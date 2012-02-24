@@ -207,18 +207,46 @@ with %i retry(s) left",
         """
         Read from the socket and call our on_data_available with the data
         """
-        try:
-            data = self.socket.recv(self._suggested_buffer_size)
-        except socket.timeout:
-            raise
-        except socket.error, error:
-            return self._handle_error(error)
+        data = None
+        while data == None:
+            try:
+                data = self.socket.recv(self._suggested_buffer_size)
+            except socket.timeout:
+                raise
+            except ssl.SSLError, error:
+                #print("SSLError: "+str(error))
+                #print(str(error.errno))
+                #print(str(error.strerror))
+                # probably 'The operation did not complete', SSL says the read should be tried again
+                pass
+            except socket.error, error:
+                print("socket.error: "+str(error))
+                return self._handle_error(error)
 
         # We received no data, so disconnect
         if not data:
             return self._adapter_disconnect()
 
-        #print("read "+str(len(data))+" bytes: "+str(data))
+        #print("  read "+str(len(data))+" bytes: "+str(data))
+
+        # Pass the data into our top level frame dispatching method
+        self._on_data_available(data)
+
+    def _handle_read_old(self):
+        """
+        Read from the socket and call our on_data_available with the data
+        """
+        try:
+            data = self.socket.recv(self._suggested_buffer_size)
+        except socket.timeout:
+            raise
+        except socket.error, error:
+            print(error)
+            return self._handle_error(error)
+
+        # We received no data, so disconnect
+        if not data:
+            return self._adapter_disconnect()
 
         # Pass the data into our top level frame dispatching method
         self._on_data_available(data)

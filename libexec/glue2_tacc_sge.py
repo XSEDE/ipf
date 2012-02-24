@@ -29,17 +29,17 @@ public_doc = TeraGridGlue2Agent().run(EntitiesAgent().run(service +
                                                           exec_envs))
 
 # if using WS-MDS to publish, write the documents to files
-args = {"filepub.file_name" : "var/glue2_private.xml"}
+args = {"publish_file.file_name" : "var/glue2_private.xml"}
 FilePublishingAgent(args).run(private_doc)
-args = {"filepub.file_name" : "var/glue2_public.xml"}
+args = {"publish_file.file_name" : "var/glue2_public.xml"}
 FilePublishingAgent(args).run(public_doc)
 
-args = {"amqp.vhost" : "teragrid_public",
-        "amqp.exchange" : "glue2"}
+args = {"publish_amqp.vhost" : "teragrid_public",
+        "publish_amqp.exchange" : "glue2"}
 AmqpPublishingAgent(args).run(public_doc)
 
-args = {"amqp.vhost" : "teragrid_private",
-        "amqp.exchange" : "glue2"}
+args = {"publish_amqp.vhost" : "teragrid_private",
+        "publish_amqp.exchange" : "glue2"}
 AmqpPublishingAgent(args).run(private_doc)
 
 ##############################################################################################################

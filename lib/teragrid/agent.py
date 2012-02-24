@@ -55,7 +55,7 @@ class TeraGridAgent(Agent):
     
     def _setSystemName(self):
         try:
-            self.system_name = self.config.get("teragrid","systemname")
+            self.system_name = self.config.get("teragrid","system_name")
             return
         except ConfigParser.Error:
             pass
@@ -68,4 +68,6 @@ class TeraGridAgent(Agent):
         if status == 0:
             self.system_name = output
             return
-        self.system_name = self._getHostName()
+        # don't fall back to hostname stuff
+        raise AgentError("execution of '"+tg_whereami+"' failed: "+output)
+        #self.system_name = self._getHostName()
