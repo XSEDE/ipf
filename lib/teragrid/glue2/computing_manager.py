@@ -18,7 +18,7 @@
 import time
 
 from ipf.document import Document
-from teragrid.tgagent import TeraGridAgent
+from teragrid.agent import TeraGridAgent
 from teragrid.xmlhelper import *
 
 ##############################################################################################################
@@ -40,12 +40,12 @@ class ComputingManager(Document):
         # Entity
         self.ID = None
         self.Name = None
-        self.OtherInfo = [] # strings
-        self.Extension = {} # (key,value) strings
+        self.OtherInfo = []    # strings
+        self.Extension = {}    # (key,value) strings
 
         # Manager
-        self.ProductName = None    # string
-        self.ProductVersion = None # string
+        self.ProductName = "unknown"    # string
+        self.ProductVersion = None      # string
 
         # ComputingManager
         self.Version = None                      # string
@@ -78,9 +78,6 @@ class ComputingManager(Document):
         self.Benchmark = []                      # list of string(LocalID)
 
         #self.computingShares = None              # ComputingShares
-
-        # required attributes that may be forgotten
-        self.ProductName = "unknown"
 
     def _addExecutionEnvironment(self, exec_env):
         self.ExecutionEnvironment.append(exec_env.ID)

@@ -19,7 +19,7 @@ import logging
 import time
 
 from ipf.document import Document
-from teragrid.tgagent import TeraGridAgent
+from teragrid.agent import TeraGridAgent
 from teragrid.xmlhelper import *
 
 logger = logging.getLogger("computing_share")
@@ -137,7 +137,7 @@ class ComputingShare(Document):
         self.MaxDiskSpace = None                # integer (GB)
         self.DefaultStorageService = None       # string - uri
         self.Preemption = None                  # boolean
-        self.ServingState = None                # string
+        self.ServingState = "production"        # string
         self.TotalJobs = None                   # integer
         self.RunningJobs = None                 # integer
         self.LocalRunningJobs = None            # integer
@@ -158,16 +158,13 @@ class ComputingShare(Document):
         self.ComputingEndpoint = []             # list of string (uri)
         self.ExecutionEnvironment = []          # list of string (uri)
         self.ComputingService = None            # list of string (uri)
-        self.ComputingActivity = []            # list of string (uri)
+        self.ComputingActivity = []             # list of string (uri)
         #self.computingActivity = []             # list of ComputingActivity
 
         # LSF has Priority
         # LSF has MaxSlotsPerUser
         # LSF has access control
         # LSF has queue status
-
-        # required attributes that may be forgotten
-        self.ServingState = "production"
 
 
     def _setBody(self, body):

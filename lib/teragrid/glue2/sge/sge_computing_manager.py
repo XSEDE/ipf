@@ -37,7 +37,7 @@ class SgeComputingManagerAgent(ComputingManagerAgent):
         manager.Name = "SGE"
         manager.Reservation = True
         #self.BulkSubmission = True
-        manager.ID = "http://"+self._getSystemName()+"/glue2/ComputingManager/"+manager.Name
+        manager.ID = "http://"+self._getSystemName()+"/glue2/ComputingManager"
 
         for doc in docs_in:
             if doc.type == "teragrid.glue2.ComputingService":

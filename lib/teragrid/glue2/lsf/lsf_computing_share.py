@@ -101,7 +101,7 @@ class LsfQueuesAgent(ComputingSharesAgent):
         queue.Name = queueName
         queue.ID = "http://"+queue.sensor.getSystemName()+"/glue2/ComputingShare/"+queue.Name
         queue.MappingQueue = queue.Name
-        queue.ComputingService = "http://"+self._getSystemName()+"/glue2/ComputingService/SGE"
+        queue.ComputingService = "http://"+self._getSystemName()+"/glue2/ComputingService"
 
         for lineNum in range(lineNumber,len(lines)):
             if lines[lineNum].startswith("  -- "):

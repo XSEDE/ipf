@@ -29,7 +29,7 @@ from ipf.error import *
 
 home_dir = os.environ.get("GLUE2_HOME")
 if home_dir == None:
-    print "HOME_DIR environment variable not set"
+    print "GLUE2_HOME environment variable not set"
     sys.exit(1)
 
 logger = logging.getLogger()
@@ -51,7 +51,7 @@ class Agent(object):
         self._loadConfig()
         self._addToConfig(args)
 
-        self._host_name = None
+        self.host_name = None
         
     def _loadConfig(self):
         self.config = ConfigParser.SafeConfigParser()

@@ -2,14 +2,13 @@
 
 from ipf.agent.file import *
 from ipf.agent.amqp import *
-#from ipf.agent.rest import *
 from teragrid.glue2.condor import *
 from teragrid.glue2.gram_endpoint import *
 from teragrid.glue2.entities import *
 from teragrid.glue2.tg_envelope import *
 
-# configuration information can be set in glue2-x.x.x/etc/agent.cfg
-# or in arguments passed to the agent constructors below
+# configuration information is specified in glue2-x.y.z/etc/agent.cfg
+#   (see glue2-x.y.z/etc/example/agent-<resource>.cfg for examples)
 
 activities = CondorJobsAgent().run()
 
@@ -27,19 +26,16 @@ public_doc = TeraGridGlue2Agent().run(EntitiesAgent().run(service +
                                                           manager +
                                                           exec_envs))
 
-# if using WS-MDS to publish, write the documents to files
-args = {"filepub.file_name" : "var/glue2_private.xml"}
-FilePublishingAgent(args).run(private_doc)
-args = {"filepub.file_name" : "var/glue2_public.xml"}
-FilePublishingAgent(args).run(public_doc)
-
-args = {"amqp.vhost" : "teragrid_public",
-        "amqp.exchange" : "glue2"}
+# by default, publish via AMQP messaging
+args = {"publish_amqp.vhost" : "teragrid_public",
+        "publish_amqp.exchange" : "glue2"}
 AmqpPublishingAgent(args).run(public_doc)
-
-args = {"amqp.vhost" : "teragrid_private",
-        "amqp.exchange" : "glue2"}
+args = {"publish_amqp.vhost" : "teragrid_private",
+        "publish_amqp.exchange" : "glue2"}
 AmqpPublishingAgent(args).run(private_doc)
 
-##############################################################################################################
-
+# if using WS-MDS to publish, write the documents to files
+#args = {"publish_file.file_name" : "var/glue2_private.xml"}
+#FilePublishingAgent(args).run(MdsEnvelopeAgent().run(private_doc))
+#args = {"publish_file.file_name" : "var/glue2_public.xml"}
+#FilePublishingAgent(args).run(MdsEnvelopeAgent().run(public_doc))

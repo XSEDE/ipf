@@ -42,7 +42,7 @@ class Document(object):
         return self._body
 
     body = property(lambda self: self._getBody(),
-                    lambda self: self._setBody(body))
+                    lambda self, body: self._setBody(body))
 
     def read(self, id=None, fd=sys.stdin):
         if id == None:

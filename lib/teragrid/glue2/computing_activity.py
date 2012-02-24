@@ -27,7 +27,7 @@ import time
 import ConfigParser
 
 from ipf.document import Document
-from teragrid.tgagent import TeraGridAgent
+from teragrid.agent import TeraGridAgent
 from teragrid.xmlhelper import *
 
 ##############################################################################################################
@@ -111,8 +111,7 @@ class ComputingActivity(Document):
         self.ComputingManagerExitCode = None       # string
         self.Error = []                            # list of string
         self.WaitingPosition = None                # integer
-        #self.UserDomain = None
-        self.Owner = None                          # string
+        self.Owner = "unknown"                     # string
         self.LocalOwner = None                     # string
         self.RequestedTotalWallTime = None         # integer (seconds) - wall time * slots
         self.RequestedTotalCPUTime = None          # integer (seconds) - cpu time * slots
@@ -140,9 +139,6 @@ class ComputingActivity(Document):
         self.ComputingEndpoint = []                # list of uri
         self.ComputingShare = []                   # list of string (LocalID)
         self.ExecutionEnvironment = []             # list of uri
-
-        # required attributes that may be forgotten
-        self.Owner = "unknown"
 
     def _setBody(self, body):
         logger.info("ComputingActivity._setBody should parse the XML...")

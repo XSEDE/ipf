@@ -58,14 +58,16 @@ class PbsQueuesAgent(ComputingSharesAgent):
             qstat = self.config.get("pbs","qstat")
         except ConfigParser.Error:
             pass
-        cmd = qconf + " -q -G"
+        cmd = qstat + " -q -G"
         logger.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
             logger.error("qstat failed: "+output)
             raise AgentError("qstat failed: "+output+"\n")
 
+
         queueStrings = output.split("\n")
+        queueStrings = queueStrings[5:len(queueStrings)-2]
 
         queues = []
         for queueString in queueStrings:
@@ -76,7 +78,7 @@ class PbsQueuesAgent(ComputingSharesAgent):
 
     def _getQueue(self, queueString):
         queue = ComputingShare()
-        queue.ComputingService = "http://"+self._getSystemName()+"/glue2/ComputingService/PBS"
+        queue.ComputingService = "http://"+self._getSystemName()+"/glue2/ComputingService"
 
         (queueName,
          memoryLimitGB,
@@ -93,9 +95,9 @@ class PbsQueuesAgent(ComputingSharesAgent):
         queue.MappingQueue = queue.Name
         queue.ID = "http://"+self._getSystemName()+"/glue2/ComputingShare/"+queue.Name
         if cpuTimeLimit != "--":
-            queue.MaxTotalCPUTime = queue._getDuration(cpuTimeLimit)
+            queue.MaxTotalCPUTime = self._getDuration(cpuTimeLimit)
         if wallTimeLimit != "--":
-            queue.MaxWallTime = queue._getDuration(wallTimeLimit)
+            queue.MaxWallTime = self._getDuration(wallTimeLimit)
         if nodeLimit != "--":
             queue.MaxSlotsPerJob = int(nodeLimit)
         queue.TotalJobs = 0

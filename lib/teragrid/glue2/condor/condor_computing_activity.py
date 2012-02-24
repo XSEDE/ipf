@@ -57,22 +57,12 @@ class CondorJobsAgent(ComputingActivitiesAgent):
             logger.error("condorq failed: "+output)
             raise AgentError("condorq failed: "+output+"\n")
 
-        jobStrings = []
-        curIndex = output.find("MyType = ")
-        if curIndex != -1:
-            while True:
-                nextIndex = output.find("MyType = ",curIndex+1)
-                if nextIndex == -1:
-                    jobStrings.append(output[curIndex:])
-                    break
-                else:
-                    jobStrings.append(output[curIndex:nextIndex])
-                    curIndex = nextIndex
+        jobStrings = output.split("\n\n")
 
         jobs = []
         for jobString in jobStrings:
             job = self._getJob(jobString)
-            if includeQueue(job.Queue):
+            if job != None and includeQueue(self.config,job.Queue,True):
                 jobs.append(job)
 
         for job in jobs:
@@ -141,22 +131,22 @@ class CondorJobsAgent(ComputingActivitiesAgent):
                         job.UsedTotalCpuTime = usedCpuTime * job.RequestedSlots
 
             if line.startswith("QDate = "):
-                job.ComputingManagerSubmissionTime = job._getDateTime(line.split()[2])
+                job.ComputingManagerSubmissionTime = self._getDateTime(line.split()[2])
                 job.SubmissionTime = job.ComputingManagerSubmissionTime
             if line.startswith("JobStartDate = "):
-                job.StartTime = job._getDateTime(line.split()[2])
+                job.StartTime = self._getDateTime(line.split()[2])
             if line.startswith("CompletionDate = "):
                 date = line.split()[2]
                 if date != "0":
-                    job.ComputingManagerEndTime = job._getDateTime(date)
+                    job.ComputingManagerEndTime = self._getDateTime(date)
                     job.EndTime = job.ComputingManagerEndTime
 
         if clusterId == None or procId == None:
             logger.error("didn't find cluster or process ID in " + jobString)
-            pass
+            return None
 
         job.LocalIDFromManager = clusterId+"."+procId
-        job.ID = "http://"+job.sensor.getSystemName()+"/glue2/ComputingActivity/"+job.LocalIDFromManager
+        job.ID = "http://"+self._getSystemName()+"/glue2/ComputingActivity/"+job.LocalIDFromManager
 
         return job
 

@@ -43,8 +43,8 @@ class PbsComputingServiceAgent(ComputingServiceAgent):
         service.Type = "org.teragrid.PBS"
         service.QualityLevel = "production"
 
-        service.ID = "http://"+self._getSystemName()+"/glue2/ComputingService/"+service.Name
-        service.ComputingManager = "http://"+self._getSystemName()+"/glue2/ComputingManager/"+service.Name
+        service.ID = "http://"+self._getSystemName()+"/glue2/ComputingService"
+        service.ComputingManager = "http://"+self._getSystemName()+"/glue2/ComputingManager"
 
         for doc in docs_in:
             if doc.type == "teragrid.glue2.ComputingShare":

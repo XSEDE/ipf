@@ -87,7 +87,12 @@ class CobaltQueuesAgent(ComputingSharesAgent):
 
     def _getQueue(self, queueString):
         queue = ComputingShare()
-        queue.ComputingService = "http://"+self._getSystemName()+"/glue2/ComputingService/SGE"
+        queue.ComputingService = "http://"+self._getSystemName()+"/glue2/ComputingService"
+
+        try:
+            procs_per_node = self.config.getint("cobalt","processors_per_node")
+        except ConfigParser.Error:
+            procs_per_node = 1
 
 	lines = queueString.split("\n")
 	for line in lines:
@@ -115,11 +120,11 @@ class CobaltQueuesAgent(ComputingSharesAgent):
             if line.startswith("    MinTime"):
                 minTime = line.split()[2]
                 if minTime != "None":
-                    queue.MinWallTime = queue._getDuration(minTime)
+                    queue.MinWallTime = self._getDuration(minTime)
             if line.startswith("    MaxTime"):
                 maxTime = line.split()[2]
                 if maxTime != "None":
-                    queue.MaxWallTime = queue._getDuration(maxTime)
+                    queue.MaxWallTime = self._getDuration(maxTime)
             if line.startswith("    MaxRunning"):
                 maxRunning = line.split()[2]
                 if maxRunning != "None":
@@ -131,11 +136,11 @@ class CobaltQueuesAgent(ComputingSharesAgent):
             if line.startswith("    MaxUserNodes"):
                 maxUserNodes = line.split()[2]
                 if maxUserNodes != "None":
-                    queue.Extension["MaxSlotsPerUser"] = int(maxUserNodes) * coresPerNode
+                    queue.Extension["MaxSlotsPerUser"] = int(maxUserNodes) * procs_per_node
             if line.startswith("    TotalNodes"):
                 totalNodes = line.split()[2]
                 if totalNodes != "None":
-                    queue.Extension["MaxSlots"] = int(totalNodes) * coresPerNode
+                    queue.Extension["MaxSlots"] = int(totalNodes) * procs_per_node
             if line.startswith("    Priority"):
                 queue.Extension["Priority"] = float(line.split()[2])
         return queue

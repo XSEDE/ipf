@@ -31,7 +31,7 @@ class FilePublishingAgent(Agent):
 
     def run(self, docs_in=[]):
         try:
-            file_name = self.config.get("filepub","file_name")
+            file_name = self.config.get("publish_file","file_name")
         except ConfigParser.Error:
             logger.error("filepub.file_name not specified")
             raise AgentError("filepub.file_name not specified")
@@ -47,3 +47,6 @@ class FilePublishingAgent(Agent):
         file = open(file_name,"w")
         file.write(docs_in[0].body)
         file.close()
+
+        return []
+    

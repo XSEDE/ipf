@@ -62,11 +62,11 @@ class CondorQueuesAgent(ComputingSharesAgent):
 
     def _getQueues(self):
         queue = ComputingShare()
-        queue.ComputingService = "http://"+self._getSystemName()+"/glue2/ComputingService/SGE"
+        queue.ComputingService = "http://"+self._getSystemName()+"/glue2/ComputingService"
 
         queue.Name = "condor"
         queue.MappingQueue = "condor"
-        queue.ID = "http://"+queue.sensor.getSystemName()+"/glue2/ComputingShare/"+queue.Name
+        queue.ID = "http://"+self._getSystemName()+"/glue2/ComputingShare/"+queue.Name
         #queue.MaxSlotsPerJob = 1
 
         return [queue]

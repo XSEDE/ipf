@@ -99,15 +99,13 @@ class LoadLevelerQueuesAgent(ComputingSharesAgent):
             print "didn't find queue name"
             sys.exit(1)
 
-        ComputingShare.__init__(self,sensor)
-
         maxSlots = None
 	for line in lines:
             line = line.lstrip() # remove leading whitespace
             if line.find("Name:") >= 0:
                 queue.Name = line[6:]
                 queue.MappingQueue = queue.Name
-                queue.ID = "http://"+queue.sensor.getSystemName()+"/glue2/ComputingShare/"+queue.Name
+                queue.ID = "http://"+self._getSystemName()+"/glue2/ComputingShare/"+queue.Name
             if line.find("Priority:") >= 0 and len(line) > 10:
                 queue.Extension["Priority"] = int(line[10:])
             if line.find("Max_processors:") >= 0 and len(line) > 16:
@@ -121,11 +119,11 @@ class LoadLevelerQueuesAgent(ComputingSharesAgent):
             if line.find("Class_comment:") >= 0:
                 queue.Description = line[15:]
             if line.find("Wall_clock_limit:") >= 0 and len(line) > 18:
-                (queue.MinWallTime,queue.MaxWallTime) = queue._getDurations(line[18:])
+                (queue.MinWallTime,queue.MaxWallTime) = self._getDurations(line[18:])
             if line.find("Cpu_limit:") >= 0 and len(line) > 11:
-                (queue.MinCPUTime,queue.MaxCPUTime) = queue._getDurations(line[11:])
+                (queue.MinCPUTime,queue.MaxCPUTime) = self._getDurations(line[11:])
             if line.find("Job_cpu_limit:") >= 0 and len(line) > 15:
-                (queue.MinTotalCPUTime,queue.MaxTotalCPUTime) = queue._getDurations(line[15:])
+                (queue.MinTotalCPUTime,queue.MaxTotalCPUTime) = self._getDurations(line[15:])
             if line.find("Free_slots:") >= 0 and len(line) > 12:
                 queue.FreeSlots = int(line[12:])
                 if maxSlots != None:
@@ -152,7 +150,11 @@ class LoadLevelerQueuesAgent(ComputingSharesAgent):
     def _getDurations(self, dStr):
         """Format is: Days+Hours:Minutes:Seconds, Days+Hours:Minutes:Seconds (XXX Seconds, XXX Seconds)
            in place of a duration, 'undefined' can be specified"""
+
         start = dStr.find("(")
+        if start == -1:
+            # no (..., ...) so must be unknown
+            return (None,None)
         end = dStr.find(",",start)
         maxStr = dStr[start+1:end]
 

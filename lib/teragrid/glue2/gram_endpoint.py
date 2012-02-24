@@ -97,7 +97,7 @@ class GramEndpointsAgent(ComputingEndpointsAgent):
         for line in lines:
             if line.startswith("#"):
                 continue
-            toks = line.split("=")
+            toks = line.split("= ")
             if len(toks) != 2:
                 continue
             name = toks[0].lstrip().rstrip()
@@ -137,6 +137,8 @@ class GramEndpointsAgent(ComputingEndpointsAgent):
         endpoint.Name = reg_info["Name"]
         endpoint.ID = "http://"+self._getSystemName()+"/glue2/ComputingEndpoint/"+endpoint.Name
         endpoint.URL = reg_info["Endpoint"]
+
+        endpoint.ComputingService = "http://"+self._getSystemName()+"/glue2/ComputingService"
 
         host_cert_file = "/etc/grid-security/hostcert.pem"
         try:
@@ -221,15 +223,6 @@ class GramEndpoint(ComputingEndpoint):
                            "executionmanagement.jobmanager",
                            ]
         self.Implementor = "The Globus Alliance"
-
-    def addComputingServiceInfo(self, computingService):
-        self.TotalJobs = computingService.TotalJobs
-        self.RunningJobs = computingService.RunningJobs
-        self.WaitingJobs = computingService.WaitingJobs
-        self.StagingJobs = computingService.StagingJobs
-        self.SuspendedJobs = computingService.SuspendedJobs
-        self.PreLRMSWaitingJobs = computingService.PreLRMSWaitingJobs
-        self.ComputingService = computingService.ID
 
 ##############################################################################################################
 

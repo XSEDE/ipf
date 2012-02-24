@@ -22,8 +22,6 @@ import logging
 import os
 import re
 import sys
-import xml.sax
-import xml.sax.handler
 import ConfigParser
 
 from ipf.error import *
@@ -72,7 +70,7 @@ class PbsJobsAgent(ComputingActivitiesAgent):
         jobs = []
         for jobString in jobStrings:
             job = self._getJob(jobString)
-            if includeQueue(job.Queue):
+            if includeQueue(self.config,job.Queue):
                 jobs.append(job)
 
         for job in jobs:
@@ -127,7 +125,7 @@ class PbsJobsAgent(ComputingActivitiesAgent):
                     logger.warn("found unknown PBS job state '" + state + "'")
                     job.State = "teragrid:unknown"
             if line.find("Resource_List.walltime =") >= 0:
-                wallTime = job._getDuration(line.split()[2])
+                wallTime = self._getDuration(line.split()[2])
                 if job.RequestedSlots != None:
                     job.RequestedTotalWallTime = wallTime * job.RequestedSlots
             # Just ncpus for some PBS installs. Both at other installs, with different values.
@@ -140,24 +138,24 @@ class PbsJobsAgent(ComputingActivitiesAgent):
                     if usedWallTime != None:
                         job.UsedTotalWallTime = usedWallTime * job.RequestedSlots
             if line.find("resources_used.walltime =") >= 0:
-                usedWallTime = job._getDuration(line.split()[2])
+                usedWallTime = self._getDuration(line.split()[2])
                 if job.RequestedSlots != None:
                     job.UsedTotalWallTime = usedWallTime * job.RequestedSlots
             if line.find("resources_used.cput =") >= 0:
-                job.UsedTotalCPUTime = job._getDuration(line.split()[2])
+                job.UsedTotalCPUTime = self._getDuration(line.split()[2])
             if line.find("qtime =") >= 0:
-                job.ComputingManagerSubmissionTime = job._getDateTime(line[line.find("=")+2:])
+                job.ComputingManagerSubmissionTime = self._getDateTime(line[line.find("=")+2:])
                 job.SubmissionTime = job.ComputingManagerSubmissionTime
             if line.find("mtime =") >= 0:
                 if job.State == "teragrid:running":
-                    job.StartTime = job._getDateTime(line[line.find("=")+2:])
+                    job.StartTime = self._getDateTime(line[line.find("=")+2:])
                 if (job.State == "teragrid:finished") or (job.State == "teragrid:terminated"):
                     # this is right for terminated since terminated is set on the E state
-                    job.ComputingManagerEndTime = job._getDateTime(line[line.find("=")+2:])
+                    job.ComputingManagerEndTime = self._getDateTime(line[line.find("=")+2:])
                     job.EndTime = job.ComputingManagerEndTime
             #if line.find("ctime =") >= 0 and \
             #        (job.State == "teragrid:finished" or job.State == "teragrid:terminated"):
-            #    job.ComputingManagerEndTime = job._getDateTime(line[line.find("=")+2:])
+            #    job.ComputingManagerEndTime = self._getDateTime(line[line.find("=")+2:])
             #    job.EndTime = job.ComputingManagerEndTime
 
         return job

@@ -16,18 +16,11 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
-import datetime
 import logging
-import os
-import re
-import sys
-import xml.sax
-import xml.sax.handler
 import ConfigParser
 
 from ipf.error import *
-from teragrid.glue2.computing_activity import *
+from teragrid.glue2.pbs.pbs_computing_activity import *
 
 logger = logging.getLogger("PscPbsJobsAgent")
 
@@ -46,9 +39,13 @@ class PscPbsJobsAgent(PbsJobsAgent):
             logger.error("psc.job_list_file not specified")
             raise AgentError("psc.job_list_file not specified")
 
-	f = open(job_list_file,"r")
-	lines = f.readlines()
-	f.close()
+        try:
+            f = open(job_list_file,"r")
+            lines = f.readlines()
+            f.close()
+        except IOError, e:
+            logger.error("couldn't read job list from file "+job_list_file)
+            raise AgentError("couldn't read job list from file "+job_list_file)
 
 	job_ids = []
 	for line in lines[1:]:

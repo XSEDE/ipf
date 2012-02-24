@@ -68,34 +68,15 @@ class PbsExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
             if self._goodHost(host):
                 hosts.append(host)
 
-        host_groups = []
-        for host in hosts:
-            for host_group in host_groups:
-                if host.sameHostGroup(host_group):
-                    host_group.TotalInstances = host_group.TotalInstances + host.TotalInstances
-                    host_group.UsedInstances = host_group.UsedInstances + host.UsedInstances
-                    host_group.UnavailableInstances = host_group.UnavailableInstances + host.UnavailableInstances
-                    host = None
-                    break
-            if host != None:
-                host_groups.append(host)
-
-        for index in range(0,len(host_groups)):
-            host_groups[index].Name = "NodeType" + str(index+1)
-            host_groups[index].ID = "http://"+self._getSystemName()+"/glue2/ExecutionEnvironment/"+ \
-                                    host_groups[index].Name
-
-        for host_group in host_groups:
-            host_group.id = host_group.Name+"."+self._getSystemName()
-
-        return host_groups
+        return self._groupHosts(hosts)
 
     def _getHost(self, nodeString):
         host = ExecutionEnvironment()
+        host.ComputingManager = "http://"+self._getSystemName()+"/glue2/ComputingManager"
 
         host.properties = ()
 
-        lines = nodeStr.split("\n")
+        lines = nodeString.split("\n")
 
         # ID set by ExecutionEnvironment
         host.Name = lines[0]
@@ -149,19 +130,30 @@ class PbsExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
                         utoks = tok.split()
                         host.Platform = utoks[len(utoks)-1]
 			host.OSVersion = utoks[2]
-                    if line.find("ncpus =") >= 0:
+                    if tok.find("ncpus=") >= 0:
                         cpus = int(tok.split("=")[1])
                         if (host.PhysicalCPUs == None) or (cpus > host.PhysicalCPUs):
                             host.PhysicalCPUs = cpus
                             host.LogicalCPUs = host.PhysicalCPUs        # don't have enough info to do anything else...
+                    if tok.find("loadave=") >= 0:
+                        load = float(tok.split("=")[1])
+                        if host.UsedInstances > 0:
+                            host.Extension["UsedAverageLoad"] = load
+                        elif host.UnavailableInstances == 0:
+                            host.Extension["UsedAvailableLoad"] = load
                 host.VirtualMemorySize = totMem - host.MainMemorySize
             if line.find("properties =") >= 0:
                 host.properties = line[18:].split(",")
         return host
         
     def _testProperties(self, properties):
-        expression = arguments["Nodes"].value
-        toks = expression.split()
+        nodes = "+*"
+        try:
+            nodes = self.config.get("glue2","nodes")
+        except ConfigParser.Error:
+            pass
+            
+        toks = nodes.split()
         goodSoFar = False
         for tok in toks:
             if tok[0] == '+':

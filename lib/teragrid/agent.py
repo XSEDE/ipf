@@ -55,7 +55,7 @@ class TeraGridAgent(Agent):
     
     def _setSystemName(self):
         try:
-            self.system_name = self.config.get("teragrid","system_name")
+            self.system_name = self.config.get("teragrid","resource_name")
             return
         except ConfigParser.Error:
             pass

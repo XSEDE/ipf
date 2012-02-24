@@ -22,8 +22,7 @@ import logging
 import os
 import re
 import sys
-import xml.sax
-import xml.sax.handler
+import xml.dom.minidom
 import ConfigParser
 
 from ipf.error import *
@@ -79,8 +78,8 @@ class MoabJobsAgent(ComputingActivitiesAgent):
                 #print("  jobs: "+node.getAttribute("count"))
                 status = node.getAttribute("option")
                 for jobElement in node.childNodes:
-                    job = self._getJob(self,jobElement,procsPerNode,status)
-                    if includeQueue(job.Queue):
+                    job = self._getJob(jobElement,procsPerNode,status)
+                    if includeQueue(self.config,job.Queue):
                         if job.EndTime == None:
                             jobs.append(job)
                         else:
@@ -98,7 +97,7 @@ class MoabJobsAgent(ComputingActivitiesAgent):
         job = ComputingActivity()
 
         job.LocalIDFromManager = jobElement.getAttribute("JobID")
-        job.ID = "http://"+job.sensor.getSystemName()+"/glue2/ComputingActivity/"+job.LocalIDFromManager
+        job.ID = "http://"+self._getSystemName()+"/glue2/ComputingActivity/"+job.LocalIDFromManager
         job.Name = jobElement.getAttribute("JobName") # showing as NONE
         job.LocalOwner = jobElement.getAttribute("User")
         job.UserDomain = jobElement.getAttribute("Account")

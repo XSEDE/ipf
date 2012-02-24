@@ -50,7 +50,7 @@ class CobaltJobsAgent(ComputingActivitiesAgent):
         except ConfigParser.Error:
             pass
 
-        cmd = qstat + " -lf"
+        cmd = cqstat + " -lf"
         logger.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
@@ -72,7 +72,7 @@ class CobaltJobsAgent(ComputingActivitiesAgent):
         jobs = []
         for jobString in jobStrings:
             job = self._getJob(jobString)
-            if includeQueue(job.Queue):
+            if includeQueue(self.config,job.Queue):
                 jobs.append(job)
 
         for job in jobs:
@@ -122,7 +122,7 @@ class CobaltJobsAgent(ComputingActivitiesAgent):
                     logger.warn("found unknown Cobalt job state '" + state + "'")
                     job.State = "teragrid:unknown"
             if line.startswith("    WallTime "):
-                wallTime = job._getDuration(line.split()[2])
+                wallTime = self._getDuration(line.split()[2])
                 if job.RequestedSlots != None:
                     job.RequestedTotalWallTime = wallTime * job.RequestedSlots
             if line.startswith("    Nodes "):
@@ -134,17 +134,17 @@ class CobaltJobsAgent(ComputingActivitiesAgent):
             if line.startswith("    RunTime "):
                 duration = line.split()[2]
                 if duration != "N/A":
-                    usedWallTime = job._getDuration(duration)
+                    usedWallTime = self._getDuration(duration)
                     if job.RequestedSlots != None:
                         job.UsedTotalWallTime = usedWallTime * job.RequestedSlots
             #job.UsedTotalCPUTime = 
             if line.startswith("    SubmitTime "):
-                job.ComputingManagerSubmissionTime = job._getSubmitDateTime(line[line.find(":")+2:])
+                job.ComputingManagerSubmissionTime = self._getSubmitDateTime(line[line.find(":")+2:])
                 job.SubmissionTime = job.ComputingManagerSubmissionTime
             if line.startswith("    StartTime "):
                 startTime = line[line.find(":")+2:]
                 if startTime != "N/A":
-                    job.StartTime = job._getStartDateTime(startTime)
+                    job.StartTime = self._getStartDateTime(startTime)
 
             #job.ComputingManagerEndTime = job._getDateTime(line[line.find("=")+2:])
             #job.EndTime = job.ComputingManagerEndTime

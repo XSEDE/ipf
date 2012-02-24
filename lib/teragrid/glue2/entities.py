@@ -18,7 +18,7 @@
 import logging
 
 from ipf.document import Document
-from teragrid.tgagent import TeraGridAgent
+from teragrid.agent import TeraGridAgent
 
 logger = logging.getLogger("EntitiesAgent")
 
@@ -48,9 +48,9 @@ class Entities(Document):
 
     def _getBody(self):
         #estr = "<?xml version='1.0' encoding='UTF-8'?>\n"
-        estr = "    <Entities xmlns='http://info.teragrid.org/glue/2009/02/spec_2.0_r01'>\n"
+        estr = "  <Entities xmlns='http://info.teragrid.org/glue/2009/02/spec_2.0_r02'>\n"
         for doc in self.docs:
-            estr = estr + doc._toXml("        ")
-        estr = estr + "    </Entities>\n"
+            estr = estr + doc._toXml("    ")
+        estr = estr + "  </Entities>\n"
         return estr
         

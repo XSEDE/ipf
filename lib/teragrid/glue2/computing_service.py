@@ -18,7 +18,7 @@
 import time
 
 from ipf.document import Document
-from teragrid.tgagent import TeraGridAgent
+from teragrid.agent import TeraGridAgent
 from teragrid.xmlhelper import *
 
 ##############################################################################################################

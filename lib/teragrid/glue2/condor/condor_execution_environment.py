@@ -66,32 +66,13 @@ class CondorExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
             if self._goodHost(host):
                 hosts.append(host)
 
-        host_groups = []
-        for host in hosts:
-            for host_group in host_groups:
-                if host.sameHostGroup(host_group):
-                    host_group.TotalInstances = host_group.TotalInstances + host.TotalInstances
-                    host_group.UsedInstances = host_group.UsedInstances + host.UsedInstances
-                    host_group.UnavailableInstances = host_group.UnavailableInstances + host.UnavailableInstances
-                    host = None
-                    break
-            if host != None:
-                host_groups.append(host)
-
-        for index in range(0,len(host_groups)):
-            host_groups[index].Name = "NodeType" + str(index+1)
-            host_groups[index].ID = "http://"+self._getSystemName()+"/glue2/ExecutionEnvironment/"+ \
-                                    host_groups[index].Name
-
-        for host_group in host_groups:
-            host_group.id = host_group.Name+"."+self._getSystemName()
-
-        return host_groups
+        return self._groupHosts(hosts)
 
     def _getHost(self, node_str):
         host = ExecutionEnvironment()
-        host.ComputingManager = "http://"+self._getSystemName()+"/glue2/ComputingManager/SGE"
+        host.ComputingManager = "http://"+self._getSystemName()+"/glue2/ComputingManager"
 
+        load = None
         lines = node_str.split("\n")
         # ID set by ExecutionEnvironment
         for line in lines:
@@ -121,6 +102,18 @@ class CondorExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
                     host.UsedInstances = 0
                     host.UnavailableInstances = 1
                 host.TotalInstances = 1
+                if load != None:
+                    if host.UsedInstances > 0:
+                        host.Extension["UsedAverageLoad"] = load
+                    elif host.UnavailableInstances == 0:
+                        host.Extension["AvailableAverageLoad"] = load
+            if line.startswith("LoadAvg = "):
+                load = float(line.split()[2])
+                if host.TotalInstances != None:
+                    if host.UsedInstances > 0:
+                        host.Extension["UsedAverageLoad"] = load
+                    elif host.UnavailableInstances == 0:
+                        host.Extension["AvailableAverageLoad"] = load
             if line.startswith("Cpus = "):
                 host.PhysicalCPUs = int(line.split()[2])
                 host.LogicalCPUs = host.PhysicalCPUs

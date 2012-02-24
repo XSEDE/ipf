@@ -61,12 +61,12 @@ class CobaltExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
 
         lines = output.split("\n")
 
-        availNodes = 0
-        unavailNodes = 0
-        usedNodes = 0
+        avail_nodes = 0
+        unavail_nodes = 0
+        used_nodes = 0
         blocking = []
-        smallestPartSize = -1
-        largestPartSize = -1;
+        smallest_partsize = -1
+        largest_partsize = -1;
         for index in range(len(lines)-1,2,-1):
             #Name          Queue                             State                   Backfill
             #          1         2         3         4         5         6         7         8
@@ -74,68 +74,70 @@ class CobaltExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
             toks = lines[index].split()
             toks2 = toks[0].split("_")
 
-            partSize = int(toks2[0])
+            partsize = int(toks2[0])
 
-            if smallestPartSize == -1:
-                smallestPartSize = partSize
-            if partSize > largestPartSize:
-                largestPartSize = partSize
+            if smallest_partsize == -1:
+                smallest_partsize = partsize
+            if partsize > largest_partsize:
+                largest_partsize = partsize
 
-            if partSize == smallestPartSize:
+            if partsize == smallest_partsize:
                 toks2 = lines[index][48:].split()
                 state = toks2[0]
                 if state == "idle":
-                    availNodes = availNodes + partSize
+                    avail_nodes = avail_nodes + partsize
                 elif state == "busy":
-                    usedNodes = usedNodes + partSize
+                    used_nodes = used_nodes + partsize
                 elif state == "starting":
-                    usedNodes = usedNodes + partSize
+                    used_nodes = used_nodes + partsize
                 elif state == "blocked":
                     if (lines[index].find("failed diags") != -1) or (lines[index].find("pending diags") != -1):
                         #blocked by pending diags
                         #failed diags
                         #blocked by failed diags
-                        unavailNodes = unavailNodes + partSize
+                        unavail_nodes = unavail_nodes + partsize
                     else:
-                        blockedBy = toks2[1][1:len(toks2[1])-1]
-                        if not blockedBy in blocking:
-                            blocking.append(blockedBy)
+                        blocked_by = toks2[1][1:len(toks2[1])-1]
+                        if not blocked_by in blocking:
+                            blocking.append(blocked_by)
                 elif state == "hardware":
                     #hardware offline: nodecard <nodecard_id>
                     #hardware offline: switch <switch_id>
-                    unavailNodes = unavailNodes + partSize
+                    unavail_nodes = unavail_nodes + partsize
                 else:
                     logger.warn("found unknown partition state: "+toks[2])
 
         # assuming that all nodes are identical
 
-        execEnv = ExecutionEnvironment()
+        exec_env = ExecutionEnvironment()
         try:
-            execEnv.PhysicalCPUs = self.config.getint("cobalt","processors_per_node")
+            exec_env.PhysicalCPUs = self.config.getint("cobalt","processors_per_node")
         except ConfigParser.Error:
             logger.error("cobalt.processors_per_node not specified")
             raise AgentError("cobalt.processors_per_node not specified")
 
-        execEnv.LogicalCPUs = execEnv.PhysicalCPUs
+        exec_env.LogicalCPUs = exec_env.PhysicalCPUs
 
         try:
-            execEnv.MainMemorySize = self.config.getint("cobalt","node_memory_size")
+            exec_env.MainMemorySize = self.config.getint("cobalt","node_memory_size")
         except ConfigParser.Error:
             logger.error("cobalt.node_memory_size not specified")
             raise AgentError("cobalt.node_memory_size not specified")
-        #execEnv.VirtualMemorySize = 
+        #exec_env.VirtualMemorySize = 
 
         # use the defaults set for Platform, OSVersion, etc in ExecutionEnvironment (same as the login node)
 
-        execEnv.UsedInstances = (totalNodes - availNodes - unavailNodes) * execEnv.PhysicalCPUs
-        execEnv.TotalInstances = totalNodes * execEnv.PhysicalCPUs
-        execEnv.UnavailableInstances = unavailNodes * execEnv.PhysicalCPUs
+        exec_env.UsedInstances = used_nodes * exec_env.PhysicalCPUs
+        exec_env.TotalInstances = (used_nodes + avail_nodes + unavail_nodes) * exec_env.PhysicalCPUs
+        exec_env.UnavailableInstances = unavail_nodes * exec_env.PhysicalCPUs
 
-        execEnv.Name = "NodeType1"
-        execEnv.ID = "http://"+self.getSystemName()+"/glue2/ExecutionEnvironment/"+ execEnv.Name
-        execEnv.id = execEnv.Name+"."+self._getSystemName()
+        exec_env.ComputingManager = "http://"+self._getSystemName()+"/glue2/ComputingManager"
 
-        return [execEnv]
+        exec_env.Name = "NodeType1"
+        exec_env.ID = "http://"+self._getSystemName()+"/glue2/ExecutionEnvironment/"+ exec_env.Name
+        exec_env.id = exec_env.Name+"."+self._getSystemName()
+
+        return [exec_env]
         
 ##############################################################################################################
 

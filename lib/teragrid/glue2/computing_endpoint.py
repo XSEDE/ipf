@@ -24,7 +24,7 @@ import time
 import ConfigParser
 
 from ipf.document import Document
-from teragrid.tgagent import TeraGridAgent
+from teragrid.agent import TeraGridAgent
 from teragrid.xmlhelper import *
 
 logger = logging.getLogger("ComputingEndpointsAgent")
@@ -54,8 +54,8 @@ class ComputingEndpoint(Document):
         # Endpoint
         self.URL = None                   # string (uri)
         self.Capability = []              # list of string (Capability)
-        self.Technology = None            # string (EndpointTechnology)
-        self.InterfaceName = None         # string (InterfaceName)
+        self.Technology = "unknown"       # string (EndpointTechnology)
+        self.InterfaceName = "unknown"    # string (InterfaceName)
         self.InterfaceVersion = None      # string
         self.InterfaceExtension = []      # list of string (uri)
         self.WSDL = []                    # list of string (uri)
@@ -65,9 +65,9 @@ class ComputingEndpoint(Document):
         self.ImplementationName = None    # string
         self.ImplementationVersion = None # string
         self.QualityLevel = None          # string (QualityLevel)
-        self.HealthState = None           # string (EndpointHealthState)
+        self.HealthState = "unknown"      # string (EndpointHealthState)
         self.HealthStateInfo = None       # string
-        self.ServingState = None          # string (ServingState)
+        self.ServingState = "production"  # string (ServingState)
         self.StartTime = None             # datetime
         self.IssuerCA = None              # string (DN)
         self.TrustedCA = []               # list of string (DN)
@@ -88,10 +88,6 @@ class ComputingEndpoint(Document):
         self.ComputingService = None   # string (uri)
         self.ComputingShare = []       # list of string (uri)
         self.ComputingActivity = []    # list of string (uri)
-
-        # required attributes that may be forgotten
-        self.HealthState = "unknown"
-        self.ServingState = "production"
 
     def _setBody(self, body):
         logger.info("ComputingEndpoint._setBody should parse the XML...")

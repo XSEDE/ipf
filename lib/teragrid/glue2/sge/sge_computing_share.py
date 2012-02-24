@@ -77,7 +77,7 @@ class SgeQueuesAgent(ComputingSharesAgent):
 
     def _getQueue(self, queueString):
         queue = ComputingShare()
-        queue.ComputingService = "http://"+self._getSystemName()+"/glue2/ComputingService/SGE"
+        queue.ComputingService = "http://"+self._getSystemName()+"/glue2/ComputingService"
 
         lines = queueString.split("\n")
         queueName = None

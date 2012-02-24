@@ -24,7 +24,7 @@ import time
 import ConfigParser
 
 from ipf.document import Document
-from teragrid.tgagent import TeraGridAgent
+from teragrid.agent import TeraGridAgent
 from teragrid.xmlhelper import *
 from teragrid.glue2.computing_activity import includeQueue
 
@@ -66,6 +66,52 @@ class ExecutionEnvironmentsAgent(TeraGridAgent):
                 return True
         return False
 
+    def _groupHosts(self, hosts):
+        host_groups = []
+        for host in hosts:
+            for host_group in host_groups:
+                if host.sameHostGroup(host_group):
+                    if "UsedAverageLoad" in host.Extension:
+                        host_load = host.Extension["UsedAverageLoad"]
+                        if not "UsedAverageLoad" in host_group.Extension:
+                            host_group.Extension["UsedAverageLoad"] = host_load
+                        else:
+                            host_group_load = host_group.Extension["UsedAverageLoad"]
+                            host_group_load = (host_group_load * host_group.UsedInstances +
+                                               host_load * host.UsedInstances) / \
+                                               (host_group.UsedInstances + host.UsedInstances)
+                            host_group.Extension["UsedAverageLoad"] = host_group_load
+                    if "AvailableAverageLoad" in host.Extension:
+                        host_load = host.Extension["AvailableAverageLoad"]
+                        if not "AvailableAverageLoad" in host_group.Extension:
+                            host_group.Extension["AvailableAverageLoad"] = host_load
+                        else:
+                            host_group_load = host_group.Extension["AvailableAverageLoad"]
+                            host_group_avail = host_group.TotalInstances - host_group.UsedInstances - \
+                                               host_group.UnavailableInstances
+                            host_avail = host.TotalInstances - host.UsedInstances - host.UnavailableInstances
+                            host_group_load = (host_group_load * host_group_avail +
+                                               host_load * host_avail) / \
+                                               (host_group_avail + host_group_avail)
+                            host_group.Extension["AvailableAverageLoad"] = host_group_load
+                    host_group.TotalInstances += host.TotalInstances
+                    host_group.UsedInstances += host.UsedInstances
+                    host_group.UnavailableInstances += host.UnavailableInstances
+                    host = None
+                    break
+            if host != None:
+                host_groups.append(host)
+
+        for index in range(0,len(host_groups)):
+            host_groups[index].Name = "NodeType" + str(index+1)
+            host_groups[index].ID = "http://"+self._getSystemName()+"/glue2/ExecutionEnvironment/"+ \
+                                    host_groups[index].Name
+
+        for host_group in host_groups:
+            host_group.id = host_group.Name+"."+self._getSystemName()
+
+        return host_groups
+
 ##############################################################################################################
 
 class ExecutionEnvironment(Document):
@@ -88,33 +134,33 @@ class ExecutionEnvironment(Document):
         self.Activity = []  # list of string (uri)
 
         # ExecutionEnvironment
-        self.Platform = None              # string (Platform_t)
-        self.VirtualMachine = None        # boolean (ExtendedBoolean)
-        self.TotalInstances = None        # integer
-        self.UsedInstances = None         # integer
-        self.UnavailableInstances = None  # integer
-        self.PhysicalCPUs = None          # integer
-        self.LogicalCPUs = None           # integer
-        self.CPUMultiplicity = None       # integer (CPUMultiplicity)
-        self.CPUVendor = None             # string
-        self.CPUModel = None              # string
-        self.CPUVersion = None            # string
-        self.CPUClockSpeed = None         # integer (MHz)
-        self.CPUTimeScalingFactor = None  # float
-        self.WallTimeScalingFactor = None # float
-        self.MainMemorySize = None        # integer (MB)
-        self.VirtualMemorySize = None     # integer (MB)
-        self.OSFamily = None              # string (OSFamily)
-        self.OSName = None                # string (OSName)
-        self.OSVersion = None             # string
-        self.ConnectivityIn = None        # boolean (ExtendedBoolean)
-        self.ConnectivityOut = None       # boolean (ExtendedBoolean)
-        self.NetworkInfo = None           # string (NetworkInfo)
-        self.ComputingManager = None      # string (uri)
-        self.ComputingShare = []          # list of string (LocalID)
-        self.ComputingActivity = []       # list of string (uri)
-        self.ApplicationEnvironment = []  # list of string (LocalID)
-        self.Benchmark = []               # list of string (LocalID)
+        self.Platform = None               # string (Platform_t)
+        self.VirtualMachine = None          # boolean (ExtendedBoolean)
+        self.TotalInstances = None          # integer
+        self.UsedInstances = None           # integer
+        self.UnavailableInstances = None    # integer
+        self.PhysicalCPUs = None            # integer
+        self.LogicalCPUs = None             # integer
+        self.CPUMultiplicity = None         # integer (CPUMultiplicity)
+        self.CPUVendor = None               # string
+        self.CPUModel = None                # string
+        self.CPUVersion = None              # string
+        self.CPUClockSpeed = None           # integer (MHz)
+        self.CPUTimeScalingFactor = None    # float
+        self.WallTimeScalingFactor = None   # float
+        self.MainMemorySize = 0             # integer (MB)
+        self.VirtualMemorySize = None       # integer (MB)
+        self.OSFamily = None                # string (OSFamily)
+        self.OSName = None                  # string (OSName)
+        self.OSVersion = None               # string
+        self.ConnectivityIn = "undefined"   # boolean (ExtendedBoolean)
+        self.ConnectivityOut = "undefined"  # boolean (ExtendedBoolean)
+        self.NetworkInfo = None             # string (NetworkInfo)
+        self.ComputingManager = None        # string (uri)
+        self.ComputingShare = []            # list of string (LocalID)
+        self.ComputingActivity = []         # list of string (uri)
+        self.ApplicationEnvironment = []    # list of string (LocalID)
+        self.Benchmark = []                 # list of string (LocalID)
 
         # set defaults to be the same as the host where this runs
         (sysName,nodeName,release,version,machine) = os.uname()
@@ -125,9 +171,6 @@ class ExecutionEnvironment(Document):
 
         if self.teragrid_platform != None:
             self.Extension["TeraGridPlatform"] = self.teragrid_platform
-
-        # required attributes that may be forgotten
-        self.MainMemorySize = 0
 
     def _setBody(self, body):
         logger.info("ExecutionEnvironment._setBody should parse the XML...")
@@ -182,7 +225,7 @@ class ExecutionEnvironment(Document):
         for info in self.OtherInfo:
             mstr = mstr+indent+"  <OtherInfo>"+info+"</OtherInfo>\n"
         for key in self.Extension.keys():
-            mstr = mstr+indent+"  <Extension Key='"+key+"'>"+self.Extension[key]+"</Extension>\n"
+            mstr = mstr+indent+"  <Extension Key='"+key+"'>"+str(self.Extension[key])+"</Extension>\n"
 
         # Resource
         if self.Manager != None:

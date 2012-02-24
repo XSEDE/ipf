@@ -23,8 +23,7 @@ from ssl import CERT_REQUIRED
 import time
 import ConfigParser
 
-# pika requires at least Python 2.4 (for @property). A higher version may be needed - 2.6 or better seems ok.
-
+# pika requires at least Python 2.6 (@property in 2.4 or higher, ssl in 2.6 or higher).
 from pika.adapters import SelectConnection
 from pika.adapters import BlockingConnection
 from pika.connection import ConnectionParameters
@@ -54,19 +53,19 @@ class AmqpPublishingAgent(Agent):
         self._configureBrokers()
 
         try:
-            self.vhost = self.config.get("amqp","vhost")
+            self.vhost = self.config.get("publish_amqp","vhost")
         except ConfigParser.Error:
-            logger.error("amqp.vhost not specified")
-            raise AgentError("amqp.vhost not specified")
+            logger.error("publish_amqp.vhost not specified")
+            raise AgentError("publish_amqp.vhost not specified")
 
         try:
-            self.exchange = self.config.get("amqp","exchange")
+            self.exchange = self.config.get("publish_amqp","exchange")
         except ConfigParser.Error:
-            logger.error("amqp.exchange not specified")
-            raise AgentError("amqp.exchange not specified")
+            logger.error("publish_amqp.exchange not specified")
+            raise AgentError("publish_amqp.exchange not specified")
 
         try:
-            self.routing_key = self.config.get("amqp","routing_key")
+            self.routing_key = self.config.get("publish_amqp","routing_key")
         except ConfigParser.Error:
             # this is fine - the id in each document will be used
             pass
@@ -79,46 +78,46 @@ class AmqpPublishingAgent(Agent):
 
         if self.error_msg != None:
             raise AgentError(self.error_msg)
-        return None
-
+        return []
 
     def _configureBrokers(self):
         try:
-            brokers_str = self.config.get("amqp","broker")
+            brokers_str = self.config.get("publish_amqp","broker")
         except ConfigParser.Error:
-            brokers_str = "info1.dyn.teragrid.org:5671,info2.dyn.teragrid.org:5672"
+            logger.error("publish_amqp.broker not specified")
+            raise AgentError("publish_amqp.broker not specified")
 
         self.brokers = []
         for hostport in brokers_str.split():
             toks = hostport.split(":")
             self.brokers.append([toks[0],int(toks[1])])
-        #random.shuffle(self.brokers)
+        random.shuffle(self.brokers)
 
     def _connect(self):
         if len(self.brokers) == 0:
-            self.error_msg = "failed to connect to any of the specified amqp brokers"
-            self.connection.ioloop.stop()
-            self.connection = None
-            return
+            raise AgentError("failed to connect to any of the specified amqp brokers")
+
         (host,port) = self.brokers.pop()
         creds = ExternalCredentials()
-
         parameters = ConnectionParameters(host, port, self.vhost, creds, ssl=True, ssl_options=self._getSslOptions())
         try:
             self.connection = SelectConnection(parameters,self.on_connected)
+            print("connected to %s:%s" % (host,port))
         except pika.exceptions.AMQPConnectionError, e:
-            raise AgentError(str(e))
+            logger.warn("failed to connect to %s:%s" % (host,port))
+            self._connect()
 
     def _getSslOptions(self):
         cacerts_filename = os.path.join(home_dir,"etc","cacerts.pem")
         self._generateCaCertsFile(cacerts_filename)
 
         try:
-            key_file = self.config.get("amqp","key")
+            key_file = self.config.get("publish_amqp","key")
         except ConfigParser.Error:
             key_file = "/etc/grid-security/hostkey.pem"
+
         try:
-            cert_file = self.config.get("amqp","certificate")
+            cert_file = self.config.get("publish_amqp","certificate")
         except ConfigParser.Error:
             try:
                 cert_file = self.config.get("globus","host_certificate")
@@ -137,12 +136,13 @@ class AmqpPublishingAgent(Agent):
 
         logger.info("generating ca certificates file")
         try:
-            cadir = self.config.get("amqp","ca_certificates_directory")
+            cadir = self.config.get("publish_amqp","ca_certificates_directory")
         except ConfigParser.Error:
             try:
                 cadir = self.config.get("globus","ca_certificates_directory")
             except ConfigParser.Error:
                 cadir = "/etc/grid-security/certificates"
+
         listing = os.listdir(cadir)
         listing.sort()
         file = open(cacerts_filename,"w")
@@ -163,13 +163,15 @@ class AmqpPublishingAgent(Agent):
                 routing_key = self.routing_key
             else:
                 routing_key = doc.id
-            logger.info("  publishing "+routing_key+" to exchange "+self.exchange)
+            logger.info("  publishing "+routing_key+" to exchange "+self.exchange+" on vhost "+self.vhost)
+            print("  publishing "+routing_key+" to exchange "+self.exchange+" on vhost "+self.vhost)
             self.channel.basic_publish(self.exchange,routing_key,doc.body)
 
         # wait a little bit for any errors
         self.connection.add_timeout(2,self.on_timeout)
 
     def on_timeout(self):
+        print("  closing connection")
         self.connection.close()
 
     def on_close(self, reply_code, reply_text):

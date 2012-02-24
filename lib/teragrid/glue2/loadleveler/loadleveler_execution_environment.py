@@ -75,38 +75,21 @@ class LoadLevelerExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
             if self._goodHost(host):
                 hosts.append(host)
 
-        host_groups = []
-        for host in hosts:
-            for host_group in host_groups:
-                if host.sameHostGroup(host_group):
-                    host_group.TotalInstances = host_group.TotalInstances + host.TotalInstances
-                    host_group.UsedInstances = host_group.UsedInstances + host.UsedInstances
-                    host_group.UnavailableInstances = host_group.UnavailableInstances + host.UnavailableInstances
-                    host = None
-                    break
-            if host != None:
-                host_groups.append(host)
-
-        for index in range(0,len(host_groups)):
-            host_groups[index].Name = "NodeType" + str(index+1)
-            host_groups[index].ID = "http://"+self._getSystemName()+"/glue2/ExecutionEnvironment/"+ \
-                                    host_groups[index].Name
-
-        for host_group in host_groups:
-            host_group.id = host_group.Name+"."+self._getSystemName()
-
-        return host_groups
+        return self._groupHosts(hosts)
 
     def _getHost(self, nodeString):
         host = ExecutionEnvironment()
-        host.ComputingManager = "http://"+self.system_name+"/glue2/ComputingManager/SGE"
+        host.ComputingManager = "http://"+self._getSystemName()+"/glue2/ComputingManager/SGE"
 
         lines = nodeString.split("\n")
 
+        load = None
         # ID set by ExecutionEnvironment
         for line in lines[1:]:
             if line.startswith("Name "):
                 host.Name = line[line.find("=")+2:]
+            if line.startswith("LoadAvg "):
+                load = float(line[line.find("=")+2:])
             if line.startswith("State "):
                 host.TotalInstances = 1
                 if line.find("Busy") >= 0:
@@ -129,6 +112,11 @@ class LoadLevelerExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
                     host.UsedInstances = 1
                     host.UnavailableInstances = 0
                 host.TotalInstances = 1
+                if load != None:
+                    if host.UsedInstances > 0:
+                        host.Extension["UsedAverageLoad"] = load
+                    elif host.UnavailableInstances == 0:
+                        host.Extension["AvailableAverageLoad"] = load
             # Not sure of the best way to get LogicalCPUs. I'm using it to calculate slots, so probably 2nd way
             if line.startswith("Cpus "):
                 host.PhysicalCPUs = int(line[line.find("=")+2:])
@@ -141,9 +129,10 @@ class LoadLevelerExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
             if line.startswith("Arch "):
                 host.Platform = line[line.find("=")+2:]
             if line.startswith("Memory "):
-                host.MainMemorySize = host._getMB(line[line.find("=")+2:].split())
+                host.MainMemorySize = self._getMB(line[line.find("=")+2:].split())
             if line.startswith("VirtualMemory "):
-                host.VirtualMemorySize = host._getMB(line[line.find("=")+2:].split())
+                host.VirtualMemorySize = self._getMB(line[line.find("=")+2:].split())
+        return host
 
     def _getMB(self, namevalue):
         (value,units) = namevalue
