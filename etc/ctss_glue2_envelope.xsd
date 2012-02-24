@@ -1,0 +1,23 @@
+<schema
+  targetNamespace="http://info.teragrid.org/2011/05/ctss"  
+  xmlns="http://www.w3.org/2001/XMLSchema"
+  xmlns:glue="http://info.teragrid.org/glue/2009/02/spec_2.0_r02"
+  xmlns:ctss="http://info.teragrid.org/2011/05/ctss"
+  elementFormDefault="qualified">
+
+  <import 
+    namespace="http://info.teragrid.org/glue/2009/02/spec_2.0_r02"
+    schemaLocation="teragrid_glue_2.0_r02.xsd"/>
+
+  <element name="glue2">
+    <complexType>
+      <sequence>
+        <element name="ResourceID" type="string"/>
+        <element name="SiteID" type="string"/>
+        <element ref="glue:Entities"/>
+      </sequence>
+      <attribute name="Timestamp" type="dateTime"/>
+      <attribute name="UniqueID" type="string"/>
+    </complexType>
+  </element>
+</schema>
