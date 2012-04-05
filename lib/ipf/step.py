@@ -16,99 +16,168 @@
 ###############################################################################
 
 import commands
-import logging
+import json
+#import logging
+import optparse
 import os
-import socket
+import select
 import sys
+import threading
 import urlparse
 
 import ConfigParser
 
-ipfHome = os.environ.get("IPF_HOME")
-if ipfHome == None:
-    print "IPF_HOME environment variable not set"
-    sys.exit(1)
+from ipf.document import Document
+from ipf.engine import Engine
+from ipf.error import *
 
-logger = logging.getLogger()
-handler = logging.FileHandler(os.path.join(ipfHome,"var","step.log"))
-formatter = logging.Formatter("%(asctime)s %(levelname)s - %(name)s %(message)s")
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-logger.setLevel(logging.WARN)
+#logger = logging.getLogger()
+#handler = logging.FileHandler(os.path.join(ipfHome,"var","step.log"))
+#formatter = logging.Formatter("%(asctime)s %(levelname)s - %(name)s %(message)s")
+#handler.setFormatter(formatter)
+#logger.addHandler(handler)
+#logger.setLevel(logging.WARN)
 
-##############################################################################################################
+#######################################################################################################################
 
 class Step:
-    def __init__(self):
+    def __init__(self, params={}):
         self.name = None
         self.description = None
-        #self.inputUri = []
-        #self.outputUri = []
-        #self.inputContentType = []
-        #self.outputContentType = []
-        self.defaultTimeOut = None
+        self.time_out = None
+        self.requires_types = []
+        self.produces_types = []
+        self.params=params
 
-        self.config = ConfigParser.ConfigParser()
-        self.config.read(ipfHome+"/etc/ipf.config")
-
-    def usage(self):
-        return "usage: \"<sensor> <command>\" where command is one of:\n" + \
-            "    name: name of the sensor\n" + \
-            "    description: user-readable description of the step\n" + \
-            "    input_uri: comma-separated list of the uris this step can accept\n" + \
-            "    output_uri: comma-separated list of the uris this step can produce\n" + \
-            "    input_content_type: comma-separated list of the content types this step can accept\n" + \
-            "    output_content_type: comma-separated list of the content types this step can produce\n" + \
-            "    default_timeout: suggested duration to wait for this step to complete (xsd:duration)\n" + \
-            "    run: perform a step\n"
-
-    def handle(self):
-        if sys.argv[1] == "name":
-            print(self.name)
-            sys.exit(0)
-        if sys.argv[1] == "description":
-            print(self.description)
-            sys.exit(0)
-        #if sys.argv[1] == "input_uri":
-        #    for i in range(0,len(self.input_uri)):
-        #        if i > 0:
-        #            print(",")
-        #        print(self.input_uri[i])
-        #    sys.exit(0)
-        #if sys.argv[1] == "output_uri":
-        #    for i in range(0,len(self.output_uri)):
-        #        if i > 0:
-        #            print(",")
-        #        print(self.output_uri[i])
-        #    sys.exit(0)
-        #if sys.argv[1] == "input_content_type":
-        #    for i in range(0,len(self.input_content_type)):
-        #        if i > 0:
-        #            print(",")
-        #        print(self.input_content_type[i])
-        #    sys.exit(0)
-        #if sys.argv[1] == "output_content_type":
-        #    for i in range(0,len(self.output_content_type)):
-        #        if i > 0:
-        #            print(",")
-        #        print(self.output_content_type[i])
-        #    sys.exit(0)
-        if sys.argv[1] == "default_timeout":
-            print self.default_timeout
-            sys.exit(0)
-        if sys.argv[1] == "run":
-            self.run()
-        print "unknown command: '"+sys.argv[1]+"'"
-        print self.usage()
-        sys.exit(1)
-
-    def _getHostName(self):
-        hostName = self.config.get("default","hostname")
-        if hostName != None:
-            return hostName
-        return socket.gethostname()
+        # these are set by the engine
+        self.engine = None
+        self.id = None
+        self.requested_types = []
 
     def run(self):
-        """Run the step."""
-        print "Step.run not overridden"
-        sys.exit(1)
+        """Run the step - the Engine will have this in its own thread."""
+        raise StepError("Step.run not overridden")
+
+
+    def input(self, document):
+        raise StepError("Step.input not overridden")
+
+    def noMoreInputs(self):
+        raise StepError("Step.noMoreInputs not overridden")
+
+
+    def error(self, message):
+        self.engine.stepError(self,message)
+
+    def warning(self, message):
+        self.engine.stepWarning(self,message)
+
+    def info(self, message):
+        self.engine.stepInfo(self,message)
+
+    def debug(self, message):
+        self.engine.stepDebug(self,message)
+
+#######################################################################################################################
+
+class StepEngine(Engine):
+    """This class is used to run a Step as a stand alone process."""
+    
+    def __init__(self, step):
+        Engine.__init__(self)
+        step.engine = self
+        self.step = step
+        self.handle()
+        
+    def handle(self):
+        parser = optparse.OptionParser(usage="usage: %prog [options] <param=value>*\n"+ \
+                                       "         two common parameters are:\n" + \
+                                       "           ipf.step.id=<id>\n" + \
+                                       "           ipf.step.requested_types=<requested_type><,requested_type>*\n")
+        parser.set_defaults(info=False)
+        parser.add_option("-i","--info",action="store_true",dest="info",
+                          help="output information about this step in JSON")
+        (options,args) = parser.parse_args()
+
+        if options.info:
+            info = {}
+            info["name"] = self.step.name
+            info["description"] = self.step.description
+            info["timeout"] = self.step.time_out
+            info["requires_types"] = self.step.requires_types
+            info["produces_types"] = self.step.produces_types
+            print(json.dumps(info,sort_keys=True,indent=4))
+            sys.exit(0)
+
+        # someone wants to run the step and all arguments are name=value properties
+
+        props = {}
+        for arg in args:
+            (name,value) = arg.split("=")
+            props[name] = value
+            
+        if "ipf.step.id" in props:
+            self.step.id = props["ipf.step.id"]
+            del props["ipf.step.id"]
+        else:
+            self.step.id = self.step.name
+        if "ipf.step.requested_types" in props:
+            self.step.requested_types = props["ipf.step.requested_types"].split(",")
+            del props["ipf.step.requested_types"]
+        else:
+            self.step.requested_types = self.step.produces_types
+
+        #self.step_thread = threading.Thread(target=self.step.run)
+        self.step_thread = threading.Thread(target=self._runStep)
+        self.step_thread.start()
+        self.run()
+
+    def _runStep(self):
+        try:
+            self.step.run()
+        except Exception, e:
+            self.stepError(self.step,str(e))
+
+    def run(self):
+        wait_time = 0.2
+        while not sys.stdin.closed and self.step_thread.isAlive():
+            rfds, wfds, efds = select.select([sys.stdin], [], [], wait_time)
+            if len(rfds) == 0:
+                continue
+            try:
+                document = Document.read(sys.stdin)
+                self.step.input(document)
+            except ReadDocumentError:
+                # log an error under some conditions?
+                pass
+        self.step_thread.join()
+
+    def output(self, step, document):
+        document.source = step.id
+        document.write(sys.stdout)
+
+    def error(self, message):
+        sys.stderr.write("ERROR: %s\n" % message)
+
+    def warn(self, message):
+        sys.stderr.write("WARN: %s\n" % message)
+
+    def info(self, message):
+        sys.stderr.write("INFO: %s\n" % message)
+
+    def debug(self, message):
+        sys.stderr.write("DEBUG: %s\n" % message)
+
+    def stepError(self, step, message):
+        self.error("%s - %s" % (step.id,message))
+
+    def stepWarning(self, step, message):
+        self.warn("%s - %s" % (step.id,message))
+
+    def stepInfo(self, step, message):
+        self.info("%s - %s" % (step.id,message))
+
+    def stepDebug(self, step, message):
+        self.debug("%s - %s" % (step.id,message))
+
+#######################################################################################################################

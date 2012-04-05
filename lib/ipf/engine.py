@@ -11,7 +11,49 @@ if ipfHome == None:
     print "IPF_HOME environment variable not set"
     sys.exit(1)
 
-##############################################################################################################
+#######################################################################################################################
+
+class Engine(object):
+    def __init__(self):
+        self.config = ConfigParser.ConfigParser()
+        for file_name in os.listdir(ipfHome+"/etc"):
+            if file_name.endswith(".cfg"):
+                self.config.read(ipfHome+"/etc/"+file_name)
+
+    def output(self, step, document):
+        pass
+
+    def stepError(self, step, message):
+        pass
+
+    def stepWarning(self, step, message):
+        pass
+
+    def stepInfo(self, step, message):
+        pass
+
+    def stepDebug(self, step, message):
+        pass
+
+#######################################################################################################################
+
+class WorkflowEngine(Engine):
+    def __init__(self):
+        Engine.__init__(self)
+
+    def run(self, workflow):
+        # assumes engine is running only one workflow
+        step_counts = {}
+        for step in workflow.steps:
+            if not step.name in step_counts:
+                step_counts[step.name] = 0
+            number = step_counts[step.name] + 1
+            step_counts[step.name] += 1
+            step.id = "%s-%s-%d" % (workflow.name,step.name,number)
+
+
+
+#######################################################################################################################
 
 steps = {}
 

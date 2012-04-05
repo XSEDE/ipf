@@ -21,19 +21,19 @@ class DocumentError(IpfError):
     def __str__(self):
         return repr(self.value)
 
-class ReadDocumentError(IpfError):
+class ReadDocumentError(DocumentError):
     def __init__(self, value):
         self.value = value
     def __str__(self):
         return repr(self.value)
 
-class WriteDocumentError(IpfError):
+class WriteDocumentError(DocumentError):
     def __init__(self, value):
         self.value = value
     def __str__(self):
         return repr(self.value)
 
-class AgentError(IpfError):
+class StepError(IpfError):
     def __init__(self, value):
         self.value = value
     def __str__(self):

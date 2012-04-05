@@ -22,10 +22,18 @@ import ipf.error
 ##############################################################################################################
 
 class Document(object):
-    def __init__(self):
-        self.id = None             # some identifier for the content of the document - may be used when publishing
-        self.type = None           # an identifier for the type/schema of the content
-        self.content_type = None   # http-style content-type (the encoding of self.body)
+
+    documents = {}
+
+    def __init__(self, id, type):
+        # some identifier for the content of the document - may be used when publishing
+        self.id = id
+        if type in self.documents:
+            raise ipf.error.DocumentError("Document class already defined for type %s" % type)
+        # an identifier for the type/schema of the content
+        self.type = type
+        
+        self.source = None         # set by the engine - an identifier for the source of a document to help route it
         self._body = None
 
     def __str__(self):
@@ -44,39 +52,72 @@ class Document(object):
     body = property(lambda self: self._getBody(),
                     lambda self, body: self._setBody(body))
 
-    def read(self, id=None, fd=sys.stdin):
-        if id == None:
-            self.id = fd.readline()
-            if line == "":
-                raise ipf.error.ReadDocumentError()
-        else:
-            self.id = id
+    @classmethod
+    def read(cls, fd=sys.stdin):
 
-        content_length = None
+        id = None
+        type = None
+        source = None
+        length = None
+
         line = fd.readline()
         while line != "":
-            (key,value) = line.split(" :")
-            if key == "Content-Type" or key == "content-type":
-                self.content_type = value
-            elif key == "Content-Length" or key == "content-lenth":
-                content_length = int(value)
+            #print("read: '%s'" % line)
+            toks = line.split(":")
+            #print(toks)
+            if len(toks) < 2:
+                break
+
+            key = toks[0].lstrip().strip()
+            value = toks[1].lstrip().strip()
+
+            if key == "id":
+                id = value
+            elif key == "type":
+                type = value
+            elif key == "source":
+                source = value
+            elif key == "length":
+                length = int(value)
             else:
                 logger.info("ignoring header with key "+key)
             line = fd.readline()
 
-        if content_length == None:
-            raise ipf.error.ReadDocumentError("didn't find content length")
-        document.body = fd.read(content_length)
+        if id == None:
+            raise ipf.error.ReadDocumentError("document id not specified")
+
+        if type == None:
+            raise ipf.error.ReadDocumentError("document type not specified")
+        if type in cls.documents:
+            document = self.documents[type]()
+        else:
+            document = Document(id,type)
+
+        if source == None:
+            raise ipf.error.ReadDocumentError("document source not specified")
+        document.source = source
+
+        if length == None:
+            raise ipf.error.ReadDocumentError("document length not specified")
+        document.body = fd.read(length)
+        if len(document.body) != length:
+            raise ipf.error.ReadDocumentError("failed to read document content")
+
+        return document
 
     def write(self, fd=sys.stdout):
         if self.id == None:
             raise ipf.error.WriteDocumentError("id is not specified")
+        if self.type == None:
+            raise ipf.error.WriteDocumentError("type is not specified")
+
         body = self.body
         if body == None:
             raise ipf.error.WriteDocumentError("body not specified")
-        #fd.write("PUT "+self.id+"\n")
-        fd.write(self.id+"\n")
-        fd.write("Content-Type: "+self.content_type+"\n")
-        fd.write("Content-Length: "+str(len(body))+"\n")
+
+        fd.write("id: %s\n" % self.id)
+        fd.write("type: %s\n" % self.type)
+        fd.write("source: %s\n" % self.source)
+        fd.write("length: %d\n" % len(body))
         fd.write("\n")
         fd.write(body)

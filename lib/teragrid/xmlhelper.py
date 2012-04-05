@@ -7,8 +7,7 @@ import time
 
 from ipf.error import *
 
-
-def xmlDateTimeToEpoch(str):
+def xmlToEpoch(str):
 
     toks = str.split('T')
     if len(toks) < 2:
@@ -69,7 +68,7 @@ def xmlDateTimeToEpoch(str):
     # so convert to seconds since the UTC epoch (like time.time() returns)
     return localEpoch - time.timezone
 
-def epochToXmlDateTime(epoch):
+def epochToXml(epoch):
 
     #dt = datetime.datetime.fromtimestamp(epoch,tzoffset(0))
     #print "offset in hours: " + str(time.timezone / 60 / 60)
@@ -143,57 +142,3 @@ def getFirstChildElement(node):
     for node in node.childNodes:
         if node.nodeType == xml.dom.Node.ELEMENT_NODE:
             return node
-
-##############################################################################################################
-
-class tzoffset(datetime.tzinfo):
-
-    def __init__(self, offset):
-        self._offset = datetime.timedelta(seconds=offset)
-    
-    def utcoffset(self, dt):
-        return self._offset
-
-    def dst(self, dt):
-        #return self._dstoffset
-        return datetime.timedelta(0)
-
-    def tzname(self, dt):
-        return self._name
-
-##############################################################################################################
-
-class localtzoffset(datetime.tzinfo):
-
-    def __init__(self):
-        self.stdOffset = datetime.timedelta(seconds=-time.timezone)
-        if time.daylight:
-            self.dstOffset = datetime.timedelta(seconds=-time.altzone)
-        else:
-            self.dstOffset = self.stdOffset
-        self.dstDiff = self.dstOffset - self.stdOffset
-    
-    def utcoffset(self, dt):
-        if self._isdst(dt):
-            return self.dstOffset
-        else:
-            return self.stdOffset
-
-    def dst(self, dt):
-        if self._isdst(dt):
-            return self.dstDiff
-        else:
-            return datetime.timedelta(0)
-
-    def _isdst(self, dt):
-        tt = (dt.year, dt.month, dt.day,
-              dt.hour, dt.minute, dt.second,
-              dt.weekday(), 0, -1)
-        epoch = time.mktime(tt)
-        tt = time.localtime(epoch)
-        return tt.tm_isdst > 0
-
-    def tzname(self, dt):
-        return time.tzname
-
-##############################################################################################################
