@@ -1,7 +1,7 @@
 #!/bin/env python
 
 ###############################################################################
-#   Copyright 2012 The University of Texas at Austin                          #
+#   Copyright 2011 The University of Texas at Austin                          #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -16,22 +16,21 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
 import socket
 import ConfigParser
 
-from ipf.engine import StepEngine
-from ipf.step import Step
 from ipf.documents.resource_name import *
+from ipf.engine import StepEngine
+import ipf.step
 
 #######################################################################################################################
 
-class ResourceNameStep(Step):
+class HostNameStep(ipf.step.Step):
     def __init__(self):
-        Step.__init__(self)
+        ipf.step.Step.__init__(self)
 
-        self.name = "teragrid/resource_name"
-        self.description = "produces a resource name document using tgwhereami"
+        self.name = "ipf/hostname"
+        self.description = "produces a resource name document using the fully qualified domain name of the host"
         self.time_out = 5
         self.requires_types = []
         self.produces_types = ["ipf/resource_name.txt",
@@ -40,25 +39,18 @@ class ResourceNameStep(Step):
 
     def run(self):
         try:
-            resource_name = self.engine.config.get("teragrid","resource_name")
-        except ConfigParser.Error:
-            try:
-                tg_whereami = self.engine.config.get("teragrid","tgwhereami")
-            except ConfigParser.Error:
-                tg_whereami = "tgwhereami"
-            (status, output) = commands.getstatusoutput(tg_whereami)
-            if status != 0:
-                raise StepError("failed to execute %s" % tg_whereami)
-            resource_name = output
+            host_name = self.engine.config.get("default","hostname")
+        except ConfigParser.NoSectionError:
+            host_name = socket.getfqdn()
 
         if "ipf/resource_name.txt" in self.requested_types:
-            self.engine.output(self,ResourceNameDocumentTxt(resource_name))
+            self.engine.output(self,ResourceNameDocumentTxt(host_name))
         if "ipf/resource_name.json" in self.requested_types:
-            self.engine.output(self,ResourceNameDocumentJson(resource_name))
+            self.engine.output(self,ResourceNameDocumentJson(host_name))
         if "ipf/resource_name.xml" in self.requested_types:
-            self.engine.output(self,ResourceNameDocumentXml(resource_name))
+            self.engine.output(self,ResourceNameDocumentXml(host_name))
 
 #######################################################################################################################
 
 if __name__ == "__main__":
-    StepEngine(ResourceNameStep())
+    ipf.step.StepEngine(HostNameStep())

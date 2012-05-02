@@ -16,32 +16,50 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-from ipf.engine import StepEngine
+import os
+import time
+import ConfigParser
 
-from glue2.computing_service import *
+from ipf.engine import StepEngine
+from ipf.step import Step
 
 #######################################################################################################################
 
-class SgeComputingServiceStep(ComputingServiceStep):
+class AmqpPublishStep(Step):
     def __init__(self):
-        ComputingServiceStep.__init__(self)
-        self.name = "glue2/sge/computing_service"
+        Step.__init__(self)
 
-    def _run(self):
-        service = ComputingService()
-        service.Name = "SGE"
-        service.Capability = ["executionmanagement.jobexecution",
-                              "executionmanagement.jobdescription",
-                              "executionmanagement.jobmanager",
-                              "executionmanagement.executionandplanning",
-                              "executionmanagement.reservation",
-                              ]
-        service.Type = "org.teragrid.SGE"
-        service.QualityLevel = "production"
+        self.name = "ipf/publish/amqp"
+        self.description = "publishes documents by via AMQP"
+        self.time_out = 5
+        self.requires_types = []
+        self.produces_types = []
+        self.accepts_params["service"] = "a list of alternative hosts (or host:ports) to try to connect to"
+        self.accepts_params["vhost"] = "the AMQP virtual host to connect to"
+        self.accepts_params["exchange"] = "the AMQP exchange to publish to"
+        # credentials for ssl
 
-        return service
-        
-##############################################################################################################
+        self.service = []
+        self.vhost = None
+        self.exchange = None
 
-if __name__ == "__main__":    
-    StepEngine(SgeComputingServiceStep())
+        self.connection = None
+        self.channel = None
+
+        self.more_inputs = True
+
+    def run(self):
+        while self.more_inputs:
+            time.sleep(1)
+
+    def input(self, document):
+        if self.channel == None:
+            # connect if necessary
+            pass
+        # publish
+        print("publishing %s via amqp" % document.id)
+
+#######################################################################################################################
+
+if __name__ == "__main__":
+    StepEngine(AmqpPublishStep())

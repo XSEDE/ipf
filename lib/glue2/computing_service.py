@@ -24,21 +24,21 @@ from ipf.document import Document
 from ipf.dt import *
 from ipf.step import Step
 
-from teragrid.glue2.computing_share import ComputingShare
-from teragrid.glue2.computing_endpoint import ComputingEndpoint
+from glue2.computing_share import ComputingShare
+from glue2.computing_endpoint import ComputingEndpoint
 
 #######################################################################################################################
 
 class ComputingServiceStep(Step):
-    def __init__(self, params={}):
-        Step.__init__(self,params)
+    def __init__(self):
+        Step.__init__(self)
 
         self.name = "glue2/computing_service"
         self.description = "This step provides a GLUE 2 ComputingService document. It is an aggregation mechanism"
         self.time_out = 10
-        self.requires_types = [["ipf/resource_name.txt",
-                                "glue2/teragrid/computing_shares.json",
-                                "glue2/teragrid/computing_endpoints.json"]]
+        self.requires_types = ["ipf/resource_name.txt",
+                               "glue2/teragrid/computing_shares.json",
+                               "glue2/teragrid/computing_endpoints.json"]
         self.produces_types = ["glue2/teragrid/computing_service.xml",
                                "glue2/teragrid/computing_service.json"]
 

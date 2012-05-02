@@ -25,10 +25,10 @@ import xml.sax
 import xml.sax.handler
 import ConfigParser
 
+from ipf.engine import StepEngine
 from ipf.error import *
-from ipf.step import StepEngine
 
-from teragrid.glue2.execution_environment import *
+from glue2.execution_environment import *
 
 #######################################################################################################################
 
@@ -37,8 +37,9 @@ from teragrid.glue2.execution_environment import *
 #######################################################################################################################
 
 class SgeExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
-    def __init__(self, params={}):
-        ExecutionEnvironmentsStep.__init__(self,params)
+    def __init__(self):
+        ExecutionEnvironmentsStep.__init__(self)
+        self.name = "glue2/sge/execution_environments"
 
     def _run(self):
         qhost = "qhost"
@@ -129,7 +130,7 @@ class HostsHandler(xml.sax.handler.ContentHandler):
                     elif units == "M":
                         self.cur_host.MainMemorySize = int(memSize)
                     else:
-                        self.step.warn("couldn't handle memory units of '"+units+"'")
+                        self.step.warning("couldn't handle memory units of '"+units+"'")
             elif self.hostvalue_name == "mem_used":
                 pass
             elif self.hostvalue_name == "swap_total":

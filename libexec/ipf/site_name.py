@@ -1,7 +1,7 @@
 #!/bin/env python
 
 ###############################################################################
-#   Copyright 2012 The University of Texas at Austin                          #
+#   Copyright 2011 The University of Texas at Austin                          #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -16,49 +16,49 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
 import socket
 import ConfigParser
 
+from ipf.documents.site_name import *
 from ipf.engine import StepEngine
-from ipf.step import Step
-from ipf.documents.resource_name import *
+import ipf.step
 
 #######################################################################################################################
 
-class ResourceNameStep(Step):
-    def __init__(self):
-        Step.__init__(self)
+class HostNameStep(ipf.step.Step):
+    def __init__(self, params={}):
+        ipf.step.Step.__init__(self,params)
 
-        self.name = "teragrid/resource_name"
-        self.description = "produces a resource name document using tgwhereami"
+        self.name = "ipf/hostname"
+        self.description = "produces a site name document using the fully qualified domain name of the host"
         self.time_out = 5
         self.requires_types = []
-        self.produces_types = ["ipf/resource_name.txt",
-                               "ipf/resource_name.json",
-                               "ipf/resource_name.xml"]
+        self.produces_types = ["ipf/site_name.txt",
+                               "ipf/site_name.json",
+                               "ipf/site_name.xml"]
 
     def run(self):
         try:
-            resource_name = self.engine.config.get("teragrid","resource_name")
-        except ConfigParser.Error:
-            try:
-                tg_whereami = self.engine.config.get("teragrid","tgwhereami")
-            except ConfigParser.Error:
-                tg_whereami = "tgwhereami"
-            (status, output) = commands.getstatusoutput(tg_whereami)
-            if status != 0:
-                raise StepError("failed to execute %s" % tg_whereami)
-            resource_name = output
+            host_name = self.engine.config.get("default","hostname")
+        except ConfigParser.NoSectionError:
+            host_name = socket.getfqdn()
 
-        if "ipf/resource_name.txt" in self.requested_types:
-            self.engine.output(self,ResourceNameDocumentTxt(resource_name))
-        if "ipf/resource_name.json" in self.requested_types:
-            self.engine.output(self,ResourceNameDocumentJson(resource_name))
-        if "ipf/resource_name.xml" in self.requested_types:
-            self.engine.output(self,ResourceNameDocumentXml(resource_name))
+        # assumes that the site name is all except first component
+        try:
+            index = host_name.index(".") + 1
+        except ValueError:
+            raise StepError("host name does not appear to be fully qualified")
+
+        site_name = host_name[index:]
+
+        if "ipf/site_name.txt" in self.requested_types:
+            self.engine.output(self,SiteNameDocumentTxt(site_name))
+        if "ipf/site_name.json" in self.requested_types:
+            self.engine.output(self,SiteNameDocumentJson(site_name))
+        if "ipf/site_name.xml" in self.requested_types:
+            self.engine.output(self,SiteNameDocumentXml(site_name))
 
 #######################################################################################################################
 
 if __name__ == "__main__":
-    StepEngine(ResourceNameStep())
+    ipf.step.StepEngine(HostNameStep())

@@ -24,9 +24,8 @@ from ipf.document import Document
 from ipf.dt import *
 from ipf.step import Step
 
-from teragrid.glue2.computing_activity import includeQueue
-from teragrid.glue2.computing_activity import ComputingActivity
-#from teragrid.xmlhelper import *
+from glue2.computing_activity import includeQueue
+from glue2.computing_activity import ComputingActivity
 
 #######################################################################################################################
 
@@ -35,14 +34,14 @@ from teragrid.glue2.computing_activity import ComputingActivity
 #######################################################################################################################
 
 class ComputingSharesStep(Step):
-    def __init__(self, params={}):
-        Step.__init__(self,params)
+    def __init__(self):
+        Step.__init__(self)
 
         self.name = "glue2/computing_shares"
         self.description = "produces a document containing one or more GLUE 2 ComputingShare"
         self.time_out = 30
-        self.requires_types = [["ipf/resource_name.txt"],
-                               ["glue2/teragrid/computing_activities.json"]]
+        self.requires_types = ["ipf/resource_name.txt",
+                               "glue2/teragrid/computing_activities.json"]
         #["glue2/teragrid/computing_activities.json","glue2/teragrid/computing_activities.xml"]]
         self.produces_types = ["glue2/teragrid/computing_shares.xml",
                                "glue2/teragrid/computing_shares.json"]

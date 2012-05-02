@@ -22,8 +22,9 @@ import os
 import ConfigParser
 
 from ipf.document import Document
+from ipf.engine import StepEngine
 from ipf.error import StepError
-from ipf.step import Step, StepEngine
+from ipf.step import Step
 
 ##############################################################################################################
 
@@ -34,12 +35,10 @@ class LocalSoftwareStep(Step):
         self.name = "teragrid.local_software"
         self.description = "produces a document describing what software is installed on this resource"
         self.time_out = 15
-        self.accepts_types = ["ipf/resource_name.txt"]
+        self.requires_types = ["ipf/resource_name.txt"]
         self.produces_types = ["teragrid/local_software.xml"]
 
     def run(self):
-        for doc in docs_in:
-            self.warn("ignoring document of type "+doc.type)
 
         try:
             mechanism = self.config.get("teragrid","local_software.mechanism")

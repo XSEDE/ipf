@@ -24,14 +24,14 @@ import xml.sax.handler
 import ConfigParser
 
 from ipf.error import *
-from ipf.step import StepEngine
-from teragrid.glue2.computing_activity import *
+from ipf.engine import StepEngine
+from glue2.computing_activity import *
 
 ##############################################################################################################
 
 class SgeComputingActivitiesStep(ComputingActivitiesStep):
-    def __init__(self, params={}):
-        ComputingActivitiesStep.__init__(self,params)
+    def __init__(self):
+        ComputingActivitiesStep.__init__(self)
         self.name = "glue2/sge/computing_activities"
 
     def _run(self):
@@ -67,7 +67,7 @@ class SgeComputingActivitiesStep(ComputingActivitiesStep):
             xml.sax.parseString(output,jhandler)
         except xml.sax.SAXParseException, e:
             # sax parsing fails sometimes
-            self.warn("parsing of XML output from qstat -j failed, parsing line by line instead")
+            self.warning("parsing of XML output from qstat -j failed, parsing line by line instead")
             self.parseJLines(output,jobs)
 
         jobList = []
@@ -84,7 +84,8 @@ class SgeComputingActivitiesStep(ComputingActivitiesStep):
         H_RT = 1
         MEM_TOTAL = 2
         cur_resource = None
-        
+
+        ua_name = None
         cur_job = None
         for line in output.splitlines():
             m = re.search("<JB_job_number>(\S+)</JB_job_number>",line)
@@ -127,13 +128,12 @@ class SgeComputingActivitiesStep(ComputingActivitiesStep):
                 continue
             m = re.search("<UA_value>(\S+)</UA_value>",line)
             if m != None:
-                if self.ua_name == "exit_status":
-                    self.cur_job.ComputingManagerExitCode = int(float(m.group(1)))
-                elif self.ua_name == "start_time":
-                    self.cur_job.StartTime = epochToDateTime(float(m.group(1)),localtzoffset())
-                elif self.ua_name == "end_time":
-                    self.cur_job.ComputingManagerEndTime = epochToDateTime(float(m.group(1)),localtzoffset())
-
+                if ua_name == "exit_status":
+                    cur_job.ComputingManagerExitCode = int(float(m.group(1)))
+                elif ua_name == "start_time":
+                    cur_job.StartTime = epochToDateTime(float(m.group(1)),localtzoffset())
+                elif ua_name == "end_time":
+                    cur_job.ComputingManagerEndTime = epochToDateTime(float(m.group(1)),localtzoffset())
 
 ##############################################################################################################
 
@@ -190,7 +190,7 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
             elif self.state == "zombie":
                 self.cur_job.State = "teragrid:pending"
             else:
-                self.step.warn("unknown job state %s" % self.state)
+                self.step.warning("unknown job state %s" % self.state)
         elif name == "JAT_prio":
             self.priority = float(self.text)
         elif name == "JB_name":
@@ -212,7 +212,7 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
             elif self.text == "t": # transfering
                 self.cur_job.State = "teragrid:pending"
             else:
-                self.step.warn("found unknown SGE job state '" + self.text + "'")
+                self.step.warning("found unknown SGE job state '" + self.text + "'")
                 self.cur_job.State = "teragrid:unknown"
         elif name == "slots":
             self.cur_job.RequestedSlots = int(self.text)

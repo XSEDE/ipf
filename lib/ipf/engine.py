@@ -1,39 +1,151 @@
 #!/usr/bin/env python
 
+import copy
+import json
+import optparse
 import os
+import select
+import subprocess
 import stat
 import sys
-
+import threading
+import time
 import ConfigParser
 
-ipfHome = os.environ.get("IPF_HOME")
-if ipfHome == None:
-    print "IPF_HOME environment variable not set"
-    sys.exit(1)
+from ipf.document import Document
+from ipf.error import IpfError, ReadDocumentError
+from ipf.workflow import ProgramStep, Workflow
+
+#######################################################################################################################
+
+def readConfig():
+    ipfHome = os.environ.get("IPF_HOME")
+    if ipfHome == None:
+        raise IpfError("IPF_HOME environment variable not set")
+
+    config = ConfigParser.ConfigParser()
+    if os.path.exists(os.path.join(ipfHome,"etc","ipf.cfg")):
+        config.read(os.path.join(ipfHome,"etc","ipf.cfg"))
+    for file_name in os.listdir(os.path.join(ipfHome,"etc")):
+        if file_name is not "ipf.cfg" and file_name.endswith(".cfg"):
+            config.read(os.path.join(ipfHome,"etc",file_name))
+    return config
 
 #######################################################################################################################
 
 class Engine(object):
     def __init__(self):
-        self.config = ConfigParser.ConfigParser()
-        for file_name in os.listdir(ipfHome+"/etc"):
-            if file_name.endswith(".cfg"):
-                self.config.read(ipfHome+"/etc/"+file_name)
+        # don't use config files - have config info in workflow definitions?
+        self.config = readConfig()
 
     def output(self, step, document):
         pass
 
-    def stepError(self, step, message):
+    def error(self, message):
         pass
+
+    def warn(self, message):
+        pass
+
+    def info(self, message):
+        pass
+
+    def debug(self, message):
+        pass
+
+    def stepError(self, step, message):
+        self.error("%s - %s" % (step.id,message))
 
     def stepWarning(self, step, message):
-        pass
+        self.warn("%s - %s" % (step.id,message))
 
     def stepInfo(self, step, message):
-        pass
+        self.info("%s - %s" % (step.id,message))
 
     def stepDebug(self, step, message):
-        pass
+        self.debug("%s - %s" % (step.id,message))
+
+#######################################################################################################################
+
+class StepEngine(Engine):
+    """This class is used to run a Step as a stand alone process."""
+    
+    def __init__(self, step):
+        Engine.__init__(self)
+        self.step = step
+        self.handle()
+        
+    def handle(self):
+        parser = optparse.OptionParser(usage="usage: %prog [options] <param=value>*")
+        parser.set_defaults(info=False)
+        parser.add_option("-i","--info",action="store_true",dest="info",
+                          help="output information about this step in JSON")
+        (options,args) = parser.parse_args()
+
+        if options.info:
+            info = {}
+            info["name"] = self.step.name
+            info["description"] = self.step.description
+            info["time_out"] = self.step.time_out
+            info["requires_types"] = self.step.requires_types
+            info["produces_types"] = self.step.produces_types
+            info["accepts_params"] = self.step.accepts_params
+            print(json.dumps(info,sort_keys=True,indent=4))
+            sys.exit(0)
+
+        # someone wants to run the step and all arguments are name=value properties
+
+        params = {}
+        for arg in args:
+            (name,value) = arg.split("=")
+            params[name] = value
+            
+        self.step.setup(self,params)
+
+        self.step_thread = threading.Thread(target=self._runStep)
+        self.step_thread.start()
+        self.run()
+
+    def _runStep(self):
+        try:
+            self.step.run()
+        except Exception, e:
+            self.stepError(self.step,str(e))
+
+    def run(self):
+        wait_time = 0.2
+        while not sys.stdin.closed and self.step_thread.isAlive():
+            try:
+                rfds, wfds, efds = select.select([sys.stdin], [], [], wait_time)
+            except KeyboardInterrupt:
+                sys.stdin.close()
+                self.step.noMoreInputs()
+            if len(rfds) == 0:
+                continue
+            
+            try:
+                document = Document.read(sys.stdin)
+                self.step.input(document)
+            except ReadDocumentError:
+                sys.stdin.close()
+                self.step.noMoreInputs()
+        self.step_thread.join()
+
+    def output(self, step, document):
+        document.source = step.id
+        document.write(sys.stdout)
+
+    def error(self, message):
+        sys.stderr.write("ERROR: %s\n" % message)
+
+    def warn(self, message):
+        sys.stderr.write("WARN: %s\n" % message)
+
+    def info(self, message):
+        sys.stderr.write("INFO: %s\n" % message)
+
+    def debug(self, message):
+        sys.stderr.write("DEBUG: %s\n" % message)
 
 #######################################################################################################################
 
@@ -41,149 +153,89 @@ class WorkflowEngine(Engine):
     def __init__(self):
         Engine.__init__(self)
 
-    def run(self, workflow):
-        # assumes engine is running only one workflow
-        step_counts = {}
+    def error(self, message):
+        # use a logger instead
+        sys.stderr.write("ERROR: %s\n" % message)
+
+    def warn(self, message):
+        sys.stderr.write("WARN: %s\n" % message)
+
+    def info(self, message):
+        sys.stderr.write("INFO: %s\n" % message)
+
+    def debug(self, message):
+        sys.stderr.write("DEBUG: %s\n" % message)
+
+    def output(self, step, document):
+        self.info("output of document %s from %s" % (document.type,step.id))
+        if document.type in step.outputs:
+            self.info("  routing to %d steps" % len(step.outputs[document.type]))
+            for dest_step in step.outputs[document.type]:
+                dest_step.input(document)
+        
+    def run(self, workflow_file_name):
+        known_steps = self._readKnownSteps()
+
+        workflow = Workflow()
+        workflow.read(workflow_file_name,known_steps)
         for step in workflow.steps:
-            if not step.name in step_counts:
-                step_counts[step.name] = 0
-            number = step_counts[step.name] + 1
-            step_counts[step.name] += 1
-            step.id = "%s-%s-%d" % (workflow.name,step.name,number)
+            step.engine = self
 
+        self.info(workflow)
 
+        self._setDependencies(workflow)
+
+        for step in workflow.steps:
+            step.start()
+
+        no_more = set()
+        while self._anyAlive(workflow.steps):
+            for step in workflow.steps:
+                if not step.isAlive():
+                    continue
+                if self._anyAlive(step.depends_on):
+                    continue
+                if not step.id in no_more:
+                    self.info("no more inputs for step %s" % step.id)
+                    step.noMoreInputs()
+                    no_more.add(step.id)
+            print("  still running")
+            time.sleep(1.0)  # reduce this after testing
+
+    def _anyAlive(self, steps):
+        for step in steps:
+            if step.isAlive():
+                return True
+        return False
+    
+    def _setDependencies(self, workflow):
+        for step in workflow.steps:
+            step.depends_on = []  # [step, ...]
+        for step in workflow.steps:
+            for type in step.outputs:
+                for dstep in step.outputs[type]:
+                    dstep.depends_on.append(step)
+
+        for step in workflow.steps:
+            dstr = "%s depends on:" % step.id
+            for dstep in step.depends_on:
+                dstr += " %s" % dstep.id
+            print(dstr)
+
+    def _readKnownSteps(self):
+        ipfHome = os.environ.get("IPF_HOME")
+        if ipfHome == None:
+            raise IpfError("IPF_HOME environment variable not set")
+
+        steps = []
+        file = open(os.path.join(ipfHome,"var","known_steps.json"))
+        doc = json.load(file)
+        file.close()
+        for step_doc in doc:
+            step = ProgramStep()
+            step.fromJson(step_doc)
+            if step.name is not None:
+                steps.append(step)
+        return steps
 
 #######################################################################################################################
-
-steps = {}
-
-def readSteps():
-    config = ConfigParser.ConfigParser()
-    config.read(ipfHome+"/etc/ipf.config")
-
-    stepDirsStr = config.get("default","stepDirs")
-    if stepDirsStr == "":
-        stepDirs = ipfHome+"/step"
-    else:
-        stepDirs = stepDirsStr.split(",")
-        # handle relative directories
-        for i in range(0,len(stepDirs)):
-            if stepDirs[i][0] != "/":
-                stepDirs[i] = ipfHome+"/"+stepDirs[i]
-
-    steps = {}
-    for stepDir in stepDirs:
-        readStepsFromDirectory(stepDir)
-
-def readStepsFromDirectory(dirPath):
-    subDirectories = []
-    for fileName in os.listdir(dirPath):
-        path = dirPath + "/" + fileName
-        mode = os.stat(path)[ST_MODE]
-        if stat.S_ISDIR(mode):
-            subDirectories.append(path)
-            continue
-        if stat.S_ISREG(mode):
-            if stat.S_IXUSR(mode):
-                stepName = getStepName(path)
-                if stepName != None:
-                    if steps.has(stepName):
-                        logger.warn("already found a step named "+stepName+", ignoring executable "+path)
-                        continue
-                    steps[stepName] = path
-            continue
-        logger.info("ignoring file "+fileName)
-    for directory in subDirectories:
-        readStepsFromDirectory(directory)
-
-def getStepName(path):
-    # this should be done in a separate process
-    (status, output) = commands.getstatusoutput(path+" name")
-    if status != 0:
-        return None
-    return output
-
-##############################################################################################################
-
-class Node(object):
-    def __init__(self):
-        self.id = None
-        self.name = None
-        self.args = None
-        self.dependsOn = []
-        self.complete = False
-
-    def __str__(self):
-        nstr = "node "+self.id+"\n"
-        nstr = nstr + "  step: "+self.name+"\n"
-        nstr = nstr + "  inputs from: "
-        for index in range(0,len(self.dependsOn)):
-            if index > 0:
-                nstr = nstr + ", "
-            nstr = nstr + self.dependsOn[index]
-        nstr = nstr + "\n"
-        return nstr
-
-    def run(self):
-        pass
-
-class Workflow(object):
-    def __init__(self):
-        self.nodes = {}
-
-    def __str__(self):
-        wstr = ""
-        for id in self.nodes.keys().sort():
-            wstr = wstr + str(self.nodes[id])
-        return wstr
-
-    def read(self, path):
-        """Workflow file has very simple syntax. Each line is one of:
-            id: name argname1=argvalue1 argname2=argvalue2
-            id1, id2, id3 -> id4
-            # comment
-          The first line associates an id with a step name.
-          The second line says that step id4 takes the outputs of steps id1, id2, and id3 as input.
-          Comments start with a #."""
-        self.nodes.clear()
-        f = open(path,"r")
-        lineNumber = 1
-        for line in f:
-            if line[0] == '#':
-                continue
-            if line.find(":") != -1:
-                node = Node()
-                (node.id,node.name,args) = line.split(" :")
-                # don't need to parse the arguments
-                self.args = ""
-                for arg in args:
-                    self.args = self.args + " " + arg
-                if node.id in self.nodes:
-                    logger.warn("")
-                self.nodes[node.id] = node
-                continue
-            if line.find("->") != -1:
-                index = line.find("->")
-                sources = line[:index].split(", ")
-                destinations = line[index+2:].split(", ")
-                for destination in destinations:
-                    if not destination in self.nodes:
-                        raise IpfError("undefined node "+destination+" at line "+str(lineNumber))
-                    for source in sources:
-                        if not source in self.nodes:
-                            raise IpfError("undefined node "+source+" at line "+str(lineNumber))
-                        self.nodes[destination].dependsOn.append(source)
-                continue
-            lineNumber = lineNumber + 1
-        f.close()
-
-    def run(self):
-        pass
-
-
-##############################################################################################################
-
-if __name__ == "__main__":
-    readSteps()
-    for (name,path) in steps:
-        print(name+": "+path)

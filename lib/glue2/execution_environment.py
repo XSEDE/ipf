@@ -29,19 +29,19 @@ from ipf.document import Document
 from ipf.dt import *
 from ipf.step import Step
 
-from teragrid.glue2.computing_activity import includeQueue
+from glue2.computing_activity import includeQueue
 
 #######################################################################################################################
 
 class ExecutionEnvironmentsStep(Step):
-    def __init__(self, params={}):
-        Step.__init__(self,params)
+    def __init__(self):
+        Step.__init__(self)
 
         self.name = "glue2/execution_environments"
         self.description = "Produces a document containing one or more GLUE 2 ExecutionEnvironment. For a batch scheduled system, an ExecutionEnivonment is typically a compute node."
         self.time_out = 30
-        self.requires_types = [["ipf/resource_name.txt",
-                                "teragrid/platform.txt"]]
+        self.requires_types = ["ipf/resource_name.txt",
+                                "teragrid/platform.txt"]
         self.produces_types = ["glue2/teragrid/execution_environments.xml",
                                "glue2/teragrid/execution_environments.json"]
 

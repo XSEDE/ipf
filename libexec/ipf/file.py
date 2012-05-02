@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 ###############################################################################
 #   Copyright 2011 The University of Texas at Austin                          #
@@ -16,40 +16,57 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import socket
+import os
+import time
 import ConfigParser
 
-import ipf.step
-from ipf.documents.resource_name import *
+from ipf.engine import StepEngine
+from ipf.error import StepError
+from ipf.step import Step
 
 #######################################################################################################################
 
-class HostNameStep(ipf.step.Step):
-    def __init__(self, params={}):
-        ipf.step.Step.__init__(self,params)
+class FilePublishStep(Step):
+    def __init__(self):
+        Step.__init__(self)
 
-        self.name = "ipf.hostname"
-        self.description = "produces a resource name document using the fully qualified domain name of the host"
+        self.name = "ipf/publish/file"
+        self.description = "publishes documents by writing them to a file"
         self.time_out = 5
         self.requires_types = []
-        self.produces_types = ["ipf/resource_name.txt",
-                               "ipf/resource_name.json",
-                               "ipf/resource_name.xml"]
+        self.produces_types = []
+        self.accepts_params["path"] = "Path to the file to write. If the path is relative, it is relative to $IPF_HOME/var/."
+
+        self.file = None
+        self.more_inputs = True
 
     def run(self):
-        try:
-            host_name = self.engine.config.get("default","hostname")
-        except ConfigParser.NoSectionError:
-            host_name = socket.gethostname()
+        while self.more_inputs:
+            time.sleep(1)
 
-        if "ipf/resource_name.txt" in self.requested_types:
-            self.engine.output(self,ResourceNameDocumentTxt(host_name))
-        if "ipf/resource_name.json" in self.requested_types:
-            self.engine.output(self,ResourceNameDocumentJson(host_name))
-        if "ipf/resource_name.xml" in self.requested_types:
-            self.engine.output(self,ResourceNameDocumentXml(host_name))
+    def input(self, document):
+        if self.file is None:
+            self.file = open(self._getPath(),"w")
+        self.file.write(document.body)
+
+    def _getPath(self):
+        if "path" not in self.params:
+            raise StepError("path parameter not specified")
+        path = self.params["path"]
+        if os.path.isabs(path):
+            return path
+        ipfHome = os.environ.get("IPF_HOME")
+        if ipfHome == None:
+            raise StepError("IPF_HOME environment variable not set")
+        return os.path.join(ipfHome,"var",path)
+
+    def noMoreInputs(self):
+        if self.more_inputs:
+            self.more_inputs = False
+            if self.file is not None:
+                self.file.close()
 
 #######################################################################################################################
 
 if __name__ == "__main__":
-    ipf.step.StepEngine(HostNameStep())
+    StepEngine(FilePublishStep())

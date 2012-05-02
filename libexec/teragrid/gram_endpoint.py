@@ -21,17 +21,19 @@ import os
 import re
 import ConfigParser
 
+from ipf.engine import StepEngine
 from ipf.error import *
-from ipf.step import Step, StepEngine
-from teragrid.glue2.computing_endpoint import *
+from ipf.step import Step
+from glue2.computing_endpoint import *
 
 #######################################################################################################################
 
 class GramEndpointsStep(ComputingEndpointsStep):
-    def __init__(self, params={}):
-        ComputingEndpointsStep.__init__(self,params)
+    def __init__(self):
+        ComputingEndpointsStep.__init__(self)
 
         self.name = "glue2/teragrid/gram_endpoints"
+        self.description = "create ComputingEndpoints for GRAM by examining the local TeraGrid registration information"
 
     def _run(self):
         try:
@@ -78,7 +80,7 @@ class GramEndpointsStep(ComputingEndpointsStep):
                     try:
                         reg_info = self._readKitRegistration(file_name)
                     except:
-                        self.warn("failed to read kit conf file "+file_name)
+                        self.warning("failed to read kit conf file "+file_name)
                         continue
                     endpoints.append(self._createEndpoint(reg_info,support_level))
 
@@ -178,7 +180,7 @@ class GramEndpointsStep(ComputingEndpointsStep):
         if status == 0:
             return output
         else:
-            logger.warning("getIssuer failed on grid-cert-info: "+output)
+            self.warning("getIssuer failed on grid-cert-info: "+output)
             return None
 
     def _getSubjects(self, caDir):
@@ -203,7 +205,7 @@ class GramEndpointsStep(ComputingEndpointsStep):
         if status == 0:
             return output
         else:
-            logger.warning("getSubject failed on grid-cert-info: "+output)
+            self.warning("getSubject failed on grid-cert-info: "+output)
             return None
 
 ##############################################################################################################

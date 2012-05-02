@@ -25,7 +25,7 @@ class ResourceNameDocumentTxt(Document):
 class ResourceNameDocumentJson(Document):
     def __init__(self, host_name):
         Document.__init__(self, host_name, "ipf/resource_name.json")
-        self.body = "{resourceName: \"%s\"}\n" % host_name
+        self.body = "{\"resourceName\": \"%s\"}\n" % host_name
 
 class ResourceNameDocumentXml(Document):
     def __init__(self, host_name):

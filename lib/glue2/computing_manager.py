@@ -24,21 +24,21 @@ from ipf.document import Document
 from ipf.dt import *
 from ipf.step import Step
 
-from teragrid.glue2.computing_share import ComputingShare
-from teragrid.glue2.execution_environment import ExecutionEnvironment
+from glue2.computing_share import ComputingShare
+from glue2.execution_environment import ExecutionEnvironment
 
 #######################################################################################################################
 
 class ComputingManagerStep(Step):
-    def __init__(self, params={}):
-        Step.__init__(self,params)
+    def __init__(self):
+        Step.__init__(self)
 
         self.name = "glue2/computing_manager"
         self.description = "This step provides documents in the GLUE 2 ComputingManager schema. For a batch scheduled system, this is typically that scheduler."
         self.time_out = 10
-        self.requires_types = [["ipf/resource_name.txt",
-                                "glue2/teragrid/execution_environments.json",
-                                "glue2/teragrid/computing_shares.json"]]
+        self.requires_types = ["ipf/resource_name.txt",
+                               "glue2/teragrid/execution_environments.json",
+                               "glue2/teragrid/computing_shares.json"]
         self.produces_types = ["glue2/teragrid/computing_manager.xml",
                                "glue2/teragrid/computing_manager.json"]
 

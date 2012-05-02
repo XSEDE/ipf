@@ -19,15 +19,15 @@
 import commands
 import ConfigParser
 
+from ipf.engine import StepEngine
 from ipf.error import *
-from ipf.step import StepEngine
-from teragrid.glue2.computing_share import *
+from glue2.computing_share import *
 
 #######################################################################################################################
 
 class SgeComputingSharesStep(ComputingSharesStep):
-    def __init__(self, params={}):
-        ComputingSharesStep.__init__(self,params)
+    def __init__(self):
+        ComputingSharesStep.__init__(self)
         self.name = "glue2/sge/computing_shares"
 
     def _run(self):

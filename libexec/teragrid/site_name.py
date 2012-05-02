@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/bin/env python
 
 ###############################################################################
 #   Copyright 2012 The University of Texas at Austin                          #
@@ -17,62 +17,48 @@
 ###############################################################################
 
 import commands
-import os
-import time
+import socket
 import ConfigParser
 
-from ipf.document import Document
+from ipf.documents.site_name import *
 from ipf.engine import StepEngine
-import ipf.error
 from ipf.step import Step
 
 #######################################################################################################################
 
-class KitsStep(Step):
+class SiteNameStep(Step):
     def __init__(self):
         Step.__init__(self)
 
-        self.name = "teragrid.kits"
-        self.description = "produces a document describing what TeraGrid kits are available on the resource"
-        self.time_out = 10
-        self.requires_types = ["ipf/resource_name.txt"]
-        self.produces_types = ["teragrid/kits.xml"]
-
-        self.resource_name = None
-
-    def input(self, document):
-        if document.type == "ipf/resource_name.txt":
-            self.resource_name = document.body
+        self.name = "teragrid/site_name"
+        self.description = "produces a site name document using tgwhereami"
+        self.time_out = 5
+        self.requires_types = []
+        self.produces_types = ["ipf/site_name.txt",
+                               "ipf/site_name.json",
+                               "ipf/site_name.xml"]
 
     def run(self):
         try:
-            corekit_dir = self.engine.config.get("teragrid","core_kit_directory")
+            site_name = self.engine.config.get("teragrid","site_name")
         except ConfigParser.Error:
-            raise ipf.error.StepError("teragrid.core_kit_directory not specified")
+            try:
+                tg_whereami = self.engine.config.get("teragrid","tgwhereami")
+            except ConfigParser.Error:
+                tg_whereami = "tgwhereami"
+            (status, output) = commands.getstatusoutput(tg_whereami+" -s")
+            if status != 0:
+                raise StepError("failed to execute %s" % tg_whereami)
+            site_name = output
 
-        cmd = os.path.join(corekit_dir,"bin","kits-reg.pl")
-        status, output = commands.getstatusoutput(cmd)
-        if status != 0:
-            logger.error("'"+cmd+"' failed: "+output)
-            raise AgentError("'"+cmd+"' failed: "+output)
-
-        self.info("waiting for ipf/resource_name.txt")
-        while self.resource_name == None:
-            time.sleep(0.25)
-
-        kits = KitsDocumentXml(self.resource_name,output)
-
-        self.engine.output(self,kits)
-
-
-#######################################################################################################################
-
-class KitsDocumentXml(Document):
-    def __init__(self, resource_name, content):
-        Document.__init__(self, resource_name, "teragrid/kits.xml")
-        self.body = content
+        if "ipf/site_name.txt" in self.requested_types:
+            self.engine.output(self,SiteNameDocumentTxt(site_name))
+        if "ipf/site_name.json" in self.requested_types:
+            self.engine.output(self,SiteNameDocumentJson(site_name))
+        if "ipf/site_name.xml" in self.requested_types:
+            self.engine.output(self,SiteNameDocumentXml(site_name))
 
 #######################################################################################################################
 
 if __name__ == "__main__":
-    StepEngine(KitsStep())
+    StepEngine(SiteNameStep())

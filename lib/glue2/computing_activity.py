@@ -58,19 +58,19 @@ def includeQueue(engine, queue_name, no_queue_name_return=False):
             if (queue == "*") or (queue == queue_name):
                 goodSoFar = False
         else:
-            engine.warn("can't parse part of Queues expression: "+tok)
+            engine.warning("can't parse part of Queues expression: "+tok)
     return goodSoFar
 
 #######################################################################################################################
 
 class ComputingActivitiesStep(Step):
-    def __init__(self, params={}):
-        Step.__init__(self,params)
+    def __init__(self):
+        Step.__init__(self)
 
         self.name = "glue2/computing_activities"
         self.description = "produces a document containing one or more GLUE 2 ComputingActivity"
         self.time_out = 30
-        self.requires_types = [["ipf/resource_name.txt"]]
+        self.requires_types = ["ipf/resource_name.txt"]
         self.produces_types = ["glue2/teragrid/computing_activities.xml",
                                "glue2/teragrid/computing_activities.json"]
 
@@ -81,6 +81,9 @@ class ComputingActivitiesStep(Step):
             self.resource_name = document.body.rstrip()
         else:
             self.info("ignoring unwanted input "+document.type)
+
+    def noMoreInputs(self):
+        pass
 
     def run(self):
         self.info("waiting for ipf/resource_name.txt")

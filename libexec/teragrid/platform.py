@@ -20,14 +20,15 @@ import commands
 import time
 import ConfigParser
 
-from ipf.step import Step, StepEngine
 from ipf.documents.resource_name import *
+from ipf.engine import StepEngine
+from ipf.step import Step
 
 #######################################################################################################################
 
 class PlatformStep(Step):
-    def __init__(self, params={}):
-        Step.__init__(self,params)
+    def __init__(self):
+        Step.__init__(self)
 
         self.name = "teragrid/platform"
         self.description = "produces a platform name using tgwhatami"

@@ -1,7 +1,6 @@
-#!/usr/bin/env python
 
 ###############################################################################
-#   Copyright 2011 The University of Texas at Austin                          #
+#   Copyright 2012 The University of Texas at Austin                          #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -16,28 +15,19 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
+from ipf.document import Document
 
-from ipf.engine import StepEngine
+class SiteNameDocumentTxt(Document):
+    def __init__(self, site_name):
+        Document.__init__(self, site_name, "ipf/site_name.txt")
+        self.body = "%s\n" % site_name
 
-from glue2.computing_manager import *
+class SiteNameDocumentJson(Document):
+    def __init__(self, site_name):
+        Document.__init__(self, site_name, "ipf/site_name.json")
+        self.body = "{\"siteName\": \"%s\"}\n" % site_name
 
-##############################################################################################################
-
-class SgeComputingManagerStep(ComputingManagerStep):
-    def __init__(self):
-        ComputingManagerStep.__init__(self)
-        self.name = "glue2/sge/computing_manager"
-
-    def _run(self):
-        manager = ComputingManager()
-        manager.ProductName = "SGE"
-        manager.Name = "SGE"
-        manager.Reservation = True
-        #self.BulkSubmission = True
-
-        return manager
-
-##############################################################################################################
-
-if __name__ == "__main__":    
-    StepEngine(SgeComputingManagerStep())
+class SiteNameDocumentXml(Document):
+    def __init__(self, site_name):
+        Document.__init__(self, site_name, "ipf/site_name.xml")
+        self.body = "<SiteName>%s</SiteName>\n" % site_name

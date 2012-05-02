@@ -27,13 +27,13 @@ from ipf.step import Step
 #######################################################################################################################
 
 class ComputingEndpointsStep(Step):
-    def __init__(self, params={}):
-        Step.__init__(self,params)
+    def __init__(self):
+        Step.__init__(self)
 
         self.name = "glue2/computing_endpoints"
         self.description = "This step produces a document containing one or more GLUE 2 ComputingEndpoints. These could be batch schedulers like LSF or SGE or remote job interfaces such as Globus GRAM"
         self.time_out = 30
-        self.requires_types = [["ipf/resource_name.txt"]]
+        self.requires_types = ["ipf/resource_name.txt"]
         self.produces_types = ["glue2/teragrid/computing_endpoints.xml",
                                "glue2/teragrid/computing_endpoints.json"]
 
