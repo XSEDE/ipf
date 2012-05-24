@@ -58,6 +58,12 @@ class ResourceNameStep(Step):
         if "ipf/resource_name.xml" in self.requested_types:
             self.engine.output(self,ResourceNameDocumentXml(resource_name))
 
+    def input(self, document):
+        self.warning("unexpected input document %s" % document.id)
+        
+    def noMoreInputs(self):
+        pass
+    
 #######################################################################################################################
 
 if __name__ == "__main__":
