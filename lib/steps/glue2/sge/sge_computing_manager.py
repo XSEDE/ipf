@@ -16,17 +16,15 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-
-from ipf.engine import StepEngine
-
 from glue2.computing_manager import *
 
 ##############################################################################################################
 
 class SgeComputingManagerStep(ComputingManagerStep):
-    def __init__(self):
-        ComputingManagerStep.__init__(self)
-        self.name = "glue2/sge/computing_manager"
+    name = "glue2/sge/computing_manager"
+
+    def __init__(self, params):
+        ComputingManagerStep.__init__(self,params)
 
     def _run(self):
         manager = ComputingManager()
@@ -38,6 +36,3 @@ class SgeComputingManagerStep(ComputingManagerStep):
         return manager
 
 ##############################################################################################################
-
-if __name__ == "__main__":    
-    StepEngine(SgeComputingManagerStep())

@@ -6,7 +6,7 @@ import time
 
 class tzoffset(datetime.tzinfo):
 
-    def __init__(self, offset):
+    def __init__(self, offset=0):
         self._offset = datetime.timedelta(seconds=offset)
     
     def utcoffset(self, dt):

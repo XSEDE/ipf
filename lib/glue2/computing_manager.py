@@ -22,74 +22,36 @@ from xml.dom.minidom import getDOMImplementation
 
 from ipf.document import Document
 from ipf.dt import *
-from ipf.step import Step
+from glue2.step import GlueStep
 
 from glue2.computing_share import ComputingShare
 from glue2.execution_environment import ExecutionEnvironment
 
 #######################################################################################################################
 
-class ComputingManagerStep(Step):
-    def __init__(self):
-        Step.__init__(self)
+class ComputingManagerStep(GlueStep):
+    name = "glue2/computing_manager"
+    description = "This step provides documents in the GLUE 2 ComputingManager schema. For a batch scheduled system, this is typically that scheduler."
+    time_out = 10
+    requires_types = ["ipf/resource_name.txt",
+                      "glue2/teragrid/execution_environments.json",
+                      "glue2/teragrid/computing_shares.json"]
+    produces_types = ["glue2/teragrid/computing_manager.xml",
+                      "glue2/teragrid/computing_manager.json"]
 
-        self.name = "glue2/computing_manager"
-        self.description = "This step provides documents in the GLUE 2 ComputingManager schema. For a batch scheduled system, this is typically that scheduler."
-        self.time_out = 10
-        self.requires_types = ["ipf/resource_name.txt",
-                               "glue2/teragrid/execution_environments.json",
-                               "glue2/teragrid/computing_shares.json"]
-        self.produces_types = ["glue2/teragrid/computing_manager.xml",
-                               "glue2/teragrid/computing_manager.json"]
-
+    def __init__(self, params):
+        GlueStep.__init__(self,params)
         self.resource_name = None
         self.exec_envs = None
         self.shares = None
 
-    def input(self, document):
-        if document.type == "ipf/resource_name.txt":
-            self.resource_name = document.body.rstrip()
-        elif document.type == "glue2/teragrid/execution_environments.json":
-            try:
-                self.exec_envs = document.exec_envs
-            except AttributeError:
-                self.exec_envs = self._parseExecEnvsJson(document.body)
-        elif document.type == "glue2/teragrid/computing_shares.json":
-            try:
-                self.shares = document.shares
-            except AttributeError:
-                self.shares = self._parseSharesJson(document.body)
-        else:
-            self.info("ignoring unwanted input "+document.type)
-
-    def _parseExecEnvsJson(self, body):
-        doc = json.loads(body)
-        exec_envs = []
-        for env_dict in doc:
-            exec_env = ExecutionEnvironment()
-            exec_env.fromJson(env_dict)
-            exec_envs.append(exec_env)
-        return exec_envs
-
-    def _parseSharesJson(self, body):
-        doc = json.loads(body)
-        shares = []
-        for share_dict in doc:
-            share = ComputingShare()
-            share.fromJson(share_dict)
-            shares.append(share)
-        return shares
-
     def run(self):
-        self.info("waiting for ipf/resource_name.txt")
-        while self.resource_name == None:
-            time.sleep(0.25)
-        self.info("waiting for glue2/teragrid/execution_environments.json")
-        while self.exec_envs == None:
-            time.sleep(0.25)
-        self.info("waiting for glue2/teragrid/computing_shares.json")
-        while self.shares == None:
-            time.sleep(0.25)
+        rn_doc = self._getInput("ipf/resource_name.txt")
+        self.resource_name = rn_doc.resource_name
+        envs_doc = self._getInput("glue2/teragrid/execution_environments.json")
+        self.exec_envs = envs_doc.exec_envs
+        shares_doc = self._getInput("glue2/teragrid/computing_shares.json")
+        self.shares = shares_doc.shares
 
         manager = self._run()
 
@@ -102,10 +64,11 @@ class ComputingManagerStep(Step):
             manager._addComputingShare(share)
 
         if "glue2/teragrid/computing_manager.xml" in self.requested_types:
-            self.engine.output(self,ComputingManagerDocumentXml(self.resource_name,manager))
+            self.debug("sending output glue2/teragrid/computing_manager.xml")
+            self.output_queue.put(ComputingManagerDocumentXml(self.resource_name,manager))
         if "glue2/teragrid/computing_manager.json" in self.requested_types:
-            self.engine.output(self,ComputingManagerDocumentJson(self.resource_name,manager))
-
+            self.debug("sending output glue2/teragrid/computing_manager.json")
+            self.output_queue.put(ComputingManagerDocumentJson(self.resource_name,manager))
 
 #######################################################################################################################
 

@@ -17,33 +17,38 @@
 ###############################################################################
 
 import commands
+import copy
 import logging
 import os
-import ConfigParser
+import sys
 
 from ipf.document import Document
-from ipf.engine import StepEngine
-from ipf.error import StepError
 from ipf.step import Step
 
 ##############################################################################################################
 
 class LocalSoftwareStep(Step):
-    def __init__(self, params={}):
+    name = "teragrid.local_software"
+    description = "produces a document describing what software is installed on this resource"
+    time_out = 15
+    requires_types = ["ipf/resource_name.txt"]
+    produces_types = ["teragrid/local_software.xml"]
+    accepts_params = copy.copy(Step.accepts_params)
+    accepts_params["mechanism"] = "'software_catalog', 'script', or 'file'"
+    accepts_params["script"] = "the path to the script to use for the script mechanism"
+    accepts_params["file"] = "the path to the file to read for the file mechanism"
+
+    def __init__(self, params):
         Step.__init__(self,params)
 
-        self.name = "teragrid.local_software"
-        self.description = "produces a document describing what software is installed on this resource"
-        self.time_out = 15
-        self.requires_types = ["ipf/resource_name.txt"]
-        self.produces_types = ["teragrid/local_software.xml"]
-
     def run(self):
+        rn_doc = self._getInput("ipf/resource_name.txt")
 
         try:
-            mechanism = self.config.get("teragrid","local_software.mechanism")
-        except ConfigParser.Error:
-            raise StepError("teragrid.local_software.mechanism not specified")
+            mechanism = self.params["mechanism"]
+        except KeyError:
+            self.error("mechanism not specified")
+            sys.exit(1)
 
         if mechanism == "software_catalog":
             return self._runCatalog()
@@ -52,20 +57,24 @@ class LocalSoftwareStep(Step):
         elif mechanism == "file":
             return self._runFile()
         else:
-            raise StepError("mechanism '%s'' unknown, specify 'software_catalog', 'script', or 'file'" % mechanism)
+            self.error("mechanism '%s'' unknown, specify 'software_catalog', 'script', or 'file'" % mechanism)
+            sys.exit(1)
 
     def _runCatalog(self):
-        raise StepError("retrieving from HPC Software Catalog not yet supported")
+        self.error("retrieving from HPC Software Catalog not yet supported")
+        sys.exit(1)
 
     def _runScript(self):
         try:
-            cmd = self.config.get("teragrid","local_software.script")
-        except ConfigParser.Error:
-            raise StepError("teragrid.local_software.script not specified")
+            cmd = self.params["script"]
+        except KeyError:
+            self.error("script not specified")
+            sys.exit(1)
 
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            raise StepError(cmd+" failed: "+output+"\n")
+            self.error(cmd+" failed: "+output+"\n")
+            sys.exit(1)
 
         doc = LocalSoftware()
         doc.body = output
@@ -73,9 +82,10 @@ class LocalSoftwareStep(Step):
 
     def _runFile(self):
         try:
-            file_name = self.config.get("teragrid","local_software.file")
-        except ConfigParser.Error:
-            raise StepError("teragrid.local_software.file not specified")
+            file_name = self.params["file"]
+        except KeyError:
+            self.error("file not specified")
+            sys.exit(1)
 
         doc = LocalSoftware()
         file = open(file_name,"r")

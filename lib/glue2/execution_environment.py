@@ -16,54 +16,44 @@
 ###############################################################################
 
 import commands
+import copy
 import datetime
 import json
 import os
 import socket
-import sys
 import time
 from xml.dom.minidom import getDOMImplementation
-import ConfigParser
 
 from ipf.document import Document
 from ipf.dt import *
-from ipf.step import Step
+from ipf.error import StepError
 
-from glue2.computing_activity import includeQueue
+from glue2.step import GlueStep
 
 #######################################################################################################################
 
-class ExecutionEnvironmentsStep(Step):
-    def __init__(self):
-        Step.__init__(self)
+class ExecutionEnvironmentsStep(GlueStep):
+    name = "glue2/execution_environments"
+    description = "Produces a document containing one or more GLUE 2 ExecutionEnvironment. For a batch scheduled system, an ExecutionEnivonment is typically a compute node."
+    time_out = 30
+    requires_types = ["ipf/resource_name.txt",
+                      "teragrid/platform.txt"]
+    produces_types = ["glue2/teragrid/execution_environments.xml",
+                      "glue2/teragrid/execution_environments.json"]
+    accepts_params = copy.copy(GlueStep.accepts_params)
+    accepts_params["queues"] = "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown."
 
-        self.name = "glue2/execution_environments"
-        self.description = "Produces a document containing one or more GLUE 2 ExecutionEnvironment. For a batch scheduled system, an ExecutionEnivonment is typically a compute node."
-        self.time_out = 30
-        self.requires_types = ["ipf/resource_name.txt",
-                                "teragrid/platform.txt"]
-        self.produces_types = ["glue2/teragrid/execution_environments.xml",
-                               "glue2/teragrid/execution_environments.json"]
-
+    def __init__(self, params):
+        GlueStep.__init__(self,params)
         self.resource_name = None
-        self.teragrid_platform = None
-
-    def input(self, document):
-        if document.type == "ipf/resource_name.txt":
-            self.resource_name = document.body.rstrip()
-        elif document.type == "teragrid/platform.txt":
-            self.teragrid_platform = document.body.rstrip()
-        else:
-            self.info("ignoring unwanted input "+document.type)
+        self.platform = None
 
     def run(self):
-        self.info("waiting for ipf/resource_name.txt")
-        while self.resource_name == None:
-            time.sleep(0.25)
-        self.info("waiting for teragrid/platform.txt")
-        while self.teragrid_platform == None:
-            time.sleep(0.25)
-
+        rn_doc = self._getInput("ipf/resource_name.txt")
+        self.resource_name = rn_doc.resource_name
+        platform_doc = self._getInput("teragrid/platform.txt")
+        self.platform = platform_doc.platform
+        
         hosts = self._run()
         host_groups = self._groupHosts(hosts)
 
@@ -73,12 +63,14 @@ class ExecutionEnvironmentsStep(Step):
                                     (self.resource_name,host_groups[index].Name)
         for host_group in host_groups:
             #host_group.id = host_group.Name+"."+self.resource_name
-            host_group.Extension["TeraGridPlatform"] = self.teragrid_platform
+            host_group.Extension["TeraGridPlatform"] = self.platform
 
         if "glue2/teragrid/execution_environments.xml" in self.requested_types:
-            self.engine.output(self,ExecutionEnvironmentsDocumentXml(self.resource_name,host_groups))
+            self.debug("sending output glue2/teragrid/execution_environment.xml")
+            self.output_queue.put(ExecutionEnvironmentsDocumentXml(self.resource_name,host_groups))
         if "glue2/teragrid/execution_environments.json" in self.requested_types:
-            self.engine.output(self,ExecutionEnvironmentsDocumentJson(self.resource_name,host_groups))
+            self.debug("sending output glue2/teragrid/execution_environment.json")
+            self.output_queue.put(ExecutionEnvironmentsDocumentJson(self.resource_name,host_groups))
 
     def _groupHosts(self, hosts):
         host_groups = []
@@ -119,6 +111,7 @@ class ExecutionEnvironmentsStep(Step):
         return host_groups
 
     def _run(self):
+        self.error("ExecutionEnvironmentsStep._run not overriden")
         raise StepError("ExecutionEnvironmentsStep._run not overriden")
 
     def _goodHost(self, host):
@@ -128,7 +121,7 @@ class ExecutionEnvironmentsStep(Step):
 
         # check that it is associated with a good queue
         for queue in host.ComputingShare:
-            if includeQueue(self.engine,queue):
+            if self._includeQueue(queue):
                 return True
         return False
 

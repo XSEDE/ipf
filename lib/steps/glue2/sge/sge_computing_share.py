@@ -17,39 +17,39 @@
 ###############################################################################
 
 import commands
-import ConfigParser
+import copy
 
-from ipf.engine import StepEngine
-from ipf.error import *
+from ipf.error import StepError
+
 from glue2.computing_share import *
 
 #######################################################################################################################
 
 class SgeComputingSharesStep(ComputingSharesStep):
-    def __init__(self):
-        ComputingSharesStep.__init__(self)
-        self.name = "glue2/sge/computing_shares"
+    name = "glue2/sge/computing_shares"
+    accepts_params = copy.copy(ComputingSharesStep.accepts_params)
+    accepts_params["qconf"] = "the path to the SGE qconf program (default 'qconf')"
+
+    def __init__(self, params):
+        ComputingSharesStep.__init__(self,params)
 
     def _run(self):
-        return self._getQueues()
-
-    def _getQueues(self):
-        qconf = "qconf"
         try:
-            qconf = self.engine.config.get("sge","qconf")
-        except ConfigParser.Error:
-            pass
+            qconf = self.params["qconf"]
+        except KeyError:
+            qconf = "qconf"
         cmd = qconf + " -sq \**"
         self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
+            self.error("qconf failed: "+output+"\n")
             raise StepError("qconf failed: "+output+"\n")
 
         queues = []
         queueStrings = output.split("\n\n")
         for queueString in queueStrings:
             queue = self._getQueue(queueString)
-            if includeQueue(self.engine,queue.Name):
+            if self._includeQueue(queue.Name):
                 queues.append(queue)
         return queues
 
@@ -87,6 +87,3 @@ class SgeComputingSharesStep(ComputingSharesStep):
         return int(hour)*60*60 + int(minute)*60 + int(second)
 
 #######################################################################################################################
-
-if __name__ == "__main__":
-    StepEngine(SgeComputingSharesStep())

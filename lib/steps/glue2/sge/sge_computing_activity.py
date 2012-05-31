@@ -17,36 +17,39 @@
 ###############################################################################
 
 import commands
+import copy
 import datetime
 import re
 import xml.sax
 import xml.sax.handler
-import ConfigParser
 
-from ipf.error import *
-from ipf.engine import StepEngine
+from ipf.error import StepError
+
 from glue2.computing_activity import *
 
 ##############################################################################################################
 
 class SgeComputingActivitiesStep(ComputingActivitiesStep):
-    def __init__(self):
-        ComputingActivitiesStep.__init__(self)
-        self.name = "glue2/sge/computing_activities"
+    name = "glue2/sge/computing_activities"
+    accepts_params = copy.copy(ComputingActivitiesStep.accepts_params)
+    accepts_params["qstat"] = "the path to the SGE qstat program (default 'qstat')"
+
+    def __init__(self, params):
+        ComputingActivitiesStep.__init__(self,params)
 
     def _run(self):
         self.info("running")
 
-        qstat = "qstat"
         try:
-            qstat = self.engine.config.get("sge","qstat")
-        except ConfigParser.Error:
-            pass
+            qstat = self.params["qstat"]
+        except KeyError:
+            qstat = "qstat"
 
         cmd = qstat + " -xml -pri -s prsz -u \\*"
         self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
+            self.error("qstat failed: "+output+"\n")
             raise StepError("qstat failed: "+output+"\n")
 
         uhandler = JobsUHandler(self)
@@ -60,6 +63,7 @@ class SgeComputingActivitiesStep(ComputingActivitiesStep):
         self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
+            self.error("qstat failed: "+output+"\n")
             raise StepError("qstat failed: "+output+"\n")
 
         jhandler = JobsJHandler(self,jobs)
@@ -72,7 +76,7 @@ class SgeComputingActivitiesStep(ComputingActivitiesStep):
 
         jobList = []
         for job in uhandler.jobs:
-            if includeQueue(self.engine,job.Queue):
+            if self._includeQueue(job.Queue):
                 jobList.append(job)
 
         for job in jobList:
@@ -318,6 +322,3 @@ def _getDateTime(dtStr):
                              tzinfo=localtzoffset())
 
 ##############################################################################################################
-
-if __name__ == "__main__":    
-    StepEngine(SgeComputingActivitiesStep())

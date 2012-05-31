@@ -16,61 +16,65 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
+import copy
 import httplib
 import logging
-import ConfigParser
+import sys
 
-from ipf.agent import *
-
-logger = logging.getLogger("HttpPublishingAgent")
+from ipf.step import Step
 
 ##############################################################################################################
 
-class HttpPublishingAgent(Agent):
+class HttpPublishStep(Step):
+    name = "ipf/publish/http"
+    description = "publishes documents by PUTing or POSTing them"
+    time_out = 10
+    accepts_params = copy.copy(Step.accepts_params)
+    accepts_params["requires_types"] = "The type of documents that will be published"
+    accepts_params["host"] = "The host name of the server to publish to"
+    accepts_params["port"] = "The port to publish to"
+    accepts_params["path"] = "The path part of the URL"
+    accepts_params["method"] = "PUT or POST (default PUT)"
 
-    def __init__(self, args={}):
-        Agent.__init__(self,args)
-        self.host = None
-        self.port = None
-        self.method = None
-        self.path = None
+    def __init__(self, params):
+        Step.__init__(self,params)
 
-    def run(self, docs_in=[]):
+    def run(self):
         try:
-            self.host = self.config.get("publish_http","host")
-        except ConfigParser.Error:
-            logger.error("publish_http.vhost not specified")
-            raise AgentError("publish_http.vhost not specified")
-
+            host = self.params["host"]
+        except KeyError:
+            self.error("host not specified")
+            sys.exit(1)
         try:
-            self.port = self.config.getint("publish_http","port")
-        except ConfigParser.Error:
-            pass
-
+            port = self.params["port"]
+        except KeyError:
+            port = 80
         try:
-            self.method = self.config.get("publish_http","method")
-        except ConfigParser.Error:
-            self.method = "PUT"
-
+            method = self.params["method"]
+        except KeyError:
+            method = "PUT"
         try:
-            self.path = self.config.get("publish_http","path")
+            path = self.params["path"]
         except ConfigParser.Error:
-            pass
+            self.error("path not specified")
+            sys.exit(1)
 
+        more_inputs = True
         connection = httplib.HTTPConnection(host+":"+str(port))
-        for doc in docs_in:
-            if self.path != None:
-                path = self.path
+        while more_inputs:
+            doc = self.input_queue.get(True)
+            if doc == Step.NO_MORE_INPUTS:
+                more_inputs = False
             else:
-                path = ""
-                for part in doc.id.split(".").reverse():
-                    path = path + "/" + part
-            connection.request(self.method,path,doc.body,{"Content-Type": doc.content_type})
-            response = httplib.getresponse()
-            if not (response.status == httplib.OK or response.status == httplib.CREATED):
-                logger.error("failed to '"+self.method+"' to http://"+self.host+":"+self.port+path+" - "+
-                             str(response.status)+" "+response.reason)
-                raise AgentError("failed to '"+self.method+"' to http://"+self.host+":"+self.port+path+" - "+
-                                 str(response.status)+" "+response.reason)
-
-        return []
+                self.info("writing document of type %s" % msg.type)
+                if doc.type.endswith(".json"):
+                    content_type = "application/json"
+                elif doc.type.endswith(".xml"):
+                    content_type = "text/xml"
+                else:
+                    content_type = "text/plain"
+                connection.request(method,path,doc.body,{"Content-Type": content_type})
+                response = httplib.getresponse()
+                if not (response.status == httplib.OK or response.status == httplib.CREATED):
+                    self.error("failed to '"+method+"' to http://"+host+":"+port+path+" - "+
+                               str(response.status)+" "+response.reason)

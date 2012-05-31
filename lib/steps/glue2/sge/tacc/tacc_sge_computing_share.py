@@ -20,35 +20,34 @@ import commands
 import logging
 import os
 import socket
-import sys
+import ConfigParser
 
-from teragrid.glue2.sge.sge_computing_share import *
-from teragrid.glue2.computing_activity import *
+from ipf.error import StepError
 
-logger = logging.getLogger("SgeQueuesAgent")
+from steps.glue2.sge.sge_computing_share import *
 
 ##############################################################################################################
 
-class TaccSgeQueuesAgent(SgeQueuesAgent):
-    def __init__(self, args={}):
-        SgeQueuesAgent.__init__(self,args)
-        self.name = "teragrid.glue2.TaccSgeQueuesAgent"
+class TaccSgeComputingSharesStep(SgeComputingSharesStep):
+    name = "glue2/sge/tacc/computing_shares"
 
-    def run(self, docs_in=[]):
-        queues = SgeQueuesAgent.run(self,docs_in)
+    def __init__(self, params, config=ConfigParser.ConfigParser):
+        SgeComputingSharesStep.__init__(self,params,config)
+
+    def _run(self):
+        queues = SgeComputingSharesStep._run(self)
 
         try:
             job_policy_file = self.config.get("tacc","job_policy_file")
         except ConfigParser.Error:
-            raise AgentError("tacc.job_policy_file not specified")
-            pass
+            raise StepError("tacc.job_policy_file not specified")
 
         try:
             file = open(job_policy_file,"r")
             lines = file.readlines()
             file.close()
         except:
-            raise AgentError("failed to read job policy file "+job_policy_file)
+            raise StepError("failed to read job policy file "+job_policy_file)
 
         # bit of a hack, but good enough
         for line in lines:

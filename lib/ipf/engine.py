@@ -2,19 +2,28 @@
 
 import copy
 import json
-import optparse
+import logging
+import logging.config
 import os
-import select
-import subprocess
-import stat
 import sys
-import threading
 import time
+import traceback
 import ConfigParser
+import Queue
 
 from ipf.document import Document
 from ipf.error import IpfError, ReadDocumentError
-from ipf.workflow import ProgramStep, Workflow
+from ipf.workflow import Workflow
+from ipf.step import Step  # testing
+
+#######################################################################################################################
+
+ipfHome = os.environ.get("IPF_HOME")
+if ipfHome == None:
+    raise IpfError("IPF_HOME environment variable not set")
+logging.config.fileConfig(os.path.join(ipfHome,"etc","logging.conf"))
+
+logger = logging.getLogger(__name__)
 
 #######################################################################################################################
 
@@ -33,180 +42,97 @@ def readConfig():
 
 #######################################################################################################################
 
-class Engine(object):
+class WorkflowEngine(object):
+   
     def __init__(self):
-        # don't use config files - have config info in workflow definitions?
         self.config = readConfig()
-
-    def output(self, step, document):
-        pass
-
-    def error(self, message):
-        pass
-
-    def warn(self, message):
-        pass
-
-    def info(self, message):
-        pass
-
-    def debug(self, message):
-        pass
-
-    def stepError(self, step, message):
-        self.error("%s - %s" % (step.id,message))
-
-    def stepWarning(self, step, message):
-        self.warn("%s - %s" % (step.id,message))
-
-    def stepInfo(self, step, message):
-        self.info("%s - %s" % (step.id,message))
-
-    def stepDebug(self, step, message):
-        self.debug("%s - %s" % (step.id,message))
-
-#######################################################################################################################
-
-class StepEngine(Engine):
-    """This class is used to run a Step as a stand alone process."""
-    
-    def __init__(self, step):
-        Engine.__init__(self)
-        self.step = step
-        self.handle()
-        
-    def handle(self):
-        parser = optparse.OptionParser(usage="usage: %prog [options] <param=value>*")
-        parser.set_defaults(info=False)
-        parser.add_option("-i","--info",action="store_true",dest="info",
-                          help="output information about this step in JSON")
-        (options,args) = parser.parse_args()
-
-        if options.info:
-            info = {}
-            info["name"] = self.step.name
-            info["description"] = self.step.description
-            info["time_out"] = self.step.time_out
-            info["requires_types"] = self.step.requires_types
-            info["produces_types"] = self.step.produces_types
-            info["accepts_params"] = self.step.accepts_params
-            print(json.dumps(info,sort_keys=True,indent=4))
-            sys.exit(0)
-
-        # someone wants to run the step and all arguments are name=value properties
-
-        params = {}
-        for arg in args:
-            (name,value) = arg.split("=")
-            params[name] = value
-            
-        self.step.setup(self,params)
-
-        self.step_thread = threading.Thread(target=self._runStep)
-        self.step_thread.start()
-        self.run()
-
-    def _runStep(self):
-        try:
-            self.step.run()
-        except Exception, e:
-            self.stepError(self.step,str(e))
-
-    def run(self):
-        wait_time = 0.2
-        while not sys.stdin.closed and self.step_thread.isAlive():
-            try:
-                rfds, wfds, efds = select.select([sys.stdin], [], [], wait_time)
-            except KeyboardInterrupt:
-                sys.stdin.close()
-                self.step.noMoreInputs()
-            if len(rfds) == 0:
-                continue
-            
-            try:
-                document = Document.read(sys.stdin)
-                self.step.input(document)
-            except ReadDocumentError:
-                sys.stdin.close()
-                self.step.noMoreInputs()
-        self.step_thread.join()
-
-    def output(self, step, document):
-        document.source = step.id
-        document.write(sys.stdout)
-
-    def error(self, message):
-        sys.stderr.write("ERROR: %s\n" % message)
-
-    def warn(self, message):
-        sys.stderr.write("WARN: %s\n" % message)
-
-    def info(self, message):
-        sys.stderr.write("INFO: %s\n" % message)
-
-    def debug(self, message):
-        sys.stderr.write("DEBUG: %s\n" % message)
-
-#######################################################################################################################
-
-class WorkflowEngine(Engine):
-    def __init__(self):
-        Engine.__init__(self)
-
-    def error(self, message):
-        # use a logger instead
-        sys.stderr.write("ERROR: %s\n" % message)
-
-    def warn(self, message):
-        sys.stderr.write("WARN: %s\n" % message)
-
-    def info(self, message):
-        sys.stderr.write("INFO: %s\n" % message)
-
-    def debug(self, message):
-        sys.stderr.write("DEBUG: %s\n" % message)
-
-    def output(self, step, document):
-        self.info("output of document %s from %s" % (document.type,step.id))
-        if document.type in step.outputs:
-            self.info("  routing to %d steps" % len(step.outputs[document.type]))
-            for dest_step in step.outputs[document.type]:
-                dest_step.input(document)
         
     def run(self, workflow_file_name):
         known_steps = self._readKnownSteps()
 
         workflow = Workflow()
-        workflow.read(workflow_file_name,known_steps)
-        for step in workflow.steps:
-            step.engine = self
-
-        self.info(workflow)
+        workflow.read(workflow_file_name,known_steps,self.config)
 
         self._setDependencies(workflow)
+        logger.info(workflow)
 
         for step in workflow.steps:
+            step.end_time = None
             step.start()
 
         no_more = set()
         while self._anyAlive(workflow.steps):
-            for step in workflow.steps:
-                if not step.isAlive():
-                    continue
-                if self._anyAlive(step.depends_on):
-                    continue
-                if not step.id in no_more:
-                    self.info("no more inputs for step %s" % step.id)
-                    step.noMoreInputs()
-                    no_more.add(step.id)
-            print("  still running")
+            #print("  still running")
+            self._handleLogging(workflow.steps)
+            self._handleOutputs(workflow.steps)
+            self._sendNoMoreInputs(workflow.steps,no_more)
             time.sleep(1.0)  # reduce this after testing
+        self._handleOutputs(workflow.steps)  # in case any are hanging around
+
+        for step in workflow.steps:
+            if step.exitcode == 0:
+                logger.info("  %s succeeded" % step.id)
+            else:
+                logger.info("  %s failed" % step.id)
 
     def _anyAlive(self, steps):
         for step in steps:
-            if step.isAlive():
+            if step.is_alive():
                 return True
         return False
+
+    def _handleLogging(self, steps):
+        for step in steps:
+            try:
+                while(True):
+                    [source,step_id,level,message] = step.logging_queue.get(False)
+                    logger = logging.getLogger(source)
+                    if level == "ERROR":
+                        logger.error("%s %s",step_id,message)
+                    elif level == "WARNING":
+                        logger.warning("%s %s",step_id,message)
+                    elif level == "INFO":
+                        logger.info("%s %s",step_id,message)
+                    elif level == "DEBUG":
+                        logger.debug("%s %s",step_id,message)
+                    else:
+                        logger.log(level,"%s %s",step_id,message)
+                    #print("%s %s %s" % (level,id,message))
+            except Queue.Empty:
+                pass    # it's ok
+
+    def _handleOutputs(self, steps):
+        for step in steps:
+            try:
+                while(True):
+                    document = step.output_queue.get(False)
+                    logger.info("output of document %s from %s" % (document.type,step.id))
+                    #logger.debug(document)
+                    if document.type in step.outputs:
+                        logger.info("  routing to %d steps" % len(step.outputs[document.type]))
+                        for dest_step in step.outputs[document.type]:
+                            logger.debug("    routing to %s" % dest_step.id)
+                            dest_step.input_queue.put(document)
+            except Queue.Empty:
+                pass    # it's ok
+
+    def _sendNoMoreInputs(self, steps, no_more):
+        cur_time = time.time()
+        for step in steps:
+            if step.id in no_more:
+                continue
+            if not step.is_alive():
+                continue
+            if self._anyAlive(step.depends_on):
+                continue
+            # potential timing issue - could be outputs in transit
+            #   below is a bit of a hack to address this
+            if step.end_time is None:
+                step.end_time = cur_time
+            if cur_time - step.end_time > 5:
+                logger.info("no more inputs to step %s" % step.id)
+                step.input_queue.put(Step.NO_MORE_INPUTS)
+                no_more.add(step.id)
     
     def _setDependencies(self, workflow):
         for step in workflow.steps:
@@ -216,13 +142,44 @@ class WorkflowEngine(Engine):
                 for dstep in step.outputs[type]:
                     dstep.depends_on.append(step)
 
-        for step in workflow.steps:
-            dstr = "%s depends on:" % step.id
-            for dstep in step.depends_on:
-                dstr += " %s" % dstep.id
-            print(dstr)
-
     def _readKnownSteps(self):
+        ipf_home = os.environ.get("IPF_HOME")
+        if ipf_home == None:
+            raise IpfError("IPF_HOME environment variable not set")
+        path = os.path.join(ipf_home,"lib","steps")
+        mod_path = "steps"
+        modules = self._readModules(path, mod_path)
+        #modules = self._readModules("/share/home/00415/wsmith/glue2/lib/steps/teragrid", "steps.teragrid")
+
+        for module in modules:
+            logger.debug("loading %s",module)
+            try:
+                __import__(module)
+            except ImportError:
+                traceback.print_exc()
+
+        classes = []
+        stack = Step.__subclasses__()
+        while len(stack) > 0:
+            cls = stack.pop(0)
+            classes.append(cls)
+            stack.extend(cls.__subclasses__())
+
+        return classes
+
+    def _readModules(self, path, mod_path):
+        modules = []
+        for file in os.listdir(path):
+            if os.path.isdir(os.path.join(path,file)):
+                mods = self._readModules(os.path.join(path,file),mod_path+"."+file)
+                modules.extend(mods)
+            elif os.path.isfile(os.path.join(path,file)):
+                if file.endswith(".py") and file != "__init__.py":
+                    mod,ext = os.path.splitext(file)
+                    modules.append(mod_path+"."+mod)
+        return modules
+        
+    def _readKnownStepsOld(self):
         ipfHome = os.environ.get("IPF_HOME")
         if ipfHome == None:
             raise IpfError("IPF_HOME environment variable not set")

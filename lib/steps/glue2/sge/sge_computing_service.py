@@ -16,16 +16,15 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-from ipf.engine import StepEngine
-
 from glue2.computing_service import *
 
 #######################################################################################################################
 
 class SgeComputingServiceStep(ComputingServiceStep):
-    def __init__(self):
-        ComputingServiceStep.__init__(self)
-        self.name = "glue2/sge/computing_service"
+    name = "glue2/sge/computing_service"
+
+    def __init__(self, params):
+        ComputingServiceStep.__init__(self,params)
 
     def _run(self):
         service = ComputingService()
@@ -42,6 +41,3 @@ class SgeComputingServiceStep(ComputingServiceStep):
         return service
         
 ##############################################################################################################
-
-if __name__ == "__main__":    
-    StepEngine(SgeComputingServiceStep())

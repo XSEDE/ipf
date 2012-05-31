@@ -17,52 +17,47 @@
 ###############################################################################
 
 import commands
+import copy
 import os
+import sys
 import time
-import ConfigParser
 
 from ipf.document import Document
-from ipf.engine import StepEngine
-import ipf.error
 from ipf.step import Step
 
 #######################################################################################################################
 
 class KitsStep(Step):
-    def __init__(self):
-        Step.__init__(self)
 
-        self.name = "teragrid.kits"
-        self.description = "produces a document describing what TeraGrid kits are available on the resource"
-        self.time_out = 10
-        self.requires_types = ["ipf/resource_name.txt"]
-        self.produces_types = ["teragrid/kits.xml"]
+    name = "teragrid.kits"
+    description = "produces a document describing what TeraGrid kits are available on the resource"
+    time_out = 10
+    requires_types = ["ipf/resource_name.txt"]
+    produces_types = ["teragrid/kits.xml"]
+    accepts_params = copy.copy(Step.accepts_params)
+    accepts_params["core_kit_directory"] = "the path to the TeraGrid core kit installation"
 
-        self.resource_name = None
-
-    def input(self, document):
-        if document.type == "ipf/resource_name.txt":
-            self.resource_name = document.body
+    def __init__(self, params):
+        Step.__init__(self,params)
 
     def run(self):
+        rn_doc = self._getInput("ipf/resource_name.txt")
+        
         try:
-            corekit_dir = self.engine.config.get("teragrid","core_kit_directory")
-        except ConfigParser.Error:
-            raise ipf.error.StepError("teragrid.core_kit_directory not specified")
+            corekit_dir = self.params["core_kit_directory"]
+        except KeyError:
+            self.error("core_kit_directory not specified")
+            sys.exit(1)
 
         cmd = os.path.join(corekit_dir,"bin","kits-reg.pl")
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            logger.error("'"+cmd+"' failed: "+output)
-            raise AgentError("'"+cmd+"' failed: "+output)
+            self.error("'"+cmd+"' failed: "+output)
+            sys.exit(1)
 
-        self.info("waiting for ipf/resource_name.txt")
-        while self.resource_name == None:
-            time.sleep(0.25)
+        kits = KitsDocumentXml(rn_doc.body,output)
 
-        kits = KitsDocumentXml(self.resource_name,output)
-
-        self.engine.output(self,kits)
+        self.output_queue.put(kits)
 
 
 #######################################################################################################################
@@ -73,6 +68,3 @@ class KitsDocumentXml(Document):
         self.body = content
 
 #######################################################################################################################
-
-if __name__ == "__main__":
-    StepEngine(KitsStep())

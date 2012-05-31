@@ -17,54 +17,48 @@
 ###############################################################################
 
 import commands
+import copy
 import socket
-import ConfigParser
+import sys
 
-from ipf.engine import StepEngine
-from ipf.step import Step
-from ipf.documents.resource_name import *
+from steps.ipf.resource_name import *
+import ipf.step
 
 #######################################################################################################################
 
-class ResourceNameStep(Step):
-    def __init__(self):
-        Step.__init__(self)
+class ResourceNameStep(ipf.step.Step):
+    name = "teragrid/resource_name"
+    description = "produces a resource name document using tgwhereami"
+    time_out = 5
+    produces_types = ["ipf/resource_name.txt",
+                      "ipf/resource_name.json",
+                      "ipf/resource_name.xml"]
+    accepts_params = copy.copy(ipf.step.Step.accepts_params)
+    accepts_params["tgwheremi"] = "path to the tgwhereami program (default 'tgwhereami')"
+    accepts_params["resource_name"] = "hard coded name of the TeraGrid resource name (optional)"
 
-        self.name = "teragrid/resource_name"
-        self.description = "produces a resource name document using tgwhereami"
-        self.time_out = 5
-        self.requires_types = []
-        self.produces_types = ["ipf/resource_name.txt",
-                               "ipf/resource_name.json",
-                               "ipf/resource_name.xml"]
+    def __init__(self, params):
+        ipf.step.Step.__init__(self,params)
 
     def run(self):
         try:
-            resource_name = self.engine.config.get("teragrid","resource_name")
-        except ConfigParser.Error:
+            resource_name = self.params["resource_name"]
+        except KeyError:
             try:
-                tg_whereami = self.engine.config.get("teragrid","tgwhereami")
-            except ConfigParser.Error:
+                tg_whereami = self.params["tgwhereami"]
+            except KeyError:
                 tg_whereami = "tgwhereami"
             (status, output) = commands.getstatusoutput(tg_whereami)
             if status != 0:
-                raise StepError("failed to execute %s" % tg_whereami)
+                self.error("failed to execute %s" % tg_whereami)
+                sys.exit(1)
             resource_name = output
 
         if "ipf/resource_name.txt" in self.requested_types:
-            self.engine.output(self,ResourceNameDocumentTxt(resource_name))
+            self.output_queue.put(ResourceNameDocumentTxt(resource_name))
         if "ipf/resource_name.json" in self.requested_types:
-            self.engine.output(self,ResourceNameDocumentJson(resource_name))
+            self.output_queue.put(ResourceNameDocumentJson(resource_name))
         if "ipf/resource_name.xml" in self.requested_types:
-            self.engine.output(self,ResourceNameDocumentXml(resource_name))
-
-    def input(self, document):
-        self.warning("unexpected input document %s" % document.id)
-        
-    def noMoreInputs(self):
-        pass
+            self.output_queue.put(ResourceNameDocumentXml(resource_name))
     
 #######################################################################################################################
-
-if __name__ == "__main__":
-    StepEngine(ResourceNameStep())

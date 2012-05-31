@@ -16,57 +16,53 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
+import copy
 import os
+import sys
 import time
-import ConfigParser
 
-from ipf.engine import StepEngine
-from ipf.error import StepError
 from ipf.step import Step
 
 #######################################################################################################################
 
 class FilePublishStep(Step):
-    def __init__(self):
-        Step.__init__(self)
+    name = "ipf/publish/file"
+    description = "publishes documents by writing them to a file"
+    time_out = 5
+    accepts_params = copy.copy(Step.accepts_params)
+    accepts_params["requires_types"] = "The type of documents that will be published"
+    accepts_params["path"] = "Path to the file to write. If the path is relative, it is relative to $IPF_HOME/var/."
 
-        self.name = "ipf/publish/file"
-        self.description = "publishes documents by writing them to a file"
-        self.time_out = 5
-        self.requires_types = []
-        self.produces_types = []
-        self.accepts_params["path"] = "Path to the file to write. If the path is relative, it is relative to $IPF_HOME/var/."
+    def __init__(self, params):
+        Step.__init__(self,params)
 
-        self.file = None
-        self.more_inputs = True
+        if "requires_types" in params:
+            self.requires_types = copy.copy(FilePublishStep.requires_types)
+            self.requires_types.extend(params["requires_types"])
 
     def run(self):
-        while self.more_inputs:
-            time.sleep(1)
-
-    def input(self, document):
-        if self.file is None:
-            self.file = open(self._getPath(),"w")
-        self.file.write(document.body)
+        more_inputs = True
+        file = open(self._getPath(),"w")
+        while more_inputs:
+            doc = self.input_queue.get(True)
+            if doc == Step.NO_MORE_INPUTS:
+                more_inputs = False
+            else:
+                self.info("writing document of type %s" % doc.type)
+                file.write(doc.body)
+        file.close()
 
     def _getPath(self):
         if "path" not in self.params:
-            raise StepError("path parameter not specified")
+            self.error("path parameter not specified")
+            sys.exit(1)
         path = self.params["path"]
         if os.path.isabs(path):
             return path
         ipfHome = os.environ.get("IPF_HOME")
         if ipfHome == None:
-            raise StepError("IPF_HOME environment variable not set")
+            self.error("IPF_HOME environment variable not set")
+            sys.exit(1)
         return os.path.join(ipfHome,"var",path)
 
-    def noMoreInputs(self):
-        if self.more_inputs:
-            self.more_inputs = False
-            if self.file is not None:
-                self.file.close()
-
 #######################################################################################################################
-
-if __name__ == "__main__":
-    StepEngine(FilePublishStep())

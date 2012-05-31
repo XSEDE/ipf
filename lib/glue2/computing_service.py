@@ -22,125 +22,55 @@ from xml.dom.minidom import getDOMImplementation
 
 from ipf.document import Document
 from ipf.dt import *
-from ipf.step import Step
+from ipf.error import StepError
 
 from glue2.computing_share import ComputingShare
 from glue2.computing_endpoint import ComputingEndpoint
+from glue2.step import GlueStep
 
 #######################################################################################################################
 
-class ComputingServiceStep(Step):
-    def __init__(self):
-        Step.__init__(self)
+class ComputingServiceStep(GlueStep):
+    name = "glue2/computing_service"
+    description = "This step provides a GLUE 2 ComputingService document. It is an aggregation mechanism"
+    time_out = 10
+    requires_types = ["ipf/resource_name.txt",
+                      "glue2/teragrid/computing_shares.json",
+                      "glue2/teragrid/computing_endpoints.json"]
+    produces_types = ["glue2/teragrid/computing_service.xml",
+                      "glue2/teragrid/computing_service.json"]
 
-        self.name = "glue2/computing_service"
-        self.description = "This step provides a GLUE 2 ComputingService document. It is an aggregation mechanism"
-        self.time_out = 10
-        self.requires_types = ["ipf/resource_name.txt",
-                               "glue2/teragrid/computing_shares.json",
-                               "glue2/teragrid/computing_endpoints.json"]
-        self.produces_types = ["glue2/teragrid/computing_service.xml",
-                               "glue2/teragrid/computing_service.json"]
-
+    def __init__(self, params):
+        GlueStep.__init__(self,params)
         self.resource_name = None
         self.shares = None
         self.endpoints = None
 
-    def input(self, document):
-        if document.type == "ipf/resource_name.txt":
-            self.resource_name = document.body.rstrip()
-        elif document.type == "glue2/teragrid/computing_shares.json":
-            try:
-                self.shares = document.shares
-            except AttributeError:
-                self.shares = self._parseSharesJson(document.body)
-        elif document.type == "glue2/teragrid/computing_endpoints.json":
-            try:
-                self.endpoints = document.endpoints
-            except AttributeError:
-                self.endpoints = self._parseEndpointsJson(document.body)
-        else:
-            self.info("ignoring unwanted input "+document.type)
-
-    def _parseSharesJson(self, body):
-        doc = json.loads(body)
-        shares = []
-        for share_dict in doc:
-            share = ComputingShare()
-            share.fromJson(share_dict)
-            shares.append(share)
-        return shares
-
-    def _parseEndpointsJson(self, body):
-        doc = json.loads(body)
-        endpoints = []
-        for endpoint_dict in doc:
-            endpoint = ComputingEndpoint()
-            endpoint.fromJson(endpoint_dict)
-            endpoints.append(endpoint)
-        return endpoints
-
     def run(self):
-        self.info("waiting for ipf/resource_name.txt")
-        while self.resource_name == None:
-            time.sleep(0.25)
-        self.info("waiting for glue2/teragrid/computing_shares.json")
-        while self.shares == None:
-            time.sleep(0.25)
-        self.info("waiting for glue2/teragrid/computing_endpoints.json")
-        while self.endpoints == None:
-            time.sleep(0.25)
+        rn_doc = self._getInput("ipf/resource_name.txt")
+        self.resource_name = rn_doc.resource_name
+        shares_doc = self._getInput("glue2/teragrid/computing_shares.json")
+        self.shares = shares_doc.shares
+        endpoints_doc = self._getInput("glue2/teragrid/computing_endpoints.json")
+        self.endpoints = endpoints_doc.endpoints
 
         service = self._run()
 
         service.ID = "http://"+self.resource_name+"/glue2/ComputingService"
         service.ComputingManager = "http://"+self.resource_name+"/glue2/ComputingManager"
-        self._addShares(service)
-        self._addEndpoints(service)
+        service._addShares(self.shares)
+        service._addEndpoints(self.endpoints)
 
         if "glue2/teragrid/computing_service.xml" in self.requested_types:
-            self.engine.output(self,ComputingServiceDocumentXml(self.resource_name,service))
+            self.debug("sending output glue2/teragrid/computing_service.xml")
+            self.output_queue.put(ComputingServiceDocumentXml(self.resource_name,service))
         if "glue2/teragrid/computing_service.json" in self.requested_types:
-            self.engine.output(self,ComputingServiceDocumentJson(self.resource_name,service))
+            self.debug("sending output glue2/teragrid/computing_service.json")
+            self.output_queue.put(ComputingServiceDocumentJson(self.resource_name,service))
 
     def _run(self):
+        self.error("ComputingServiceStep._run not overriden")
         raise StepError("ComputingServiceStep._run not overriden")
-
-    def _addShares(self, service):
-        service.ComputingShare = []
-        if len(self.shares) == 0:
-            return
-        for share in self.shares:
-            service.ComputingShare.append(share.ID)
-            if share.TotalJobs is not None:
-                if service.TotalJobs == None:
-                    service.TotalJobs = 0
-                service.TotalJobs = service.TotalJobs + share.TotalJobs
-            if share.RunningJobs is not None:
-                if service.RunningJobs == None:
-                    service.RunningJobs = 0
-                service.RunningJobs = service.RunningJobs + share.RunningJobs
-            if share.WaitingJobs is not None:
-                if service.WaitingJobs == None:
-                    service.WaitingJobs = 0
-                service.WaitingJobs = service.WaitingJobs + share.WaitingJobs
-            if share.StagingJobs is not None:
-                if service.StagingJobs == None:
-                    service.StagingJobs = 0
-                service.StagingJobs = service.StagingJobs + share.StagingJobs
-            if share.SuspendedJobs is not None:
-                if service.SuspendedJobs == None:
-                    service.SuspendedJobs = 0
-                service.SuspendedJobs = service.SuspendedJobs + share.SuspendedJobs
-            if share.PreLRMSWaitingJobs is not None:
-                if service.PreLRMSWaitingJobs == None:
-                    service.PreLRMSWaitingJobs = 0
-                service.PreLRMSWaitingJobs = service.PreLRMSWaitingJobs + share.PreLRMSWaitingJobs
-
-    def _addEndpoints(self, service):
-        service.ComputingEndpoint = []
-        for endpoint in self.endpoints:
-            service.ComputingEndpoint.append(endpoint.ID)
 
 #######################################################################################################################
 
@@ -211,6 +141,42 @@ class ComputingService(object):
         self.ComputingManager = None  # string (uri)
         #self.computingManager = None   # ComputingManager (set by child class)
         self.StorageService = []       # list of string (uri)
+
+    def _addShares(self, shares):
+        self.ComputingShare = []
+        if len(shares) == 0:
+            return
+        for share in shares:
+            self.ComputingShare.append(share.ID)
+            if share.TotalJobs is not None:
+                if self.TotalJobs == None:
+                    self.TotalJobs = 0
+                self.TotalJobs = self.TotalJobs + share.TotalJobs
+            if share.RunningJobs is not None:
+                if self.RunningJobs == None:
+                    self.RunningJobs = 0
+                self.RunningJobs = self.RunningJobs + share.RunningJobs
+            if share.WaitingJobs is not None:
+                if self.WaitingJobs == None:
+                    self.WaitingJobs = 0
+                self.WaitingJobs = self.WaitingJobs + share.WaitingJobs
+            if share.StagingJobs is not None:
+                if self.StagingJobs == None:
+                    self.StagingJobs = 0
+                self.StagingJobs = self.StagingJobs + share.StagingJobs
+            if share.SuspendedJobs is not None:
+                if self.SuspendedJobs == None:
+                    self.SuspendedJobs = 0
+                self.SuspendedJobs = self.SuspendedJobs + share.SuspendedJobs
+            if share.PreLRMSWaitingJobs is not None:
+                if self.PreLRMSWaitingJobs == None:
+                    self.PreLRMSWaitingJobs = 0
+                self.PreLRMSWaitingJobs = self.PreLRMSWaitingJobs + share.PreLRMSWaitingJobs
+
+    def _addEndpoints(self, endpoints):
+        self.ComputingEndpoint = []
+        for endpoint in endpoints:
+            self.ComputingEndpoint.append(endpoint.ID)
 
     ###################################################################################################################
 

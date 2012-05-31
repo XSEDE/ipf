@@ -23,72 +23,37 @@
 #    teragrid:terminated
 #    teragrid:finished
 
+import copy
 import json    # new in Python 2.6
 import time
 from xml.dom.minidom import getDOMImplementation
-import ConfigParser
 
 from ipf.document import Document
-from ipf.step import Step
-
 from ipf.dt import *
+from ipf.error import StepError
+
+from glue2.step import GlueStep
 
 #######################################################################################################################
 
-def includeQueue(engine, queue_name, no_queue_name_return=False):
-    if queue_name == None:
-        return no_queue_name_return
-    if queue_name == "":
-        return no_queue_name_return
+class ComputingActivitiesStep(GlueStep):
+    name = "glue2/computing_activities"
+    description = "produces a document containing one or more GLUE 2 ComputingActivity"
+    time_out = 30
+    requires_types = ["ipf/resource_name.txt"]
+    produces_types = ["glue2/teragrid/computing_activities.xml",
+                      "glue2/teragrid/computing_activities.json"]
+    accepts_params = copy.copy(GlueStep.accepts_params)
+    accepts_params["hide_job_attribs"] = "a comma-separated list of ComputingActivity attributes to hide (optional)"
+    accepts_params["queues"] = "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown."
 
-    try:
-        expression = engine.config.get("glue2","queues")
-    except ConfigParser.Error:
-        return True
-
-    toks = expression.split()
-    goodSoFar = False
-    for tok in toks:
-        if tok[0] == '+':
-            queue = tok[1:]
-            if (queue == "*") or (queue == queue_name):
-                goodSoFar = True
-        elif tok[0] == '-':
-            queue = tok[1:]
-            if (queue == "*") or (queue == queue_name):
-                goodSoFar = False
-        else:
-            engine.warning("can't parse part of Queues expression: "+tok)
-    return goodSoFar
-
-#######################################################################################################################
-
-class ComputingActivitiesStep(Step):
-    def __init__(self):
-        Step.__init__(self)
-
-        self.name = "glue2/computing_activities"
-        self.description = "produces a document containing one or more GLUE 2 ComputingActivity"
-        self.time_out = 30
-        self.requires_types = ["ipf/resource_name.txt"]
-        self.produces_types = ["glue2/teragrid/computing_activities.xml",
-                               "glue2/teragrid/computing_activities.json"]
-
+    def __init__(self, params):
+        GlueStep.__init__(self,params)
         self.resource_name = None
-
-    def input(self, document):
-        if document.type == "ipf/resource_name.txt":
-            self.resource_name = document.body.rstrip()
-        else:
-            self.info("ignoring unwanted input "+document.type)
-
-    def noMoreInputs(self):
-        pass
-
+        
     def run(self):
-        self.info("waiting for ipf/resource_name.txt")
-        while self.resource_name == None:
-            time.sleep(0.25)
+        rn_doc = self._getInput("ipf/resource_name.txt")
+        self.resource_name = rn_doc.resource_name
 
         activities = self._run()
 
@@ -97,20 +62,23 @@ class ComputingActivitiesStep(Step):
 
         hide = self._getJobAttribsToHide()
         if "glue2/teragrid/computing_activities.xml" in self.requested_types:
-            self.engine.output(self,ComputingActivitiesDocumentXml(self.resource_name,activities,hide))
+            self.debug("sending output glue2/teragrid/computing_activities.xml")
+            self.output_queue.put(ComputingActivitiesDocumentXml(self.resource_name,activities,hide))
         if "glue2/teragrid/computing_activities.json" in self.requested_types:
-            self.engine.output(self,ComputingActivitiesDocumentJson(self.resource_name,activities,hide))
+            self.debug("sending output glue2/teragrid/computing_activities.json")
+            self.output_queue.put(ComputingActivitiesDocumentJson(self.resource_name,activities,hide))
 
     def _run(self):
+        self.error("ComputingActivitiesStep._run not overriden")
         raise StepError("ComputingActivitiesStep._run not overriden")
 
     def _getJobAttribsToHide(self):
         hide = {}
         try:
-            hideStr = self.engine.config.get("glue2","hide_job_attribs")
+            hideStr = self.params["hide_job_attribs"]
             for name in hideStr.split():
                 hide[name] = True
-        except ConfigParser.Error:
+        except KeyError:
             pass
         return hide
 

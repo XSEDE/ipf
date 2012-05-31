@@ -19,46 +19,43 @@ import datetime
 import json
 import time
 from xml.dom.minidom import getDOMImplementation
+import ConfigParser
 
 from ipf.document import Document
 from ipf.dt import *
-from ipf.step import Step
+
+from glue2.step import GlueStep
 
 #######################################################################################################################
 
-class ComputingEndpointsStep(Step):
-    def __init__(self):
-        Step.__init__(self)
+class ComputingEndpointsStep(GlueStep):
+    name = "glue2/computing_endpoints"
+    description = "This step produces a document containing one or more GLUE 2 ComputingEndpoints. These could be batch schedulers like LSF or SGE or remote job interfaces such as Globus GRAM"
+    time_out = 30
+    requires_types = ["ipf/resource_name.txt"]
+    produces_types = ["glue2/teragrid/computing_endpoints.xml",
+                      "glue2/teragrid/computing_endpoints.json"]
 
-        self.name = "glue2/computing_endpoints"
-        self.description = "This step produces a document containing one or more GLUE 2 ComputingEndpoints. These could be batch schedulers like LSF or SGE or remote job interfaces such as Globus GRAM"
-        self.time_out = 30
-        self.requires_types = ["ipf/resource_name.txt"]
-        self.produces_types = ["glue2/teragrid/computing_endpoints.xml",
-                               "glue2/teragrid/computing_endpoints.json"]
-
+    def __init__(self, params):
+        GlueStep.__init__(self,params)
         self.resource_name = None
 
-    def input(self, document):
-        if document.type == "ipf/resource_name.txt":
-            self.resource_name = document.body.rstrip()
-        else:
-            self.info("ignoring unwanted input "+document.type)
-
     def run(self):
-        self.info("waiting for ipf/resource_name.txt")
-        while self.resource_name == None:
-            time.sleep(0.25)
+        rn_doc = self._getInput("ipf/resource_name.txt")
+        self.resource_name = rn_doc.resource_name
 
         endpoints = self._run()
 
         if "glue2/teragrid/computing_endpoints.xml" in self.requested_types:
-            self.engine.output(self,ComputingEndpointsDocumentXml(self.resource_name,endpoints))
+            self.debug("sending output glue2/teragrid/computing_endpoint.xml")
+            self.output_queue.put(ComputingEndpointsDocumentXml(self.resource_name,endpoints))
         if "glue2/teragrid/computing_endpoints.json" in self.requested_types:
-            self.engine.output(self,ComputingEndpointsDocumentJson(self.resource_name,endpoints))
+            self.debug("sending output glue2/teragrid/computing_endpoint.json")
+            self.output_queue.put(ComputingEndpointsDocumentJson(self.resource_name,endpoints))
 
     def _run(self):
-        raise StepError("ComputingEndpointsStep._run not overriden")
+        self.error("ComputingEndpointsStep._run not overriden")
+        sys.exit(1)
 
 #######################################################################################################################
 

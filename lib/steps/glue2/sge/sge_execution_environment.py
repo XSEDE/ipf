@@ -17,16 +17,14 @@
 ###############################################################################
 
 import commands
+import copy
 import datetime
 import os
 import re
-import sys
 import xml.sax
 import xml.sax.handler
-import ConfigParser
 
-from ipf.engine import StepEngine
-from ipf.error import *
+from ipf.error import StepError
 
 from glue2.execution_environment import *
 
@@ -37,21 +35,24 @@ from glue2.execution_environment import *
 #######################################################################################################################
 
 class SgeExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
-    def __init__(self):
-        ExecutionEnvironmentsStep.__init__(self)
-        self.name = "glue2/sge/execution_environments"
+    name = "glue2/sge/execution_environments"
+    accepts_params = copy.copy(ExecutionEnvironmentsStep.accepts_params)
+    accepts_params["qhost"] = "the path to the SGE qhost program (default 'qhost')"
+
+    def __init__(self, params):
+        ExecutionEnvironmentsStep.__init__(self,params)
 
     def _run(self):
-        qhost = "qhost"
         try:
-            qhost = self.engine.config.get("sge","qhost")
-        except ConfigParser.Error:
-            pass
+            qhost = self.params["qhost"]
+        except KeyError:
+            qhost = "qhost"
 
         cmd = qhost + " -xml -q"
         self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
+            self.error("qhost failed: "+output+"\n")
             raise StepError("qhost failed: "+output+"\n")
 
         handler = HostsHandler(self)
@@ -63,6 +64,8 @@ class SgeExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
                 hosts.append(host)
 
         return hosts
+
+#######################################################################################################################
 
 class HostsHandler(xml.sax.handler.ContentHandler):
 
@@ -145,6 +148,3 @@ class HostsHandler(xml.sax.handler.ContentHandler):
         self.text = self.text + ch
         
 #######################################################################################################################
-
-if __name__ == "__main__":    
-    StepEngine(SgeExecutionEnvironmentsStep())

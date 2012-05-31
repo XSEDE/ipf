@@ -15,6 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
+import copy
 import datetime
 import json
 import time
@@ -22,61 +23,35 @@ from xml.dom.minidom import getDOMImplementation
 
 from ipf.document import Document
 from ipf.dt import *
-from ipf.step import Step
+from ipf.error import StepError
 
-from glue2.computing_activity import includeQueue
 from glue2.computing_activity import ComputingActivity
+from glue2.step import GlueStep
 
 #######################################################################################################################
 
-# the queues to include are in computing_activity.py
+class ComputingSharesStep(GlueStep):
+    name = "glue2/computing_shares"
+    description = "produces a document containing one or more GLUE 2 ComputingShare"
+    time_out = 30
+    requires_types = ["ipf/resource_name.txt",
+                      "glue2/teragrid/computing_activities.json"]
+    produces_types = ["glue2/teragrid/computing_shares.xml",
+                      "glue2/teragrid/computing_shares.json"]
+    accepts_params = copy.copy(GlueStep.accepts_params)
+    accepts_params["queues"] = "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown."
 
-#######################################################################################################################
-
-class ComputingSharesStep(Step):
-    def __init__(self):
-        Step.__init__(self)
-
-        self.name = "glue2/computing_shares"
-        self.description = "produces a document containing one or more GLUE 2 ComputingShare"
-        self.time_out = 30
-        self.requires_types = ["ipf/resource_name.txt",
-                               "glue2/teragrid/computing_activities.json"]
-        #["glue2/teragrid/computing_activities.json","glue2/teragrid/computing_activities.xml"]]
-        self.produces_types = ["glue2/teragrid/computing_shares.xml",
-                               "glue2/teragrid/computing_shares.json"]
-
+    def __init__(self, params):
+        GlueStep.__init__(self,params)
         self.resource_name = None
         self.activities = None
-
-    def input(self, document):
-        if document.type == "ipf/resource_name.txt":
-            self.resource_name = document.body.rstrip()
-        elif document.type == "glue2/teragrid/computing_activities.json":
-            try:
-                self.activities = document.activities
-            except AttributeError:
-                self.activities = self._parseJson(document.body)
-        else:
-            self.info("ignoring unwanted input "+document.type)
-
-    def _parseJson(self, body):
-        doc = json.loads(body)
-        activities = []
-        for act_dict in doc:
-            act = ComputingActivity()
-            act.fromJson(act_dict)
-            activities.append(act)
-        return activities
-
+        
     def run(self):
-        self.info("waiting for ipf/resource_name.txt")
-        while self.resource_name == None:
-            time.sleep(0.25)
-        self.info("waiting for glue2/teragrid/computing_activities.json")
-        while self.activities == None:
-            time.sleep(0.25)
-
+        rn_doc = self._getInput("ipf/resource_name.txt")
+        self.resource_name = rn_doc.resource_name
+        activities_doc = self._getInput("glue2/teragrid/computing_activities.json")
+        self.activities = activities_doc.activities
+        
         shares = self._run()
 
         for share in shares:
@@ -84,11 +59,14 @@ class ComputingSharesStep(Step):
         self._addActivities(self.activities,shares)
 
         if "glue2/teragrid/computing_shares.xml" in self.requested_types:
-            self.engine.output(self,ComputingSharesDocumentXml(self.resource_name,shares))
+            self.debug("sending output glue2/teragrid/computing_shares.xml")
+            self.output_queue.put(ComputingSharesDocumentXml(self.resource_name,shares))
         if "glue2/teragrid/computing_shares.json" in self.requested_types:
-            self.engine.output(self,ComputingSharesDocumentJson(self.resource_name,shares))
+            self.debug("sending output glue2/teragrid/computing_shares.json")
+            self.output_queue.put(ComputingSharesDocumentJson(self.resource_name,shares))
 
     def _run(self):
+        self.error("ComputingSharesStep._run not overriden")
         raise StepError("ComputingSharesStep._run not overriden")
 
     def _addActivities(self, activities, shares):
@@ -112,8 +90,7 @@ class ComputingSharesStep(Step):
             #print(str(activity))
             share = shareDict.get(activity.Queue)
             if share == None:
-                # output a warning
-                print("  didn't find share for queue "+str(activity.Queue))
+                self.warning("  didn't find share for queue "+str(activity.Queue))
                 continue
 
             share.computingActivity.append(activity)

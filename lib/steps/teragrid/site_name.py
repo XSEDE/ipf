@@ -17,48 +17,49 @@
 ###############################################################################
 
 import commands
+import copy
 import socket
-import ConfigParser
+import sys
 
-from ipf.documents.site_name import *
-from ipf.engine import StepEngine
+from steps.ipf.site_name import *
 from ipf.step import Step
 
 #######################################################################################################################
 
 class SiteNameStep(Step):
-    def __init__(self):
-        Step.__init__(self)
+    name = "teragrid/site_name"
+    description = "produces a site name document using tgwhereami"
+    time_out = 5
+    requires_types = []
+    produces_types = ["ipf/site_name.txt",
+                      "ipf/site_name.json",
+                      "ipf/site_name.xml"]
+    accepts_params = copy.copy(Step.accepts_params)
+    accepts_params["tgwheremi"] = "path to the tgwhereami program (default 'tgwhereami')"
+    accepts_params["site_name"] = "hard coded name of the TeraGrid site name (optional)"
 
-        self.name = "teragrid/site_name"
-        self.description = "produces a site name document using tgwhereami"
-        self.time_out = 5
-        self.requires_types = []
-        self.produces_types = ["ipf/site_name.txt",
-                               "ipf/site_name.json",
-                               "ipf/site_name.xml"]
+    def __init__(self, params):
+        Step.__init__(self,params)
 
     def run(self):
         try:
-            site_name = self.engine.config.get("teragrid","site_name")
-        except ConfigParser.Error:
+            site_name = self.params["site_name"]
+        except KeyError:
             try:
-                tg_whereami = self.engine.config.get("teragrid","tgwhereami")
-            except ConfigParser.Error:
+                tg_whereami = self.params["tgwhereami"]
+            except KeyError:
                 tg_whereami = "tgwhereami"
             (status, output) = commands.getstatusoutput(tg_whereami+" -s")
             if status != 0:
-                raise StepError("failed to execute %s" % tg_whereami)
+                self.error("failed to execute %s" % tg_whereami)
+                sys.exit(1)
             site_name = output
 
         if "ipf/site_name.txt" in self.requested_types:
-            self.engine.output(self,SiteNameDocumentTxt(site_name))
+            self.output_queue.put(SiteNameDocumentTxt(site_name))
         if "ipf/site_name.json" in self.requested_types:
-            self.engine.output(self,SiteNameDocumentJson(site_name))
+            self.output_queue.put(SiteNameDocumentJson(site_name))
         if "ipf/site_name.xml" in self.requested_types:
-            self.engine.output(self,SiteNameDocumentXml(site_name))
+            self.output_queue.put(SiteNameDocumentXml(site_name))
 
 #######################################################################################################################
-
-if __name__ == "__main__":
-    StepEngine(SiteNameStep())

@@ -16,28 +16,27 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
+import copy
 import os
+import sys
 import time
-import ConfigParser
 
-from ipf.engine import StepEngine
 from ipf.step import Step
 
 #######################################################################################################################
 
 class AmqpPublishStep(Step):
-    def __init__(self):
-        Step.__init__(self)
+    name = "ipf/publish/amqp"
+    description = "publishes documents by via AMQP"
+    time_out = 5
+    accepts_params = copy.copy(Step.accepts_params)
+    accepts_params["service"] = "a list of alternative hosts (or host:ports) to try to connect to"
+    accepts_params["vhost"] = "the AMQP virtual host to connect to"
+    accepts_params["exchange"] = "the AMQP exchange to publish to"
+    # credentials for ssl
 
-        self.name = "ipf/publish/amqp"
-        self.description = "publishes documents by via AMQP"
-        self.time_out = 5
-        self.requires_types = []
-        self.produces_types = []
-        self.accepts_params["service"] = "a list of alternative hosts (or host:ports) to try to connect to"
-        self.accepts_params["vhost"] = "the AMQP virtual host to connect to"
-        self.accepts_params["exchange"] = "the AMQP exchange to publish to"
-        # credentials for ssl
+    def __init__(self, params):
+        Step.__init__(self,params)
 
         self.service = []
         self.vhost = None
@@ -49,17 +48,13 @@ class AmqpPublishStep(Step):
         self.more_inputs = True
 
     def run(self):
-        while self.more_inputs:
-            time.sleep(1)
-
-    def input(self, document):
-        if self.channel == None:
-            # connect if necessary
-            pass
-        # publish
-        print("publishing %s via amqp" % document.id)
+        # connect
+        more_inputs = True
+        while more_inputs:
+            doc = self.input_queue.get(True)
+            if doc == Step.NO_MORE_INPUTS:
+                more_inputs = False
+            else:
+                self.info("publishing document of type %s" % doc.type)
 
 #######################################################################################################################
-
-if __name__ == "__main__":
-    StepEngine(AmqpPublishStep())

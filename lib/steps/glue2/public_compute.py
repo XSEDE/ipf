@@ -16,120 +16,55 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
+import json
 import os
-import ConfigParser
+from xml.dom.minidom import getDOMImplementation
 
-from ipf.engine import StepEngine
+from ipf.document import Document
 from ipf.error import StepError
 from ipf.step import Step
 
 #######################################################################################################################
 
 class PublicComputeStep(Step):
-    def __init__(self):
-        Step.__init__(self)
+    name = "glue2/teragrid/public_compute"
+    description = "creates a single document containing all nonsensitive compute-related information"
+    time_out = 5
+    requires_types = ["ipf/resource_name.txt",
+                      "ipf/site_name.txt",
+                      "glue2/teragrid/computing_service.json",
+                      "glue2/teragrid/computing_endpoints.json",
+                      "glue2/teragrid/computing_shares.json",
+                      "glue2/teragrid/computing_manager.json",
+                      "glue2/teragrid/execution_environments.json",]
+    produces_types = ["glue2/teragrid/public_compute.xml",
+                      "glue2/teragrid/public_compute.json"]
 
-        self.name = "glue2/teragrid/public_compute"
-        self.description = "creates a single document containing all nonsensitive compute-related information"
-        self.time_out = 5
-        self.requires_types = ["ipf/resource_name.txt",
-                               "ipf/site_name.txt",
-                               "glue2/teragrid/computing_service.json",
-                               "glue2/teragrid/computing_endpoints.json",
-                               "glue2/teragrid/computing_shares.json",
-                               "glue2/teragrid/computing_manager.json",
-                               "glue2/teragrid/execution_environments.json",]
-        self.produces_types = ["glue2/teragrid/public_compute.xml",
-                               "glue2/teragrid/public_compute.json"]
-
-        self.more_inputs = True
-
-        self.public_compute = PublicCompute()
-
-    def input(self, document):
-        if document.type == "ipf/resource_name.txt":
-            self.public_compute.resource_name = document.body.rstrip()
-        elif document.type == "ipf/site_name.txt":
-            self.public_compute.site_name = document.body.rstrip()
-        elif document.type == "glue2/teragrid/computing_service.json":
-            try:
-                self.public_compute.service = document.service
-            except AttributeError:
-                self.public_compute.service = self._parseServiceJson(document.body)
-        elif document.type == "glue2/teragrid/computing_endpoints.json":
-            try:
-                self.public_compute.endpoints = document.endpoints
-            except AttributeError:
-                self.public_compute.endpoints = self._parseEndpointsJson(document.body)
-        elif document.type == "glue2/teragrid/computing_shares.json":
-            try:
-                self.public_compute.shares = document.shares
-            except AttributeError:
-                self.public_compute.shares = self._parseSharesJson(document.body)
-        elif document.type == "glue2/teragrid/computing_manager.json":
-            try:
-                self.public_compute.manager = document.manager
-            except AttributeError:
-                self.public_compute.manager = self._parseManagerJson(document.body)
-        elif document.type == "glue2/teragrid/execution_environments.json":
-            try:
-                self.public_compute.environments = document.environments
-            except AttributeError:
-                self.public_compute.environments = self._parseEnvironmentsJson(document.body)
-        else:
-            self.info("ignoring unwanted input "+document.type)
-
-    def _parseServiceJson(self, body):
-        doc = json.loads(body)
-        service = ComputingService()
-        service.fromJson(doc)
-        return service
-
-    def _parseEndpointsJson(self, body):
-        doc = json.loads(body)
-        endpoints = []
-        for endpoint_dict in doc:
-            endpoint = ComputingEndpoint()
-            endpoint.fromJson(endpoint_dict)
-            endpoints.append(endpoint)
-        return endpoints
-
-    def _parseSharesJson(self, body):
-        doc = json.loads(body)
-        shares = []
-        for share_dict in doc:
-            share = ComputingShare()
-            share.fromJson(share_dict)
-            shares.append(share)
-        return shares
-
-    def _parseManagerJson(self, body):
-        doc = json.loads(body)
-        manager = ComputingManager()
-        manager.fromJson(doc)
-        return manager
-
-    def _parseEnvironmentsJson(self, body):
-        doc = json.loads(body)
-        environments = []
-        for environment_dict in doc:
-            environment = ExecutionEnvironment()
-            environment.fromJson(environment_dict)
-            environments.append(environment)
-        return environments
+    def __init__(self, params):
+        Step.__init__(self,params)
 
     def run(self):
-        self.info("waiting for all inputs")
-        while self.more_inputs:
-            time.sleep(0.25)
+        rn_doc = self._getInput("ipf/resource_name.txt")
+        sn_doc = self._getInput("ipf/site_name.txt")
+        service_doc = self._getInput("glue2/teragrid/computing_service.json")
+        endpoints_doc = self._getInput("glue2/teragrid/computing_endpoints.json")
+        shares_doc = self._getInput("glue2/teragrid/computing_shares.json")
+        manager_doc = self._getInput("glue2/teragrid/computing_manager.json")
+        environments_doc = self._getInput("glue2/teragrid/execution_environments.json")
+
+        public_compute = PublicCompute()
+        public_compute.resource_name = rn_doc.resource_name
+        public_compute.site_name = sn_doc.site_name
+        public_compute.service = service_doc.service
+        public_compute.endpoints = endpoints_doc.endpoints
+        public_compute.shares = shares_doc.shares
+        public_compute.manager = manager_doc.manager
+        public_compute.environments = environments_doc.exec_envs
 
         if "glue2/teragrid/public_compute.xml" in self.requested_types:
-            self.engine.output(self,PublicComputeDocumentXml(self.public_compute))
+            self.output_queue.put(PublicComputeDocumentXml(public_compute))
         if "glue2/teragrid/public_compute.json" in self.requested_types:
-            self.engine.output(self,PublicComputeDocumentJson(self.public_compute))
-
-    def noMoreInputs(self):
-        self.more_inputs = False
+            self.output_queue.put(PublicComputeDocumentJson(public_compute))
 
 #######################################################################################################################
 
@@ -145,7 +80,7 @@ class PublicCompute(object):
 
     ###################################################################################################################
 
-    def toDom(self, hide):
+    def toDom(self):
         doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
                                                     "glue2",None)
 
@@ -193,15 +128,24 @@ class PublicCompute(object):
         doc["SiteID"] = self.site_name
 
         if self.service is not None:
-            doc["ComputingService"] = self.service
+            doc["ComputingService"] = self.service.toJson()
         if self.endpoints is not None:
-            doc["ComputingEndpoints"] = self.endpoints
+            endpoints = []
+            for endpoint in self.endpoints:
+                endpoints.append(endpoint.toJson())
+            doc["ComputingEndpoints"] = endpoints
         if self.shares is not None:
-            doc["ComputingShares"] = self.shares
+            shares = []
+            for share in self.shares:
+                shares.append(share.toJson())
+            doc["ComputingShares"] = shares
         if self.manager is not None:
-            doc["ComputingManager"] = self.manager
+            doc["ComputingManager"] = self.manager.toJson()
         if self.environments is not None:
-            doc["ExecutionEnvironments"] = self.environments
+            envs = []
+            for env in self.environments:
+                envs.append(env.toJson())
+            doc["ExecutionEnvironments"] = envs
         
         return doc
 
@@ -218,5 +162,29 @@ class PublicCompute(object):
 
 #######################################################################################################################
 
-if __name__ == "__main__":
-    StepEngine(PublicComputeStep())
+class PublicComputeDocumentXml(Document):
+    def __init__(self, public_compute):
+        Document.__init__(self, public_compute.resource_name, "glue2/teragrid/public_compute.xml")
+        self.public_compute = public_compute
+
+    def _setBody(self, body):
+        raise DocumentError("PublicComputeDocumentXml._setBody should parse the XML...")
+
+    def _getBody(self):
+        return self.public_compute.toDom().toxml()
+
+#######################################################################################################################
+
+class PublicComputeDocumentJson(Document):
+    def __init__(self, public_compute):
+        Document.__init__(self, public_compute.resource_name, "glue2/teragrid/public_compute.json")
+        self.public_compute = public_compute
+
+    def _setBody(self, body):
+        self.public_compute = PublicCompute()
+        self.public_compute.fromJson(json.loads(body))
+
+    def _getBody(self):
+        return json.dumps(self.public_compute.toJson(),indent=4)
+
+#######################################################################################################################

@@ -37,7 +37,7 @@ class Document(object):
         self._body = None
 
     def __str__(self):
-        dstr = "document "+str(self.id)+" of type "+str(self.content_type)+":\n"
+        dstr = "document "+str(self.id)+" of type "+str(self.type)+":\n"
         dstr = dstr + self.body
         return dstr
 

@@ -16,66 +16,44 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
+import json
 import os
-import ConfigParser
+from xml.dom.minidom import getDOMImplementation
 
-from ipf.engine import StepEngine
+from ipf.document import Document
 from ipf.error import StepError
 from ipf.step import Step
 
 #######################################################################################################################
 
 class PrivateComputeStep(Step):
-    def __init__(self):
-        Step.__init__(self)
+    name = "glue2/teragrid/private_compute"
+    description = "creates a single document containing all sensitive compute-related information"
+    time_out = 5
+    requires_types = ["ipf/resource_name.txt",
+                      "ipf/site_name.txt",
+                      "glue2/teragrid/computing_activities.json"]
+    produces_types = ["glue2/teragrid/private_compute.xml",
+                      "glue2/teragrid/private_compute.json"]
 
-        self.name = "glue2/teragrid/private_compute"
-        self.description = "creates a single document containing all sensitive compute-related information"
-        self.time_out = 5
-        self.requires_types = ["ipf/resource_name.txt",
-                               "ipf/site_name.txt",
-                               "glue2/teragrid/computing_activities.json"]
-        self.produces_types = ["glue2/teragrid/private_compute.xml",
-                               "glue2/teragrid/private_compute.json"]
-
-        self.more_inputs = True
-
-        self.private_compute = PrivateCompute()
-
-    def input(self, document):
-        if document.type == "ipf/resource_name.txt":
-            self.private_compute.resource_name = document.body.rstrip()
-        elif document.type == "ipf/site_name.txt":
-            self.private_computesite_name = document.body.rstrip()
-        elif document.type == "glue2/teragrid/computing_activities.json":
-            try:
-                self.private_compute.activities = document.activities
-            except AttributeError:
-                self.private_compute.activities = self._parseActivitiesJson(document.body)
-        else:
-            self.info("ignoring unwanted input "+document.type)
-
-    def _parseActivitiesJson(self, body):
-        doc = json.loads(body)
-        activities = []
-        for activity_dict in doc:
-            activity = ComputingActivity()
-            activity.fromJson(activity_dict)
-            activities.append(activity)
-        return activities
+    def __init__(self, params):
+        Step.__init__(self,params)
 
     def run(self):
-        self.info("waiting for all inputs")
-        while self.more_inputs:
-            time.sleep(0.25)
+        rn_doc = self._getInput("ipf/resource_name.txt")
+        sn_doc = self._getInput("ipf/site_name.txt")
+        activities_doc = self._getInput("glue2/teragrid/computing_activities.json")
 
+        private_compute = PrivateCompute()
+        private_compute.resource_name = rn_doc.resource_name
+        private_compute.site_name = sn_doc.site_name
+        private_compute.activities = activities_doc.activities
+        private_compute.hide = activities_doc.hide
+        
         if "glue2/teragrid/private_compute.xml" in self.requested_types:
-            self.engine.output(self,PrivateComputeDocumentXml(self.private_compute))
+            self.output_queue.put(PrivateComputeDocumentXml(private_compute))
         if "glue2/teragrid/private_compute.json" in self.requested_types:
-            self.engine.output(self,PrivateComputeDocumentJson(self.private_compute))
-
-    def noMoreInputs(self):
-        self.more_inputs = False
+            self.output_queue.put(PrivateComputeDocumentJson(private_compute))
 
 #######################################################################################################################
 
@@ -84,10 +62,11 @@ class PrivateCompute(object):
         self.resource_name = None
         self.site_name = None
         self.activities = None
+        self.hide = []
 
     ###################################################################################################################
 
-    def toDom(self, hide):
+    def toDom(self):
         doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
                                                     "glue2",None)
 
@@ -108,7 +87,7 @@ class PrivateCompute(object):
 
         if self.activities is not None:
             for activity in self.activities:
-                root.appendChild(activity.toDom().documentElement.firstChild)
+                root.appendChild(activity.toDom(self.hide).documentElement.firstChild)
 
         return doc
     
@@ -125,7 +104,10 @@ class PrivateCompute(object):
         doc["SiteID"] = self.site_name
 
         if self.activities is not None:
-            doc["ComputingActivities"] = self.activities
+            docs = []
+            for activity in self.activities:
+                docs.append(activity.toJson(self.hide))
+            doc["ComputingActivities"] = docs
         
         return doc
 
@@ -139,5 +121,29 @@ class PrivateCompute(object):
 
 #######################################################################################################################
 
-if __name__ == "__main__":
-    StepEngine(PrivateComputeStep())
+class PrivateComputeDocumentXml(Document):
+    def __init__(self, private_compute):
+        Document.__init__(self, private_compute.resource_name, "glue2/teragrid/private_compute.xml")
+        self.private_compute = private_compute
+
+    def _setBody(self, body):
+        raise DocumentError("PrivateComputeDocumentXml._setBody should parse the XML...")
+
+    def _getBody(self):
+        return self.private_compute.toDom().toxml()
+
+#######################################################################################################################
+
+class PrivateComputeDocumentJson(Document):
+    def __init__(self, private_compute):
+        Document.__init__(self, private_compute.resource_name, "glue2/teragrid/private_compute.json")
+        self.private_compute = private_compute
+
+    def _setBody(self, body):
+        self.private_compute = PrivateCompute()
+        self.private_compute.fromJson(json.loads(body))
+
+    def _getBody(self):
+        return json.dumps(self.private_compute.toJson(),indent=4)
+
+#######################################################################################################################

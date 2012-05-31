@@ -17,61 +17,59 @@
 ###############################################################################
 
 import commands
+import copy
 import time
-import ConfigParser
+import sys
 
 from ipf.documents.resource_name import *
-from ipf.engine import StepEngine
 from ipf.step import Step
 
 #######################################################################################################################
 
 class PlatformStep(Step):
-    def __init__(self):
-        Step.__init__(self)
+    name = "teragrid/platform"
+    description = "produces a platform name using tgwhatami"
+    time_out = 5
+    requires_types = ["ipf/resource_name.txt"]
+    produces_types = ["teragrid/platform.txt",
+                      "teragrid/platform.json",
+                      "teragrid/platform.xml"]
+    accepts_params = copy.copy(Step.accepts_params)
+    accepts_params["tgwhatami"] = "path to the tgwhatami program (default 'tgwhatami')"
+    accepts_params["platform"] = "hard coded name of the TeraGrid platform (optional)"
 
-        self.name = "teragrid/platform"
-        self.description = "produces a platform name using tgwhatami"
-        self.time_out = 5
-        self.requires_types = ["ipf/resource_name.txt"]
-        self.produces_types = ["teragrid/platform.txt",
-                               "teragrid/platform.json",
-                               "teragrid/platform.xml"]
-        self.resource_name = None
-
-    def input(self, document):
-        if document.type == "ipf/resource_name.txt":
-            self.resource_name = document.body.rstrip()
+    def __init__(self, params):
+        Step.__init__(self,params)
 
     def run(self):
-        self.info("waiting for ipf/resource_name.txt")
-        while self.resource_name == None:
-            time.sleep(0.25)
+        rn_doc = self._getInput("ipf/resource_name.txt")
 
         try:
-            platform = self.engine.config.get("teragrid","platform")
-        except ConfigParser.Error:
+            platform = self.params["platform"]
+        except KeyError:
             try:
-                tg_whatami = self.engine.config.get("teragrid","tgwhatami")
-            except ConfigParser.Error:
+                tg_whatami = self.params["tgwhatami"]
+            except KeyError:
                 tg_whatami = "tgwhatami"
             (status, output) = commands.getstatusoutput(tg_whatami)
             if status != 0:
-                raise StepError("failed to execute %s" % tg_whatami)
+                self.error("failed to execute %s" % tg_whatami)
+                sys.exit(1)
             platform = output
 
         if "teragrid/platform.txt" in self.requested_types:
-            self.engine.output(self,PlatformDocumentTxt(self.resource_name,platform))
+            self.output_queue.put(PlatformDocumentTxt(rn_doc.body,platform))
         if "teragrid/platform.json" in self.requested_types:
-            self.engine.output(self,PlatformDocumentJson(self.resource_name,platform))
+            self.output_queue.put(PlatformDocumentJson(rn_doc.body,platform))
         if "teragrid/platform.xml" in self.requested_types:
-            self.engine.output(self,PlatformDocumentXml(self.resource_name,platform))
+            self.output_queue.put(PlatformDocumentXml(rn_doc.body,platform))
 
 #######################################################################################################################
 
 class PlatformDocumentTxt(Document):
     def __init__(self, resource_name, platform):
         Document.__init__(self, resource_name, "teragrid/platform.txt")
+        self.platform = platform
         self.body = "%s\n" % platform
 
 #######################################################################################################################
@@ -79,7 +77,7 @@ class PlatformDocumentTxt(Document):
 class PlatformDocumentJson(Document):
     def __init__(self, resource_name, platform):
         Document.__init__(self, resource_name, "teragrid/platform.json")
-        self.type = "teragrid/platform.json"
+        self.platform = platform
         self.body = "{platform: \"%s\"}\n" % platform
 
 #######################################################################################################################
@@ -87,9 +85,7 @@ class PlatformDocumentJson(Document):
 class PlatformDocumentXml(Document):
     def __init__(self, resource_name, platform):
         Document.__init__(self, resource_name, "teragrid/platform.xml")
+        self.platform = platform
         self.body = "<Platform>%s</Platform>\n" % platform
 
 #######################################################################################################################
-
-if __name__ == "__main__":
-    StepEngine(PlatformStep())

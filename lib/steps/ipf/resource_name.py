@@ -16,41 +16,56 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
+import copy
 import socket
-import ConfigParser
 
-from ipf.documents.resource_name import *
-from ipf.engine import StepEngine
-import ipf.step
+from ipf.document import Document
+from ipf.step import Step
 
 #######################################################################################################################
 
-class HostNameStep(ipf.step.Step):
-    def __init__(self):
-        ipf.step.Step.__init__(self)
+class ResourceNameStep(Step):
+    name = "ipf/hostname"
+    description = "produces a resource name document using the fully qualified domain name of the host"
+    time_out = 5
+    produces_types = ["ipf/resource_name.txt",
+                      "ipf/resource_name.json",
+                      "ipf/resource_name.xml"]
+    accepts_params = copy.copy(Step.accepts_params)
+    accepts_params["hostname"] = "a hard coded host name"
 
-        self.name = "ipf/hostname"
-        self.description = "produces a resource name document using the fully qualified domain name of the host"
-        self.time_out = 5
-        self.requires_types = []
-        self.produces_types = ["ipf/resource_name.txt",
-                               "ipf/resource_name.json",
-                               "ipf/resource_name.xml"]
+    def __init__(self, params):
+        Step.__init__(self,params)
 
     def run(self):
         try:
-            host_name = self.engine.config.get("default","hostname")
-        except ConfigParser.NoSectionError:
+            host_name = self.accepts_params["hostname"]
+        except KeyError:
             host_name = socket.getfqdn()
 
         if "ipf/resource_name.txt" in self.requested_types:
-            self.engine.output(self,ResourceNameDocumentTxt(host_name))
+            self.output_queue.put(ResourceNameDocumentTxt(host_name))
         if "ipf/resource_name.json" in self.requested_types:
-            self.engine.output(self,ResourceNameDocumentJson(host_name))
+            self.output_queue.put(ResourceNameDocumentJson(host_name))
         if "ipf/resource_name.xml" in self.requested_types:
-            self.engine.output(self,ResourceNameDocumentXml(host_name))
+            self.output_queue.put(ResourceNameDocumentXml(host_name))
 
 #######################################################################################################################
 
-if __name__ == "__main__":
-    ipf.step.StepEngine(HostNameStep())
+class ResourceNameDocumentTxt(Document):
+    def __init__(self, resource_name):
+        Document.__init__(self, resource_name, "ipf/resource_name.txt")
+        self.resource_name = resource_name
+        self.body = "%s\n" % resource_name
+
+class ResourceNameDocumentJson(Document):
+    def __init__(self, resource_name):
+        Document.__init__(self, resource_name, "ipf/resource_name.json")
+        self.resource_name = resource_name
+        self.body = "{\"resourceName\": \"%s\"}\n" % resource_name
+
+class ResourceNameDocumentXml(Document):
+    def __init__(self, resource_name):
+        Document.__init__(self, resource_name, "ipf/resource_name.xml")
+        self.resource_name = resource_name
+        self.body = "<ResourceName>%s</ResourceName>\n" % resource_name
