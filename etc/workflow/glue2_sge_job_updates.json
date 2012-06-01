@@ -1,0 +1,15 @@
+{
+  "name": "sge_glue2_job_updates",
+  "period": 0,
+  "steps": [
+    { "name": "teragrid/resource_name" },
+    { "name": "glue2/sge/computing_activity_update" },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["glue2/teragrid/computing_activity.json"],
+        "path": "glue2_job_updates.json"
+      }
+    }
+  ]
+}

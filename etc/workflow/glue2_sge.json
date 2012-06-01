@@ -1,0 +1,64 @@
+{
+  "name": "glue2_sge",
+  "period": 120,
+  "steps": [
+    { "name": "teragrid/resource_name" },
+    { "name": "teragrid/site_name" },
+    { "name": "glue2/teragrid/gram_endpoints",
+      "params": {
+        "core_kit_directory": "/share/apps/teragrid/kits/ctss-core-registration-5.0.0-r1"
+      }
+    },
+    { "name": "glue2/sge/computing_activities" },
+    { "name": "glue2/sge/computing_shares" },
+    { "name": "glue2/sge/computing_service" },
+    { "name": "glue2/sge/execution_environments" },
+    { "name": "glue2/sge/computing_manager" },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["glue2/teragrid/public_compute.json"],
+        "path": "glue2_public.json"
+      }
+    },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["glue2/teragrid/private_compute.json"],
+        "path": "glue2_private.json"
+      }
+    },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["glue2/teragrid/public_compute.xml"],
+        "path": "glue2_public.xml"
+      }
+    },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["glue2/teragrid/private_compute.xml"],
+        "path": "glue2_private.xml"
+      }
+    },
+    {
+      "name": "ipf/publish/amqp",
+      "params": {
+        "requires_types": ["glue2/teragrid/public_compute.json"],
+        "service": ["info1.dyn.teragrid.org","info2.dyn.teragrid.org"],
+	"vhost": "teragrid_public",
+        "exchange": "glue2"
+      }
+    },
+    {
+      "name": "ipf/publish/amqp",
+      "params": {
+        "requires_types": ["glue2/teragrid/private_compute.json"],
+        "service": ["info1.dyn.teragrid.org","info2.dyn.teragrid.org"],
+	"vhost": "teragrid_private",
+        "exchange": "glue2"
+      }
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "glue2_sge",
+  "period": 120,
+  "steps": [
+    { "name": "teragrid/resource_name" },
+    { "name": "teragrid/site_name" },
+    { "name": "glue2/sge/computing_activities" },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["glue2/teragrid/computing_activities.json"],
+        "path": "activities.json"
+      }
+    }
+  ]
+}

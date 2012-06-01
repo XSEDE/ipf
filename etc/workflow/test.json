@@ -1,0 +1,14 @@
+{
+  "name": "test",
+  "period": 120,
+  "steps": [
+    { "name": "teragrid/resource_name" },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["ipf/resource_name.txt"],
+        "path": "resource_name.txt"
+      }
+    }
+  ]
+}
