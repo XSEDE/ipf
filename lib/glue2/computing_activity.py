@@ -84,6 +84,52 @@ class ComputingActivitiesStep(GlueStep):
 
 #######################################################################################################################
 
+class ComputingActivityUpdateStep(GlueStep):
+    name = "glue2/computing_activity_update"
+    description = "produces a document containing an update to a GLUE 2 ComputingActivity"
+    time_out = 30
+    requires_types = ["ipf/resource_name.txt"]
+    produces_types = ["glue2/teragrid/computing_activity.xml",
+                      "glue2/teragrid/computing_activity.json"]
+    accepts_params = copy.copy(GlueStep.accepts_params)
+    accepts_params["hide_job_attribs"] = "a comma-separated list of ComputingActivity attributes to hide (optional)"
+    accepts_params["queues"] = "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown."
+
+    def __init__(self, params):
+        GlueStep.__init__(self,params)
+        self.resource_name = None
+        self.hide_attribs = self._getJobAttribsToHide()
+        
+    def run(self):
+        rn_doc = self._getInput("ipf/resource_name.txt")
+        self.resource_name = rn_doc.resource_name
+        
+        self._run()
+
+    def output(self, activity):
+        if "glue2/teragrid/computing_activity.xml" in self.requested_types:
+            self.debug("sending output glue2/teragrid/computing_activity.xml")
+            self.output_queue.put(ComputingActivityDocumentXml(self.resource_name,activity,self.hide_attribs))
+        if "glue2/teragrid/computing_activity.json" in self.requested_types:
+            self.debug("sending output glue2/teragrid/computing_activity.json")
+            self.output_queue.put(ComputingActivityDocumentJson(self.resource_name,activity,self.hide_attribs))
+
+    def _run(self):
+        self.error("ComputingActivityUpdateStep._run not overriden")
+        raise StepError("ComputingActivityUpdateStep._run not overriden")
+
+    def _getJobAttribsToHide(self):
+        hide = {}
+        try:
+            hideStr = self.params["hide_job_attribs"]
+            for name in hideStr.split():
+                hide[name] = True
+        except KeyError:
+            pass
+        return hide
+
+#######################################################################################################################
+
 class ComputingActivitiesDocumentXml(Document):
     def __init__(self, resource_name, activities, hide):
         Document.__init__(self, resource_name, "glue2/teragrid/computing_activities.xml")
@@ -99,8 +145,8 @@ class ComputingActivitiesDocumentXml(Document):
         for activity in self.activities:
             adoc = activity.toDom(self.hide)
             doc.documentElement.appendChild(adoc.documentElement.firstChild)
-        #return doc.toxml()
-        return doc.toprettyxml()
+        return doc.toxml()
+        #return doc.toprettyxml()
 
 #######################################################################################################################
 
@@ -145,7 +191,7 @@ class ComputingActivityDocumentJson(Document):
         raise DocumentError("ComputingActivityDocumentJson._setBody should parse the JSON...")
 
     def _getBody(self):
-        return json.dumps(self.activity.toJson(self.hide))
+        return json.dumps(self.activity.toJson(self.hide),sort_keys=True,indent=4)
 
 #######################################################################################################################
     

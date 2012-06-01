@@ -19,6 +19,7 @@
 import commands
 import copy
 import datetime
+import os
 import re
 import xml.sax
 import xml.sax.handler
@@ -27,7 +28,7 @@ from ipf.error import StepError
 
 from glue2.computing_activity import *
 
-##############################################################################################################
+#######################################################################################################################
 
 class SgeComputingActivitiesStep(ComputingActivitiesStep):
     name = "glue2/sge/computing_activities"
@@ -139,14 +140,14 @@ class SgeComputingActivitiesStep(ComputingActivitiesStep):
                 elif ua_name == "end_time":
                     cur_job.ComputingManagerEndTime = epochToDateTime(float(m.group(1)),localtzoffset())
 
-##############################################################################################################
+#######################################################################################################################
 
         # this indicates that SGE should reserve resources for this job (and sorta backfill around it)
         #if line.startswith("reserve:"):
         #if line.split()[1] == "y":
         #self.Extension["SgeReserve"] = "yes"
 
-##############################################################################################################
+#######################################################################################################################
 
 class JobsUHandler(xml.sax.handler.ContentHandler):
 
@@ -232,7 +233,7 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
         # all of the text for an element may not come at once
         self.text = self.text + ch
         
-##############################################################################################################
+#######################################################################################################################
 
 class JobsJHandler(xml.sax.handler.ContentHandler):
 
@@ -301,7 +302,7 @@ class JobsJHandler(xml.sax.handler.ContentHandler):
     def characters(self, ch):
         self.text = self.text + ch
 
-##############################################################################################################
+#######################################################################################################################
 
 def _getDateTime(dtStr):
     # Example: 2010-08-04T14:01:54
@@ -321,4 +322,169 @@ def _getDateTime(dtStr):
                              second=second,
                              tzinfo=localtzoffset())
 
-##############################################################################################################
+#######################################################################################################################
+
+
+class SgeComputingActivityUpdateStep(ComputingActivityUpdateStep):
+    name = "glue2/sge/computing_activity_update"
+    accepts_params = copy.copy(ComputingActivityUpdateStep.accepts_params)
+    accepts_params["reporting_file"] = "the path to the SGE reporting file (optional)"
+
+    def __init__(self, params):
+        ComputingActivityUpdateStep.__init__(self,params)
+
+    def _run(self):
+        self.info("running")
+
+        try:
+            reporting_filename = self.params["reporting_file"]
+        except KeyError:
+            try:
+                reporting_filename = os.path.join(os.environ["SGE_ROOT"],"default","common","reporting")
+            except KeyError:
+                msg = "no reporting_file specified and the SGE_ROOT environment variable is not set"
+                self.error(msg)
+                raise StepError(msg)
+
+        try:
+            file = open(reporting_filename,"r")
+        except IOError:
+            msg = "could not open SGE reporting file %s" % reporting_filename
+            self.error(msg)
+            raise StepError(msg)
+
+        file.seek(0,2)
+        while True:
+            where = file.tell()
+            line = file.readline()
+            if not line:
+                time.sleep(1)
+                file.seek(where)
+            else:
+                self.handleEntry(line)
+
+    def handleEntry(self, line):
+        if line.startswith("#"):
+            return
+
+        toks = line.split(":")
+
+        if toks[1] == "new_job":
+            #self.handleNewJob(toks)
+            pass # there is a job_log for every new job, so ignore these
+        elif toks[1] == "job_log":
+            self.handleJobLog(toks)
+        elif toks[1] == "queue":
+            pass # ignore
+        elif toks[1] == "acct":
+            # accounting records have job configuration information, but are generated when the job completes
+            pass
+        else:
+            self.info("unknown type: %s" % toks[1])
+
+    def handleNewJob(self, toks):
+        # log time
+        # new_job
+        # submit time
+        # job id
+        # dunno (always -1)
+        # dunno (always NONE)
+        # job name?
+        # user name
+        # group name
+        # queue
+        # department (ignore)
+        # charge account
+        # dunno (always 1024)
+
+        activity = ComputingActivity()
+        activity.State = "teragrid:pending"
+        activity.ComputingManagerSubmissionTime = datetime.datetime.fromtimestamp(float(toks[2]),tzoffset(0))
+        activity.LocalIDFromManager = toks[3]
+        activity.Name = toks[6]
+        activity.LocalOwner = toks[7]
+        # ignore group
+        activity.Queue = toks[9]
+        activity.ComputingShare = ["http://"+self.resource_name+"/glue2/ComputingShare/"+activity.Queue]
+        activity.UserDomain = toks[11]
+
+        if self._includeQueue(activity.Queue):
+            self.output(activity)
+
+#1329699034:new_job:1329699034:2373873:-1:NONE:myjob:hx634:G-800513:development:defaultdepartment:TACC-PCSE:1024
+
+#1329699147:job_log:1329699147:sent:2373873:0:NONE:t:master:sge2.ranger.tacc.utexas.edu:0:1024:1329699034:myjob:hx634:G-800513:development:defaultdepartment:TACC-PCSE:sent to execd
+
+#1338574037:job_log:1338574037:finished:2599414:0:NONE:r:master:sge2.ranger.tacc.utexas.edu:0:1024:1338573943:schmIin_de:mthapa01:G-800583:development:defaultdepartment:LES_Liu_Lu_UTA:job waits for schedds deletion
+
+
+    def handleJobLog(self, toks):
+        # log time
+        # job_log
+        # event time ?
+        # type
+        # job id
+        # dunno (always 0)
+        # dunno (always NONE)
+        # dunno (r, t, T ...)
+        # source? (master, execution daemon, scheduler)
+        # dunno (sge2.ranger.tacc.utexas.edu)
+        # dunno (0)
+        # dunno (always 1024)
+        # time of some kind
+        # job name?
+        # user name
+        # group name
+        # queue
+        # department (ignore)
+        # charge account
+        # comment
+
+        if len(toks) != 20:
+            logger.warning("Expected 20 tokens in log entry, but found %d. Ignoring." % len(toks))
+            return
+
+        if toks[8] == "execution daemon":
+            # these are redundant to what master logs, so ignore
+            return
+
+        activity = ComputingActivity()
+
+        event_dt = datetime.datetime.fromtimestamp(float(toks[2]),tzoffset(0))
+        activity.LocalIDFromManager = toks[4]
+        activity.Name = toks[13]
+        activity.LocalOwner = toks[14]
+        # ignore group
+        activity.Queue = toks[16]
+        activity.ComputingShare = ["http://"+self.resource_name+"/glue2/ComputingShare/"+activity.Queue]
+        activity.UserDomain = toks[18]
+
+        if toks[3] == "pending":
+            activity.State = "teragrid:pending"
+            activity.ComputingManagerSubmissionTime = event_dt
+        elif toks[3] == "sent":
+            # sent to execd - just ignore
+            return
+        elif toks[3] == "delivered":
+            # job received by execd - job started
+            activity.State = "teragrid:running"
+            activity.StartTime = event_dt
+        elif toks[3] == "finished":
+            activity.State = "teragrid:finished"
+            activity.ComputingManagerEndTime = event_dt
+        elif toks[3] == "deleted":
+            # scheduler deleting the job and a finished appears first, so ignore
+            return
+        elif toks[3] == "error":
+            self.info("ignoring error state for job %s" % activity.LocalIDFromManager)
+            return
+        elif toks[3] == "restart":
+            activity.State = "teragrid:running"
+            activity.StartTime = event_dt
+        else:
+            self.warning("unknown job log of type %s" % toks[3])
+
+        if self._includeQueue(activity.Queue):
+            self.output(activity)
+
+#######################################################################################################################
