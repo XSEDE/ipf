@@ -12,7 +12,7 @@
     { "name": "glue2/sge/computing_activities" },
     { "name": "glue2/sge/computing_shares" },
     { "name": "glue2/sge/computing_service" },
-    { "name": "glue2/sge/execution_environments" },
+    { "name": "glue2/teragrid/sge/execution_environments" },
     { "name": "glue2/sge/computing_manager" },
     {
       "name": "ipf/publish/file",
