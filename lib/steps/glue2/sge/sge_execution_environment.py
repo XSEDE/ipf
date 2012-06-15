@@ -17,7 +17,6 @@
 ###############################################################################
 
 import commands
-import copy
 import datetime
 import os
 import re
@@ -25,22 +24,18 @@ import xml.sax
 import xml.sax.handler
 
 from ipf.error import StepError
-
 from glue2.execution_environment import *
-
-#######################################################################################################################
-
-# the Queues argument is defined in ComputingActivity
+from glue2.teragrid.platform import PlatformMixIn
 
 #######################################################################################################################
 
 class SgeExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
-    name = "glue2/sge/execution_environments"
-    accepts_params = copy.copy(ExecutionEnvironmentsStep.accepts_params)
-    accepts_params["qhost"] = "the path to the SGE qhost program (default 'qhost')"
 
     def __init__(self, params):
         ExecutionEnvironmentsStep.__init__(self,params)
+
+        self.name = "glue2/sge/execution_environments"
+        self.accepts_params["qhost"] = "the path to the SGE qhost program (default 'qhost')"
 
     def _run(self):
         try:
@@ -63,6 +58,20 @@ class SgeExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
             if self._goodHost(host):
                 hosts.append(host)
 
+        return hosts
+
+#######################################################################################################################
+
+class TeraGridSgeExecutionEnvironmentsStep(SgeExecutionEnvironmentsStep, PlatformMixIn):
+
+    def __init__(self, params):
+        SgeExecutionEnvironmentsStep.__init__(self,params)
+        PlatformMixIn.__init__(self)
+        self.name = "glue2/teragrid/sge/execution_environments"
+
+    def _run(self):
+        hosts = SgeExecutionEnvironmentsStep._run(self)
+        self.addTeraGridPlatform(hosts)
         return hosts
 
 #######################################################################################################################

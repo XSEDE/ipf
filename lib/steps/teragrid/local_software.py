@@ -17,7 +17,6 @@
 ###############################################################################
 
 import commands
-import copy
 import logging
 import os
 import sys
@@ -28,18 +27,18 @@ from ipf.step import Step
 ##############################################################################################################
 
 class LocalSoftwareStep(Step):
-    name = "teragrid.local_software"
-    description = "produces a document describing what software is installed on this resource"
-    time_out = 15
-    requires_types = ["ipf/resource_name.txt"]
-    produces_types = ["teragrid/local_software.xml"]
-    accepts_params = copy.copy(Step.accepts_params)
-    accepts_params["mechanism"] = "'software_catalog', 'script', or 'file'"
-    accepts_params["script"] = "the path to the script to use for the script mechanism"
-    accepts_params["file"] = "the path to the file to read for the file mechanism"
 
     def __init__(self, params):
         Step.__init__(self,params)
+
+        self.name = "teragrid.local_software"
+        self.description = "produces a document describing what software is installed on this resource"
+        self.time_out = 15
+        self.requires_types = ["ipf/resource_name.txt"]
+        self.produces_types = ["teragrid/local_software.xml"]
+        self.accepts_params["mechanism"] = "'software_catalog', 'script', or 'file'"
+        self.accepts_params["script"] = "the path to the script to use for the script mechanism"
+        self.accepts_params["file"] = "the path to the file to read for the file mechanism"
 
     def run(self):
         rn_doc = self._getInput("ipf/resource_name.txt")

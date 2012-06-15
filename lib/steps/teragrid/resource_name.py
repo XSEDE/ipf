@@ -17,28 +17,21 @@
 ###############################################################################
 
 import commands
-import copy
 import socket
 import sys
 
 from steps.ipf.resource_name import *
-import ipf.step
 
 #######################################################################################################################
 
-class ResourceNameStep(ipf.step.Step):
-    name = "teragrid/resource_name"
-    description = "produces a resource name document using tgwhereami"
-    time_out = 5
-    produces_types = ["ipf/resource_name.txt",
-                      "ipf/resource_name.json",
-                      "ipf/resource_name.xml"]
-    accepts_params = copy.copy(ipf.step.Step.accepts_params)
-    accepts_params["tgwheremi"] = "path to the tgwhereami program (default 'tgwhereami')"
-    accepts_params["resource_name"] = "hard coded name of the TeraGrid resource name (optional)"
+class TeraGridResourceNameStep(ResourceNameStep):
 
     def __init__(self, params):
-        ipf.step.Step.__init__(self,params)
+        ResourceNameStep.__init__(self,params)
+
+        self.name = "teragrid/resource_name"
+        self.description = "produces a resource name document using tgwhereami"
+        self.accepts_params["tgwheremi"] = "path to the tgwhereami program (default 'tgwhereami')"
 
     def run(self):
         try:

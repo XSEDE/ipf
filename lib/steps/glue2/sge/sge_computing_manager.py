@@ -18,13 +18,14 @@
 
 from glue2.computing_manager import *
 
-##############################################################################################################
+#######################################################################################################################
 
 class SgeComputingManagerStep(ComputingManagerStep):
-    name = "glue2/sge/computing_manager"
 
     def __init__(self, params):
         ComputingManagerStep.__init__(self,params)
+
+        self.name = "glue2/sge/computing_manager"
 
     def _run(self):
         manager = ComputingManager()
@@ -35,4 +36,4 @@ class SgeComputingManagerStep(ComputingManagerStep):
 
         return manager
 
-##############################################################################################################
+#######################################################################################################################

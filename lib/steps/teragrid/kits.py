@@ -17,7 +17,6 @@
 ###############################################################################
 
 import commands
-import copy
 import os
 import sys
 import time
@@ -29,16 +28,15 @@ from ipf.step import Step
 
 class KitsStep(Step):
 
-    name = "teragrid.kits"
-    description = "produces a document describing what TeraGrid kits are available on the resource"
-    time_out = 10
-    requires_types = ["ipf/resource_name.txt"]
-    produces_types = ["teragrid/kits.xml"]
-    accepts_params = copy.copy(Step.accepts_params)
-    accepts_params["core_kit_directory"] = "the path to the TeraGrid core kit installation"
-
     def __init__(self, params):
         Step.__init__(self,params)
+
+        self.name = "teragrid.kits"
+        self.description = "produces a document describing what TeraGrid kits are available on the resource"
+        self.time_out = 10
+        self.requires_types = ["ipf/resource_name.txt"]
+        self.produces_types = ["teragrid/kits.xml"]
+        self.accepts_params["core_kit_directory"] = "the path to the TeraGrid core kit installation"
 
     def run(self):
         rn_doc = self._getInput("ipf/resource_name.txt")

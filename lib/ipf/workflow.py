@@ -48,16 +48,12 @@ class Workflow(object):
             #params["id"] = step_doc.get("id")
             #params["requires_types"] = step_doc.get("requires_types",[])
 
-            step = None
             if "name" not in step_doc:
                 raise WorkflowError("workflow step does not specify the 'name' of the step to run")
-            for kstep in known_steps:
-                if kstep.name == step_doc["name"]:
-                    # if any info in the config applies to the step, add it to params ?
-                    step = kstep(params)
-                    break
-
-            if step == None:
+            try:
+                # if any info in the config applies to the step, add it to params ?
+                step = known_steps[step_doc["name"]](params)
+            except KeyError:
                 raise WorkflowError("no step is known with name '%s'" % step_doc["name"])
 
             self.steps.append(step)
@@ -66,8 +62,8 @@ class Workflow(object):
 
     def _inferDetails(self, known_steps):
         known_types = {}
-        for kstep in known_steps:
-            for type in kstep.produces_types:
+        for kstep in known_steps.values():
+            for type in kstep({}).produces_types:
                 if type not in known_types:
                     known_types[type] = []
                 known_types[type].append(kstep)
@@ -76,15 +72,17 @@ class Workflow(object):
         self._connectSteps()
 
     def _addMissingSteps(self, known_types):
-        ptypes = set()
-        rtypes = set()
+        ptypes = {}
+        rtypes = {}
         for step in self.steps:
             for ptype in step.produces_types:
-                if ptype in ptypes:
-                    raise WorkflowError("type %s produced by two or more steps in the workflow")
-                ptypes.add(ptype)
+                if ptype not in ptypes:
+                    ptypes[ptype] = []
+                ptypes[ptype].append(step)
             for rtype in step.requires_types:
-                rtypes.add(rtype)
+                if rtype not in rtypes:
+                    rtypes[rtype] = []
+                rtypes[rtype].append(step)
 
         added_step = True
         while added_step:
@@ -93,18 +91,20 @@ class Workflow(object):
                 if rtype in ptypes:
                     continue
                 if rtype not in known_types:
-                    raise WorkflowError("no step is known that produces type '%s'" % rtype)
+                    raise WorkflowError("no known step that produces type '%s'" % rtype)
                 if len(known_types[rtype]) > 1:
                     raise WorkflowError("more than one step produces type '%s' - can't infer which to use" % rtype)
                 new_step = known_types[rtype][0]({})
                 self.steps.append(new_step)
                 logger.info("adding step %s" % new_step.name)
                 for ptype in new_step.produces_types:
-                    if ptype in ptypes:
-                        raise WorkflowError("type %s produced by two or more steps in the workflow")
-                    ptypes.add(ptype)
+                    if ptype not in ptypes:
+                        ptypes[ptype] = []
+                    ptypes[ptype].append(new_step)
                 for rtype in new_step.requires_types:
-                    rtypes.add(rtype)
+                    if not rtype in rtypes:
+                        rtypes[rtype] = []
+                    rtypes[rtype].append(new_step)
                 added_step = True
                 break
 
@@ -124,13 +124,30 @@ class Workflow(object):
                 if rtype not in rtypes:
                     rtypes[rtype] = []
                 rtypes[rtype].append(step)
+
+        step_map = {}
+        for step in self.steps:
+            step_map[step.id] = step
+
         for step in self.steps:
             step.outputs = {}
-            for ptype in step.produces_types:
-                if ptype in rtypes:
-                    step.outputs[ptype] = rtypes[ptype]
+            if step.output_ids is not None:
+                for type in step.output_ids:
+                    step.outputs[type] = []
+                    for id in step.output_ids[type]:
+                        try:
+                            step.outputs[type].append(step_map[id])
+                        except KeyError:
+                            raise WorkflowError("step %s wants to send output to unknown step %s" % (step.id,id))
+            else:
+                for ptype in step.produces_types:
+                    if ptype in rtypes:
+                        step.outputs[ptype] = rtypes[ptype]
             step.requested_types = []
             for type in step.outputs:
                 step.requested_types.append(type)
+
+    def _checkConnections(self):
+        pass
 
 #######################################################################################################################

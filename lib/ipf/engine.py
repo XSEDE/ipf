@@ -63,43 +63,36 @@ class WorkflowEngine(object):
         no_more = set()
         while self._anyAlive(workflow.steps):
             #print("  still running")
-            self._handleLogging(workflow.steps)
             self._handleOutputs(workflow.steps)
             self._sendNoMoreInputs(workflow.steps,no_more)
             time.sleep(1.0)  # reduce this after testing
         self._handleOutputs(workflow.steps)  # in case any are hanging around
 
+        succeeded = True
         for step in workflow.steps:
-            if step.exitcode == 0:
-                logger.info("  %s succeeded" % step.id)
-            else:
-                logger.info("  %s failed" % step.id)
+            if step.exitcode != 0:
+                succeeded = False
 
+        if succeeded:
+            logger.info("workflow succeeded")
+            for step in workflow.steps:
+                if step.exitcode == 0:
+                    logger.debug("  %10s succeeded (%s)" % (step.id,step.name))
+                else:
+                    logger.debug("  %10s failed    (%s)" % (step.id,step.name))
+        else:
+            logger.error("workflow failed")
+            for step in workflow.steps:
+                if step.exitcode == 0:
+                    logger.info("  %10s succeeded (%s)" % (step.id,step.name))
+                else:
+                    logger.error("  %10s failed    (%s)" % (step.id,step.name))
+                    
     def _anyAlive(self, steps):
         for step in steps:
             if step.is_alive():
                 return True
         return False
-
-    def _handleLogging(self, steps):
-        for step in steps:
-            try:
-                while(True):
-                    [source,step_id,level,message] = step.logging_queue.get(False)
-                    logger = logging.getLogger(source)
-                    if level == "ERROR":
-                        logger.error("%s %s",step_id,message)
-                    elif level == "WARNING":
-                        logger.warning("%s %s",step_id,message)
-                    elif level == "INFO":
-                        logger.info("%s %s",step_id,message)
-                    elif level == "DEBUG":
-                        logger.debug("%s %s",step_id,message)
-                    else:
-                        logger.log(level,"%s %s",step_id,message)
-                    #print("%s %s %s" % (level,id,message))
-            except Queue.Empty:
-                pass    # it's ok
 
     def _handleOutputs(self, steps):
         for step in steps:
@@ -149,7 +142,6 @@ class WorkflowEngine(object):
         path = os.path.join(ipf_home,"lib","steps")
         mod_path = "steps"
         modules = self._readModules(path, mod_path)
-        #modules = self._readModules("/share/home/00415/wsmith/glue2/lib/steps/teragrid", "steps.teragrid")
 
         for module in modules:
             logger.debug("loading %s",module)
@@ -158,11 +150,15 @@ class WorkflowEngine(object):
             except ImportError:
                 traceback.print_exc()
 
-        classes = []
+        classes = {}
         stack = Step.__subclasses__()
         while len(stack) > 0:
             cls = stack.pop(0)
-            classes.append(cls)
+            step = cls({})
+            if step.name in classes:
+                logger.warn("multiple step classes with name %s - ignoring all but first" % step.name)
+            else:
+                classes[step.name] = cls
             stack.extend(cls.__subclasses__())
 
         return classes

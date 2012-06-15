@@ -30,17 +30,19 @@ from glue2.execution_environment import ExecutionEnvironment
 #######################################################################################################################
 
 class ComputingManagerStep(GlueStep):
-    name = "glue2/computing_manager"
-    description = "This step provides documents in the GLUE 2 ComputingManager schema. For a batch scheduled system, this is typically that scheduler."
-    time_out = 10
-    requires_types = ["ipf/resource_name.txt",
-                      "glue2/teragrid/execution_environments.json",
-                      "glue2/teragrid/computing_shares.json"]
-    produces_types = ["glue2/teragrid/computing_manager.xml",
-                      "glue2/teragrid/computing_manager.json"]
 
     def __init__(self, params):
         GlueStep.__init__(self,params)
+
+        self.name = "glue2/computing_manager"
+        self.description = "This step provides documents in the GLUE 2 ComputingManager schema. For a batch scheduled system, this is typically that scheduler."
+        self.time_out = 10
+        self.requires_types = ["ipf/resource_name.txt",
+                               "glue2/teragrid/execution_environments.json",
+                               "glue2/teragrid/computing_shares.json"]
+        self.produces_types = ["glue2/teragrid/computing_manager.xml",
+                               "glue2/teragrid/computing_manager.json"]
+
         self.resource_name = None
         self.exec_envs = None
         self.shares = None

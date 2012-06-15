@@ -16,7 +16,6 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import copy
 import os
 import sys
 import time
@@ -26,18 +25,17 @@ from ipf.step import Step
 #######################################################################################################################
 
 class FilePublishStep(Step):
-    name = "ipf/publish/file"
-    description = "publishes documents by writing them to a file"
-    time_out = 5
-    accepts_params = copy.copy(Step.accepts_params)
-    accepts_params["requires_types"] = "The type of documents that will be published"
-    accepts_params["path"] = "Path to the file to write. If the path is relative, it is relative to $IPF_HOME/var/."
 
     def __init__(self, params):
         Step.__init__(self,params)
 
+        self.name = "ipf/publish/file"
+        self.description = "publishes documents by writing them to a file"
+        self.time_out = 5
+        self.accepts_params["requires_types"] = "The type of documents that will be published"
+        self.accepts_params["path"] = "Path to the file to write. If the path is relative, it is relative to $IPF_HOME/var/."
+
         if "requires_types" in params:
-            self.requires_types = copy.copy(FilePublishStep.requires_types)
             self.requires_types.extend(params["requires_types"])
 
     def run(self):
@@ -50,6 +48,7 @@ class FilePublishStep(Step):
             else:
                 self.info("writing document of type %s" % doc.type)
                 file.write(doc.body)
+                file.flush()
         file.close()
 
     def _getPath(self):

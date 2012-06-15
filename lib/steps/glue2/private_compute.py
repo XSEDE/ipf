@@ -27,17 +27,18 @@ from ipf.step import Step
 #######################################################################################################################
 
 class PrivateComputeStep(Step):
-    name = "glue2/teragrid/private_compute"
-    description = "creates a single document containing all sensitive compute-related information"
-    time_out = 5
-    requires_types = ["ipf/resource_name.txt",
-                      "ipf/site_name.txt",
-                      "glue2/teragrid/computing_activities.json"]
-    produces_types = ["glue2/teragrid/private_compute.xml",
-                      "glue2/teragrid/private_compute.json"]
 
     def __init__(self, params):
         Step.__init__(self,params)
+
+        self.name = "glue2/teragrid/private_compute"
+        self.description = "creates a single document containing all sensitive compute-related information"
+        self.time_out = 5
+        self.requires_types = ["ipf/resource_name.txt",
+                               "ipf/site_name.txt",
+                               "glue2/teragrid/computing_activities.json"]
+        self.produces_types = ["glue2/teragrid/private_compute.xml",
+                               "glue2/teragrid/private_compute.json"]
 
     def run(self):
         rn_doc = self._getInput("ipf/resource_name.txt")

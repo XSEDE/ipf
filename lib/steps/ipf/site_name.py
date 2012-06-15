@@ -16,44 +16,39 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import copy
 import socket
 import sys
 
 from ipf.document import Document
+from ipf.error import StepError
 from ipf.step import Step
 
 #######################################################################################################################
 
 class SiteNameStep(Step):
-    name = "ipf/hostname"
-    description = "produces a site name document using the fully qualified domain name of the host"
-    time_out = 5
-    produces_types = ["ipf/site_name.txt",
-                      "ipf/site_name.json",
-                      "ipf/site_name.xml"]
-    accepts_params = copy.copy(Step.accepts_params)
-    accepts_params["sitename"] = "a hard coded site name (optional)"
-    accepts_params["hostname"] = "a hard coded host name (optional)"
 
     def __init__(self, params):
         Step.__init__(self,params)
 
+        self.name = "ipf/site_name"
+        self.description = "produces a site name document using the fully qualified domain name of the host"
+        self.time_out = 5
+        self.produces_types = ["ipf/site_name.txt",
+                               "ipf/site_name.json",
+                               "ipf/site_name.xml"]
+        self.accepts_params["site_name"] = "a hard coded site name (optional)"
+
     def run(self):
         try:
-            site_name = self.params["sitename"]
+            site_name = self.params["site_name"]
         except KeyError:
-            try:
-                host_name = self.params["hostname"]
-            except KeyError:
-                host_name = socket.getfqdn()
+            host_name = socket.getfqdn()
             # assumes that the site name is all except first component
             try:
                 index = host_name.index(".") + 1
             except ValueError:
                 self.error("host name does not appear to be fully qualified")
-                sys.exit(1)
-
+                raise StepError("host name does not appear to be fully qualified")
             site_name = host_name[index:]
 
         if "ipf/site_name.txt" in self.requested_types:

@@ -22,7 +22,7 @@ from xml.dom.minidom import getDOMImplementation
 
 from ipf.document import Document
 from ipf.dt import *
-from ipf.error import StepError
+from ipf.error import NoMoreInputsError,StepError
 
 from glue2.computing_share import ComputingShare
 from glue2.computing_endpoint import ComputingEndpoint
@@ -31,17 +31,19 @@ from glue2.step import GlueStep
 #######################################################################################################################
 
 class ComputingServiceStep(GlueStep):
-    name = "glue2/computing_service"
-    description = "This step provides a GLUE 2 ComputingService document. It is an aggregation mechanism"
-    time_out = 10
-    requires_types = ["ipf/resource_name.txt",
-                      "glue2/teragrid/computing_shares.json",
-                      "glue2/teragrid/computing_endpoints.json"]
-    produces_types = ["glue2/teragrid/computing_service.xml",
-                      "glue2/teragrid/computing_service.json"]
 
     def __init__(self, params):
         GlueStep.__init__(self,params)
+
+        self.name = "glue2/computing_service"
+        self.description = "This step provides a GLUE 2 ComputingService document. It is an aggregation mechanism"
+        self.time_out = 10
+        self.requires_types = ["ipf/resource_name.txt",
+                               "glue2/teragrid/computing_shares.json",
+                               "glue2/teragrid/computing_endpoint.json"]
+        self.produces_types = ["glue2/teragrid/computing_service.xml",
+                               "glue2/teragrid/computing_service.json"]
+
         self.resource_name = None
         self.shares = None
         self.endpoints = None
@@ -51,8 +53,15 @@ class ComputingServiceStep(GlueStep):
         self.resource_name = rn_doc.resource_name
         shares_doc = self._getInput("glue2/teragrid/computing_shares.json")
         self.shares = shares_doc.shares
-        endpoints_doc = self._getInput("glue2/teragrid/computing_endpoints.json")
-        self.endpoints = endpoints_doc.endpoints
+        #endpoints_doc = self._getInput("glue2/teragrid/computing_endpoints.json")
+        #self.endpoints = endpoints_doc.endpoints
+        self.endpoints = []
+        try:
+            while True:
+                endpoint_doc = self._getInput("glue2/teragrid/computing_endpoint.json")
+                self.endpoints.append(endpoint_doc.endpoint)
+        except NoMoreInputsError:
+            pass
 
         service = self._run()
 

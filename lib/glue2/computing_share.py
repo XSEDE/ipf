@@ -15,7 +15,6 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import copy
 import datetime
 import json
 import time
@@ -31,18 +30,19 @@ from glue2.step import GlueStep
 #######################################################################################################################
 
 class ComputingSharesStep(GlueStep):
-    name = "glue2/computing_shares"
-    description = "produces a document containing one or more GLUE 2 ComputingShare"
-    time_out = 30
-    requires_types = ["ipf/resource_name.txt",
-                      "glue2/teragrid/computing_activities.json"]
-    produces_types = ["glue2/teragrid/computing_shares.xml",
-                      "glue2/teragrid/computing_shares.json"]
-    accepts_params = copy.copy(GlueStep.accepts_params)
-    accepts_params["queues"] = "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown."
 
     def __init__(self, params):
         GlueStep.__init__(self,params)
+
+        self.name = "glue2/computing_shares"
+        self.description = "produces a document containing one or more GLUE 2 ComputingShare"
+        self.time_out = 30
+        self.requires_types = ["ipf/resource_name.txt",
+                               "glue2/teragrid/computing_activities.json"]
+        self.produces_types = ["glue2/teragrid/computing_shares.xml",
+                               "glue2/teragrid/computing_shares.json"]
+        self.accepts_params["queues"] = "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown."
+
         self.resource_name = None
         self.activities = None
         
@@ -56,7 +56,8 @@ class ComputingSharesStep(GlueStep):
 
         for share in shares:
             share.ID = "http://"+self.resource_name+"/glue2/ComputingShare/"+share.MappingQueue
-        self._addActivities(self.activities,shares)
+            share.ComputingService = "http://"+self.resource_name+"/glue2/ComputingService"
+        self._addActivities(shares)
 
         if "glue2/teragrid/computing_shares.xml" in self.requested_types:
             self.debug("sending output glue2/teragrid/computing_shares.xml")
@@ -69,7 +70,7 @@ class ComputingSharesStep(GlueStep):
         self.error("ComputingSharesStep._run not overriden")
         raise StepError("ComputingSharesStep._run not overriden")
 
-    def _addActivities(self, activities, shares):
+    def _addActivities(self, shares):
         shareDict = {}
         for share in shares:
             shareDict[share.Name] = share
@@ -86,7 +87,7 @@ class ComputingSharesStep(GlueStep):
             share.RequestedSlots = 0
             share.computingActivity = []
 
-        for activity in activities:
+        for activity in self.activities:
             #print(str(activity))
             share = shareDict.get(activity.Queue)
             if share == None:
@@ -253,12 +254,11 @@ class ComputingShare(object):
             e = doc.createElement("OtherInfo")
             e.appendChild(doc.createTextNode(info))
             root.appendChild(e)
-        for key in self.Extension.keys():
-            for key in self.Extension.keys():
-                e = doc.createElement("Extension")
-                e.setAttribute("Key",key)
-                e.appendChild(doc.createTextNode(self.Extension[key]))
-                root.appendChild(e)
+        for key in self.Extension:
+            e = doc.createElement("Extension")
+            e.setAttribute("Key",key)
+            e.appendChild(doc.createTextNode(str(self.Extension[key])))
+            root.appendChild(e)
 
         # Share
         if self.Description is not None:
@@ -686,7 +686,7 @@ class ComputingShare(object):
             mstr = mstr+indent+"  <Name>"+self.Name+"</Name>\n"
         for info in self.OtherInfo:
             mstr = mstr+indent+"  <OtherInfo>"+info+"</OtherInfo>\n"
-        for key in self.Extension.keys():
+        for key in self.Extension:
             mstr = mstr+indent+"  <Extension Key='"+key+"'>"+str(self.Extension[key])+"</Extension>\n"
 
         # Share

@@ -16,7 +16,6 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import copy
 import socket
 
 from ipf.document import Document
@@ -25,30 +24,30 @@ from ipf.step import Step
 #######################################################################################################################
 
 class ResourceNameStep(Step):
-    name = "ipf/hostname"
-    description = "produces a resource name document using the fully qualified domain name of the host"
-    time_out = 5
-    produces_types = ["ipf/resource_name.txt",
-                      "ipf/resource_name.json",
-                      "ipf/resource_name.xml"]
-    accepts_params = copy.copy(Step.accepts_params)
-    accepts_params["hostname"] = "a hard coded host name"
 
     def __init__(self, params):
         Step.__init__(self,params)
 
+        self.name = "ipf/resource_name"
+        self.description = "produces a resource name document using the fully qualified domain name of the host"
+        self.time_out = 5
+        self.produces_types = ["ipf/resource_name.txt",
+                               "ipf/resource_name.json",
+                               "ipf/resource_name.xml"]
+        self.accepts_params["resource_name"] = "a hard coded host name"
+
     def run(self):
         try:
-            host_name = self.accepts_params["hostname"]
+            resource_name = self.params["resource_name"]
         except KeyError:
-            host_name = socket.getfqdn()
+            resource_name = socket.getfqdn()
 
         if "ipf/resource_name.txt" in self.requested_types:
-            self.output_queue.put(ResourceNameDocumentTxt(host_name))
+            self.output_queue.put(ResourceNameDocumentTxt(resource_name))
         if "ipf/resource_name.json" in self.requested_types:
-            self.output_queue.put(ResourceNameDocumentJson(host_name))
+            self.output_queue.put(ResourceNameDocumentJson(resource_name))
         if "ipf/resource_name.xml" in self.requested_types:
-            self.output_queue.put(ResourceNameDocumentXml(host_name))
+            self.output_queue.put(ResourceNameDocumentXml(resource_name))
 
 #######################################################################################################################
 

@@ -21,10 +21,11 @@ from glue2.computing_service import *
 #######################################################################################################################
 
 class SgeComputingServiceStep(ComputingServiceStep):
-    name = "glue2/sge/computing_service"
 
     def __init__(self, params):
         ComputingServiceStep.__init__(self,params)
+
+        self.name = "glue2/sge/computing_service"
 
     def _run(self):
         service = ComputingService()
@@ -40,4 +41,4 @@ class SgeComputingServiceStep(ComputingServiceStep):
 
         return service
         
-##############################################################################################################
+#######################################################################################################################

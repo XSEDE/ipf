@@ -17,7 +17,6 @@
 ###############################################################################
 
 import commands
-import copy
 
 from ipf.error import StepError
 
@@ -26,12 +25,12 @@ from glue2.computing_share import *
 #######################################################################################################################
 
 class SgeComputingSharesStep(ComputingSharesStep):
-    name = "glue2/sge/computing_shares"
-    accepts_params = copy.copy(ComputingSharesStep.accepts_params)
-    accepts_params["qconf"] = "the path to the SGE qconf program (default 'qconf')"
 
     def __init__(self, params):
         ComputingSharesStep.__init__(self,params)
+
+        self.name = "glue2/sge/computing_shares"
+        self.accepts_params["qconf"] = "the path to the SGE qconf program (default 'qconf')"
 
     def _run(self):
         try:
@@ -55,7 +54,6 @@ class SgeComputingSharesStep(ComputingSharesStep):
 
     def _getQueue(self, queueString):
         queue = ComputingShare()
-        queue.ComputingService = "http://"+self.resource_name+"/glue2/ComputingService"
 
         lines = queueString.split("\n")
         queueName = None

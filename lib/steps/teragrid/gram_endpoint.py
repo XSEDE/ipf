@@ -17,7 +17,6 @@
 ###############################################################################
 
 import commands
-import copy
 import os
 import re
 import sys
@@ -26,19 +25,17 @@ from glue2.computing_endpoint import *
 
 #######################################################################################################################
 
-class GramEndpointsStep(ComputingEndpointsStep):
-
-    name = "glue2/teragrid/gram_endpoints"
-    description = "create ComputingEndpoints for GRAM by examining the local TeraGrid registration information"
-    accepts_params = copy.copy(ComputingEndpointsStep.accepts_params)
-    accepts_params["core_kit_directory"] = "the path to the TeraGrid core kit installation"
-    accepts_params["ca_certificates_directory"] = "the path to the CA directory (default /etc/grid-security/certificates"
-    accepts_params["host_certificate"] = "the path to the host certificate file (default /etc/grid-security/hostcert.pem)"
-    accepts_params["container_certificate"] = "the path to the GRAM 4 container certificate file (default /etc/grid-security/containercert.pem)"
-    accepts_params["grid-cert-info"] = "the path to the 'grid-cert-info' command (default 'grid-cert-info')"
-
+class GramEndpointStep(ComputingEndpointStep):
     def __init__(self, params):
-        ComputingEndpointsStep.__init__(self,params)
+        ComputingEndpointStep.__init__(self,params)
+
+        self.name = "glue2/teragrid/gram/computing_endpoint"
+        self.description = "create ComputingEndpoints for GRAM by examining the local TeraGrid registration information"
+        self.accepts_params["core_kit_directory"] = "the path to the TeraGrid core kit installation"
+        self.accepts_params["ca_certificates_directory"] = "the path to the CA directory (default /etc/grid-security/certificates"
+        self.accepts_params["host_certificate"] = "the path to the host certificate file (default /etc/grid-security/hostcert.pem)"
+        self.accepts_params["container_certificate"] = "the path to the GRAM 4 container certificate file (default /etc/grid-security/containercert.pem)"
+        self.accepts_params["grid-cert-info"] = "the path to the 'grid-cert-info' command (default 'grid-cert-info')"
 
     def _run(self):
         try:
@@ -129,45 +126,47 @@ class GramEndpointsStep(ComputingEndpointsStep):
         return info
 
     def _createEndpoint(self, reg_info, quality_level):
-        endpoint = GramEndpoint()
+        endpoint = ComputingEndpoint()
+        self.Capability = ["executionmanagement.jobdescription",
+                           "executionmanagement.jobexecution",
+                           "executionmanagement.jobmanager",
+                           ]
+        self.Implementor = "The Globus Alliance"
 
-        ca_dir = "/etc/grid-security/certificates"
         try:
             ca_dir = self.params["ca_certificates_directory"]
         except KeyError:
-            pass
+            ca_dir = "/etc/grid-security/certificates"
         # this is slow - about 1 second per CA file. and there are lots of CA files
         #endpoint.TrustedCA = self._getSubjects(ca_dir)
 
         endpoint.Name = reg_info["Name"]
-        endpoint.ID = "http://"+self.resource_name+"/glue2/ComputingEndpoint/"+endpoint.Name
         endpoint.URL = reg_info["Endpoint"]
 
-        endpoint.ComputingService = "http://"+self.resource_name+"/glue2/ComputingService"
-
-        host_cert_file = "/etc/grid-security/hostcert.pem"
         try:
             host_cert_file = self.params["host_certificate"]
         except KeyError:
-            pass
-        container_cert_file = "/etc/grid-security/containercert.pem"
+            host_cert_file = "/etc/grid-security/hostcert.pem"
         try:
             container_cert_file = self.params["container_certificate"]
         except KeyError:
-            pass
+            container_cert_file = "/etc/grid-security/containercert.pem"
 
         if reg_info["Type"] == "prews-gram":
             endpoint.Technology = "legacy"
             endpoint.InterfaceName = "globus.prews-gram"
+            endpoint.ImplementationVersion = "2"
             endpoint.IssuerCA = self._getIssuer(host_cert_file)
         elif reg_info["Type"] == "ws-gram":
             endpoint.Technology = "webservice"
             endpoint.InterfaceName = "globus.ws-gram"
+            endpoint.ImplementationVersion = "4"
             endpoint.IssuerCA = self._getIssuer(container_cert_file)
             #self.WSDL
         elif reg_info["Type"] == "gram5":
             endpoint.Technology = "legacy"
             endpoint.InterfaceName = "globus.gram5"
+            endpoint.ImplementationVersion = "5"
             endpoint.IssuerCA = self._getIssuer(host_cert_file)
         endpoint.ImplementationName = reg_info["Type"]
         endpoint.ImplementationVersion = reg_info["Version"]
@@ -177,11 +176,10 @@ class GramEndpointsStep(ComputingEndpointsStep):
         return endpoint
 
     def _getIssuer(self, caFile):
-        grid_cert_info = "grid-cert-info"
         try:
             grid_cert_info = self.params["grid-cert-info"]
         except KeyError:
-            pass
+            grid_cert_info = "grid-cert-info"
         
         cmd = grid_cert_info + " -issuer -file "+caFile
         (status, output) = commands.getstatusoutput(cmd)
@@ -202,11 +200,10 @@ class GramEndpointsStep(ComputingEndpointsStep):
         return subjects
 
     def _getSubject(self, caFile):
-        grid_cert_info = "grid-cert-info"
         try:
             grid_cert_info = self.params["grid-cert-info"]
         except KeyError:
-            pass
+            grid_cert_info = "grid-cert-info"
 
         cmd = grid_cert_info + " -subject -file "+caFile
         status, output = commands.getstatusoutput(cmd)
@@ -216,16 +213,4 @@ class GramEndpointsStep(ComputingEndpointsStep):
             self.warning("getSubject failed on grid-cert-info: "+output)
             return None
 
-##############################################################################################################
-
-class GramEndpoint(ComputingEndpoint):
-    def __init__(self):
-        ComputingEndpoint.__init__(self)
-
-        self.Capability = ["executionmanagement.jobdescription",
-                           "executionmanagement.jobexecution",
-                           "executionmanagement.jobmanager",
-                           ]
-        self.Implementor = "The Globus Alliance"
-
-##############################################################################################################
+#######################################################################################################################

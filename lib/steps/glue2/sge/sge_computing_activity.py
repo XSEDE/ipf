@@ -17,7 +17,6 @@
 ###############################################################################
 
 import commands
-import copy
 import datetime
 import os
 import re
@@ -31,12 +30,12 @@ from glue2.computing_activity import *
 #######################################################################################################################
 
 class SgeComputingActivitiesStep(ComputingActivitiesStep):
-    name = "glue2/sge/computing_activities"
-    accepts_params = copy.copy(ComputingActivitiesStep.accepts_params)
-    accepts_params["qstat"] = "the path to the SGE qstat program (default 'qstat')"
 
     def __init__(self, params):
         ComputingActivitiesStep.__init__(self,params)
+
+        self.name = "glue2/sge/computing_activities"
+        self.accepts_params["qstat"] = "the path to the SGE qstat program (default 'qstat')"
 
     def _run(self):
         self.info("running")
@@ -79,9 +78,6 @@ class SgeComputingActivitiesStep(ComputingActivitiesStep):
         for job in uhandler.jobs:
             if self._includeQueue(job.Queue):
                 jobList.append(job)
-
-        for job in jobList:
-            job.id = job.LocalIDFromManager+"."+self.resource_name
 
         return jobList
 
@@ -324,14 +320,13 @@ def _getDateTime(dtStr):
 
 #######################################################################################################################
 
-
 class SgeComputingActivityUpdateStep(ComputingActivityUpdateStep):
-    name = "glue2/sge/computing_activity_update"
-    accepts_params = copy.copy(ComputingActivityUpdateStep.accepts_params)
-    accepts_params["reporting_file"] = "the path to the SGE reporting file (optional)"
 
     def __init__(self, params):
         ComputingActivityUpdateStep.__init__(self,params)
+
+        self.name = "glue2/sge/computing_activity_update"
+        self.accepts_params["reporting_file"] = "the path to the SGE reporting file (optional)"
 
     def _run(self):
         self.info("running")

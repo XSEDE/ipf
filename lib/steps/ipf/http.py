@@ -16,7 +16,6 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import copy
 import httplib
 import logging
 import sys
@@ -26,18 +25,18 @@ from ipf.step import Step
 ##############################################################################################################
 
 class HttpPublishStep(Step):
-    name = "ipf/publish/http"
-    description = "publishes documents by PUTing or POSTing them"
-    time_out = 10
-    accepts_params = copy.copy(Step.accepts_params)
-    accepts_params["requires_types"] = "The type of documents that will be published"
-    accepts_params["host"] = "The host name of the server to publish to"
-    accepts_params["port"] = "The port to publish to"
-    accepts_params["path"] = "The path part of the URL"
-    accepts_params["method"] = "PUT or POST (default PUT)"
 
     def __init__(self, params):
         Step.__init__(self,params)
+
+        self.name = "ipf/publish/http"
+        self.description = "publishes documents by PUTing or POSTing them"
+        self.time_out = 10
+        self.accepts_params["requires_types"] = "The type of documents that will be published"
+        self.accepts_params["host"] = "The host name of the server to publish to"
+        self.accepts_params["port"] = "The port to publish to"
+        self.accepts_params["path"] = "The path part of the URL"
+        self.accepts_params["method"] = "PUT or POST (default PUT)"
 
     def run(self):
         try:

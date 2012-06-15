@@ -16,7 +16,6 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import copy
 import os
 import sys
 import time
@@ -26,17 +25,17 @@ from ipf.step import Step
 #######################################################################################################################
 
 class AmqpPublishStep(Step):
-    name = "ipf/publish/amqp"
-    description = "publishes documents by via AMQP"
-    time_out = 5
-    accepts_params = copy.copy(Step.accepts_params)
-    accepts_params["service"] = "a list of alternative hosts (or host:ports) to try to connect to"
-    accepts_params["vhost"] = "the AMQP virtual host to connect to"
-    accepts_params["exchange"] = "the AMQP exchange to publish to"
-    # credentials for ssl
 
     def __init__(self, params):
         Step.__init__(self,params)
+
+        self.name = "ipf/publish/amqp"
+        self.description = "publishes documents by via AMQP"
+        self.time_out = 5
+        self.accepts_params["service"] = "a list of alternative hosts (or host:ports) to try to connect to"
+        self.accepts_params["vhost"] = "the AMQP virtual host to connect to"
+        self.accepts_params["exchange"] = "the AMQP exchange to publish to"
+        # credentials for ssl
 
         self.service = []
         self.vhost = None

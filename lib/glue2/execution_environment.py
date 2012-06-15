@@ -16,7 +16,6 @@
 ###############################################################################
 
 import commands
-import copy
 import datetime
 import json
 import os
@@ -33,26 +32,23 @@ from glue2.step import GlueStep
 #######################################################################################################################
 
 class ExecutionEnvironmentsStep(GlueStep):
-    name = "glue2/execution_environments"
-    description = "Produces a document containing one or more GLUE 2 ExecutionEnvironment. For a batch scheduled system, an ExecutionEnivonment is typically a compute node."
-    time_out = 30
-    requires_types = ["ipf/resource_name.txt",
-                      "teragrid/platform.txt"]
-    produces_types = ["glue2/teragrid/execution_environments.xml",
-                      "glue2/teragrid/execution_environments.json"]
-    accepts_params = copy.copy(GlueStep.accepts_params)
-    accepts_params["queues"] = "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown."
 
     def __init__(self, params):
         GlueStep.__init__(self,params)
+
+        self.name = "glue2/execution_environments"
+        self.description = "Produces a document containing one or more GLUE 2 ExecutionEnvironment. For a batch scheduled system, an ExecutionEnivonment is typically a compute node."
+        self.time_out = 30
+        self.requires_types = ["ipf/resource_name.txt"]
+        self.produces_types = ["glue2/teragrid/execution_environments.xml",
+                               "glue2/teragrid/execution_environments.json"]
+        self.accepts_params["queues"] = "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. The expression is processed in order and the value for a queue at the end determines if it is shown."
+
         self.resource_name = None
-        self.platform = None
 
     def run(self):
         rn_doc = self._getInput("ipf/resource_name.txt")
         self.resource_name = rn_doc.resource_name
-        platform_doc = self._getInput("teragrid/platform.txt")
-        self.platform = platform_doc.platform
         
         hosts = self._run()
         host_groups = self._groupHosts(hosts)
@@ -61,9 +57,6 @@ class ExecutionEnvironmentsStep(GlueStep):
             host_groups[index].Name = "NodeType%d" % (index+1)
             host_groups[index].ID = "http://%s/glue2/ExecutionEnvironment/%s" % \
                                     (self.resource_name,host_groups[index].Name)
-        for host_group in host_groups:
-            #host_group.id = host_group.Name+"."+self.resource_name
-            host_group.Extension["TeraGridPlatform"] = self.platform
 
         if "glue2/teragrid/execution_environments.xml" in self.requested_types:
             self.debug("sending output glue2/teragrid/execution_environment.xml")

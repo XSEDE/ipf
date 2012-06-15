@@ -23,7 +23,6 @@
 #    teragrid:terminated
 #    teragrid:finished
 
-import copy
 import json    # new in Python 2.6
 import time
 from xml.dom.minidom import getDOMImplementation
@@ -37,18 +36,19 @@ from glue2.step import GlueStep
 #######################################################################################################################
 
 class ComputingActivitiesStep(GlueStep):
-    name = "glue2/computing_activities"
-    description = "produces a document containing one or more GLUE 2 ComputingActivity"
-    time_out = 30
-    requires_types = ["ipf/resource_name.txt"]
-    produces_types = ["glue2/teragrid/computing_activities.xml",
-                      "glue2/teragrid/computing_activities.json"]
-    accepts_params = copy.copy(GlueStep.accepts_params)
-    accepts_params["hide_job_attribs"] = "a comma-separated list of ComputingActivity attributes to hide (optional)"
-    accepts_params["queues"] = "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown."
 
     def __init__(self, params):
         GlueStep.__init__(self,params)
+
+        self.name = "glue2/computing_activities"
+        self.description = "produces a document containing one or more GLUE 2 ComputingActivity"
+        self.time_out = 30
+        self.requires_types = ["ipf/resource_name.txt"]
+        self.produces_types = ["glue2/teragrid/computing_activities.xml",
+                               "glue2/teragrid/computing_activities.json"]
+        self.accepts_params["hide_job_attribs"] = "a comma-separated list of ComputingActivity attributes to hide (optional)"
+        self.accepts_params["queues"] = "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown."
+
         self.resource_name = None
         
     def run(self):
@@ -85,18 +85,19 @@ class ComputingActivitiesStep(GlueStep):
 #######################################################################################################################
 
 class ComputingActivityUpdateStep(GlueStep):
-    name = "glue2/computing_activity_update"
-    description = "produces a document containing an update to a GLUE 2 ComputingActivity"
-    time_out = 30
-    requires_types = ["ipf/resource_name.txt"]
-    produces_types = ["glue2/teragrid/computing_activity.xml",
-                      "glue2/teragrid/computing_activity.json"]
-    accepts_params = copy.copy(GlueStep.accepts_params)
-    accepts_params["hide_job_attribs"] = "a comma-separated list of ComputingActivity attributes to hide (optional)"
-    accepts_params["queues"] = "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown."
 
     def __init__(self, params):
         GlueStep.__init__(self,params)
+
+        self.name = "glue2/computing_activity_update"
+        self.description = "produces a document containing an update to a GLUE 2 ComputingActivity"
+        self.time_out = None
+        self.requires_types = ["ipf/resource_name.txt"]
+        self.produces_types = ["glue2/teragrid/computing_activity.xml",
+                               "glue2/teragrid/computing_activity.json"]
+        self.accepts_params["hide_job_attribs"] = "a comma-separated list of ComputingActivity attributes to hide (optional)"
+        self.accepts_params["queues"] = "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown."
+
         self.resource_name = None
         self.hide_attribs = self._getJobAttribsToHide()
         

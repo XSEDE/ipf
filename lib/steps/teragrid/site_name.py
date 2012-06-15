@@ -17,29 +17,21 @@
 ###############################################################################
 
 import commands
-import copy
 import socket
 import sys
 
 from steps.ipf.site_name import *
-from ipf.step import Step
 
 #######################################################################################################################
 
-class SiteNameStep(Step):
-    name = "teragrid/site_name"
-    description = "produces a site name document using tgwhereami"
-    time_out = 5
-    requires_types = []
-    produces_types = ["ipf/site_name.txt",
-                      "ipf/site_name.json",
-                      "ipf/site_name.xml"]
-    accepts_params = copy.copy(Step.accepts_params)
-    accepts_params["tgwheremi"] = "path to the tgwhereami program (default 'tgwhereami')"
-    accepts_params["site_name"] = "hard coded name of the TeraGrid site name (optional)"
+class TeraGridSiteNameStep(SiteNameStep):
 
     def __init__(self, params):
-        Step.__init__(self,params)
+        SiteNameStep.__init__(self,params)
+
+        self.name = "teragrid/site_name"
+        self.description = "produces a site name document using tgwhereami"
+        self.accepts_params["tgwheremi"] = "path to the tgwhereami program (default 'tgwhereami')"
 
     def run(self):
         try:

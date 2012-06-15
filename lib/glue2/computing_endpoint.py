@@ -23,21 +23,24 @@ import ConfigParser
 
 from ipf.document import Document
 from ipf.dt import *
+from ipf.error import StepError
 
 from glue2.step import GlueStep
 
 #######################################################################################################################
 
+# drop
 class ComputingEndpointsStep(GlueStep):
-    name = "glue2/computing_endpoints"
-    description = "This step produces a document containing one or more GLUE 2 ComputingEndpoints. These could be batch schedulers like LSF or SGE or remote job interfaces such as Globus GRAM"
-    time_out = 30
-    requires_types = ["ipf/resource_name.txt"]
-    produces_types = ["glue2/teragrid/computing_endpoints.xml",
-                      "glue2/teragrid/computing_endpoints.json"]
-
     def __init__(self, params):
         GlueStep.__init__(self,params)
+
+        self.name = "glue2/computing_endpoints"
+        self.description = "This step produces a document containing one or more GLUE 2 ComputingEndpoints."
+        self.time_out = 30
+        self.requires_types = ["ipf/resource_name.txt"]
+        self.produces_types = ["glue2/teragrid/computing_endpoints.xml",
+                               "glue2/teragrid/computing_endpoints.json"]
+
         self.resource_name = None
 
     def run(self):
@@ -54,11 +57,11 @@ class ComputingEndpointsStep(GlueStep):
             self.output_queue.put(ComputingEndpointsDocumentJson(self.resource_name,endpoints))
 
     def _run(self):
-        self.error("ComputingEndpointsStep._run not overriden")
-        sys.exit(1)
+        raise StepError("ComputingEndpointsStep._run not overriden")
 
 #######################################################################################################################
 
+# drop
 class ComputingEndpointsDocumentXml(Document):
     def __init__(self, resource_name, endpoints):
         Document.__init__(self, resource_name, "glue2/teragrid/computing_endpoints.xml")
@@ -78,6 +81,7 @@ class ComputingEndpointsDocumentXml(Document):
 
 #######################################################################################################################
 
+# drop
 class ComputingEndpointsDocumentJson(Document):
     def __init__(self, resource_name, endpoints):
         Document.__init__(self, resource_name, "glue2/teragrid/computing_endpoints.json")
@@ -91,6 +95,92 @@ class ComputingEndpointsDocumentJson(Document):
         for endpoint in self.endpoints:
             edoc.append(endpoint.toJson())
         return json.dumps(edoc,sort_keys=True,indent=4)
+
+
+#######################################################################################################################
+
+class ComputingEndpointStep(GlueStep):
+    def __init__(self, params):
+        GlueStep.__init__(self,params)
+
+        self.name = "glue2/computing_endpoint"
+        self.description = "This step produces a document containing one GLUE 2 ComputingEndpoint."
+        self.time_out = 10
+        self.requires_types = ["ipf/resource_name.txt"]
+        self.produces_types = ["glue2/teragrid/computing_endpoint.xml",
+                               "glue2/teragrid/computing_endpoint.json"]
+
+        self.resource_name = None
+
+    def run(self):
+        rn_doc = self._getInput("ipf/resource_name.txt")
+        self.resource_name = rn_doc.resource_name
+
+        endpoints = self._run()
+        for i in range(0,len(endpoints)):
+            if endpoints[i].Name == None:
+                endpoint[i].Name = "endpoint-%d" % (i+1)
+        for endpoint in endpoints:
+            endpoint.ID = "http://"+self.resource_name+"/glue2/ComputingEndpoint/"+endpoint.Name
+            endpoint.ComputingService = "http://"+self.resource_name+"/glue2/ComputingService"
+            if "glue2/teragrid/computing_endpoint.xml" in self.requested_types:
+                self.debug("sending output glue2/teragrid/computing_endpoint.xml")
+                self.output_queue.put(ComputingEndpointDocumentXml(self.resource_name,endpoint))
+            if "glue2/teragrid/computing_endpoint.json" in self.requested_types:
+                self.debug("sending output glue2/teragrid/computing_endpoint.json")
+                self.output_queue.put(ComputingEndpointDocumentJson(self.resource_name,endpoint))
+
+    def _run(self):
+        raise StepError("ComputingEndpointStep._run not overriden")
+
+#######################################################################################################################
+
+class ParamComputingEndpointStep(ComputingEndpointStep):
+    def __init__(self, params):
+        ComputingEndpointStep.__init__(self,params)
+        self.name = "glue2/param/computing_endpoint"
+        self.description = "create a ComputingEndpoint using parameters"
+        self.accepts_params["endpoint"] = "An endpoint, represented as a dictionary. See ComputingEndpoint.fromJson() for the keys and values."
+
+    def _run(self):
+        try:
+            endpoint_doc = self.params["endpoint"]
+        except KeyError:
+            raise StepError("endpoint not specified")
+        endpoint = ComputingEndpoint()
+        endpoint.fromJson(endpoint_doc)
+        return [endpoint]
+
+#######################################################################################################################
+
+class ComputingEndpointDocumentXml(Document):
+    def __init__(self, resource_name, endpoint):
+        Document.__init__(self, resource_name, "glue2/teragrid/computing_endpoint.xml")
+        self.endpoint = endpoint
+
+    def _setBody(self, body):
+        raise DocumentError("ComputingEndpointDocumentXml._setBody should parse the XML...")
+
+    def _getBody(self):
+        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
+                                                    "Entities",None)
+        edoc = endpoint.toDom()
+        doc.documentElement.appendChild(edoc.documentElement.firstChild)
+        #return doc.toxml()
+        return doc.toprettyxml()
+
+#######################################################################################################################
+
+class ComputingEndpointDocumentJson(Document):
+    def __init__(self, resource_name, endpoint):
+        Document.__init__(self, resource_name, "glue2/teragrid/computing_endpoint.json")
+        self.endpoint = endpoint
+
+    def _setBody(self, body):
+        raise DocumentError("ComputingEndpointDocumentJson._setBody should parse the JSON...")
+
+    def _getBody(self):
+        return json.dumps(endpoint.toJson(),sort_keys=True,indent=4)
 
 #######################################################################################################################
 
@@ -168,7 +258,7 @@ class ComputingEndpoint(object):
             e = doc.createElement("OtherInfo")
             e.appendChild(doc.createTextNode(info))
             root.appendChild(e)
-        for key in self.Extension.keys():
+        for key in self.Extension:
             e = doc.createElement("Extension")
             e.setAttribute("Key",key)
             e.appendChild(doc.createTextNode(self.Extension[key]))
@@ -413,7 +503,7 @@ class ComputingEndpoint(object):
         if "CreationTime" in doc:
             self.CreationTime = textToDateTime(doc["CreationTime"])
         else:
-            self.CreationTime = None
+            self.CreationTime = datetime.datetime.now(tzoffset(0))
         self.Validity = doc.get("Validity")
         self.ID = doc.get("ID")
         self.Name = doc.get("Name")
@@ -427,7 +517,7 @@ class ComputingEndpoint(object):
         self.InterfaceName = doc.get("InterfaceName")
         self.InterfaceVersion = doc.get("InterfaceVersion")
         self.InterfaceExtension = doc.get("InterfaceExtension",[])
-        self.WSDL = doc.get("WSDL")
+        self.WSDL = doc.get("WSDL",[])
         self.SupportedProfile = doc.get("SupportedProfile",[])
         self.Semantics = doc.get("Semantics",[])
         self.Implementor = doc.get("Implementor")
@@ -438,7 +528,7 @@ class ComputingEndpoint(object):
         self.HealthStateInfo = doc.get("HealthStateInfo")
         self.StartTime = textToDateTime(doc.get("StartTime"))
         self.IssuerCA = doc.get("IssuerCA")
-        self.TrustedCA = doc.get("TrustedCA")
+        self.TrustedCA = doc.get("TrustedCA",[])
         self.DowntimeAnnounce = textToDateTime(doc.get("DowntimeAnnounce"))
         self.DowntimeStart = textToDateTime(doc.get("DowntimeStart"))
         self.DowntimeEnd = textToDateTime(doc.get("DowntimeEnd"))
@@ -446,15 +536,15 @@ class ComputingEndpoint(object):
 
         # ComputingEndpoint
         self.Staging = doc.get("Staging")
-        self.JobDescription = doc.get("JobDescription")
+        self.JobDescription = doc.get("JobDescription",[])
         self.TotalJobs = doc.get("TotalJobs")
         self.RunningJobs = doc.get("RunningJobs")
         self.WaitingJobs = doc.get("WaitingJobs")
         self.StagingJobs = doc.get("StagingJobs")
         self.PreLRMSWaitingJobs = doc.get("PreLRMSWaitingJobs")
         self.ComputingService = doc.get("ComputingService")
-        self.ComputingShare = doc.get("ComputingShare")
-        self.ComputingActivity = doc.get("ComputingActivity")
+        self.ComputingShare = doc.get("ComputingShare",[])
+        self.ComputingActivity = doc.get("ComputingActivity",[])
 
     ###################################################################################################################
 

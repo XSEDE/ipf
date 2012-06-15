@@ -17,29 +17,28 @@
 ###############################################################################
 
 import commands
-import copy
 import time
 import sys
 
-from ipf.documents.resource_name import *
+from ipf.document import Document
 from ipf.step import Step
 
 #######################################################################################################################
 
 class PlatformStep(Step):
-    name = "teragrid/platform"
-    description = "produces a platform name using tgwhatami"
-    time_out = 5
-    requires_types = ["ipf/resource_name.txt"]
-    produces_types = ["teragrid/platform.txt",
-                      "teragrid/platform.json",
-                      "teragrid/platform.xml"]
-    accepts_params = copy.copy(Step.accepts_params)
-    accepts_params["tgwhatami"] = "path to the tgwhatami program (default 'tgwhatami')"
-    accepts_params["platform"] = "hard coded name of the TeraGrid platform (optional)"
 
     def __init__(self, params):
         Step.__init__(self,params)
+
+        self.name = "teragrid/platform"
+        self.description = "produces a platform name using tgwhatami"
+        self.time_out = 5
+        self.requires_types = ["ipf/resource_name.txt"]
+        self.produces_types = ["teragrid/platform.txt",
+                               "teragrid/platform.json",
+                               "teragrid/platform.xml"]
+        self.accepts_params["tgwhatami"] = "path to the tgwhatami program (default 'tgwhatami')"
+        self.accepts_params["platform"] = "hard coded name of the TeraGrid platform (optional)"
 
     def run(self):
         rn_doc = self._getInput("ipf/resource_name.txt")
