@@ -57,8 +57,8 @@ class ComputingManagerStep(GlueStep):
 
         manager = self._run()
 
-        manager.ID = "http://"+self.resource_name+"/glue2/ComputingManager"
-        manager.ComputingService = "http://"+self.resource_name+"/glue2/ComputingService"
+        manager.ID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
+        manager.ComputingService = "urn:glue2:ComputingService:%s" % (self.resource_name)
 
         for exec_env in self.exec_envs:
             manager._addExecutionEnvironment(exec_env)

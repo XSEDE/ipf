@@ -51,12 +51,13 @@ class ComputingSharesStep(GlueStep):
         self.resource_name = rn_doc.resource_name
         activities_doc = self._getInput("glue2/teragrid/computing_activities.json")
         self.activities = activities_doc.activities
-        
+
         shares = self._run()
 
         for share in shares:
-            share.ID = "http://"+self.resource_name+"/glue2/ComputingShare/"+share.MappingQueue
-            share.ComputingService = "http://"+self.resource_name+"/glue2/ComputingService"
+            share.ID = "urn:glue2:ComputingShare:%s.%s" % (share.MappingQueue,self.resource_name)
+            share.ComputingService = "urn:glue2:ComputingService:%s" % (self.resource_name)
+
         self._addActivities(shares)
 
         if "glue2/teragrid/computing_shares.xml" in self.requested_types:

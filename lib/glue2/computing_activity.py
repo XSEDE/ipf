@@ -58,7 +58,8 @@ class ComputingActivitiesStep(GlueStep):
         activities = self._run()
 
         for activity in activities:
-            activity.ID = "http://"+self.resource_name+"/glue2/ComputingActivity/"+activity.LocalIDFromManager
+            activity.ID = "urn:glue2:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
+            activity.ComputingShare = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
 
         hide = self._getJobAttribsToHide()
         if "glue2/teragrid/computing_activities.xml" in self.requested_types:
@@ -108,6 +109,9 @@ class ComputingActivityUpdateStep(GlueStep):
         self._run()
 
     def output(self, activity):
+        activity.ID = "urn:glue2:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
+        activity.ComputingShare = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
+
         if "glue2/teragrid/computing_activity.xml" in self.requested_types:
             self.debug("sending output glue2/teragrid/computing_activity.xml")
             self.output_queue.put(ComputingActivityDocumentXml(self.resource_name,activity,self.hide_attribs))
@@ -249,9 +253,9 @@ class ComputingActivity(object):
         self.SubmissionHost = None                 # string
         self.SubmissionClientName = None           # string
         self.OtherMessages = []                    # list of string
-        self.ComputingEndpoint = []                # list of uri
-        self.ComputingShare = []                   # list of string (LocalID)
-        self.ExecutionEnvironment = []             # list of uri
+        self.ComputingEndpoint = None              # uri
+        self.ComputingShare = None                 # string (LocalID)
+        self.ExecutionEnvironment = None           # uri
 
     ###################################################################################################################
 
@@ -457,17 +461,17 @@ class ComputingActivity(object):
             e = doc.createElement("OtherMessages")
             e.appendChild(doc.createTextNode(message))
             root.appendChild(e)
-        for endpoint in self.ComputingEndpoint:
+        if self.ComputingEndpoint is not None:
             e = doc.createElement("ComputingEndpoint")
-            e.appendChild(doc.createTextNode(endpoint))
+            e.appendChild(doc.createTextNode(self.ComputingEndpoint))
             root.appendChild(e)
-        for share in self.ComputingShare:
+        if self.ComputingShare is not None:
             e = doc.createElement("ComputingShare")
-            e.appendChild(doc.createTextNode(share))
+            e.appendChild(doc.createTextNode(self.ComputingShare))
             root.appendChild(e)
-        for execEnv in self.ExecutionEnvironment:
+        if self.ExecutionEnvironment is not None:
             e = doc.createElement("ExecutionEnvironment")
-            e.appendChild(doc.createTextNode(execEnv))
+            e.appendChild(doc.createTextNode(self.ExecutionEnvironment))
             root.appendChild(e)
 
         return doc
@@ -573,11 +577,11 @@ class ComputingActivity(object):
             doc["SubmissionClientName"] = self.SubmissionClientName
         if len(self.OtherMessages) > 0 and "OtherMessages" not in hide:
             doc["OtherMessages"] = self.OtherMessages
-        if len(self.ComputingEndpoint) > 0 and "ComputingEndpoint" not in hide:
+        if self.ComputingEndpoint is not None and "ComputingEndpoint" not in hide:
             doc["ComputingEndpoint"] = self.ComputingEndpoint
-        if len(self.ComputingShare) > 0 and "ComputingShare" not in hide:
+        if self.ComputingShare is not None and "ComputingShare" not in hide:
             doc["ComputingShare"] = self.ComputingShare
-        if len(self.ExecutionEnvironment) > 0 and "ExecutionEnvironment" not in hide:
+        if self.ExecutionEnvironment is not None and "ExecutionEnvironment" not in hide:
             doc["ExecutionEnvironment"] = self.ExecutionEnvironment
 
         return doc

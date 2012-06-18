@@ -29,76 +29,6 @@ from glue2.step import GlueStep
 
 #######################################################################################################################
 
-# drop
-class ComputingEndpointsStep(GlueStep):
-    def __init__(self, params):
-        GlueStep.__init__(self,params)
-
-        self.name = "glue2/computing_endpoints"
-        self.description = "This step produces a document containing one or more GLUE 2 ComputingEndpoints."
-        self.time_out = 30
-        self.requires_types = ["ipf/resource_name.txt"]
-        self.produces_types = ["glue2/teragrid/computing_endpoints.xml",
-                               "glue2/teragrid/computing_endpoints.json"]
-
-        self.resource_name = None
-
-    def run(self):
-        rn_doc = self._getInput("ipf/resource_name.txt")
-        self.resource_name = rn_doc.resource_name
-
-        endpoints = self._run()
-
-        if "glue2/teragrid/computing_endpoints.xml" in self.requested_types:
-            self.debug("sending output glue2/teragrid/computing_endpoint.xml")
-            self.output_queue.put(ComputingEndpointsDocumentXml(self.resource_name,endpoints))
-        if "glue2/teragrid/computing_endpoints.json" in self.requested_types:
-            self.debug("sending output glue2/teragrid/computing_endpoint.json")
-            self.output_queue.put(ComputingEndpointsDocumentJson(self.resource_name,endpoints))
-
-    def _run(self):
-        raise StepError("ComputingEndpointsStep._run not overriden")
-
-#######################################################################################################################
-
-# drop
-class ComputingEndpointsDocumentXml(Document):
-    def __init__(self, resource_name, endpoints):
-        Document.__init__(self, resource_name, "glue2/teragrid/computing_endpoints.xml")
-        self.endpoints = endpoints
-
-    def _setBody(self, body):
-        raise DocumentError("ComputingEndpointsDocumentXml._setBody should parse the XML...")
-
-    def _getBody(self):
-        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
-                                                    "Entities",None)
-        for endpoint in self.endpoints:
-            edoc = endpoint.toDom()
-            doc.documentElement.appendChild(edoc.documentElement.firstChild)
-        #return doc.toxml()
-        return doc.toprettyxml()
-
-#######################################################################################################################
-
-# drop
-class ComputingEndpointsDocumentJson(Document):
-    def __init__(self, resource_name, endpoints):
-        Document.__init__(self, resource_name, "glue2/teragrid/computing_endpoints.json")
-        self.endpoints = endpoints
-
-    def _setBody(self, body):
-        raise DocumentError("ComputingEndpointsDocumentJson._setBody should parse the JSON...")
-
-    def _getBody(self):
-        edoc = []
-        for endpoint in self.endpoints:
-            edoc.append(endpoint.toJson())
-        return json.dumps(edoc,sort_keys=True,indent=4)
-
-
-#######################################################################################################################
-
 class ComputingEndpointStep(GlueStep):
     def __init__(self, params):
         GlueStep.__init__(self,params)
@@ -121,8 +51,8 @@ class ComputingEndpointStep(GlueStep):
             if endpoints[i].Name == None:
                 endpoint[i].Name = "endpoint-%d" % (i+1)
         for endpoint in endpoints:
-            endpoint.ID = "http://"+self.resource_name+"/glue2/ComputingEndpoint/"+endpoint.Name
-            endpoint.ComputingService = "http://"+self.resource_name+"/glue2/ComputingService"
+            endpoint.ID = "urn:glue2:ComputingEndpoint:%s.%s" % (endpoint.Name,self.resource_name)
+            endpoint.ComputingService = "urn:glue2:ComputingService:%s" % (self.resource_name)
             if "glue2/teragrid/computing_endpoint.xml" in self.requested_types:
                 self.debug("sending output glue2/teragrid/computing_endpoint.xml")
                 self.output_queue.put(ComputingEndpointDocumentXml(self.resource_name,endpoint))

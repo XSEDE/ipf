@@ -65,10 +65,16 @@ class ComputingServiceStep(GlueStep):
 
         service = self._run()
 
-        service.ID = "http://"+self.resource_name+"/glue2/ComputingService"
-        service.ComputingManager = "http://"+self.resource_name+"/glue2/ComputingManager"
+        service.ID = "urn:glue2:ComputingService:%s" % (self.resource_name)
+        service.ComputingManager = "urn:glue2:ComputingManager:%s" % (self.resource_name)
+
         service._addShares(self.shares)
         service._addEndpoints(self.endpoints)
+
+        for share in self.shares:
+            share.ComputingService = service.ID
+        for endpoint in self.endpoints:
+            endpoint.ComputingService = service.ID
 
         if "glue2/teragrid/computing_service.xml" in self.requested_types:
             self.debug("sending output glue2/teragrid/computing_service.xml")

@@ -55,8 +55,9 @@ class ExecutionEnvironmentsStep(GlueStep):
 
         for index in range(0,len(host_groups)):
             host_groups[index].Name = "NodeType%d" % (index+1)
-            host_groups[index].ID = "http://%s/glue2/ExecutionEnvironment/%s" % \
-                                    (self.resource_name,host_groups[index].Name)
+            host_groups[index].ID = "urn:glue2:ExecutionEnvironment:%s.%s" % \
+                                    (host_groups[index].Name,self.resource_name)
+            host_groups[index].ComputingService = "urn:glue2:ComputingService:%s" % (self.resource_name)
 
         if "glue2/teragrid/execution_environments.xml" in self.requested_types:
             self.debug("sending output glue2/teragrid/execution_environment.xml")
