@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 ###############################################################################
 #   Copyright 2011 The University of Texas at Austin                          #
@@ -16,22 +15,20 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import logging
+from glue2.computing_service import *
 
-from teragrid.glue2.computing_service import *
+#######################################################################################################################
 
-logger = logging.getLogger("PbsComputingServiceAgent")
+class PbsComputingServiceStep(ComputingServiceStep):
 
-##############################################################################################################
+    def __init__(self, params):
+        ComputingServiceStep.__init__(self,params)
 
-class PbsComputingServiceAgent(ComputingServiceAgent):
-    def __init__(self, args={}):
-        ComputingServiceAgent.__init__(self,args)
-        self.name = "teragrid.glue2.PbsComputingService"
+        self.name = "glue2/pbs/computing_service"
 
-    def run(self, docs_in=[]):
-        logger.info("running")
+        self.sched_name = "PBS"
 
+    def _run(self):
         service = ComputingService()
         service.Name = "PBS"
         service.Capability = ["executionmanagement.jobexecution",
@@ -43,23 +40,6 @@ class PbsComputingServiceAgent(ComputingServiceAgent):
         service.Type = "org.teragrid.PBS"
         service.QualityLevel = "production"
 
-        service.ID = "http://"+self._getSystemName()+"/glue2/ComputingService"
-        service.ComputingManager = "http://"+self._getSystemName()+"/glue2/ComputingManager"
-
-        for doc in docs_in:
-            if doc.type == "teragrid.glue2.ComputingShare":
-                self._addShare(service,doc)
-            elif doc.type == "teragrid.glue2.ComputingEndpoint":
-                service.ComputingEndpoint.append(doc.ID)
-            else:
-                logger.warn("ignoring document of type "+doc.type)
-
-        service.id = self._getSystemName()
-
-        return [service]
+        return service
         
-##############################################################################################################
-
-if __name__ == "__main__":    
-    agent = PbsComputingServiceAgent.createFromCommandLine()
-    agent.runStdinStdout()
+#######################################################################################################################

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 ###############################################################################
 #   Copyright 2011 The University of Texas at Austin                          #
@@ -17,54 +16,34 @@
 ###############################################################################
 
 import commands
-import logging
-import os
-import socket
-import sys
 
-from ipf.error import *
-from teragrid.glue2.computing_share import *
-from teragrid.glue2.computing_activity import *
+from ipf.error import StepError
 
-logger = logging.getLogger("PbsQueuesAgent")
+from glue2.computing_share import *
 
-##############################################################################################################
+#######################################################################################################################
 
-class PbsQueuesAgent(ComputingSharesAgent):
-    def __init__(self, args={}):
-        ComputingSharesAgent.__init__(self,args)
-        self.name = "teragrid.glue2.PbsQueuesAgent"
+class PbsComputingSharesStep(ComputingSharesStep):
 
-    def run(self, docs_in=[]):
-        logger.info("running")
-        queues = self._getQueues()
+    def __init__(self, params):
+        ComputingSharesStep.__init__(self,params)
 
-        activities = []
-        for doc in docs_in:
-            if doc.type == "teragrid.glue2.ComputingActivity":
-                activities.append(doc)
-            else:
-                logger.warn("ignoring document of type "+doc.type)
-        self._addActivities(activities,queues)
+        self.name = "glue2/pbs/computing_shares"
+        self.accepts_params["qstat"] = "the path to the PBS qstat program (default 'qstat')"
 
-        for queue in queues:
-            queue.id = queue.MappingQueue+"."+self._getSystemName()
+        self.sched_name = "PBS"
 
-        return queues
-
-    def _getQueues(self):
-        qstat = "qstat"
+    def _run(self):
         try:
-            qstat = self.config.get("pbs","qstat")
-        except ConfigParser.Error:
-            pass
+            qstat = self.params["qstat"]
+        except KeyError:
+            qstat = "qstat"
         cmd = qstat + " -q -G"
-        logger.debug("running "+cmd)
+        self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            logger.error("qstat failed: "+output)
-            raise AgentError("qstat failed: "+output+"\n")
-
+            self.error("qstat failed: "+output)
+            raise StepError("qstat failed: "+output+"\n")
 
         queueStrings = output.split("\n")
         queueStrings = queueStrings[5:len(queueStrings)-2]
@@ -72,13 +51,12 @@ class PbsQueuesAgent(ComputingSharesAgent):
         queues = []
         for queueString in queueStrings:
             queue = self._getQueue(queueString)
-            if includeQueue(self.config,queue.Name):
+            if self._includeQueue(queue.Name):
                 queues.append(queue)
         return queues
 
     def _getQueue(self, queueString):
         queue = ComputingShare()
-        queue.ComputingService = "http://"+self._getSystemName()+"/glue2/ComputingService"
 
         (queueName,
          memoryLimitGB,
@@ -93,7 +71,6 @@ class PbsQueuesAgent(ComputingSharesAgent):
 
         queue.Name = queueName
         queue.MappingQueue = queue.Name
-        queue.ID = "http://"+self._getSystemName()+"/glue2/ComputingShare/"+queue.Name
         if cpuTimeLimit != "--":
             queue.MaxTotalCPUTime = self._getDuration(cpuTimeLimit)
         if wallTimeLimit != "--":
@@ -127,8 +104,4 @@ class PbsQueuesAgent(ComputingSharesAgent):
         (hour,minute,second)=dStr.split(":")
         return int(hour)*60*60 + int(minute)*60 + int(second)
 
-##############################################################################################################
-
-if __name__ == "__main__":
-    agent = PbsQueuesAgent.createFromCommandLine()
-    agent.runStdinStdout()
+#######################################################################################################################

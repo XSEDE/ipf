@@ -16,60 +16,58 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import logging
-import ConfigParser
+from ipf.error import StepError
 
-from ipf.error import *
-from teragrid.glue2.pbs.pbs_computing_activity import *
+from steps.glue2.pbs.pbs_computing_activity import *
 
-logger = logging.getLogger("PscPbsJobsAgent")
+#######################################################################################################################
 
-##############################################################################################################
+class PscPbsComputingActivitiesStep(PbsComputingActivitiesStep):
+    name = "glue2/pbs/psc/computing_activities"
+    accepts_params = copy.copy(PbsComputingActivitiesStep.accepts_params)
+    accepts_params["job_list_file"] = "the path to the PSC file containing the list of jobs in schedule order"
 
-class PscPbsJobsAgent(PbsJobsAgent):
-    def __init__(self, args={}):
-        PbsJobsAgent.__init__(self,args)
+    def __init__(self, params):
+        ComputingActivitiesStep.__init__(self,params)
 
-    def run(self, docs_in=[]):
-        jobs = PbsJobsAgent.run(self,docs_in)
+    def _run(self):
+        self.info("running")
+        jobs = PbsComputingActivitiesStep._run(self)
 
         try:
-            job_list_file = self.config.get("psc","job_list_file")
-        except ConfigParser.Error:
-            logger.error("psc.job_list_file not specified")
-            raise AgentError("psc.job_list_file not specified")
+            job_list_file = self.params["job_list_file"]
+        except KeyError:
+            self.error("job_list_file not specified")
+            raise StepError("job_list_file not specified")
 
         try:
             f = open(job_list_file,"r")
             lines = f.readlines()
             f.close()
         except IOError, e:
-            logger.error("couldn't read job list from file "+job_list_file)
-            raise AgentError("couldn't read job list from file "+job_list_file)
+            self.error("couldn't read job list from file "+job_list_file)
+            raise StepError("couldn't read job list from file "+job_list_file)
 
 	job_ids = []
 	for line in lines[1:]:
 	    toks = line.split()
 	    job_ids.append(toks[0])
 
+        job_dict = {}
         for job in jobs:
             job_dict[job.LocalIDFromManager] = job
 
         jobs = []
 	for job_id in job_ids:
-            foundIt = False
             try:
                 jobs.append(job_dict[job_id])
                 del job_dict[job_id]
             except KeyError:
-                logger.warn("didn't find PBS job "+job_id+" in job list")
-        for job_id in jobs.keys():
-            logger.warn("didn't find an entry in job list for PBS job "+job_id)
+                self.warn("didn't find job "+job_id+" in job list")
+        for job_id in job_dict.keys():
+            self.warn("didn't find an entry in job list for PBS job "+job_id)
         return jobs
 
 
-##############################################################################################################
-
-if __name__ == "__main__":    
-    agent = PscPbsJobsAgent.createFromCommandLine()
+#######################################################################################################################
     agent.runStdinStdout()

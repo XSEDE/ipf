@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 ###############################################################################
 #   Copyright 2011 The University of Texas at Austin                          #
@@ -18,45 +17,41 @@
 
 import commands
 import datetime
-import logging
 import os
 import re
-import sys
 import xml.sax
 import xml.sax.handler
-import ConfigParser
 
-from ipf.error import *
-from teragrid.glue2.computing_activity import includeQueue
-from teragrid.glue2.execution_environment import *
+from ipf.error import StepError
+from glue2.execution_environment import *
+from glue2.teragrid.platform import PlatformMixIn
 
-logger = logging.getLogger("PbsExecutionEnvironment")
+#######################################################################################################################
 
-##############################################################################################################
+class PbsExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
 
-class PbsExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
-    def __init__(self, args={}):
-        ExecutionEnvironmentsAgent.__init__(self)
-        self.name = "teragrid.glue2.PbsExecutionEnvironment"
+    def __init__(self, params):
+        ExecutionEnvironmentsStep.__init__(self,params)
 
-    def run(self, docs_in=[]):
-        logger.info("running")
+        self.name = "glue2/pbs/execution_environments"
+        self.accepts_params["pbsnodes"] = "the path to the PBS pbsnodes program (default 'pbsnodes')"
+        self.accepts_params["nodes"] = "An expression describing the nodes to include (optional). The syntax is a series of +<property> and -<property> where <property> is the name of a node property or a '*'. '+' means include '-' means exclude. The expression is processed in order and the value for a node at the end determines if it is shown."
 
-        for doc in docs_in:
-            logger.warn("ignoring document "+doc.id)
+        self.sched_name = "PBS"
 
-        pbsnodes = "pbsnodes"
+    def _run(self):
+        self.info("running")
         try:
-            pbsnodes = self.config.get("pbs","pbsnodes")
-        except ConfigParser.Error:
-            pass
+            pbsnodes = self.params["pbsnodes"]
+        except KeyError:
+            pbsnodes = "pbsnodes"
 
         cmd = pbsnodes + " -a"
-        logger.debug("running "+cmd)
+        self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            logger.error("pbsnodes failed: "+output)
-            raise AgentError("pbsnodes failed: "+output+"\n")
+            self.error("pbsnodes failed: "+output)
+            raise StepError("pbsnodes failed: "+output+"\n")
 
         nodeStrings = output.split("\n\n")
 
@@ -72,7 +67,7 @@ class PbsExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
 
     def _getHost(self, nodeString):
         host = ExecutionEnvironment()
-        host.ComputingManager = "http://"+self._getSystemName()+"/glue2/ComputingManager"
+        host.ComputingManager = "http://"+self.resource_name+"/glue2/ComputingManager"
 
         host.properties = ()
 
@@ -147,11 +142,10 @@ class PbsExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
         return host
         
     def _testProperties(self, properties):
-        nodes = "+*"
         try:
-            nodes = self.config.get("glue2","nodes")
-        except ConfigParser.Error:
-            pass
+            nodes = self.params["nodes"]
+        except KeyError:
+            nodes = "+*"
             
         toks = nodes.split()
         goodSoFar = False
@@ -165,11 +159,20 @@ class PbsExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
                 if (prop == "*") or (prop in properties):
                     goodSoFar = False
             else:
-                logger.warn("can't parse part of Nodes expression: "+tok)
+                self.warn("can't parse part of nodes expression: "+tok)
         return goodSoFar
 
-##############################################################################################################
+#######################################################################################################################
 
-if __name__ == "__main__":    
-    agent = PbsExecutionEnvironmentsAgent.createFromCommandLine()
-    agent.runStdinStdout()
+class TeraGridPbsExecutionEnvironmentsStep(PbsExecutionEnvironmentsStep, PlatformMixIn):
+    def __init__(self, params):
+        PbsExecutionEnvironmentsStep.__init__(self,params)
+        PlatformMixIn.__init__(self)
+        self.name = "glue2/teragrid/pbs/execution_environments"
+
+    def _run(self):
+        hosts = PbsExecutionEnvironmentsStep._run(self)
+        self.addTeraGridPlatform(hosts)
+        return hosts
+
+#######################################################################################################################

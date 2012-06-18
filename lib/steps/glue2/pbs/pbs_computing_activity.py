@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 ###############################################################################
 #   Copyright 2011 The University of Texas at Austin                          #
@@ -18,41 +17,40 @@
 
 import commands
 import datetime
-import logging
 import os
 import re
 import sys
-import ConfigParser
 
-from ipf.error import *
-from teragrid.glue2.computing_activity import *
+from ipf.error import StepError
+from glue2.log import LogDirectoryWatcher
 
-logger = logging.getLogger("PbsJobsAgent")
+from glue2.computing_activity import *
 
-##############################################################################################################
+#######################################################################################################################
 
-class PbsJobsAgent(ComputingActivitiesAgent):
-    def __init__(self, args={}):
-        ComputingActivitiesAgent.__init__(self,args)
-        self.name = "teragrid.glue2.PbsJobsAgent"
+class PbsComputingActivitiesStep(ComputingActivitiesStep):
 
-    def run(self, docs_in=[]):
-        logger.info("running")
+    def __init__(self, params):
+        ComputingActivitiesStep.__init__(self,params)
 
-        for doc in docs_in:
-            logger.warn("ignoring document of type "+doc.type)
+        self.name = "glue2/pbs/computing_activities"
+        self.accepts_params["qstat"] = "the path to the PBS qstat program (default 'qstat')"
 
-        qstat = "qstat"
+        self.sched_name = "PBS"
+
+    def _run(self):
+        self.info("running")
+
         try:
-            qstat = self.config.get("pbs","qstat")
-        except ConfigParser.Error:
-            pass
+            qstat = self.params["qstat"]
+        except KeyError:
+            qstat = "qstat"
 
         cmd = qstat + " -f"
-        logger.debug("running "+cmd)
+        self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            logger.error("qstat failed: "+output)
+            self.error("qstat failed: "+output)
             raise AgentError("qstat failed: "+output+"\n")
 
         jobStrings = []
@@ -70,11 +68,8 @@ class PbsJobsAgent(ComputingActivitiesAgent):
         jobs = []
         for jobString in jobStrings:
             job = self._getJob(jobString)
-            if includeQueue(self.config,job.Queue):
+            if self._includeQueue(job.Queue):
                 jobs.append(job)
-
-        for job in jobs:
-            job.id = job.LocalIDFromManager+"."+self._getSystemName()
 
         return jobs
 
@@ -92,7 +87,6 @@ class PbsJobsAgent(ComputingActivitiesAgent):
                 job.LocalIDFromManager = line[8:]
                 # remove the host name
                 job.LocalIDFromManager = job.LocalIDFromManager.split(".")[0]
-                job.ID = "http://"+self._getSystemName()+"/glue2/ComputingActivity/"+job.LocalIDFromManager
             if line.find("Job_Name =") >= 0:
                 job.Name = line.split()[2]
             if line.find("Job_Owner =") >= 0:
@@ -122,7 +116,7 @@ class PbsJobsAgent(ComputingActivitiesAgent):
                 elif state == "H":
                     job.State = "teragrid:held"
                 else:
-                    logger.warn("found unknown PBS job state '" + state + "'")
+                    self.warning("found unknown PBS job state '" + state + "'")
                     job.State = "teragrid:unknown"
             if line.find("Resource_List.walltime =") >= 0:
                 wallTime = self._getDuration(line.split()[2])
@@ -188,8 +182,130 @@ class PbsJobsAgent(ComputingActivitiesAgent):
                                  second=second,
                                  tzinfo=localtzoffset())
 
-##############################################################################################################
+#######################################################################################################################
 
-if __name__ == "__main__":    
-    agent = PbsJobsAgent.createFromCommandLine()
-    agent.runStdinStdout()
+class PbsComputingActivityUpdateStep(ComputingActivityUpdateStep):
+
+    def __init__(self, params):
+        ComputingActivityUpdateStep.__init__(self,params)
+
+        self.name = "glue2/pbs/computing_activity_update"
+        self.accepts_params["server_logs_dir"] = "the path to the PBS spool/server_logs directory (optional)"
+
+        self.sched_name = "PBS"
+
+        # caching job information may not be the best idea for systems with very large queues...
+        self.activities = {}
+
+    def _run(self):
+        self.info("running")
+
+        try:
+            dir_name = self.params["server_logs_dir"]
+        except KeyError:
+            try:
+                dir_name = os.path.join(os.environ["PBS_HOME"],"spool","server_logs")
+            except KeyError:
+                raise StepError("server_logs_dir not specified and the PBS_HOME environment variable is not set")
+
+        watcher = LogDirectoryWatcher(self._logEntry,dir_name)
+        watcher.run()
+
+    def _logEntry(self, log_file_name, entry):
+        # log time
+        # entry type
+        # source (PBS_Server, ...)
+        # Svr/Req/Job
+        # ? job id (with Job)
+        # message
+        toks = entry.split(";")
+        if len(toks) < 6:
+            self.warning("too few tokens in line: %s",entry)
+            return
+        type = toks[1]
+        if type == "0002":
+            # batch system/server events
+            if toks[5] == "Log closed":
+                # move on to the next log
+                return False
+        elif type == "0008":
+            # job events
+            self._handleJobEntry(toks)
+        elif type == "0010":
+            # job resource usage
+            pass
+        else:
+            #self.debug("unknown type %s",type)
+            pass
+        return True
+
+    def _handleJobEntry(self, toks):
+        id = toks[4].split(".")[0]  # just the id part of id.host.name
+        try:
+            activity = self.activities[id]
+        except KeyError:
+            activity = ComputingActivity()
+            activity.LocalIDFromManager = id
+            self.activities[id] = activity
+        if "Job Queued" in toks[5]:
+            activity.State = "teragrid:pending"
+            activity.ComputingManagerSubmissionTime = self._getDateTime(toks[0])
+            try:
+                m = re.search(" owner = (\w+)@(\S*),",toks[5])  # just the user part of user@host
+                #m = re.search(toks[5]," owner = (\S+)@\S*,")  # just the user part of user@host
+                activity.LocalOwner = m.group(1)
+            except AttributeError:
+                self.warning("didn't find owner in log mesage: %s",toks)
+                return
+            try:
+                m = re.search(" job name = (\S+)",toks[5])
+                activity.Name = m.group(1).split(".")[0]  # just the a part of a.b.?
+            except AttributeError:
+                self.warning("didn't find job name in log mesage: %s",toks)
+                return
+            try:
+                m = re.search(" queue = (\S+)",toks[5])
+                activity.Queue = m.group(1).split(".")
+            except AttributeError:
+                self.warning("didn't find queue in log mesage: %s",toks)
+                return
+        elif "Job Run" in toks[5]:
+            activity.State = "teragrid:running"
+            activity.StartTime = self._getDateTime(toks[0])
+        elif "Job deleted" in toks[5]:
+            activity.State = "teragrid:terminated"
+            activity.ComputingManagerEndTime = self._getDateTime(toks[0])
+            del self.activities[id]
+        elif "JOB_SUBSTATE_EXITING" in toks[5]:
+            activity.State = "teragrid:finished"
+            activity.ComputingManagerEndTime = self._getDateTime(toks[0])
+            del self.activities[id]
+        elif "Job sent signal SIGKILL on delete" in toks[5]:
+            # job ran too long and was killed
+            activity.State = "teragrid:terminated"
+            activity.ComputingManagerEndTime = self._getDateTime(toks[0])
+            del self.activities[id]
+        else:
+            self.warning("unhandled log event: %s",toks)
+            return
+        
+        if activity.Queue is None or self._includeQueue(activity.Queue):
+            self.output(activity)
+
+    def _getDateTime(self, dt_str):
+        # Example: 06/10/2012 16:17:41
+        month = int(dt_str[:2])
+        day = int(dt_str[3:5])
+        year = int(dt_str[6:10])
+        hour = int(dt_str[11:13])
+        minute = int(dt_str[14:16])
+        second = int(dt_str[17:19])
+        return datetime.datetime(year=year,
+                                 month=month,
+                                 day=day,
+                                 hour=hour,
+                                 minute=minute,
+                                 second=second,
+                                 tzinfo=localtzoffset())
+
+#######################################################################################################################

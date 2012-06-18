@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 ###############################################################################
 #   Copyright 2011 The University of Texas at Austin                          #
@@ -16,45 +15,25 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import logging
+from glue2.computing_manager import *
 
-from teragrid.glue2.computing_manager import *
+#######################################################################################################################
 
-logger = logging.getLogger("PbsComputingManagerAgent")
+class PbsComputingManagerStep(ComputingManagerStep):
 
-##############################################################################################################
+    def __init__(self, params):
+        ComputingManagerStep.__init__(self,params)
 
-class PbsComputingManagerAgent(ComputingManagerAgent):
-    def __init__(self, args={}):
-        ComputingManagerAgent.__init__(self,args)
-        self.name = "teragrid.glue2.PbsComputingManager"
+        self.name = "glue2/pbs/computing_manager"
+        self.sched_name = "PBS"
 
-    def run(self, docs_in=[]):
-        logger.info("running")
-
+    def _run(self):
         manager = ComputingManager()
         manager.ProductName = "PBS"
         manager.Name = "PBS"
         manager.Reservation = True
         #self.BulkSubmission = True
-        manager.ID = "http://"+self._getSystemName()+"/glue2/ComputingManager"
 
-        for doc in docs_in:
-            if doc.type == "teragrid.glue2.ComputingService":
-                manager.ComputingService = doc.ID
-            elif doc.type == "teragrid.glue2.ExecutionEnvironment":
-                manager._addExecutionEnvironment(doc)
-            elif doc.type == "teragrid.glue2.ComputingShare":
-                manager._addComputingShare(doc)
-            else:
-                logger.warn("ignoring document of type "+doc.type)
+        return manager
 
-        manager.id = self._getSystemName()
-
-        return [manager]
-
-##############################################################################################################
-
-if __name__ == "__main__":    
-    agent = PbsComputingManagerAgent.createFromCommandLine()
-    agent.runStdinStdout()
+#######################################################################################################################
