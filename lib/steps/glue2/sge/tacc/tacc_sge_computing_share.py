@@ -20,7 +20,6 @@ import commands
 import logging
 import os
 import socket
-import ConfigParser
 
 from ipf.error import StepError
 
@@ -29,10 +28,11 @@ from steps.glue2.sge.sge_computing_share import *
 ##############################################################################################################
 
 class TaccSgeComputingSharesStep(SgeComputingSharesStep):
-    name = "glue2/sge/tacc/computing_shares"
 
-    def __init__(self, params, config=ConfigParser.ConfigParser):
-        SgeComputingSharesStep.__init__(self,params,config)
+    def __init__(self, params):
+        SgeComputingSharesStep.__init__(self,params)
+
+        self.name = "glue2/sge/tacc/computing_shares"
 
     def _run(self):
         queues = SgeComputingSharesStep._run(self)
