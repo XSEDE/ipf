@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 ###############################################################################
 #   Copyright 2011 The University of Texas at Austin                          #
@@ -18,27 +17,30 @@
 
 import commands
 import datetime
-import logging
 import os
 import re
 import sys
 import xml.dom.minidom
-import ConfigParser
 
-from ipf.error import *
-from teragrid.glue2.computing_activity import *
+from ipf.error import StepError
+from glue2.log import LogDirectoryWatcher
 
-logger = logging.getLogger("MoabJobsAgent")
+from glue2.computing_activity import *
 
 ##############################################################################################################
 
-class MoabJobsAgent(ComputingActivitiesAgent):
-    def __init__(self, args={}):
-        ComputingActivitiesAgent.__init__(self,args)
-        self.name = "teragrid.glue2.MoabJobsAgent"
+class MoabComputingActivitiesStep(ComputingActivitiesStep):
 
-    def run(self, docs_in=[]):
-        logger.info("running")
+    def __init__(self, params):
+        ComputingActivitiesStep.__init__(self,params)
+
+        self.name = "glue2/moab/computing_activities"
+        self.accepts_params["showq"] = "the path to the Moab showq program (default 'showq')"
+
+        self.sched_name = "Moab"
+
+    def _run(self):
+        self.info("running")
 
         for doc in docs_in:
             logger.warn("ignoring document of type "+doc.type)
@@ -52,18 +54,16 @@ class MoabJobsAgent(ComputingActivitiesAgent):
         return jobs
 
     def _addJobs(self, flag, jobs):
-        showq = "showq"
         try:
-            show1 = self.config.get("moab","showq")
-        except ConfigParser.Error:
-            pass
+            showq = self.params["showq"]
+        except KeyError:
+            showq = "showq"
 
         cmd = showq + " "+flag+" --xml"
-        logger.debug("running "+cmd)
+        self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            logger.error("showq failed: "+output)
-            raise AgentError("showq failed: "+output+"\n")
+            raise StepError("showq failed: "+output+"\n")
 
         doc = xml.dom.minidom.parseString(output)
 
@@ -74,8 +74,6 @@ class MoabJobsAgent(ComputingActivitiesAgent):
                 procsPerNode = float(node.getAttribute("LocalUpProcs")) / float(node.getAttribute("LocalUpNodes"))
                 procsPerNode = round(procsPerNode,0)
             if node.nodeName == "queue":
-                #print("status: "+node.getAttribute("option"))
-                #print("  jobs: "+node.getAttribute("count"))
                 status = node.getAttribute("option")
                 for jobElement in node.childNodes:
                     job = self._getJob(jobElement,procsPerNode,status)
@@ -88,16 +86,12 @@ class MoabJobsAgent(ComputingActivitiesAgent):
                                 jobs.append(job)
         doc.unlink()
 
-        for job in jobs:
-            job.id = job.LocalIDFromManager+"."+self._getSystemName()
-
         return jobs
 
     def _getJob(self, jobElement, procsPerNode, status):
         job = ComputingActivity()
 
         job.LocalIDFromManager = jobElement.getAttribute("JobID")
-        job.ID = "http://"+self._getSystemName()+"/glue2/ComputingActivity/"+job.LocalIDFromManager
         job.Name = jobElement.getAttribute("JobName") # showing as NONE
         job.LocalOwner = jobElement.getAttribute("User")
         job.UserDomain = jobElement.getAttribute("Account")
@@ -180,6 +174,4 @@ class MoabJobsAgent(ComputingActivitiesAgent):
 
 ##############################################################################################################
 
-if __name__ == "__main__":    
-    agent = MoabJobsAgent.createFromCommandLine()
-    agent.runStdinStdout()
+# don't see a Moab log file with job information, so no update class.
