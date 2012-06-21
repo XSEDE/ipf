@@ -25,7 +25,6 @@ class PbsComputingManagerStep(ComputingManagerStep):
         ComputingManagerStep.__init__(self,params)
 
         self.name = "glue2/pbs/computing_manager"
-        self.sched_name = "PBS"
 
     def _run(self):
         manager = ComputingManager()

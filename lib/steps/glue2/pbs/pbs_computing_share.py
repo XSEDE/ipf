@@ -31,8 +31,6 @@ class PbsComputingSharesStep(ComputingSharesStep):
         self.name = "glue2/pbs/computing_shares"
         self.accepts_params["qstat"] = "the path to the PBS qstat program (default 'qstat')"
 
-        self.sched_name = "PBS"
-
     def _run(self):
         try:
             qstat = self.params["qstat"]

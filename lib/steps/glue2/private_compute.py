@@ -62,10 +62,8 @@ class PrivateCompute(object):
     def __init__(self):
         self.resource_name = None
         self.site_name = None
-        self.activities = None
+        self.activities = []
         self.hide = []
-
-    ###################################################################################################################
 
     def toDom(self):
         doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
@@ -86,13 +84,10 @@ class PrivateCompute(object):
         root = doc.createElement("Entities")
         doc.documentElement.appendChild(root)
 
-        if self.activities is not None:
-            for activity in self.activities:
-                root.appendChild(activity.toDom(self.hide).documentElement.firstChild)
+        for activity in self.activities:
+            root.appendChild(activity.toDom(self.hide).documentElement.firstChild)
 
         return doc
-    
-    ###################################################################################################################
 
     def toJson(self):
         doc = {}
@@ -104,7 +99,7 @@ class PrivateCompute(object):
             raise StepError("site name is not set")
         doc["SiteID"] = self.site_name
 
-        if self.activities is not None:
+        if len(self.activities) > 0:
             docs = []
             for activity in self.activities:
                 docs.append(activity.toJson(self.hide))
@@ -112,13 +107,10 @@ class PrivateCompute(object):
         
         return doc
 
-    ###################################################################################################################
-
     def fromJson(self, doc):
         self.resource_name = doc.get("ResourceID")
         self.site_name = doc.get("SiteID")
         self.activities = doc.get("ComputingActivities",[])
-
 
 #######################################################################################################################
 

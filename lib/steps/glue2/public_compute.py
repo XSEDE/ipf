@@ -81,10 +81,10 @@ class PublicCompute(object):
         self.resource_name = None
         self.site_name = None
         self.service = None
-        self.endpoints = None
-        self.shares = None
+        self.endpoints = []
+        self.shares = []
         self.manager = None
-        self.environments = None
+        self.environments = []
 
     ###################################################################################################################
 
@@ -109,17 +109,14 @@ class PublicCompute(object):
 
         if self.service is not None:
             root.appendChild(self.service.toDom().documentElement.firstChild)
-        if self.endpoints is not None:
-            for endpoint in self.endpoints:
-                root.appendChild(endpoint.toDom().documentElement.firstChild)
-        if self.shares is not None:
-            for share in self.shares:
-                root.appendChild(share.toDom().documentElement.firstChild)
+        for endpoint in self.endpoints:
+            root.appendChild(endpoint.toDom().documentElement.firstChild)
+        for share in self.shares:
+            root.appendChild(share.toDom().documentElement.firstChild)
         if self.manager is not None:
             root.appendChild(self.manager.toDom().documentElement.firstChild)
-        if self.environments is not None:
-            for environment in self.environments:
-                root.appendChild(environment.toDom().documentElement.firstChild)
+        for environment in self.environments:
+            root.appendChild(environment.toDom().documentElement.firstChild)
 
         return doc
     
@@ -137,19 +134,19 @@ class PublicCompute(object):
 
         if self.service is not None:
             doc["ComputingService"] = self.service.toJson()
-        if self.endpoints is not None:
+        if len(self.endpoints) > 0:
             endpoints = []
             for endpoint in self.endpoints:
                 endpoints.append(endpoint.toJson())
             doc["ComputingEndpoints"] = endpoints
-        if self.shares is not None:
+        if len(self.shares) > 0:
             shares = []
             for share in self.shares:
                 shares.append(share.toJson())
             doc["ComputingShares"] = shares
         if self.manager is not None:
             doc["ComputingManager"] = self.manager.toJson()
-        if self.environments is not None:
+        if len(self.environments) > 0:
             envs = []
             for env in self.environments:
                 envs.append(env.toJson())

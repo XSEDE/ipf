@@ -127,11 +127,11 @@ class GramEndpointStep(ComputingEndpointStep):
 
     def _createEndpoint(self, reg_info, quality_level):
         endpoint = ComputingEndpoint()
-        self.Capability = ["executionmanagement.jobdescription",
-                           "executionmanagement.jobexecution",
-                           "executionmanagement.jobmanager",
-                           ]
-        self.Implementor = "The Globus Alliance"
+        endpoint.Capability = ["executionmanagement.jobdescription",
+                               "executionmanagement.jobexecution",
+                               "executionmanagement.jobmanager",
+                               ]
+        endpoint.Implementor = "The Globus Alliance"
 
         try:
             ca_dir = self.params["ca_certificates_directory"]

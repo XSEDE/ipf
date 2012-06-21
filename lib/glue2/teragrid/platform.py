@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2011 The University of Texas at Austin                          #
+#   Copyright 2012 The University of Texas at Austin                          #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -15,29 +15,17 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-from glue2.computing_service import *
+import copy
 
-#######################################################################################################################
+class PlatformMixIn(object):
+    """Assumes that it is being mixed in with a Step."""
 
-class PbsComputingServiceStep(ComputingServiceStep):
+    def __init__(self):
+        self.requires_types.append("teragrid/platform.txt")
+        self.platform = None
 
-    def __init__(self, params):
-        ComputingServiceStep.__init__(self,params)
-
-        self.name = "glue2/pbs/computing_service"
-
-    def _run(self):
-        service = ComputingService()
-        service.Name = "PBS"
-        service.Capability = ["executionmanagement.jobexecution",
-                              "executionmanagement.jobdescription",
-                              "executionmanagement.jobmanager",
-                              "executionmanagement.executionandplanning",
-                              "executionmanagement.reservation",
-                              ]
-        service.Type = "org.teragrid.PBS"
-        service.QualityLevel = "production"
-
-        return service
-        
-#######################################################################################################################
+    def addTeraGridPlatform(self, environments):
+        platform_doc = self._getInput("teragrid/platform.txt")
+        self.platform = platform_doc.platform
+        for env in environments:
+            env.Extension["TeraGridPlatform"] = self.platform

@@ -36,8 +36,6 @@ class PbsComputingActivitiesStep(ComputingActivitiesStep):
         self.name = "glue2/pbs/computing_activities"
         self.accepts_params["qstat"] = "the path to the PBS qstat program (default 'qstat')"
 
-        self.sched_name = "PBS"
-
     def _run(self):
         self.info("running")
 
@@ -191,8 +189,6 @@ class PbsComputingActivityUpdateStep(ComputingActivityUpdateStep):
 
         self.name = "glue2/pbs/computing_activity_update"
         self.accepts_params["server_logs_dir"] = "the path to the PBS spool/server_logs directory (optional)"
-
-        self.sched_name = "PBS"
 
         # caching job information may not be the best idea for systems with very large queues...
         self.activities = {}
