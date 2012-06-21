@@ -1,0 +1,83 @@
+{
+  "name": "glue2_pbs",
+  "period": 120,
+  "steps": [
+    { "name": "ipf/resource_name",
+      "params": {
+        "resource_name": "torquemoab.alamo.futuregrid.org"
+      }
+    },
+    { "name": "ipf/site_name",
+      "params": {
+        "site_name": "tacc.futuregrid.org"
+      }
+    },
+    { "name": "glue2/gram5/computing_endpoint",
+      "params": {
+        "endpoint": {
+          "Name": "gram5-pbs",
+          "URL": "gram://daemon.alamo.futuregrid.org:2119/jobmanager-pbs"
+        }
+      }
+    },
+    { "name": "glue2/gram5/computing_endpoint",
+      "params": {
+        "endpoint": {
+          "Name": "gram5-fork",
+          "URL": "gram://daemon.alamo.futuregrid.org:2119/jobmanager-fork"
+        }
+      }
+    },
+    { "name": "glue2/pbs/computing_activities" },
+    { "name": "glue2/pbs/computing_shares" },
+    { "name": "glue2/pbs/computing_service" },
+    { "name": "glue2/pbs/execution_environments" },
+    { "name": "glue2/pbs/computing_manager" },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["glue2/teragrid/public_compute.json"],
+        "path": "glue2_public.json"
+      }
+    },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["glue2/teragrid/private_compute.json"],
+        "path": "glue2_private.json"
+      }
+    },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["glue2/teragrid/public_compute.xml"],
+        "path": "glue2_public.xml"
+      }
+    },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["glue2/teragrid/private_compute.xml"],
+        "path": "glue2_private.xml"
+      }
+    },
+    {
+      "name": "ipf/publish/amqp",
+      "params": {
+        "requires_types": ["glue2/teragrid/public_compute.json"],
+        "service": ["info1.dyn.teragrid.org","info2.dyn.teragrid.org"],
+	"vhost": "teragrid_public",
+        "exchange": "glue2"
+      }
+    },
+    {
+      "name": "ipf/publish/amqp",
+      "params": {
+        "requires_types": ["glue2/teragrid/private_compute.json"],
+        "service": ["info1.dyn.teragrid.org","info2.dyn.teragrid.org"],
+	"vhost": "teragrid_private",
+        "exchange": "glue2"
+      }
+    }
+  ]
+}

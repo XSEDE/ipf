@@ -53,11 +53,9 @@ class ExecutionEnvironmentsStep(GlueStep):
         hosts = self._run()
         host_groups = self._groupHosts(hosts)
 
-        for index in range(0,len(host_groups)):
-            host_groups[index].Name = "NodeType%d" % (index+1)
-            host_groups[index].ID = "urn:glue2:ExecutionEnvironment:%s.%s" % \
-                                    (host_groups[index].Name,self.resource_name)
-            host_groups[index].ComputingService = "urn:glue2:ComputingService:%s" % (self.resource_name)
+        for host_group in host_groups:
+            host_group.ID = "urn:glue2:ExecutionEnvironment:%s.%s" % (host_group.Name,self.resource_name)
+            host_group.ComputingManager = "urn:glue2:ComputingManager:%s" % (self.resource_name)
 
         if "glue2/teragrid/execution_environments.xml" in self.requested_types:
             self.debug("sending output glue2/teragrid/execution_environment.xml")
@@ -66,11 +64,22 @@ class ExecutionEnvironmentsStep(GlueStep):
             self.debug("sending output glue2/teragrid/execution_environment.json")
             self.output_queue.put(ExecutionEnvironmentsDocumentJson(self.resource_name,host_groups))
 
+    def _shouldUseName(self, hosts):
+        names = set()
+        for host in hosts:
+            names.add(host.Name)
+        print("**** %d names used by %d hosts" % (len(names),len(hosts)))
+        if len(names) == 1 or len(names) < len(hosts):
+            return True
+        else:
+            return False
+
     def _groupHosts(self, hosts):
+        use_name = self._shouldUseName(hosts)
         host_groups = []
         for host in hosts:
             for host_group in host_groups:
-                if host.sameHostGroup(host_group):
+                if host.sameHostGroup(host_group,use_name):
                     if "UsedAverageLoad" in host.Extension:
                         host_load = host.Extension["UsedAverageLoad"]
                         if not "UsedAverageLoad" in host_group.Extension:
@@ -101,6 +110,8 @@ class ExecutionEnvironmentsStep(GlueStep):
                     break
             if host is not None:
                 host_groups.append(host)
+                if not use_name:
+                    host.Name = "NodeType%d" % len(host_groups)
 
         return host_groups
 
@@ -161,7 +172,7 @@ class ExecutionEnvironment(object):
     def __init__(self):
         # Entity
         self.CreationTime = datetime.datetime.now(tzoffset(0))
-        self.Validity = 300
+        self.Validity = None
         self.ID = None
         self.Name = None
         self.OtherInfo = [] # strings
@@ -208,36 +219,41 @@ class ExecutionEnvironment(object):
         self.OSName = sysName.lower()
         self.OSVersion = release
 
-    def sameHostGroup(self, execEnv):
-        if self.Platform != execEnv.Platform:
+    def __str__(self):
+        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+
+    def sameHostGroup(self, exec_env, useName):
+        if useName and self.Name != exec_env.Name:
             return False
-        if self.PhysicalCPUs != execEnv.PhysicalCPUs:
+        if self.Platform != exec_env.Platform:
             return False
-        if self.LogicalCPUs != execEnv.LogicalCPUs:
+        if self.PhysicalCPUs != exec_env.PhysicalCPUs:
             return False
-        if self.CPUVendor != execEnv.CPUVendor:
+        if self.LogicalCPUs != exec_env.LogicalCPUs:
             return False
-        if self.CPUModel != execEnv.CPUModel:
+        if self.CPUVendor != exec_env.CPUVendor:
             return False
-        if self.CPUVersion != execEnv.CPUVersion:
+        if self.CPUModel != exec_env.CPUModel:
             return False
-        if self.CPUClockSpeed != execEnv.CPUClockSpeed:
+        if self.CPUVersion != exec_env.CPUVersion:
             return False
-        if self.MainMemorySize != execEnv.MainMemorySize:
+        if self.CPUClockSpeed != exec_env.CPUClockSpeed:
             return False
-        #if self.VirtualMemorySize != execEnv.VirtualMemorySize:
+        if self.MainMemorySize != exec_env.MainMemorySize:
+            return False
+        #if self.VirtualMemorySize != exec_env.VirtualMemorySize:
         #    return False
-        if self.OSFamily != execEnv.OSFamily:
+        if self.OSFamily != exec_env.OSFamily:
             return False
-        if self.OSName != execEnv.OSName:
+        if self.OSName != exec_env.OSName:
             return False
-        if self.OSVersion != execEnv.OSVersion:
+        if self.OSVersion != exec_env.OSVersion:
             return False
 
-        if len(self.ComputingShare) != len(execEnv.ComputingShare):
+        if len(self.ComputingShare) != len(exec_env.ComputingShare):
             return False
         for share in self.ComputingShare:
-            if not share in execEnv.ComputingShare:
+            if not share in exec_env.ComputingShare:
                 return False
 
         return True
@@ -253,7 +269,8 @@ class ExecutionEnvironment(object):
         # Entity
         e = doc.createElement("CreationTime")
         e.appendChild(doc.createTextNode(dateTimeToText(self.CreationTime)))
-        e.setAttribute("Validity",str(self.Validity))
+        if self.Validity is not None:
+            e.setAttribute("Validity",str(self.Validity))
         root.appendChild(e)
 
         e = doc.createElement("ID")
@@ -426,7 +443,8 @@ class ExecutionEnvironment(object):
 
         # Entity
         doc["CreationTime"] = dateTimeToText(self.CreationTime)
-        doc["Validity"] = self.Validity
+        if self.Validity is not None:
+            doc["Validity"] = self.Validity
         doc["ID"] = self.ID
         if self.Name is not None:
             doc["Name"] = self.Name
@@ -556,8 +574,11 @@ class ExecutionEnvironment(object):
 
         # Entity
         curTime = time.time()
-        mstr = mstr+" CreationTime='"+epochToXmlDateTime(curTime)+"'\n"
-        mstr = mstr+indent+"                      Validity='300'>\n"
+        mstr = mstr+" CreationTime='"+epochToXmlDateTime(curTime)+"'"
+        if self.Validity is not None:
+            mstr = mstr+"\n"+indent+"                      Validity='300'>\n"
+        else:
+            mstr = mstr+"\n"
         mstr = mstr+indent+"  <ID>"+str(self.ID)+"</ID>\n"
         if self.Name is not None:
             mstr = mstr+indent+"  <Name>"+self.Name+"</Name>\n"

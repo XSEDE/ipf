@@ -44,7 +44,7 @@ class Workflow(object):
 
         self.name = doc.get("name","workflow")
         for step_doc in doc["steps"]:
-            params = step_doc.get("params",{})
+            params = dict(doc.get("params",{}).items()+step_doc.get("params",{}).items())
             #params["id"] = step_doc.get("id")
             #params["requires_types"] = step_doc.get("requires_types",[])
 

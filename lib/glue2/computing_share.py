@@ -89,7 +89,9 @@ class ComputingSharesStep(GlueStep):
             share.computingActivity = []
 
         for activity in self.activities:
-            #print(str(activity))
+            if activity.Queue is None:
+                self.debug("no queue specified for activity %s",activity)
+                continue
             share = shareDict.get(activity.Queue)
             if share == None:
                 self.warning("  didn't find share for queue "+str(activity.Queue))
@@ -161,7 +163,7 @@ class ComputingShare(object):
     def __init__(self):
         # Entity
         self.CreationTime = datetime.datetime.now(tzoffset(0))
-        self.Validity = 300
+        self.Validity = None
         self.ID = None
         self.Name = None
         self.OtherInfo = [] # list of string
@@ -229,6 +231,9 @@ class ComputingShare(object):
         # LSF has access control
         # LSF has queue status
 
+    def __str__(self):
+        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+
     ###################################################################################################################
 
     def toDom(self):
@@ -240,7 +245,8 @@ class ComputingShare(object):
         # Entity
         e = doc.createElement("CreationTime")
         e.appendChild(doc.createTextNode(dateTimeToText(self.CreationTime)))
-        e.setAttribute("Validity",str(self.Validity))
+        if self.Validity is not None:
+            e.setAttribute("Validity",str(self.Validity))
         root.appendChild(e)
 
         e = doc.createElement("ID")
@@ -485,7 +491,8 @@ class ComputingShare(object):
 
         # Entity
         doc["CreationTime"] = dateTimeToText(self.CreationTime)
-        doc["Validity"] = self.Validity
+        if self.Validity is not None:
+            doc["Validity"] = self.Validity
         doc["ID"] = self.ID
         if self.Name is not None:
             doc["Name"] = self.Name
@@ -680,8 +687,11 @@ class ComputingShare(object):
 
         # Entity
         curTime = time.time()
-        mstr = mstr+" CreationTime='"+epochToXmlDateTime(curTime)+"'\n"
-        mstr = mstr+indent+"                Validity='300'>\n"
+        mstr = mstr+" CreationTime='"+epochToXmlDateTime(curTime)+"'"
+        if self.Validity is not None:
+            mstr = mstr+"\n"+indent+"                Validity='300'>\n"
+        else:
+            mstr = mstr+"\n"
         mstr = mstr+indent+"  <ID>"+self.ID+"</ID>\n"
         if self.Name is not None:
             mstr = mstr+indent+"  <Name>"+self.Name+"</Name>\n"

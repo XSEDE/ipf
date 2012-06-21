@@ -1,0 +1,19 @@
+{
+  "name": "pbs_glue2_job_updates",
+  "period": 0,
+  "steps": [
+    { "name": "ipf/resource_name",
+      "params": {
+        "resource_name": "alamo.futuregrid.org"
+      }
+    },
+    { "name": "glue2/pbs/computing_activity_update" },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["glue2/teragrid/computing_activity.json"],
+        "path": "glue2_job_updates.json"
+      }
+    }
+  ]
+}

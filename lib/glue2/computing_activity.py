@@ -56,10 +56,11 @@ class ComputingActivitiesStep(GlueStep):
         self.resource_name = rn_doc.resource_name
 
         activities = self._run()
-
+        self.info("%d activities to publish",len(activities))
         for activity in activities:
             activity.ID = "urn:glue2:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
-            activity.ComputingShare = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
+            if activity.Queue is not None:
+                activity.ComputingShare = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
 
         hide = self._getJobAttribsToHide()
         if "glue2/teragrid/computing_activities.xml" in self.requested_types:
@@ -74,11 +75,11 @@ class ComputingActivitiesStep(GlueStep):
         raise StepError("ComputingActivitiesStep._run not overriden")
 
     def _getJobAttribsToHide(self):
-        hide = {}
+        hide = set()
         try:
             hideStr = self.params["hide_job_attribs"]
             for name in hideStr.split():
-                hide[name] = True
+                hide.add(name)
         except KeyError:
             pass
         return hide
@@ -204,7 +205,7 @@ class ComputingActivity(object):
     def __init__(self):
         # Entity
         self.CreationTime = datetime.datetime.now(tzoffset(0))
-        self.Validity = 300
+        self.Validity = None
         self.ID = None      # string (uri)
         self.Name = None    # string
         self.OtherInfo = [] # list of string
@@ -257,6 +258,9 @@ class ComputingActivity(object):
         self.ComputingShare = None                 # string (LocalID)
         self.ExecutionEnvironment = None           # uri
 
+    def __str__(self):
+        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+
     ###################################################################################################################
 
     def toDom(self, hide):
@@ -268,7 +272,8 @@ class ComputingActivity(object):
         # Entity
         e = doc.createElement("CreationTime")
         e.appendChild(doc.createTextNode(dateTimeToText(self.CreationTime)))
-        e.setAttribute("Validity",str(self.Validity))
+        if self.Validity is not None:
+            e.setAttribute("Validity",str(self.Validity))
         root.appendChild(e)
 
         e = doc.createElement("ID")
@@ -478,12 +483,13 @@ class ComputingActivity(object):
     
     ###################################################################################################################
 
-    def toJson(self, hide):
+    def toJson(self, hide=set()):
         doc = {}
 
         # Entity
         doc["CreationTime"] = dateTimeToText(self.CreationTime)
-        doc["Validity"] = self.Validity
+        if self.Validity is not None:
+            doc["Validity"] = self.Validity
         doc["ID"] = self.ID
         if self.Name is not None and "Name" not in hide:
             doc["Name"] = self.Name
@@ -657,8 +663,11 @@ class ComputingActivity(object):
         mstr = mstr+indent+"<ComputingActivity"
 
         # Entity
-        mstr = mstr+" CreationTime='"+dateTimeToText(self.CreationTime)+"'\n"
-        mstr = mstr+indent+("                   Validity='%d'>\n" % self.Validity)
+        mstr = mstr+" CreationTime='"+dateTimeToText(self.CreationTime)+"'"
+        if Validity is not None:
+            mstr = mstr+"\n"+indent+("                   Validity='%d'>\n" % self.Validity)
+        else:
+            mstr = mstr+"\n"
         mstr = mstr+indent+"  <ID>"+self.ID+"</ID>\n"
         if self.Name is not None and "Name" not in hide:
             mstr = mstr+indent+"  <Name>"+self.Name+"</Name>\n"

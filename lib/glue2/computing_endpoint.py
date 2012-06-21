@@ -34,7 +34,7 @@ class ComputingEndpointStep(GlueStep):
         GlueStep.__init__(self,params)
 
         self.name = "glue2/computing_endpoint"
-        self.description = "This step produces a document containing one GLUE 2 ComputingEndpoint."
+        self.description = "This step produces one or more documents containing one or more GLUE 2 ComputingEndpoint."
         self.time_out = 10
         self.requires_types = ["ipf/resource_name.txt"]
         self.produces_types = ["glue2/teragrid/computing_endpoint.xml",

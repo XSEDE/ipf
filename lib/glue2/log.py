@@ -1,9 +1,29 @@
 
+###############################################################################
+#   Copyright 2012 The University of Texas at Austin                          #
+#                                                                             #
+#   Licensed under the Apache License, Version 2.0 (the "License");           #
+#   you may not use this file except in compliance with the License.          #
+#   You may obtain a copy of the License at                                   #
+#                                                                             #
+#       http://www.apache.org/licenses/LICENSE-2.0                            #
+#                                                                             #
+#   Unless required by applicable law or agreed to in writing, software       #
+#   distributed under the License is distributed on an "AS IS" BASIS,         #
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+#   See the License for the specific language governing permissions and       #
+#   limitations under the License.                                            #
+###############################################################################
+
 import logging
 import os
 import time
 import stat
 import sys
+
+from ipf.error import StepError
+
+#######################################################################################################################
 
 # load config file while testing
 import logging.config
@@ -14,6 +34,27 @@ logging.config.fileConfig(os.path.join(ipfHome,"etc","logging.conf"))
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
+#######################################################################################################################
+
+class LogFileWatcher(object):
+    def __init__(self, callback, path):
+        self.callback = callback
+        self.path = path
+        self.keep_running = True
+
+    def run(self):
+        file = LogFile(self.path,self.callback)
+        file.open()
+        while self.keep_running:
+            file.handle()
+            time.sleep(1)
+        file.close()
+
+    def stop(self):
+        self.keep_running = False
+        
+#######################################################################################################################
 
 class LogDirectoryWatcher(object):
     """Discovers new lines in log files and sends them to the callback."""
@@ -42,7 +83,7 @@ class LogDirectoryWatcher(object):
         cur_time = time.time()
         if cur_time - self.last_update < 60:  # update files once a minute
             return
-        logger.info("updating files")
+        logger.debug("updating files")
         cur_files = self._getCurrentFiles()
         for file in cur_files:
             if file.id in self.files:
@@ -59,7 +100,7 @@ class LogDirectoryWatcher(object):
             st = os.stat(path)
             if not stat.S_ISREG(st.st_mode):
                 continue
-            cur_files.append(LogFile(path,st,self.callback))
+            cur_files.append(LogFile(path,self.callback,st))
         return cur_files
 
     def _handleExistingFile(self, file):
@@ -73,7 +114,7 @@ class LogDirectoryWatcher(object):
             file.closeIfNeeded()
 
     def _handleNewFile(self, file):
-        logger.info("new file %s",file.path)
+        logger.info("new file %s %s",file.id,file.path)
         if self.last_update > 0:  # a new file
             file.open(0)
         else:                     # starting up
@@ -86,24 +127,31 @@ class LogDirectoryWatcher(object):
         cur_file_ids = set()
         for file in cur_files:
             cur_file_ids.add(file.id)
+        to_delete = []
         for id in self.files:
             if id in cur_file_ids:
                 continue
             if self.files[id].file != None:
                 self.files[id].file.close()
+            to_delete.append(id)
+        for id in to_delete:
             del self.files[id]
 
+#######################################################################################################################
+
 class LogFile(object):
-    def __init__(self, path, st, callback):
+    def __init__(self, path, callback, st=None):
         self.path = path
         self.id = self._getId(st)
+        if st is None:
+            st = os.stat(path)
         self.mod_time = st.st_mtime
         self.callback = callback
         self.file = None
         self.where = None
             
     def _getId(self, st):
-        return "%s %d" % (st.st_dev, st.st_ino)
+        return "%s-%d" % (st.st_dev, st.st_ino)
 
     def openIfNeeded(self):
         if self._shouldOpen():
@@ -157,6 +205,8 @@ class LogFile(object):
             if line:
                 self.callback(self.path,line)
         self.where = self.file.tell()
+
+#######################################################################################################################
 
 def echo(path, message):
     print("%s: %s" % (path,message))

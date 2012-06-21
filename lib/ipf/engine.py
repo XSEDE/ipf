@@ -43,7 +43,6 @@ def readConfig():
 #######################################################################################################################
 
 class WorkflowEngine(object):
-   
     def __init__(self):
         self.config = readConfig()
         

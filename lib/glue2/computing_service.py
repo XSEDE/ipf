@@ -125,7 +125,7 @@ class ComputingService(object):
     def __init__(self):
         # Entity
         self.CreationTime = datetime.datetime.now(tzoffset(0))
-        self.Validity = 300
+        self.Validity = None
         self.ID = None
         self.Name = None
         self.OtherInfo = [] # strings
@@ -204,7 +204,8 @@ class ComputingService(object):
         # Entity
         e = doc.createElement("CreationTime")
         e.appendChild(doc.createTextNode(dateTimeToText(self.CreationTime)))
-        e.setAttribute("Validity",str(self.Validity))
+        if self.Validity is not None:
+            e.setAttribute("Validity",str(self.Validity))
         root.appendChild(e)
 
         e = doc.createElement("ID")
@@ -314,7 +315,8 @@ class ComputingService(object):
 
         # Entity
         doc["CreationTime"] = dateTimeToText(self.CreationTime)
-        doc["Validity"] = self.Validity
+        if self.Validity is not None:
+            doc["Validity"] = self.Validity
         doc["ID"] = self.ID
         if self.Name is not None:
             doc["Name"] = self.Name
@@ -411,8 +413,11 @@ class ComputingService(object):
 
         # Entity
         curTime = time.time()
-        mstr = mstr+" CreationTime='"+epochToXmlDateTime(curTime)+"'\n"
-        mstr = mstr+indent+"                  Validity='300'>\n"
+        mstr = mstr+" CreationTime='"+epochToXmlDateTime(curTime)+"'"
+        if self.Validity is not None:
+            mstr = mstr+"\n"+indent+"                  Validity='300'>\n"
+        else:
+            mstr = mstr+"\n"
         mstr = mstr+indent+"  <ID>"+self.ID+"</ID>\n"
         if self.Name is not None:
             mstr = mstr+indent+"  <Name>"+self.Name+"</Name>\n"
