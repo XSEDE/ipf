@@ -48,8 +48,7 @@ class PbsComputingActivitiesStep(ComputingActivitiesStep):
         self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            self.error("qstat failed: "+output)
-            raise AgentError("qstat failed: "+output+"\n")
+            raise StepError("qstat failed: "+output+"\n")
 
         jobStrings = []
         curIndex = output.find("Job Id: ")
