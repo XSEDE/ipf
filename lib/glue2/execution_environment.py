@@ -68,7 +68,6 @@ class ExecutionEnvironmentsStep(GlueStep):
         names = set()
         for host in hosts:
             names.add(host.Name)
-        print("**** %d names used by %d hosts" % (len(names),len(hosts)))
         if len(names) == 1 or len(names) < len(hosts):
             return True
         else:
