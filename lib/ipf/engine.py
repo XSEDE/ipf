@@ -13,31 +13,24 @@ import Queue
 
 from ipf.document import Document
 from ipf.error import IpfError, ReadDocumentError
+from ipf.home import IPF_HOME
+from ipf.step import Step
 from ipf.workflow import Workflow
-from ipf.step import Step  # testing
 
 #######################################################################################################################
 
-ipfHome = os.environ.get("IPF_HOME")
-if ipfHome == None:
-    raise IpfError("IPF_HOME environment variable not set")
-logging.config.fileConfig(os.path.join(ipfHome,"etc","logging.conf"))
-
+logging.config.fileConfig(os.path.join(IPF_HOME,"etc","logging.conf"))
 logger = logging.getLogger(__name__)
 
 #######################################################################################################################
 
 def readConfig():
-    ipfHome = os.environ.get("IPF_HOME")
-    if ipfHome == None:
-        raise IpfError("IPF_HOME environment variable not set")
-
     config = ConfigParser.ConfigParser()
-    if os.path.exists(os.path.join(ipfHome,"etc","ipf.cfg")):
-        config.read(os.path.join(ipfHome,"etc","ipf.cfg"))
-    for file_name in os.listdir(os.path.join(ipfHome,"etc")):
+    if os.path.exists(os.path.join(IPF_HOME,"etc","ipf.cfg")):
+        config.read(os.path.join(IPF_HOME,"etc","ipf.cfg"))
+    for file_name in os.listdir(os.path.join(IPF_HOME,"etc")):
         if file_name is not "ipf.cfg" and file_name.endswith(".cfg"):
-            config.read(os.path.join(ipfHome,"etc",file_name))
+            config.read(os.path.join(IPF_HOME,"etc",file_name))
     return config
 
 #######################################################################################################################
@@ -175,12 +168,8 @@ class WorkflowEngine(object):
         return modules
         
     def _readKnownStepsOld(self):
-        ipfHome = os.environ.get("IPF_HOME")
-        if ipfHome == None:
-            raise IpfError("IPF_HOME environment variable not set")
-
         steps = []
-        file = open(os.path.join(ipfHome,"var","known_steps.json"))
+        file = open(os.path.join(IPF_HOME,"var","known_steps.json"))
         doc = json.load(file)
         file.close()
         for step_doc in doc:

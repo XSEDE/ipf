@@ -20,6 +20,7 @@ import os
 import sys
 import time
 
+from ipf.home import IPF_HOME
 from ipf.step import Step
 
 #######################################################################################################################
@@ -58,10 +59,6 @@ class FilePublishStep(Step):
         path = self.params["path"]
         if os.path.isabs(path):
             return path
-        ipfHome = os.environ.get("IPF_HOME")
-        if ipfHome == None:
-            self.error("IPF_HOME environment variable not set")
-            sys.exit(1)
-        return os.path.join(ipfHome,"var",path)
+        return os.path.join(IPF_HOME,"var",path)
 
 #######################################################################################################################

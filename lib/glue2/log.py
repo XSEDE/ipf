@@ -25,15 +25,7 @@ from ipf.error import StepError
 
 #######################################################################################################################
 
-# load config file while testing
-import logging.config
-ipfHome = os.environ.get("IPF_HOME")
-if ipfHome == None:
-    raise IpfError("IPF_HOME environment variable not set")
-logging.config.fileConfig(os.path.join(ipfHome,"etc","logging.conf"))
-
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 #######################################################################################################################
 
@@ -208,6 +200,8 @@ class LogFile(object):
 
 #######################################################################################################################
 
+# testing
+
 def echo(path, message):
     print("%s: %s" % (path,message))
 
@@ -218,5 +212,10 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("usage: log.py <log directory>")
         sys.exit(1)
+
+    import logging.config
+    from ipf.home import IPF_HOME
+    logging.config.fileConfig(os.path.join(IPF_HOME,"etc","logging.conf"))
+
     watcher = LogDirectoryWatcher(doNothing,sys.argv[1])
     watcher.run()
