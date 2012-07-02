@@ -1,5 +1,5 @@
 {
-  "name": "pbs_glue2_job_updates",
+  "name": "nimbus_glue2_job_updates",
   "period": 0,
   "steps": [
     { "name": "ipf/resource_name",
@@ -7,7 +7,7 @@
         "resource_name": "alamo.futuregrid.org"
       }
     },
-    { "name": "glue2/pbs/computing_activity_update" },
+    { "name": "glue2/nimbus/computing_activity_update" },
     {
       "name": "ipf/publish/amqp",
       "params": {

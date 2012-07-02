@@ -34,40 +34,15 @@
     { "name": "glue2/pbs/execution_environments" },
     { "name": "glue2/pbs/computing_manager" },
     {
-      "name": "ipf/publish/file",
-      "params": {
-        "requires_types": ["glue2/teragrid/public_compute.json"],
-        "path": "glue2_public.json"
-      }
-    },
-    {
-      "name": "ipf/publish/file",
-      "params": {
-        "requires_types": ["glue2/teragrid/private_compute.json"],
-        "path": "glue2_private.json"
-      }
-    },
-    {
-      "name": "ipf/publish/file",
-      "params": {
-        "requires_types": ["glue2/teragrid/public_compute.xml"],
-        "path": "glue2_public.xml"
-      }
-    },
-    {
-      "name": "ipf/publish/file",
-      "params": {
-        "requires_types": ["glue2/teragrid/private_compute.xml"],
-        "path": "glue2_private.xml"
-      }
-    },
-    {
       "name": "ipf/publish/amqp",
       "params": {
         "requires_types": ["glue2/teragrid/public_compute.json"],
-        "services": [
-          {"host": "inca.futuregrid.org"}
-        ]
+        "services": [ "inca.futuregrid.org" ],
+        "ssl_options": {
+          "keyfile":"key.pem",
+          "certfile":"cert.pem",
+          "ca_certs":"ca_certs.pem"
+        },
 	"vhost": "monitoring",
         "exchange": "glue2.systems"
       }
@@ -76,9 +51,12 @@
       "name": "ipf/publish/amqp",
       "params": {
         "requires_types": ["glue2/teragrid/private_compute.json"],
-        "services": [
-          {"host": "inca.futuregrid.org"}
-        ]
+        "services": [ "inca.futuregrid.org" ],
+        "ssl_options": {
+          "keyfile":"key.pem",
+          "certfile":"cert.pem",
+          "ca_certs":"ca_certs.pem"
+        },
 	"vhost": "monitoring",
         "exchange": "glue2.activities"
       }
