@@ -16,11 +16,6 @@
 ###############################################################################
 
 import commands
-import datetime
-import os
-import re
-import xml.sax
-import xml.sax.handler
 
 from ipf.error import StepError
 from glue2.execution_environment import *
@@ -39,10 +34,8 @@ class PbsExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
 
     def _run(self):
         self.info("running")
-        try:
-            pbsnodes = self.params["pbsnodes"]
-        except KeyError:
-            pbsnodes = "pbsnodes"
+
+        pbsnodes = self.params.get("pbsnodes","pbsnodes")
 
         cmd = pbsnodes + " -a"
         self.debug("running "+cmd)
@@ -139,11 +132,7 @@ class PbsExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
         return host
         
     def _testProperties(self, properties):
-        try:
-            nodes = self.params["nodes"]
-        except KeyError:
-            nodes = "+*"
-            
+        nodes = self.params.get("nodes","+*")
         toks = nodes.split()
         goodSoFar = False
         for tok in toks:

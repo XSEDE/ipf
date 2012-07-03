@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2011 The University of Texas at Austin                          #
+#   Copyright 2012 The University of Texas at Austin                          #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -19,7 +19,6 @@ import commands
 import datetime
 import os
 import re
-import sys
 
 from ipf.error import StepError
 from glue2.log import LogDirectoryWatcher
@@ -39,10 +38,7 @@ class PbsComputingActivitiesStep(ComputingActivitiesStep):
     def _run(self):
         self.info("running")
 
-        try:
-            qstat = self.params["qstat"]
-        except KeyError:
-            qstat = "qstat"
+        qstat = self.params.get("qstat","qstat")
 
         cmd = qstat + " -f"
         self.debug("running "+cmd)
