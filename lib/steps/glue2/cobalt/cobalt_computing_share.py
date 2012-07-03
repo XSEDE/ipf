@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ###############################################################################
-#   Copyright 2011 The University of Texas at Austin                          #
+#   Copyright 2012 The University of Texas at Austin                          #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -17,53 +17,31 @@
 ###############################################################################
 
 import commands
-import logging
-import os
-import socket
-import sys
 
-from ipf.error import *
-from teragrid.glue2.computing_share import *
-from teragrid.glue2.computing_activity import *
+from ipf.error import StepError
 
-logger = logging.getLogger("CobaltQueuesAgent")
+from glue2.computing_share import *
 
-##############################################################################################################
+#######################################################################################################################
 
-class CobaltQueuesAgent(ComputingSharesAgent):
-    def __init__(self, args={}):
-        ComputingSharesAgent.__init__(self,args)
-        self.name = "teragrid.glue2.CobaltQueuesAgent"
+class PbsComputingSharesStep(ComputingSharesStep):
 
-    def run(self, docs_in=[]):
-        logger.info("running")
-        queues = self._getQueues()
+    def __init__(self, params):
+        ComputingSharesStep.__init__(self,params)
 
-        activities = []
-        for doc in docs_in:
-            if doc.type == "teragrid.glue2.ComputingActivity":
-                activities.append(doc)
-            else:
-                logger.warn("ignoring document of type "+doc.type)
-        self._addActivities(activities,queues)
+        self.name = "glue2/cobalt/computing_shares"
+        self.accepts_params["cqstat"] = "the path to the Cobalt cqstat program (default 'cqstat')"
+        self.accepts_params["cores_per_node"] = "the number of processing cores per node is not provided by the Cobalt partlist program (default 8)"
 
-        for queue in queues:
-            queue.id = queue.MappingQueue+"."+self._getSystemName()
+    def _run(self):
 
-        return queues
+        cqstat = self.params.get("cqstat","cqstat")
 
-    def _getQueues(self):
-        cqstat = "cqstat"
-        try:
-            cqstat = self.config.get("cobalt","cqstat")
-        except ConfigParser.Error:
-            pass
         cmd = cqstat + " -lq"
-        logger.debug("running "+cmd)
+        self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            logger.error("cqstat failed: "+output)
-            raise AgentError("cqstat failed: "+output+"\n")
+            raise StepError("cqstat failed: "+output+"\n")
 
         queueStrings = []
         curIndex = output.find("Name: ")
@@ -77,7 +55,6 @@ class CobaltQueuesAgent(ComputingSharesAgent):
                     queueStrings.append(output[curIndex:nextIndex])
                     curIndex = nextIndex
 
-
         queues = []
         for queueString in queueStrings:
             queue = self._getQueue(queueString)
@@ -87,19 +64,14 @@ class CobaltQueuesAgent(ComputingSharesAgent):
 
     def _getQueue(self, queueString):
         queue = ComputingShare()
-        queue.ComputingService = "http://"+self._getSystemName()+"/glue2/ComputingService"
 
-        try:
-            procs_per_node = self.config.getint("cobalt","processors_per_node")
-        except ConfigParser.Error:
-            procs_per_node = 1
+        procs_per_node = self.prams.get("cores_per_node",8)
 
 	lines = queueString.split("\n")
 	for line in lines:
             if line.startswith("Name: "):
                 queue.Name = line[6:]
                 queue.MappingQueue = queue.Name
-                queue.ID = "http://"+self._getSystemName()+"/glue2/ComputingShare/"+queue.Name
             if line.startswith("    State"):
                 state = line.split()[2]
                 if state == "running":
@@ -149,8 +121,4 @@ class CobaltQueuesAgent(ComputingSharesAgent):
         (hour,minute,second)=dStr.split(":")
         return int(hour)*60*60 + int(minute)*60 + int(second)
 
-##############################################################################################################
-
-if __name__ == "__main__":
-    agent = CobaltQueuesAgent.createFromCommandLine()
-    agent.runStdinStdout()
+#######################################################################################################################

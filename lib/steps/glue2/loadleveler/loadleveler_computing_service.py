@@ -16,22 +16,18 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import logging
+from glue2.computing_service import *
 
-from teragrid.glue2.computing_service import *
+#######################################################################################################################
 
-logger = logging.getLogger("LoadLevelerComputingServiceAgent")
+class LoadLevelerComputingServiceStep(ComputingServiceStep):
 
-##############################################################################################################
+    def __init__(self, params):
+        ComputingServiceStep.__init__(self,params)
 
-class LoadLevelerComputingServiceAgent(ComputingServiceAgent):
-    def __init__(self, args={}):
-        ComputingServiceAgent.__init__(self,args)
-        self.name = "teragrid.glue2.LoadLevelerComputingService"
+        self.name = "glue2/loadleveler/computing_service"
 
-    def run(self, docs_in=[]):
-        logger.info("running")
-
+    def _run(self):
         service = ComputingService()
         service.Name = "LoadLeveler"
         service.Capability = ["executionmanagement.jobexecution",
@@ -43,23 +39,6 @@ class LoadLevelerComputingServiceAgent(ComputingServiceAgent):
         service.Type = "org.teragrid.LoadLeveler"
         service.QualityLevel = "production"
 
-        service.ID = "http://"+self._getSystemName()+"/glue2/ComputingService"
-        service.ComputingManager = "http://"+self._getSystemName()+"/glue2/ComputingManager"
-
-        for doc in docs_in:
-            if doc.type == "teragrid.glue2.ComputingShare":
-                self._addShare(service,doc)
-            elif doc.type == "teragrid.glue2.ComputingEndpoint":
-                service.ComputingEndpoint.append(doc.ID)
-            else:
-                logger.warn("ignoring document of type "+doc.type)
-
-        service.id = self._getSystemName()
-
-        return [service]
+        return service
         
-##############################################################################################################
-
-if __name__ == "__main__":    
-    agent = LoadLevelerComputingServiceAgent.createFromCommandLine()
-    agent.runStdinStdout()
+#######################################################################################################################

@@ -16,45 +16,24 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import logging
+from glue2.computing_manager import *
 
-from teragrid.glue2.computing_manager import *
+#######################################################################################################################
 
-logger = logging.getLogger("LsfComputingManagerAgent")
+class LsfComputingManagerStep(ComputingManagerStep):
 
-##############################################################################################################
+    def __init__(self, params):
+        ComputingManagerStep.__init__(self,params)
 
-class LsfComputingManagerAgent(ComputingManagerAgent):
-    def __init__(self, args={}):
-        ComputingManagerAgent.__init__(self,args)
-        self.name = "teragrid.glue2.LsfComputingManager"
+        self.name = "glue2/lsf/computing_manager"
 
-    def run(self, docs_in=[]):
-        logger.info("running")
-
+    def _run(self):
         manager = ComputingManager()
         manager.ProductName = "LSF"
         manager.Name = "LSF"
         manager.Reservation = True
         #self.BulkSubmission = True
-        manager.ID = "http://"+self._getSystemName()+"/glue2/ComputingManager"
 
-        for doc in docs_in:
-            if doc.type == "teragrid.glue2.ComputingService":
-                manager.ComputingService = doc.ID
-            elif doc.type == "teragrid.glue2.ExecutionEnvironment":
-                manager._addExecutionEnvironment(doc)
-            elif doc.type == "teragrid.glue2.ComputingShare":
-                manager._addComputingShare(doc)
-            else:
-                logger.warn("ignoring document of type "+doc.type)
+        return manager
 
-        manager.id = self._getSystemName()
-
-        return [manager]
-
-##############################################################################################################
-
-if __name__ == "__main__":    
-    agent = LsfComputingManagerAgent.createFromCommandLine()
-    agent.runStdinStdout()
+#######################################################################################################################

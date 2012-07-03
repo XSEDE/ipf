@@ -17,60 +17,31 @@
 ###############################################################################
 
 import commands
-import logging
-import os
-import socket
-import sys
 
-from ipf.error import *
-from teragrid.glue2.computing_share import *
-from teragrid.glue2.computing_activity import *
+from ipf.error import StepError
 
-logger = logging.getLogger("LsfQueuesAgent")
+from glue2.computing_share import *
 
-##############################################################################################################
+#######################################################################################################################
 
-#arg.defaultValue = "qconf"
-#arg.description = "The path to the LSF qconf program. Only needed if 'qconf' won't execute."
+class LsfComputingSharesStep(ComputingSharesStep):
 
-##############################################################################################################
+    def __init__(self, params):
+        ComputingSharesStep.__init__(self,params)
 
-class LsfQueuesAgent(ComputingSharesAgent):
-    def __init__(self, args={}):
-        ComputingSharesAgent.__init__(self,args)
-        self.name = "teragrid.glue2.LsfQueuesAgent"
-        # ComputingActivity can't parse XML yet
-        #self._doc_class["teragrid/glue2/ComputingActivity"] = ComputingActivity
+        self.name = "glue2/lsf/computing_shares"
+        self.accepts_params["bqueues"] = "the path to the LSF bqueues program (default 'bqueues')"
 
-    def run(self, docs_in=[]):
-        logger.info("running")
-        queues = self._getQueues()
+    def _run(self):
+        self.info("running")
 
-        activities = []
-        for doc in docs_in:
-            if doc.type == "teragrid.glue2.ComputingActivity":
-                activities.append(doc)
-            else:
-                logger.warn("ignoring document of type "+doc.type)
-        self._addActivities(activities,queues)
+        bqueues = self.params.get("bqueues","bqueues")
 
-        for queue in queues:
-            queue.id = queue.MappingQueue+"."+self._getSystemName()
-
-        return queues
-
-    def _getQueues(self):
-        bqueues = "bqueues"
-        try:
-            bqueues = self.config.get("lsf","bqueues")
-        except ConfigParser.Error:
-            pass
-        cmd = arguments["bqueues"].value + " -l"
-        logger.debug("running "+cmd)
+        cmd = bqueues + " -l"
+        self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            logger.error("bqueues failed: "+output)
-            raise AgentError("bqueues failed: "+output+"\n")
+            raise StepError("bqueues failed: "+output+"\n")
 
         queues = []
         queueStrings = output.split("------------------------------------------------------------------------------")
@@ -93,15 +64,12 @@ class LsfQueuesAgent(ComputingSharesAgent):
                 lineNumber = lineNum + 1
                 break
         if queueName == None:
-            logger.error("didn't find queue name in output")
-            raise AgentError("Error: didn't find queue name in output")
+            raise StepError("Error: didn't find queue name in output: "+queueString)
 
         ComputingShare.__init__(self,sensor)
 
         queue.Name = queueName
-        queue.ID = "http://"+queue.sensor.getSystemName()+"/glue2/ComputingShare/"+queue.Name
         queue.MappingQueue = queue.Name
-        queue.ComputingService = "http://"+self._getSystemName()+"/glue2/ComputingService"
 
         for lineNum in range(lineNumber,len(lines)):
             if lines[lineNum].startswith("  -- "):
@@ -183,10 +151,10 @@ class LsfQueuesAgent(ComputingSharesAgent):
             if lines[lineNum].startswith(" RUNLIMIT"):
                 toks = lines[lineNum+1].split()
                 if len(toks) < 2:
-                    logger.warn("failed to parse run limit")
+                    self.warn("failed to parse run limit")
                     return None
                 if toks[1] != "min":
-                    logger.warn("don't understand time unit '" + toks[1] + "'")
+                    self.warn("don't understand time unit '" + toks[1] + "'")
                     return None
                 return float(toks[0])*60
         return None
@@ -206,8 +174,4 @@ class LsfQueuesAgent(ComputingSharesAgent):
                 return (None,None,None)
         return (None,None,None)
 
-##############################################################################################################
-
-if __name__ == "__main__":
-    agent = LsfQueuesAgent.createFromCommandLine()
-    agent.runStdinStdout()
+#######################################################################################################################

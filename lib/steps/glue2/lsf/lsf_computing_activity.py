@@ -18,52 +18,38 @@
 
 import commands
 import datetime
-import logging
-import os
-import re
-import sys
-import xml.sax
-import xml.sax.handler
-import ConfigParser
 
-from teragrid.glue2.computing_activity import *
+from ipf.error import StepError
+from glue2.log import LogDirectoryWatcher
 
-logger = logging.getLogger("LsfJobsAgent")
+from glue2.computing_activity import *
 
-##############################################################################################################
+#######################################################################################################################
 
-class LsfJobsAgent(ComputingActivitiesAgent):
-    def __init__(self, args={}):
-        ComputingActivitiesAgent.__init__(self,args)
-        self.name = "teragrid.glue2.LsfJobsAgent"
+class LsfComputingActivitiesStep(ComputingActivitiesStep):
 
-    def run(self, docs_in=[]):
-        logger.info("running")
+    def __init__(self, params):
+        ComputingActivitiesStep.__init__(self,params)
 
-        for doc in docs_in:
-            logger.warn("ignoring document of type "+doc.type)
+        self.name = "glue2/lsf/computing_activities"
+        self.accepts_params["bjobs"] = "the path to the LSF bjobs program (default 'bjobs')"
 
-        bjobs = "bjobs"
-        try:
-            bjobs = self.config.get("lsf","bjobs")
-        except ConfigParser.Error:
-            pass
+    def _run(self):
+        self.info("running")
+
+        bjobs = self.params.get("bjobs","bjobs")
 
         cmd = bjobs + " -a -l -u all"
-        logger.debug("running "+cmd)
+        self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            logger.error("bjobs failed: "+output)
-            raise AgentError("bjobs failed: "+output+"\n")
+            raise StepError("bjobs failed: "+output+"\n")
 
         jobStrings = output.split("------------------------------------------------------------------------------")
         for jobString in jobStrings:
             job = self._getJob(jobString)
             if includeQueue(job.Queue):
                 self.activities.append(job)
-
-        for job in jobList:
-            job.id = job.LocalIDFromManager+"."+self._getSystemName()
 
         return jobList
 
@@ -83,35 +69,32 @@ class LsfJobsAgent(ComputingActivitiesAgent):
         m = re.search(r"Job\s*<\S*>",lines[0])
         if m != None:
             job.LocalIDFromManager = job._betweenAngleBrackets(m.group())
-            job.ID = "http://"+job.sensor.getSystemName()+"/glue2/ComputingActivity/"+job.LocalIDFromManager
-            #job.IDFromEndpoint = job.LocalIDFromManager
         else:
-            logger.warn("didn't find Job")
+            self.warn("didn't find Job")
         m = re.search(r"Job Name\s*<\S*>",lines[0])
         if m != None:
             job.Name = job._betweenAngleBrackets(m.group())
         else:
-            logger.info("didn't find Job Name")
+            self.info("didn't find Job Name")
                 
         m = re.search(r"User\s*<\S*>",lines[0])
         if m != None:
             job.LocalOwner = job._betweenAngleBrackets(m.group())
         else:
-            logger.warn("didn't find User")
+            self.warn("didn't find User")
             job.LocalOwner = "UNKNOWN"
 
         m = re.search(r"Project\s*<\S*>",lines[0])
         if m != None:
             job.UserDomain = job._betweenAngleBrackets(m.group())
         else:
-            logger.warn("didn't find Project")
+            self.warn("didn't find Project")
 
         m = re.search(r"Queue\s*<\S*>",lines[0])
         if m != None:
             job.Queue = job._betweenAngleBrackets(m.group())
-            job.ComputingShare = ["http://"+self._getSystemName()+"/glue2/ComputingShare/"+job.Queue]
         else:
-            logger.warn("didn't find Queue in "+lines[0])
+            self.warn("didn't find Queue in "+lines[0])
 
         m = re.search(r"Status\s*<\S*>",lines[0])
         currentState = None
@@ -136,10 +119,10 @@ class LsfJobsAgent(ComputingActivitiesAgent):
             elif status == "UNKWN":
                 job.State = "teragrid:unknown"
             else:
-                logger.warn("found unknown status '"+status+"'")
+                self.warn("found unknown status '"+status+"'")
                 job.State = "teragrid:unknown"
         else:
-            logger.warn("didn't find Status in "+lines[0])
+            self.warn("didn't find Status in "+lines[0])
             job.State = "teragrid:unknown"
 
         #m = re.search(r"Command <\S*>",lines[0])
@@ -159,7 +142,7 @@ class LsfJobsAgent(ComputingActivitiesAgent):
             tempStr = m.group()
             job.RequestedSlots = int(tempStr.split()[0])
         else:
-            logger.info("didn't find Processors, assuming 1")
+            self.info("didn't find Processors, assuming 1")
             job.RequestedSlots = 1
 
         # run limit should be in lines[3], but had one case where it wasn't
@@ -194,7 +177,7 @@ class LsfJobsAgent(ComputingActivitiesAgent):
                 else:
                     # teragrid:held is better, even though LSF calls it PEND. some examples:
                     # Job dependency condition not satisfied;
-                    logger.info("setting state to held for pending reason: "+lines[index+1])
+                    self.info("setting state to held for pending reason: "+lines[index+1])
                     job.State = "teragrid:held"
 
         return job
@@ -229,8 +212,4 @@ class LsfJobsAgent(ComputingActivitiesAgent):
                                  second=second,
                                  tzinfo=localtzoffset())
 
-##############################################################################################################
-
-if __name__ == "__main__":    
-    agent = LsfJobsAgent.createFromCommandLine()
-    agent.runStdinStdout()
+#######################################################################################################################

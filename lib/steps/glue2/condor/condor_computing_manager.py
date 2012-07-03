@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ###############################################################################
-#   Copyright 2011 The University of Texas at Austin                          #
+#   Copyright 2012 The University of Texas at Austin                          #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -16,45 +16,24 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import logging
+from glue2.computing_manager import *
 
-from teragrid.glue2.computing_manager import *
+#######################################################################################################################
 
-logger = logging.getLogger("CondorComputingManagerAgent")
+class CondorComputingManagerStep(ComputingManagerStep):
 
-##############################################################################################################
+    def __init__(self, params):
+        ComputingManagerStep.__init__(self,params)
 
-class CondorComputingManagerAgent(ComputingManagerAgent):
-    def __init__(self, args={}):
-        ComputingManagerAgent.__init__(self,args)
-        self.name = "teragrid.glue2.CondorComputingManager"
+        self.name = "glue2/condor/computing_manager"
 
-    def run(self, docs_in=[]):
-        logger.info("running")
-
+    def _run(self):
         manager = ComputingManager()
         manager.ProductName = "Condor"
         manager.Name = "Condor"
         manager.Reservation = True
         #self.BulkSubmission = True
-        manager.ID = "http://"+self._getSystemName()+"/glue2/ComputingManager"
 
-        for doc in docs_in:
-            if doc.type == "teragrid.glue2.ComputingService":
-                manager.ComputingService = doc.ID
-            elif doc.type == "teragrid.glue2.ExecutionEnvironment":
-                manager._addExecutionEnvironment(doc)
-            elif doc.type == "teragrid.glue2.ComputingShare":
-                manager._addComputingShare(doc)
-            else:
-                logger.warn("ignoring document of type "+doc.type)
+        return manager
 
-        manager.id = self._getSystemName()
-
-        return [manager]
-
-##############################################################################################################
-
-if __name__ == "__main__":    
-    agent = CondorComputingManagerAgent.createFromCommandLine()
-    agent.runStdinStdout()
+#######################################################################################################################

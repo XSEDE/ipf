@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ###############################################################################
-#   Copyright 2011 The University of Texas at Austin                          #
+#   Copyright 2012 The University of Texas at Austin                          #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -17,46 +17,31 @@
 ###############################################################################
 
 import commands
-import datetime
-import logging
-import os
-import re
-import sys
-import xml.sax
-import xml.sax.handler
-import ConfigParser
 
-from ipf.error import *
-from teragrid.glue2.computing_activity import includeQueue
-from teragrid.glue2.execution_environment import *
+from ipf.error import StepError
+from glue2.execution_environment import *
+from glue2.teragrid.platform import PlatformMixIn
 
-logger = logging.getLogger("CondorExecutionEnvironment")
+#######################################################################################################################
 
-##############################################################################################################
+class CondorExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
 
-class CondorExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
-    def __init__(self, args={}):
-        ExecutionEnvironmentsAgent.__init__(self)
-        self.name = "teragrid.glue2.CondorExecutionEnvironment"
+    def __init__(self, params):
+        ExecutionEnvironmentsStep.__init__(self,params)
 
-    def run(self, docs_in=[]):
-        logger.info("running")
+        self.name = "glue2/condor/execution_environments"
+        self.accepts_params["condor_status"] = "the path to the Condor condor_status program (default 'condor_status')"
 
-        for doc in docs_in:
-            logger.warn("ignoring document "+doc.id)
+    def _run(self):
+        self.info("running")
 
-        condor_status = "condor_status"
-        try:
-            condor_status = self.config.get("condor","condor_status")
-        except ConfigParser.Error:
-            pass
+        condor_status = self.params.get("condor_status","condor_status")
 
         cmd = condor_status + " -long"
-        logger.debug("running "+cmd)
+        info.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            logger.error("condor_status failed: "+output)
-            raise AgentError("condor_status failed: "+output+"\n")
+            raise StepError("condor_status failed: "+output+"\n")
 
         node_strings = output.split("\n\n")
 
@@ -70,7 +55,6 @@ class CondorExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
 
     def _getHost(self, node_str):
         host = ExecutionEnvironment()
-        host.ComputingManager = "http://"+self._getSystemName()+"/glue2/ComputingManager"
 
         load = None
         lines = node_str.split("\n")
@@ -134,8 +118,4 @@ class CondorExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
 
         return host
         
-##############################################################################################################
-
-if __name__ == "__main__":    
-    agent = CondorExecutionEnvironmentsAgent.createFromCommandLine()
-    agent.runStdinStdout()
+#######################################################################################################################

@@ -17,53 +17,30 @@
 ###############################################################################
 
 import commands
-import logging
-import os
-import socket
-import sys
 
-from ipf.error import *
-from teragrid.glue2.computing_share import *
-from teragrid.glue2.computing_activity import *
+from ipf.error import StepError
 
-logger = logging.getLogger("LoadLevelerQueuesAgent")
+from glue2.computing_share import *
 
-##############################################################################################################
+#######################################################################################################################
 
-class LoadLevelerQueuesAgent(ComputingSharesAgent):
-    def __init__(self, args={}):
-        ComputingSharesAgent.__init__(self,args)
-        self.name = "teragrid.glue2.LoadLevelerQueuesAgent"
+class LoadLevelerComputingSharesStep(ComputingSharesStep):
+    def __init__(self, params):
+        ComputingSharesStep.__init__(self,params)
 
-    def run(self, docs_in=[]):
-        logger.info("running")
-        queues = self._getQueues()
+        self.name = "glue2/loadleveler/computing_shares"
+        self.accepts_params["llclass"] = "the path to the Load Leveler llclass program (default 'llclass')"
 
-        activities = []
-        for doc in docs_in:
-            if doc.type == "teragrid.glue2.ComputingActivity":
-                activities.append(doc)
-            else:
-                logger.warn("ignoring document of type "+doc.type)
-        self._addActivities(activities,queues)
+    def _run(self):
+        self.info("running")
 
-        for queue in queues:
-            queue.id = queue.MappingQueue+"."+self._getSystemName()
+        llclass = self.params.get("llclass","llclass")
 
-        return queues
-
-    def _getQueues(self):
-        llclass = "llclass"
-        try:
-            llclass = self.config.get("loadleveler","llclass")
-        except ConfigParser.Error:
-            pass
         cmd = llclass + " -l"
-        logger.debug("running "+cmd)
+        self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            logger.error("llclass failed: "+output)
-            raise AgentError("llclass failed: "+output+"\n")
+            raise StepError("llclass failed: "+output+"\n")
 
         queueStrings = []
 
@@ -84,7 +61,6 @@ class LoadLevelerQueuesAgent(ComputingSharesAgent):
 
     def _getQueue(self, queueString):
         queue = ComputingShare()
-        queue.ComputingService = "http://"+self._getSystemName()+"/glue2/ComputingService/SGE"
 
 	lines = queueString.split("\n")
 
@@ -96,8 +72,7 @@ class LoadLevelerQueuesAgent(ComputingSharesAgent):
                 break
 
         if queueName == None:
-            print "didn't find queue name"
-            sys.exit(1)
+            raise StepError("didn't find queue name")
 
         maxSlots = None
 	for line in lines:
@@ -105,7 +80,6 @@ class LoadLevelerQueuesAgent(ComputingSharesAgent):
             if line.find("Name:") >= 0:
                 queue.Name = line[6:]
                 queue.MappingQueue = queue.Name
-                queue.ID = "http://"+self._getSystemName()+"/glue2/ComputingShare/"+queue.Name
             if line.find("Priority:") >= 0 and len(line) > 10:
                 queue.Extension["Priority"] = int(line[10:])
             if line.find("Max_processors:") >= 0 and len(line) > 16:
@@ -172,8 +146,4 @@ class LoadLevelerQueuesAgent(ComputingSharesAgent):
 
         return (minDuration,maxDuration)
 
-##############################################################################################################
-
-if __name__ == "__main__":
-    agent = LoadLevelerQueuesAgent.createFromCommandLine()
-    agent.runStdinStdout()
+#######################################################################################################################

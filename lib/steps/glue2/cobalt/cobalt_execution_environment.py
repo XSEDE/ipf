@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ###############################################################################
-#   Copyright 2011 The University of Texas at Austin                          #
+#   Copyright 2012 The University of Texas at Austin                          #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -18,46 +18,33 @@
 
 import commands
 import datetime
-import logging
-import os
-import re
-import sys
-import xml.sax
-import xml.sax.handler
-import ConfigParser
 
-from ipf.error import *
-from teragrid.glue2.computing_activity import includeQueue
-from teragrid.glue2.execution_environment import *
+from ipf.error import StepError
+from glue2.execution_environment import *
+from glue2.teragrid.platform import PlatformMixIn
 
-logger = logging.getLogger("CobaltExecutionEnvironment")
+#######################################################################################################################
 
-##############################################################################################################
+class CobaltExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
 
-class CobaltExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
-    def __init__(self, args={}):
-        ExecutionEnvironmentsAgent.__init__(self)
-        self.name = "teragrid.glue2.CobaltExecutionEnvironment"
+    def __init__(self, params):
+        ExecutionEnvironmentsStep.__init__(self,params)
 
-    def run(self, docs_in=[]):
-        logger.info("running")
+        self.name = "glue2/cobalt/execution_environments"
+        self.accepts_params["partlist"] = "the path to the Cobalt partlist program (default 'partlist')"
+        self.accepts_params["cores_per_node"] = "the number of processing cores per node is not provided by the Cobalt partlist program (default 8)"
+        self.accepts_params["memory_per_node"] = "the amount of memory per node (in MB) is not provided by the Cobalt partlist program (default 16384)"
 
-        for doc in docs_in:
-            logger.warn("ignoring document "+doc.id)
+    def _run(self):
+        self.info("running")
 
-        partlist = "partlist"
-        try:
-            partlist = self.config.get("cobalt","partlist")
-        except ConfigParser.Error:
-            pass
+        partlist = self.params.get("partlist","partlist")
 
         cmd = partlist + " -a"
-        logger.debug("running "+cmd)
+        selfr.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            logger.error("partlist failed: "+output)
-            raise AgentError("partlist failed: "+output+"\n")
-
+            raise StepError("partlist failed: "+output+"\n")
 
         lines = output.split("\n")
 
@@ -105,24 +92,15 @@ class CobaltExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
                     #hardware offline: switch <switch_id>
                     unavail_nodes = unavail_nodes + partsize
                 else:
-                    logger.warn("found unknown partition state: "+toks[2])
+                    self.warning("found unknown partition state: "+toks[2])
 
         # assuming that all nodes are identical
 
         exec_env = ExecutionEnvironment()
-        try:
-            exec_env.PhysicalCPUs = self.config.getint("cobalt","processors_per_node")
-        except ConfigParser.Error:
-            logger.error("cobalt.processors_per_node not specified")
-            raise AgentError("cobalt.processors_per_node not specified")
+        exec_env.LogicalCPUs = self.params.get("cores_per_node",8)
+        exec_env.PhysicalCPUs = exec_env.LogicalCPUs
 
-        exec_env.LogicalCPUs = exec_env.PhysicalCPUs
-
-        try:
-            exec_env.MainMemorySize = self.config.getint("cobalt","node_memory_size")
-        except ConfigParser.Error:
-            logger.error("cobalt.node_memory_size not specified")
-            raise AgentError("cobalt.node_memory_size not specified")
+        exec_env.MainMemorySize = self.params.get("memory_per_node",16384)
         #exec_env.VirtualMemorySize = 
 
         # use the defaults set for Platform, OSVersion, etc in ExecutionEnvironment (same as the login node)
@@ -131,16 +109,8 @@ class CobaltExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
         exec_env.TotalInstances = (used_nodes + avail_nodes + unavail_nodes) * exec_env.PhysicalCPUs
         exec_env.UnavailableInstances = unavail_nodes * exec_env.PhysicalCPUs
 
-        exec_env.ComputingManager = "http://"+self._getSystemName()+"/glue2/ComputingManager"
-
         exec_env.Name = "NodeType1"
-        exec_env.ID = "http://"+self._getSystemName()+"/glue2/ExecutionEnvironment/"+ exec_env.Name
-        exec_env.id = exec_env.Name+"."+self._getSystemName()
 
         return [exec_env]
         
-##############################################################################################################
-
-if __name__ == "__main__":    
-    agent = CobaltExecutionEnvironmentsAgent.createFromCommandLine()
-    agent.runStdinStdout()
+#######################################################################################################################

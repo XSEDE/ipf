@@ -16,6 +16,8 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
+import copy
+
 from ipf.error import StepError
 
 from steps.glue2.pbs.pbs_computing_activity import *
@@ -23,12 +25,12 @@ from steps.glue2.pbs.pbs_computing_activity import *
 #######################################################################################################################
 
 class PscPbsComputingActivitiesStep(PbsComputingActivitiesStep):
-    name = "glue2/pbs/psc/computing_activities"
-    accepts_params = copy.copy(PbsComputingActivitiesStep.accepts_params)
-    accepts_params["job_list_file"] = "the path to the PSC file containing the list of jobs in schedule order"
 
     def __init__(self, params):
         ComputingActivitiesStep.__init__(self,params)
+
+        self.name = "glue2/pbs/psc/computing_activities"
+        self.accepts_params["job_list_file"] = "the path to the PSC file containing the list of jobs in schedule order"
 
     def _run(self):
         self.info("running")
@@ -37,7 +39,6 @@ class PscPbsComputingActivitiesStep(PbsComputingActivitiesStep):
         try:
             job_list_file = self.params["job_list_file"]
         except KeyError:
-            self.error("job_list_file not specified")
             raise StepError("job_list_file not specified")
 
         try:
@@ -45,7 +46,6 @@ class PscPbsComputingActivitiesStep(PbsComputingActivitiesStep):
             lines = f.readlines()
             f.close()
         except IOError, e:
-            self.error("couldn't read job list from file "+job_list_file)
             raise StepError("couldn't read job list from file "+job_list_file)
 
 	job_ids = []
@@ -63,11 +63,9 @@ class PscPbsComputingActivitiesStep(PbsComputingActivitiesStep):
                 jobs.append(job_dict[job_id])
                 del job_dict[job_id]
             except KeyError:
-                self.warn("didn't find job "+job_id+" in job list")
+                self.warning("didn't find job "+job_id+" in job list")
         for job_id in job_dict.keys():
-            self.warn("didn't find an entry in job list for PBS job "+job_id)
+            self.warning("didn't find an entry in job list for PBS job "+job_id)
         return jobs
 
-
 #######################################################################################################################
-    agent.runStdinStdout()

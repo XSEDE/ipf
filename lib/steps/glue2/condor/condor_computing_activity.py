@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ###############################################################################
-#   Copyright 2011 The University of Texas at Austin                          #
+#   Copyright 2012 The University of Texas at Austin                          #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -18,44 +18,31 @@
 
 import commands
 import datetime
-import logging
-import os
-import re
-import sys
-import xml.sax
-import xml.sax.handler
-import ConfigParser
 
-from ipf.error import *
-from teragrid.glue2.computing_activity import *
+from ipf.error import StepError
+from glue2.log import LogDirectoryWatcher
 
-logger = logging.getLogger("CondorJobsAgent")
+from glue2.computing_activity import *
 
-##############################################################################################################
+#######################################################################################################################
 
-class CondorJobsAgent(ComputingActivitiesAgent):
-    def __init__(self, args={}):
-        ComputingActivitiesAgent.__init__(self,args)
-        self.name = "teragrid.glue2.CondorJobsAgent"
+class CondorComputingActivitiesStep(ComputingActivitiesStep):
+    def __init__(self, params):
+        ComputingActivitiesStep.__init__(self,params)
 
-    def run(self, docs_in=[]):
-        logger.info("running")
+        self.name = "glue2/condor/computing_activities"
+        self.accepts_params["condor_q"] = "the path to the Condor condor_q program (default 'condor_q')"
 
-        for doc in docs_in:
-            logger.warn("ignoring document of type "+doc.type)
+    def _run(self):
+        self.info("running")
 
-        condor_q = "condor_q"
-        try:
-            condor_q = self.config.get("condor","condor_q")
-        except ConfigParser.Error:
-            pass
+        condor_q = self.params.get("condor_q","condor_q")
 
         cmd = condor_q + " -long"
         logger.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            logger.error("condorq failed: "+output)
-            raise AgentError("condorq failed: "+output+"\n")
+            raise StepError("condor_q failed: "+output+"\n")
 
         jobStrings = output.split("\n\n")
 
@@ -106,7 +93,7 @@ class CondorJobsAgent(ComputingActivitiesAgent):
                 elif status == "5":
                     job.State = "teragrid:held"
                 else:
-                    logger.warn("found unknown Condor job status '" + status + "'")
+                    self.warning("found unknown Condor job status '" + status + "'")
                     job.State = "teragrid:unknown"
 
             # not sure if this is right - don't see any mpi jobs for comparison
@@ -140,11 +127,10 @@ class CondorJobsAgent(ComputingActivitiesAgent):
                     job.ComputingManagerEndTime = self._getDateTime(date)
 
         if clusterId == None or procId == None:
-            logger.error("didn't find cluster or process ID in " + jobString)
+            self.error("didn't find cluster or process ID in " + jobString)
             return None
 
         job.LocalIDFromManager = clusterId+"."+procId
-        job.ID = "http://"+self._getSystemName()+"/glue2/ComputingActivity/"+job.LocalIDFromManager
 
         return job
 
@@ -155,8 +141,4 @@ class CondorJobsAgent(ComputingActivitiesAgent):
         # string containing the epoch time
         return datetime.datetime.fromtimestamp(float(aStr),localtzoffset())
 
-##############################################################################################################
-
-if __name__ == "__main__":    
-    agent = CondorJobsAgent.createFromCommandLine()
-    agent.runStdinStdout()
+#######################################################################################################################

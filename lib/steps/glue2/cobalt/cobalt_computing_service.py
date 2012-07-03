@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ###############################################################################
-#   Copyright 2011 The University of Texas at Austin                          #
+#   Copyright 2012 The University of Texas at Austin                          #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -16,50 +16,29 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import logging
+from glue2.computing_service import *
 
-from teragrid.glue2.computing_service import *
+#######################################################################################################################
 
-logger = logging.getLogger("CobaltComputingServiceAgent")
+class PbsComputingServiceStep(ComputingServiceStep):
 
-##############################################################################################################
+    def __init__(self, params):
+        ComputingServiceStep.__init__(self,params)
 
-class CobaltComputingServiceAgent(ComputingServiceAgent):
-    def __init__(self, args={}):
-        ComputingServiceAgent.__init__(self,args)
-        self.name = "teragrid.glue2.CobaltComputingService"
+        self.name = "glue2/cobalt/computing_service"
 
-    def run(self, docs_in=[]):
-        logger.info("running")
-
+    def _run(self):
         service = ComputingService()
-        service.Name = "Cobalt"
+        service.Name = "PBS"
         service.Capability = ["executionmanagement.jobexecution",
                               "executionmanagement.jobdescription",
                               "executionmanagement.jobmanager",
                               "executionmanagement.executionandplanning",
                               "executionmanagement.reservation",
                               ]
-        service.Type = "org.teragrid.COBALT"
+        service.Type = "org.teragrid.Cobalt"
         service.QualityLevel = "production"
 
-        service.ID = "http://"+self._getSystemName()+"/glue2/ComputingService"
-        service.ComputingManager = "http://"+self._getSystemName()+"/glue2/ComputingManager"
+        return service
 
-        for doc in docs_in:
-            if doc.type == "teragrid.glue2.ComputingShare":
-                self._addShare(service,doc)
-            elif doc.type == "teragrid.glue2.ComputingEndpoint":
-                service.ComputingEndpoint.append(doc.ID)
-            else:
-                logger.warn("ignoring document of type "+doc.type)
-
-        service.id = self._getSystemName()
-
-        return [service]
-        
-##############################################################################################################
-
-if __name__ == "__main__":    
-    agent = CobaltComputingServiceAgent.createFromCommandLine()
-    agent.runStdinStdout()
+#######################################################################################################################

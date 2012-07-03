@@ -18,49 +18,32 @@
 
 import commands
 import datetime
-import logging
-import os
-import re
-import sys
-import xml.sax
-import xml.sax.handler
-import ConfigParser
 
-from ipf.error import *
-from teragrid.glue2.computing_activity import includeQueue
-from teragrid.glue2.execution_environment import *
+from ipf.error import StepError
+from glue2.execution_environment import *
+from glue2.teragrid.platform import PlatformMixIn
 
-logger = logging.getLogger("LsfExecutionEnvironment")
+#######################################################################################################################
 
-##############################################################################################################
+class LsfExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
 
-# the Queues argument is defined in ComputingActivity
+    def __init__(self, params):
+        ExecutionEnvironmentsStep.__init__(self,params)
 
-##############################################################################################################
+        self.name = "glue2/lsf/execution_environments"
+        self.accepts_params["lshosts"] = "the path to the LSF lshosts program (default 'lshosts')"
+        self.accepts_params["bhosts"] = "the path to the LSF bhosts program (default 'lshosts')"
 
-class LsfExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
-    def __init__(self, args={}):
-        ExecutionEnvironmentsAgent.__init__(self)
-        self.name = "teragrid.glue2.LsfExecutionEnvironment"
+    def _run(self):
+        self.info("running")
 
-    def run(self, docs_in=[]):
-        logger.info("running")
-
-        for doc in docs_in:
-            logger.warn("ignoring document "+doc.id)
-
-        lshosts = "lshosts"
-        try:
-            lshosts = self.config.get("lsf","lshosts")
-        except ConfigParser.Error:
-            pass
+        lshosts = self.params.get("lshosts","lshosts")
 
         cmd = lshosts + " -w"
-        logger.debug("running "+cmd)
+        info.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            logger.error("lshosts failed: "+output)
-            raise AgentError("lshosts failed: "+output+"\n")
+            raise StepError("lshosts failed: "+output)
 
         lshostsRecords = {}
         lines = output.split("\n")
@@ -68,18 +51,13 @@ class LsfExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
             rec = LsHostsRecord(lines[index])
             lshostsRecords[rec.hostName] = rec
 
-        bhosts = "bhosts"
-        try:
-            bhosts = self.config.get("lsf","bhosts")
-        except ConfigParser.Error:
-            pass
+        bhosts = self.params.get("bhosts","bhosts")
 
         cmd = bhosts + " -w"
-        logger.debug("running "+cmd)
+        self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            logger.error("bhosts failed: "+output)
-            raise AgentError("bhosts failed: "+output+"\n")
+            raise StepError("bhosts failed: "+output)
 
         bhostsRecords = {}
         lines = output.split("\n")
@@ -92,7 +70,7 @@ class LsfExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
             lshost = lshostsRecords.get(host)
             bhost = bhostsRecords.get(host)
             if bhost == None:
-                logger.warn("no bhost record found for "+host)
+                info.warn("no bhost record found for "+host)
                 break
             all_hosts.append(self._getHost(lshost,bhost))
 
@@ -105,9 +83,7 @@ class LsfExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
 
     def _getHost(self, lshost, bhost):
         host = ExecutionEnvironment()
-        host.ComputingManager = "http://"+self._getSystemName()+"/glue2/ComputingManager"
 
-        # ID set by ExecutionEnvironment
         host.Name = lshostsRecord.hostName
 
         host.Platform = lshostsRecord.type.lower()
@@ -129,7 +105,7 @@ class LsfExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
             host.UsedInstances = 0
             host.UnavailableInstances = 1
         else:
-            logger.warn("unknown status: " + bhostsRecord.status)
+            self.warn("unknown status: " + bhostsRecord.status)
 
         toks = lshostsRecord.model.split("_")
         host.CPUVendor = toks[0]
@@ -176,7 +152,7 @@ class LsfExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
 
         # assume the node has the same operating system as the node this script runs on
 
-##############################################################################################################
+#######################################################################################################################
 
 class LsHostsRecord:
     def __init__(self, line):
@@ -238,8 +214,4 @@ class BHostsRecord:
         self.jobSlotsUsedByUserSuspended = int(toks[7])
         self.jobSlotsUsedByPending = int(toks[8])
 
-##############################################################################################################
-
-if __name__ == "__main__":    
-    agent = LsfExecutionEnvironmentsAgent.createFromCommandLine()
-    agent.runStdinStdout()
+#######################################################################################################################

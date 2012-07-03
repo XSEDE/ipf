@@ -18,44 +18,33 @@
 
 import commands
 import datetime
-import logging
-import os
-import re
-import sys
-import xml.sax
-import xml.sax.handler
-import ConfigParser
 
-from ipf.error import *
-from teragrid.glue2.computing_activity import *
+from ipf.error import StepError
+from glue2.log import LogDirectoryWatcher
 
-logger = logging.getLogger("LoadLevelerJobsAgent")
+from glue2.computing_activity import *
 
-##############################################################################################################
+#######################################################################################################################
 
-class LoadLevelerJobsAgent(ComputingActivitiesAgent):
-    def __init__(self, args={}):
-        ComputingActivitiesAgent.__init__(self,args)
-        self.name = "teragrid.glue2.LoadLevelerJobsAgent"
+class LoadLevelerComputingActivitiesStep(ComputingActivitiesStep):
 
-    def run(self, docs_in=[]):
-        logger.info("running")
+    def __init__(self, params):
+        ComputingActivitiesStep.__init__(self,params)
 
-        for doc in docs_in:
-            logger.warn("ignoring document of type "+doc.type)
+        self.name = "glue2/loadleveler/computing_activities"
+        self.accepts_params["llq"] = "the path to the Load Leveler llq program (default 'llq')"
+        self.accepts_params["llstatus"] = "the path to the Load Leveler llstatus program (default 'llstatus')"
 
-        llq = "llq"
-        try:
-            llq = self.config.get("loadleveler","llq")
-        except ConfigParser.Error:
-            pass
+    def _run(self):
+        self.info("running")
+
+        llq = self.params.get("llq","llq")
 
         cmd = llq + " -l"
-        logger.debug("running "+cmd)
+        self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            logger.error("llq failed: "+output)
-            raise AgentError("llq failed: "+output+"\n")
+            raise StepError("llq failed: "+output+"\n")
 
         jobStrings = []
 
@@ -81,18 +70,14 @@ class LoadLevelerJobsAgent(ComputingActivitiesAgent):
         return jobs
 
     def _slotsPerNode(self):
-        llstatus = "llstatus"
-        try:
-            llstatus = self.config.get("loadleveler","llstatus")
-        except ConfigParser.Error:
-            pass
+
+        llstatus = self.params.get("llstatus","llstatus")
 
         cmd = llstatus + " -l"
-        logger.debug("running "+cmd)
+        self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            logger.error("llstatus failed: "+output)
-            raise AgentError("llstatus failed: "+output)
+            raise StepError("llstatus failed: "+output)
 
 	lines = output.split("\n")
         slotOccurances = {}
@@ -132,7 +117,6 @@ class LoadLevelerJobsAgent(ComputingActivitiesAgent):
             line = line.lstrip() # remove leading whitespace
             if line.find("Job Step Id:") >= 0:
                 job.LocalIDFromManager = line[13:]
-                job.ID = "http://"+job.sensor.getSystemName()+"/glue2/ComputingActivity/"+job.LocalIDFromManager
             if line.find("Job Name:") >= 0:
                 job.Name = line[10:]
             if line.find("Owner:") >= 0:
@@ -166,7 +150,7 @@ class LoadLevelerJobsAgent(ComputingActivitiesAgent):
                 elif state == "Not Queued":
                     job.State = "teragrid:pending"
                 else:
-                    logger.warn("found unknown LoadLeveler job state '" + state + "'")
+                    self.warn("found unknown LoadLeveler job state '" + state + "'")
                     job.State = "teragrid:unknown"
             if line.find("Wall Clk Hard Limit:") >= 0:
                 wallTime = job._getDuration(line[21:])
@@ -235,8 +219,4 @@ class LoadLevelerJobsAgent(ComputingActivitiesAgent):
                                  second=second,
                                  tzinfo=localtzoffset())
 
-##############################################################################################################
-
-if __name__ == "__main__":    
-    agent = LoadLevelerJobsAgent.createFromCommandLine()
-    agent.runStdinStdout()
+#######################################################################################################################

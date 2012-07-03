@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ###############################################################################
-#   Copyright 2011 The University of Texas at Austin                          #
+#   Copyright 2012 The University of Texas at Austin                          #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -18,44 +18,32 @@
 
 import commands
 import datetime
-import logging
 import os
-import re
-import sys
-import xml.sax
-import xml.sax.handler
-import ConfigParser
 
-from ipf.error import *
-from teragrid.glue2.computing_activity import *
+from ipf.error import StepError
+from glue2.log import LogDirectoryWatcher
 
-logger = logging.getLogger("CobaltJobsAgent")
+from glue2.computing_activity import *
 
-##############################################################################################################
+#######################################################################################################################
 
-class CobaltJobsAgent(ComputingActivitiesAgent):
-    def __init__(self, args={}):
-        ComputingActivitiesAgent.__init__(self,args)
-        self.name = "teragrid.glue2.CobaltJobsAgent"
+class CobaltComputingActivitiesStep(ComputingActivitiesStep):
+    def __init__(self, params):
+        ComputingActivitiesStep.__init__(self,params)
 
-    def run(self, docs_in=[]):
-        logger.info("running")
+        self.name = "glue2/cobalt/computing_activities"
+        self.accepts_params["cqstat"] = "the path to the Cobalt cqstat program (default 'cqstat')"
 
-        for doc in docs_in:
-            logger.warn("ignoring document of type "+doc.type)
+    def _run(self):
+        self.info("running")
 
-        cqstat = "cqstat"
-        try:
-            cqstat = self.config.get("cobalt","cqstat")
-        except ConfigParser.Error:
-            pass
+        cqstat = self.params.get("cqstat","cqstat")
 
         cmd = cqstat + " -lf"
-        logger.debug("running "+cmd)
+        self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            logger.error("cqstat failed: "+output)
-            raise AgentError("cqstat failed: "+output+"\n")
+            raise StepError("cqstat failed: "+output+"\n")
 
         jobStrings = []
         curIndex = output.find("JobID: ")
@@ -119,7 +107,7 @@ class CobaltJobsAgent(ComputingActivitiesAgent):
                 elif state == "killing":
                     job.State = "teragrid:terminated"
                 else:
-                    logger.warn("found unknown Cobalt job state '" + state + "'")
+                    self.warning("found unknown Cobalt job state '" + state + "'")
                     job.State = "teragrid:unknown"
             if line.startswith("    WallTime "):
                 wallTime = self._getDuration(line.split()[2])
@@ -197,8 +185,4 @@ class CobaltJobsAgent(ComputingActivitiesAgent):
                                  second=second,
                                  tzinfo=localtzoffset())
 
-##############################################################################################################
-
-if __name__ == "__main__":    
-    agent = CobaltJobsAgent.createFromCommandLine()
-    agent.runStdinStdout()
+#######################################################################################################################

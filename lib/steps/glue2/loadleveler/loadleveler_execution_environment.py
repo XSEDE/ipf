@@ -18,45 +18,31 @@
 
 import commands
 import datetime
-import logging
-import os
-import re
-import sys
-import xml.sax
-import xml.sax.handler
-import ConfigParser
 
-from ipf.error import *
-from teragrid.glue2.computing_activity import includeQueue
-from teragrid.glue2.execution_environment import *
+from ipf.error import StepError
+from glue2.execution_environment import *
+from glue2.teragrid.platform import PlatformMixIn
 
-logger = logging.getLogger("LoadLevelerExecutionEnvironment")
+#######################################################################################################################
 
-##############################################################################################################
+class LoadLevelerExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
 
-class LoadLevelerExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
-    def __init__(self, args={}):
-        ExecutionEnvironmentsAgent.__init__(self)
-        self.name = "teragrid.glue2.LoadLevelerExecutionEnvironment"
+    def __init__(self, params):
+        ExecutionEnvironmentsStep.__init__(self,params)
 
-    def run(self, docs_in=[]):
-        logger.info("running")
+        self.name = "glue2/loadleveler/execution_environments"
+        self.accepts_params["llstatus"] = "the path to the Load Leveler llstatus program (default 'llstatus')"
 
-        for doc in docs_in:
-            logger.warn("ignoring document "+doc.id)
+    def _run(self):
+        self.info("running")
 
-        llstatus = "llstatus"
-        try:
-            llstatus = self.config.get("loadleveler","llstatus")
-        except ConfigParser.Error:
-            pass
+        llstatus = self.params.get("llstatus","llstatus")
 
         cmd = llstatus + " -l"
-        logger.debug("running "+cmd)
+        self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            logger.error("llstatus failed: "+output)
-            raise AgentError("llstatus failed: "+output+"\n")
+            raise StepError("llstatus failed: "+output+"\n")
 
         nodeStrings = []
 
@@ -79,7 +65,6 @@ class LoadLevelerExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
 
     def _getHost(self, nodeString):
         host = ExecutionEnvironment()
-        host.ComputingManager = "http://"+self._getSystemName()+"/glue2/ComputingManager/SGE"
 
         lines = nodeString.split("\n")
 
@@ -143,8 +128,4 @@ class LoadLevelerExecutionEnvironmentsAgent(ExecutionEnvironmentsAgent):
         if units == "gb":
             return int(value) * 1024
         
-##############################################################################################################
-
-if __name__ == "__main__":    
-    agent = LoadLevelerExecutionEnvironmentsAgent.createFromCommandLine()
-    agent.runStdinStdout()
+#######################################################################################################################
