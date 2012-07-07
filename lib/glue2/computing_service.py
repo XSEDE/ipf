@@ -76,12 +76,8 @@ class ComputingServiceStep(GlueStep):
         for endpoint in self.endpoints:
             endpoint.ComputingService = service.ID
 
-        if "glue2/teragrid/computing_service.xml" in self.requested_types:
-            self.debug("sending output glue2/teragrid/computing_service.xml")
-            self.output_queue.put(ComputingServiceDocumentXml(self.resource_name,service))
-        if "glue2/teragrid/computing_service.json" in self.requested_types:
-            self.debug("sending output glue2/teragrid/computing_service.json")
-            self.output_queue.put(ComputingServiceDocumentJson(self.resource_name,service))
+        self._output(ComputingServiceDocumentXml(self.resource_name,service))
+        self._output(ComputingServiceDocumentJson(self.resource_name,service))
 
     def _run(self):
         self.error("ComputingServiceStep._run not overriden")

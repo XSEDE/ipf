@@ -50,56 +50,48 @@ class LocalSoftwareStep(Step):
             sys.exit(1)
 
         if mechanism == "software_catalog":
-            return self._runCatalog()
+            self._runCatalog()
         elif mechanism == "script":
-            return self._runScript()
+            self._runScript()
         elif mechanism == "file":
-            return self._runFile()
+            self._runFile()
         else:
-            self.error("mechanism '%s'' unknown, specify 'software_catalog', 'script', or 'file'" % mechanism)
-            sys.exit(1)
+            raise StepError("mechanism '%s'' unknown, specify 'software_catalog', 'script', or 'file'" % mechanism)
 
     def _runCatalog(self):
-        self.error("retrieving from HPC Software Catalog not yet supported")
-        sys.exit(1)
+        raise StepError("retrieving from HPC Software Catalog not yet supported")
 
     def _runScript(self):
         try:
             cmd = self.params["script"]
         except KeyError:
-            self.error("script not specified")
-            sys.exit(1)
+            raise StepError("script not specified")
 
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
-            self.error(cmd+" failed: "+output+"\n")
-            sys.exit(1)
+            raise StepError(cmd+" failed: "+output+"\n")
 
         doc = LocalSoftware()
         doc.body = output
-        return doc
+        self._output(doc)
 
     def _runFile(self):
         try:
             file_name = self.params["file"]
         except KeyError:
-            self.error("file not specified")
-            sys.exit(1)
+            raise StepError("file not specified")
 
         doc = LocalSoftware()
         file = open(file_name,"r")
         doc.body = file.read()
         file.close()
-        return doc
+        self._output(doc)
 
-##############################################################################################################
+#######################################################################################################################
 
 class LocalSoftwareDocumentXml(Document):
     def __init__(self, resource_name, content):
         Document.__init__(self, resource_name, "teragrid.local_software")
         self.body = content
 
-##############################################################################################################
-
-if __name__ == "__main__":
-    StepEngine(LocalSoftwareStep())
+#######################################################################################################################

@@ -55,8 +55,7 @@ class KitsStep(Step):
 
         kits = KitsDocumentXml(rn_doc.body,output)
 
-        self.output_queue.put(kits)
-
+        self._output(kits)
 
 #######################################################################################################################
 

@@ -47,11 +47,8 @@ class TeraGridResourceNameStep(ResourceNameStep):
                 sys.exit(1)
             resource_name = output
 
-        if "ipf/resource_name.txt" in self.requested_types:
-            self.output_queue.put(ResourceNameDocumentTxt(resource_name))
-        if "ipf/resource_name.json" in self.requested_types:
-            self.output_queue.put(ResourceNameDocumentJson(resource_name))
-        if "ipf/resource_name.xml" in self.requested_types:
-            self.output_queue.put(ResourceNameDocumentXml(resource_name))
+        self._output(ResourceNameDocumentTxt(resource_name))
+        self._output(ResourceNameDocumentJson(resource_name))
+        self._output(ResourceNameDocumentXml(resource_name))
     
 #######################################################################################################################

@@ -57,12 +57,8 @@ class ExecutionEnvironmentsStep(GlueStep):
             host_group.ID = "urn:glue2:ExecutionEnvironment:%s.%s" % (host_group.Name,self.resource_name)
             host_group.ComputingManager = "urn:glue2:ComputingManager:%s" % (self.resource_name)
 
-        if "glue2/teragrid/execution_environments.xml" in self.requested_types:
-            self.debug("sending output glue2/teragrid/execution_environment.xml")
-            self.output_queue.put(ExecutionEnvironmentsDocumentXml(self.resource_name,host_groups))
-        if "glue2/teragrid/execution_environments.json" in self.requested_types:
-            self.debug("sending output glue2/teragrid/execution_environment.json")
-            self.output_queue.put(ExecutionEnvironmentsDocumentJson(self.resource_name,host_groups))
+        self._output(ExecutionEnvironmentsDocumentXml(self.resource_name,host_groups))
+        self._output(ExecutionEnvironmentsDocumentJson(self.resource_name,host_groups))
 
     def _shouldUseName(self, hosts):
         names = set()

@@ -51,12 +51,9 @@ class SiteNameStep(Step):
                 raise StepError("host name does not appear to be fully qualified")
             site_name = host_name[index:]
 
-        if "ipf/site_name.txt" in self.requested_types:
-            self.output_queue.put(SiteNameDocumentTxt(site_name))
-        if "ipf/site_name.json" in self.requested_types:
-            self.output_queue.put(SiteNameDocumentJson(site_name))
-        if "ipf/site_name.xml" in self.requested_types:
-            self.output_queue.put(SiteNameDocumentXml(site_name))
+        self._output(SiteNameDocumentTxt(site_name))
+        self._output(SiteNameDocumentJson(site_name))
+        self._output(SiteNameDocumentXml(site_name))
 
 #######################################################################################################################
 

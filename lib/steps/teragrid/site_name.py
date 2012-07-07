@@ -47,11 +47,8 @@ class TeraGridSiteNameStep(SiteNameStep):
                 sys.exit(1)
             site_name = output
 
-        if "ipf/site_name.txt" in self.requested_types:
-            self.output_queue.put(SiteNameDocumentTxt(site_name))
-        if "ipf/site_name.json" in self.requested_types:
-            self.output_queue.put(SiteNameDocumentJson(site_name))
-        if "ipf/site_name.xml" in self.requested_types:
-            self.output_queue.put(SiteNameDocumentXml(site_name))
+        self._output(SiteNameDocumentTxt(site_name))
+        self._output(SiteNameDocumentJson(site_name))
+        self._output(SiteNameDocumentXml(site_name))
 
 #######################################################################################################################

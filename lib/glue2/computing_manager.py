@@ -65,12 +65,8 @@ class ComputingManagerStep(GlueStep):
         for share in self.shares:
             manager._addComputingShare(share)
 
-        if "glue2/teragrid/computing_manager.xml" in self.requested_types:
-            self.debug("sending output glue2/teragrid/computing_manager.xml")
-            self.output_queue.put(ComputingManagerDocumentXml(self.resource_name,manager))
-        if "glue2/teragrid/computing_manager.json" in self.requested_types:
-            self.debug("sending output glue2/teragrid/computing_manager.json")
-            self.output_queue.put(ComputingManagerDocumentJson(self.resource_name,manager))
+        self._output(ComputingManagerDocumentXml(self.resource_name,manager))
+        self._output(ComputingManagerDocumentJson(self.resource_name,manager))
 
 #######################################################################################################################
 

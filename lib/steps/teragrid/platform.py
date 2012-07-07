@@ -56,12 +56,9 @@ class PlatformStep(Step):
                 sys.exit(1)
             platform = output
 
-        if "teragrid/platform.txt" in self.requested_types:
-            self.output_queue.put(PlatformDocumentTxt(rn_doc.body,platform))
-        if "teragrid/platform.json" in self.requested_types:
-            self.output_queue.put(PlatformDocumentJson(rn_doc.body,platform))
-        if "teragrid/platform.xml" in self.requested_types:
-            self.output_queue.put(PlatformDocumentXml(rn_doc.body,platform))
+        self._output(PlatformDocumentTxt(rn_doc.body,platform))
+        self._output(PlatformDocumentJson(rn_doc.body,platform))
+        self._output(PlatformDocumentXml(rn_doc.body,platform))
 
 #######################################################################################################################
 

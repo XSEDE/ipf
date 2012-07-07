@@ -65,10 +65,7 @@ class Step(multiprocessing.Process):
         self.params = params
         
         self.input_queue = multiprocessing.Queue()
-        self.output_queue = multiprocessing.Queue()
-
-        # inputs received over input_queue
-        self.inputs = []
+        self.inputs = []  # input documents received from input_queue, but not yet wanted
         self.no_more_inputs = False
 
         self.logger = logging.getLogger(self._logName())
@@ -128,6 +125,14 @@ class Step(multiprocessing.Process):
         """Run the step - the Engine will have this in its own thread."""
         raise StepError("Step.run not overridden")
 
+    def _output(self, document):
+        if document.type not in self.outputs:
+            return
+        self.info("output %s",document.type)
+        for step in self.outputs[document.type]:
+            self.debug("sending output %s to step %s",document.type,step.id)
+            step.input_queue.put(document)
+
     def _logName(self):
         return self.__module__ + "." + self.__class__.__name__
 
@@ -142,11 +147,6 @@ class Step(multiprocessing.Process):
     def info(self, msg, *args, **kwargs):
         args2 = (self.id,)+args
         self.logger.info("%s - "+msg,*args2,**kwargs)
-        #if "extra" not in kwargs:
-        #    kwargs["extra"] = {"step" : self.id}
-        #else:
-        #    kwargs["extra"]["step"] = self.id
-        #self.logger.info(msg,*args,**kwargs)
 
     def debug(self, msg, *args, **kwargs):
         args2 = (self.id,)+args

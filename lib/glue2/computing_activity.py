@@ -56,19 +56,14 @@ class ComputingActivitiesStep(GlueStep):
         self.resource_name = rn_doc.resource_name
 
         activities = self._run()
-        self.info("%d activities to publish",len(activities))
         for activity in activities:
             activity.ID = "urn:glue2:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
             if activity.Queue is not None:
                 activity.ComputingShare = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
 
         hide = self._getJobAttribsToHide()
-        if "glue2/teragrid/computing_activities.xml" in self.requested_types:
-            self.debug("sending output glue2/teragrid/computing_activities.xml")
-            self.output_queue.put(ComputingActivitiesDocumentXml(self.resource_name,activities,hide))
-        if "glue2/teragrid/computing_activities.json" in self.requested_types:
-            self.debug("sending output glue2/teragrid/computing_activities.json")
-            self.output_queue.put(ComputingActivitiesDocumentJson(self.resource_name,activities,hide))
+        self._output(ComputingActivitiesDocumentXml(self.resource_name,activities,hide))
+        self._output(ComputingActivitiesDocumentJson(self.resource_name,activities,hide))
 
     def _run(self):
         self.error("ComputingActivitiesStep._run not overriden")
@@ -113,12 +108,8 @@ class ComputingActivityUpdateStep(GlueStep):
         activity.ID = "urn:glue2:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
         activity.ComputingShare = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
 
-        if "glue2/teragrid/computing_activity.xml" in self.requested_types:
-            self.debug("sending output glue2/teragrid/computing_activity.xml")
-            self.output_queue.put(ComputingActivityDocumentXml(self.resource_name,activity,self.hide_attribs))
-        if "glue2/teragrid/computing_activity.json" in self.requested_types:
-            self.debug("sending output glue2/teragrid/computing_activity.json")
-            self.output_queue.put(ComputingActivityDocumentJson(self.resource_name,activity,self.hide_attribs))
+        self._output(ComputingActivityDocumentXml(self.resource_name,activity,self.hide_attribs))
+        self._output(ComputingActivityDocumentJson(self.resource_name,activity,self.hide_attribs))
 
     def _run(self):
         self.error("ComputingActivityUpdateStep._run not overriden")

@@ -51,10 +51,8 @@ class PrivateComputeStep(Step):
         private_compute.activities = activities_doc.activities
         private_compute.hide = activities_doc.hide
         
-        if "glue2/teragrid/private_compute.xml" in self.requested_types:
-            self.output_queue.put(PrivateComputeDocumentXml(private_compute))
-        if "glue2/teragrid/private_compute.json" in self.requested_types:
-            self.output_queue.put(PrivateComputeDocumentJson(private_compute))
+        self._output(PrivateComputeDocumentXml(private_compute))
+        self._output(PrivateComputeDocumentJson(private_compute))
 
 #######################################################################################################################
 

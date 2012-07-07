@@ -8,8 +8,6 @@ import os
 import sys
 import time
 import traceback
-import ConfigParser
-import Queue
 
 from ipf.document import Document
 from ipf.error import IpfError, ReadDocumentError
@@ -24,61 +22,36 @@ logger = logging.getLogger(__name__)
 
 #######################################################################################################################
 
-def readConfig():
-    config = ConfigParser.ConfigParser()
-    if os.path.exists(os.path.join(IPF_HOME,"etc","ipf.cfg")):
-        config.read(os.path.join(IPF_HOME,"etc","ipf.cfg"))
-    for file_name in os.listdir(os.path.join(IPF_HOME,"etc")):
-        if file_name is not "ipf.cfg" and file_name.endswith(".cfg"):
-            config.read(os.path.join(IPF_HOME,"etc",file_name))
-    return config
-
-#######################################################################################################################
-
 class WorkflowEngine(object):
     def __init__(self):
-        self.config = readConfig()
+        pass
         
     def run(self, workflow_file_name):
         known_steps = self._readKnownSteps()
 
         workflow = Workflow()
-        workflow.read(workflow_file_name,known_steps,self.config)
+        workflow.read(workflow_file_name,known_steps)
 
         self._setDependencies(workflow)
         logger.info(workflow)
 
         for step in workflow.steps:
-            step.end_time = None
             step.start()
 
-        no_more = set()
+        steps_with_inputs = filter(self._sendNoMoreInputs,workflow.steps)
         while self._anyAlive(workflow.steps):
-            #print("  still running")
-            self._handleOutputs(workflow.steps)
-            self._sendNoMoreInputs(workflow.steps,no_more)
             time.sleep(1.0)  # reduce this after testing
-        self._handleOutputs(workflow.steps)  # in case any are hanging around
+            steps_with_inputs = filter(self._sendNoMoreInputs,steps_with_inputs)
 
-        succeeded = True
-        for step in workflow.steps:
-            if step.exitcode != 0:
-                succeeded = False
-
-        if succeeded:
+        if reduce(lambda b1,b2: b1 and b2, map(lambda step: step.exitcode == 0, workflow.steps)):
             logger.info("workflow succeeded")
-            for step in workflow.steps:
-                if step.exitcode == 0:
-                    logger.debug("  %10s succeeded (%s)" % (step.id,step.name))
-                else:
-                    logger.debug("  %10s failed    (%s)" % (step.id,step.name))
         else:
             logger.error("workflow failed")
             for step in workflow.steps:
                 if step.exitcode == 0:
-                    logger.info("  %10s succeeded (%s)" % (step.id,step.name))
+                    logger.info("  %10s succeeded (%s)",step.id,step.name)
                 else:
-                    logger.error("  %10s failed    (%s)" % (step.id,step.name))
+                    logger.error("  %10s failed    (%s)",step.id,step.name)
                     
     def _anyAlive(self, steps):
         for step in steps:
@@ -86,38 +59,12 @@ class WorkflowEngine(object):
                 return True
         return False
 
-    def _handleOutputs(self, steps):
-        for step in steps:
-            try:
-                while(True):
-                    document = step.output_queue.get(False)
-                    logger.info("output of document %s from %s" % (document.type,step.id))
-                    #logger.debug(document)
-                    if document.type in step.outputs:
-                        logger.info("  routing to %d steps" % len(step.outputs[document.type]))
-                        for dest_step in step.outputs[document.type]:
-                            logger.debug("    routing to %s" % dest_step.id)
-                            dest_step.input_queue.put(document)
-            except Queue.Empty:
-                pass    # it's ok
-
-    def _sendNoMoreInputs(self, steps, no_more):
-        cur_time = time.time()
-        for step in steps:
-            if step.id in no_more:
-                continue
-            if not step.is_alive():
-                continue
-            if self._anyAlive(step.depends_on):
-                continue
-            # potential timing issue - could be outputs in transit
-            #   below is a bit of a hack to address this
-            if step.end_time is None:
-                step.end_time = cur_time
-            if cur_time - step.end_time > 5:
-                logger.info("no more inputs to step %s" % step.id)
-                step.input_queue.put(Step.NO_MORE_INPUTS)
-                no_more.add(step.id)
+    def _sendNoMoreInputs(self, step):
+        if self._anyAlive(step.depends_on):
+            return True
+        logger.debug("no more inputs to step %s",step.id)
+        step.input_queue.put(Step.NO_MORE_INPUTS)
+        return False
     
     def _setDependencies(self, workflow):
         for step in workflow.steps:
@@ -148,7 +95,7 @@ class WorkflowEngine(object):
             cls = stack.pop(0)
             step = cls({})
             if step.name in classes:
-                logger.warn("multiple step classes with name %s - ignoring all but first" % step.name)
+                logger.warn("multiple step classes with name %s - ignoring all but first",step.name)
             else:
                 classes[step.name] = cls
             stack.extend(cls.__subclasses__())
@@ -166,17 +113,5 @@ class WorkflowEngine(object):
                     mod,ext = os.path.splitext(file)
                     modules.append(mod_path+"."+mod)
         return modules
-        
-    def _readKnownStepsOld(self):
-        steps = []
-        file = open(os.path.join(IPF_HOME,"var","known_steps.json"))
-        doc = json.load(file)
-        file.close()
-        for step_doc in doc:
-            step = ProgramStep()
-            step.fromJson(step_doc)
-            if step.name is not None:
-                steps.append(step)
-        return steps
 
 #######################################################################################################################

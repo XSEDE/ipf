@@ -4,11 +4,9 @@ import copy
 import json
 import logging
 import os
-import subprocess
 import sys
 import threading
 import time
-import ConfigParser
 import Queue
 
 from ipf.document import Document
@@ -30,7 +28,7 @@ class Workflow(object):
             wstr += step.__str__("  ")
         return wstr
 
-    def read(self, file_name, known_steps, config):
+    def read(self, file_name, known_steps):
 
         file = open(file_name,"r")
         try:
@@ -51,7 +49,6 @@ class Workflow(object):
             if "name" not in step_doc:
                 raise WorkflowError("workflow step does not specify the 'name' of the step to run")
             try:
-                # if any info in the config applies to the step, add it to params ?
                 step = known_steps[step_doc["name"]](params)
             except KeyError:
                 raise WorkflowError("no step is known with name '%s'" % step_doc["name"])

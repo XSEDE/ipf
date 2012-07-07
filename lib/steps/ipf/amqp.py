@@ -121,7 +121,7 @@ class AmqpPublishStep(Step):
             return
         try:
             self.channel.basicPublish(doc.body,self.exchange,doc.id.encode("utf-8"))
-        except AmqpError:
+        except MtkError:
             self.warning("first publish failed, will try to another service")
             self._connect()
             self.channel.basicPublish(doc.body,self.exchange,doc.id.encode("utf-8"))

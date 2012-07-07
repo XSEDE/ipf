@@ -69,10 +69,8 @@ class PublicComputeStep(Step):
         public_compute.manager = manager_doc.manager
         public_compute.environments = environments_doc.exec_envs
 
-        if "glue2/teragrid/public_compute.xml" in self.requested_types:
-            self.output_queue.put(PublicComputeDocumentXml(public_compute))
-        if "glue2/teragrid/public_compute.json" in self.requested_types:
-            self.output_queue.put(PublicComputeDocumentJson(public_compute))
+        self._output(PublicComputeDocumentXml(public_compute))
+        self._output(PublicComputeDocumentJson(public_compute))
 
 #######################################################################################################################
 

@@ -60,12 +60,8 @@ class ComputingSharesStep(GlueStep):
 
         self._addActivities(shares)
 
-        if "glue2/teragrid/computing_shares.xml" in self.requested_types:
-            self.debug("sending output glue2/teragrid/computing_shares.xml")
-            self.output_queue.put(ComputingSharesDocumentXml(self.resource_name,shares))
-        if "glue2/teragrid/computing_shares.json" in self.requested_types:
-            self.debug("sending output glue2/teragrid/computing_shares.json")
-            self.output_queue.put(ComputingSharesDocumentJson(self.resource_name,shares))
+        self._output(ComputingSharesDocumentXml(self.resource_name,shares))
+        self._output(ComputingSharesDocumentJson(self.resource_name,shares))
 
     def _run(self):
         self.error("ComputingSharesStep._run not overriden")
