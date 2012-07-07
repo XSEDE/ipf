@@ -68,37 +68,42 @@ class Step(multiprocessing.Process):
         self.inputs = []  # input documents received from input_queue, but not yet wanted
         self.no_more_inputs = False
 
+        self.outputs = {}  # steps to send outputs to. keys are document.type, values are lists of steps
+
         self.logger = logging.getLogger(self._logName())
 
     def __str__(self, indent=""):
-        sstr = indent+"Step %s\n" % self.id
+        if self.id is None:
+            sstr = indent+"Step:\n"
+        else:
+            sstr = indent+"Step %s:\n" % self.id
         sstr += indent+"  name:  %s\n" % self.name
         sstr += indent+"  description: %s\n" % self.description
+        sstr += indent+"  class: %s.%s\n" % (self.__module__,self.__class__.__name__)
         if self.time_out is None:
             sstr += indent+"  time out: None\n"
         else:
             sstr += indent+"  time out: %d secs\n" % self.time_out
-        sstr += indent+"  parameters:\n"
-        for param in self.params:
-            sstr += indent+"    %s: %s\n" % (param,self.params[param])
+        if len(self.params) > 0:
+            sstr += indent+"  parameters:\n"
+            for param in self.params:
+                sstr += indent+"    %s: %s\n" % (param,self.params[param])
         sstr += indent+"  requires types:\n"
         for type in self.requires_types:
             sstr += indent+"    %s\n" % type
         sstr += indent+"  produces types:\n"
         for type in self.produces_types:
             sstr += indent+"    %s\n" % type
-        sstr += indent+"  requested types:\n"
-        for type in self.requested_types:
-            sstr += indent+"    %s\n" % type
-
-        # set/used by workflow
-        sstr += indent+"  outputs:\n"
-        try:
+        if len(self.requested_types) > 0:
+            sstr += indent+"  requested types:\n"
+            for type in self.requested_types:
+                sstr += indent+"    %s\n" % type
+        if len(self.outputs) > 0:
+            sstr += indent+"  outputs:\n"
             for type in self.outputs:
                 for step in self.outputs[type]:
                     sstr += indent+"    %s -> %s\n" % (type,step.id)
-        except AttributeError:
-            pass
+
         return sstr
 
     def _getInput(self, type):

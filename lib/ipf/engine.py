@@ -27,7 +27,7 @@ class WorkflowEngine(object):
         pass
         
     def run(self, workflow_file_name):
-        known_steps = self._readKnownSteps()
+        known_steps = self.readKnownSteps()
 
         workflow = Workflow()
         workflow.read(workflow_file_name,known_steps)
@@ -74,7 +74,7 @@ class WorkflowEngine(object):
                 for dstep in step.outputs[type]:
                     dstep.depends_on.append(step)
 
-    def _readKnownSteps(self):
+    def readKnownSteps(self):
         ipf_home = os.environ.get("IPF_HOME")
         if ipf_home == None:
             raise IpfError("IPF_HOME environment variable not set")
