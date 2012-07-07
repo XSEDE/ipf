@@ -33,8 +33,6 @@ class CondorExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
         self.accepts_params["condor_status"] = "the path to the Condor condor_status program (default 'condor_status')"
 
     def _run(self):
-        self.info("running")
-
         condor_status = self.params.get("condor_status","condor_status")
 
         cmd = condor_status + " -long"

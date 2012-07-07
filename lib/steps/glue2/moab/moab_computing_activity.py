@@ -40,8 +40,6 @@ class MoabComputingActivitiesStep(ComputingActivitiesStep):
         self.sched_name = "Moab"
 
     def _run(self):
-        self.info("running")
-
         for doc in docs_in:
             logger.warn("ignoring document of type "+doc.type)
 

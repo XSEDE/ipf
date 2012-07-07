@@ -106,7 +106,6 @@ class NimbusComputingActivitiesStep(ComputingActivitiesStep, NimbusActivityMixIn
         self.accepts_params["nimbus_dir"] = "the path to the NIMBUS directory"
 
     def _run(self):
-        self.info("running")
         try:
             self.nimbus_dir = self.params["nimbus_dir"]
         except KeyError:

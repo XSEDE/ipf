@@ -35,8 +35,6 @@ class LsfExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
         self.accepts_params["bhosts"] = "the path to the LSF bhosts program (default 'lshosts')"
 
     def _run(self):
-        self.info("running")
-
         lshosts = self.params.get("lshosts","lshosts")
 
         cmd = lshosts + " -w"

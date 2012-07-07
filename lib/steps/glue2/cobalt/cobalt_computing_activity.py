@@ -35,8 +35,6 @@ class CobaltComputingActivitiesStep(ComputingActivitiesStep):
         self.accepts_params["cqstat"] = "the path to the Cobalt cqstat program (default 'cqstat')"
 
     def _run(self):
-        self.info("running")
-
         cqstat = self.params.get("cqstat","cqstat")
 
         cmd = cqstat + " -lf"

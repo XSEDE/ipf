@@ -38,8 +38,6 @@ class SgeComputingActivitiesStep(ComputingActivitiesStep):
         self.accepts_params["qstat"] = "the path to the SGE qstat program (default 'qstat')"
 
     def _run(self):
-        self.info("running")
-
         try:
             qstat = self.params["qstat"]
         except KeyError:

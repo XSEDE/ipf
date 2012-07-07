@@ -32,8 +32,6 @@ class LoadLevelerComputingSharesStep(ComputingSharesStep):
         self.accepts_params["llclass"] = "the path to the Load Leveler llclass program (default 'llclass')"
 
     def _run(self):
-        self.info("running")
-
         llclass = self.params.get("llclass","llclass")
 
         cmd = llclass + " -l"

@@ -36,8 +36,6 @@ class LoadLevelerComputingActivitiesStep(ComputingActivitiesStep):
         self.accepts_params["llstatus"] = "the path to the Load Leveler llstatus program (default 'llstatus')"
 
     def _run(self):
-        self.info("running")
-
         llq = self.params.get("llq","llq")
 
         cmd = llq + " -l"

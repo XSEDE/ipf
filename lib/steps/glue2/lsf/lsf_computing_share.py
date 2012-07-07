@@ -33,8 +33,6 @@ class LsfComputingSharesStep(ComputingSharesStep):
         self.accepts_params["bqueues"] = "the path to the LSF bqueues program (default 'bqueues')"
 
     def _run(self):
-        self.info("running")
-
         bqueues = self.params.get("bqueues","bqueues")
 
         cmd = bqueues + " -l"

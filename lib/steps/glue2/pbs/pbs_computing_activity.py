@@ -36,8 +36,6 @@ class PbsComputingActivitiesStep(ComputingActivitiesStep):
         self.accepts_params["qstat"] = "the path to the PBS qstat program (default 'qstat')"
 
     def _run(self):
-        self.info("running")
-
         qstat = self.params.get("qstat","qstat")
 
         cmd = qstat + " -f"
@@ -189,8 +187,6 @@ class PbsComputingActivityUpdateStep(ComputingActivityUpdateStep):
         self.activities = {}
 
     def _run(self):
-        self.info("running")
-
         try:
             dir_name = self.params["server_logs_dir"]
         except KeyError:

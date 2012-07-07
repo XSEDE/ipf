@@ -34,8 +34,6 @@ class LoadLevelerExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
         self.accepts_params["llstatus"] = "the path to the Load Leveler llstatus program (default 'llstatus')"
 
     def _run(self):
-        self.info("running")
-
         llstatus = self.params.get("llstatus","llstatus")
 
         cmd = llstatus + " -l"

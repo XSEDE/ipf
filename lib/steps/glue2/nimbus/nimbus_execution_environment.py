@@ -38,7 +38,6 @@ class NimbusExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
         self.accepts_params["cores_per_node"] = "the number of processing cores per node"
 
     def _run(self):
-        self.info("running")
         try:
             nimbus_nodes = os.path.join(self.params["nimbus_dir"],"bin","nimbus-nodes")
         except KeyError:

@@ -32,8 +32,6 @@ class PbsComputingSharesStep(ComputingSharesStep):
         self.accepts_params["qstat"] = "the path to the PBS qstat program (default 'qstat')"
 
     def _run(self):
-        self.info("running")
-        
         qstat = self.params.get("qstat","qstat")
         cmd = qstat + " -q -G"
         self.debug("running "+cmd)

@@ -36,8 +36,6 @@ class CobaltExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
         self.accepts_params["memory_per_node"] = "the amount of memory per node (in MB) is not provided by the Cobalt partlist program (default 16384)"
 
     def _run(self):
-        self.info("running")
-
         partlist = self.params.get("partlist","partlist")
 
         cmd = partlist + " -a"

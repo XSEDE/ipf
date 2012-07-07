@@ -33,8 +33,6 @@ class PbsExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
         self.accepts_params["nodes"] = "An expression describing the nodes to include (optional). The syntax is a series of +<property> and -<property> where <property> is the name of a node property or a '*'. '+' means include '-' means exclude. The expression is processed in order and the value for a node at the end determines if it is shown."
 
     def _run(self):
-        self.info("running")
-
         pbsnodes = self.params.get("pbsnodes","pbsnodes")
 
         cmd = pbsnodes + " -a"

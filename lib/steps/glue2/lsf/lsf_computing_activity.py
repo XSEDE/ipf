@@ -35,8 +35,6 @@ class LsfComputingActivitiesStep(ComputingActivitiesStep):
         self.accepts_params["bjobs"] = "the path to the LSF bjobs program (default 'bjobs')"
 
     def _run(self):
-        self.info("running")
-
         bjobs = self.params.get("bjobs","bjobs")
 
         cmd = bjobs + " -a -l -u all"

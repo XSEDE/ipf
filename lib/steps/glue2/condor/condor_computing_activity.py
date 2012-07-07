@@ -34,8 +34,6 @@ class CondorComputingActivitiesStep(ComputingActivitiesStep):
         self.accepts_params["condor_q"] = "the path to the Condor condor_q program (default 'condor_q')"
 
     def _run(self):
-        self.info("running")
-
         condor_q = self.params.get("condor_q","condor_q")
 
         cmd = condor_q + " -long"
