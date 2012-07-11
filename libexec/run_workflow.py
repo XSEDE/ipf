@@ -15,24 +15,23 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import os
 import sys
+
+min_version = (2,6)
+max_version = (2,9)
+
+if sys.version_info < min_version or sys.version_info > max_version:
+    print(stderr,"Python version 2.6 or 2.7 is required")
+    sys.exit(1)
+
+from ipf.engine import WorkflowEngine
 
 #######################################################################################################################
 
-#### for with distutils ####
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("usage: run_workflow.py <workflow file>")
+        sys.exit(1)
 
-# use the environment variable if set (during development)
-#IPF_HOME = os.environ.get("IPF_HOME")
-
-# use the location of the Python install otherwise (e.g. installed into a virtualenv)
-#if IPF_HOME == None:
-#    IPF_HOME = sys.prefix
-
-#### for with custom install.py ####
-
-path = os.path.abspath(__file__)
-path = os.path.split(path)[0]
-path = os.path.split(path)[0]
-path = os.path.split(path)[0]
-IPF_HOME = path
+    engine = WorkflowEngine()
+    engine.run(sys.argv[1])
