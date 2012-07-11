@@ -4,30 +4,34 @@ import os
 import shutil
 import tempfile
 
-version = "2.0.0"
+version = "0.5"
 
 os.umask(0)
 
-path = tempfile.mkdtemp()
-print(path)
+temp_path = tempfile.mkdtemp()
+print(temp_path)
 
-gpath = os.path.join(path,"glue2-"+version)
-os.mkdir(gpath,0755)
+path = os.path.join(temp_path,"ipf-"+version)
+os.mkdir(path,0755)
 
-shutil.copyfile("LICENSE-2.0.txt",os.path.join(gpath,"LICENSE-2.0.txt"))
+shutil.copyfile("LICENSE-2.0.txt",os.path.join(path,"LICENSE-2.0.txt"))
+shutil.copyfile("install.py",os.path.join(path,"install.py"))
 
 ig=shutil.ignore_patterns("*~","*.pyc","*.pem")
 
-shutil.copytree("bin",os.path.join(gpath,"bin"),ignore=ig)
-shutil.copytree("libexec",os.path.join(gpath,"libexec"),ignore=ig)
-shutil.copytree("lib",os.path.join(gpath,"lib"),ignore=ig)
-shutil.copytree("etc",os.path.join(gpath,"etc"),ignore=ig)
+shutil.copytree("bin",os.path.join(path,"bin"),ignore=ig)
+shutil.copytree("lib",os.path.join(path,"lib"),ignore=ig)
+shutil.copytree("etc",os.path.join(path,"etc"),ignore=ig)
 
-os.mkdir(os.path.join(gpath,"var"))
+shutil.copy(os.path.join("..","mtk","lib","mtk","__init__.py"),
+            os.path.join(path,"lib","mtk","__init__.py"))
+shutil.copytree(os.path.join("..","mtk","lib","mtk","amqp_0_9_1"),
+                os.path.join(path,"lib","mtk","amqp_0_9_1"),
+                ignore=ig)
 
 dir = os.getcwd()
-os.chdir(path)
-os.system("tar czf "+os.path.join(dir,"glue2-"+version+".tar.gz")+" glue2-"+version)
+os.chdir(temp_path)
+os.system("tar czf "+os.path.join(dir,"ipf-"+version+".tar.gz")+" ipf-"+version)
 os.chdir(dir)
 
-shutil.rmtree(path)
+shutil.rmtree(temp_path)
