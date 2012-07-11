@@ -16,6 +16,7 @@
 ###############################################################################
 
 import commands
+import copy
 import json
 import logging
 import multiprocessing
@@ -136,7 +137,8 @@ class Step(multiprocessing.Process):
         self.info("output %s",document.type)
         for step in self.outputs[document.type]:
             self.debug("sending output %s to step %s",document.type,step.id)
-            step.input_queue.put(document)
+            # isolate any changes to the document by queuing copies
+            step.input_queue.put(copy.deepcopy(document))
 
     def _logName(self):
         return self.__module__ + "." + self.__class__.__name__
