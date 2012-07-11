@@ -4,7 +4,7 @@
   "steps": [
     { "name": "ipf/resource_name",
       "params": {
-        "resource_name": "alamo.futuregrid.org"
+        "resource_name": "nimbus.alamo.futuregrid.org"
       }
     },
     { "name": "glue2/nimbus/computing_activity_update" },
