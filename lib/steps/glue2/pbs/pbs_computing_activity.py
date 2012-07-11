@@ -239,20 +239,20 @@ class PbsComputingActivityUpdateStep(ComputingActivityUpdateStep):
             activity.ComputingManagerSubmissionTime = self._getDateTime(toks[0])
             try:
                 m = re.search(" owner = (\w+)@(\S*),",toks[5])  # just the user part of user@host
-                #m = re.search(toks[5]," owner = (\S+)@\S*,")  # just the user part of user@host
                 activity.LocalOwner = m.group(1)
             except AttributeError:
                 self.warning("didn't find owner in log mesage: %s",toks)
                 return
             try:
                 m = re.search(" job name = (\S+)",toks[5])
-                activity.Name = m.group(1).split(".")[0]  # just the a part of a.b.?
+                #activity.Name = m.group(1).split(".")[0]  # just the a part of a.b.?
+                activity.Name = m.group(1)
             except AttributeError:
                 self.warning("didn't find job name in log mesage: %s",toks)
                 return
             try:
                 m = re.search(" queue = (\S+)",toks[5])
-                activity.Queue = m.group(1).split(".")
+                activity.Queue = m.group(1).split(".")[0]
             except AttributeError:
                 self.warning("didn't find queue in log mesage: %s",toks)
                 return
@@ -272,12 +272,21 @@ class PbsComputingActivityUpdateStep(ComputingActivityUpdateStep):
             activity.State = "teragrid:terminated"
             activity.ComputingManagerEndTime = self._getDateTime(toks[0])
             del self.activities[id]
+        elif "Job Modified" in toks[5]:
+            # when nodes aren't available, log has jobs that quickly go from Job Queued to Job Run to Job Modified
+            # and the jobs are pending after this
+            if activity.State == "teragrid:running":
+                activity.State = "teragrid:pending"
+                activity.StartTime = None
+            else:
+                self.warning("not sure how to handle log event: %s",toks)
         else:
             self.warning("unhandled log event: %s",toks)
             return
-        
+
         if activity.Queue is None or self._includeQueue(activity.Queue):
             self.output(activity)
+            
 
     def _getDateTime(self, dt_str):
         # Example: 06/10/2012 16:17:41
