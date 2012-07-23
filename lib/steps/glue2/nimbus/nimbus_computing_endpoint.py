@@ -55,7 +55,7 @@ class NimbusEndpointStep(ComputingEndpointStep):
 
         endpoint = self._getEndpoint(issuer)
         endpoint.Name = "nimbus-rest"
-        endpoint.URL = "http://%s:8444"
+        endpoint.URL = "http://%s:8444" % host_name
         endpoint.Technology = "REST"
         endpoint.InterfaceName = "EC2"
         endpoints.append(endpoint)
