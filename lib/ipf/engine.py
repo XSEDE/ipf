@@ -75,10 +75,7 @@ class WorkflowEngine(object):
                     dstep.depends_on.append(step)
 
     def readKnownSteps(self):
-        ipf_home = os.environ.get("IPF_HOME")
-        if ipf_home == None:
-            raise IpfError("IPF_HOME environment variable not set")
-        path = os.path.join(ipf_home,"lib","steps")
+        path = os.path.join(IPF_HOME,"lib","steps")
         mod_path = "steps"
         modules = self._readModules(path, mod_path)
 
