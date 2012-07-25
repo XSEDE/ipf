@@ -40,7 +40,7 @@ class WorkflowEngine(object):
 
         steps_with_inputs = filter(self._sendNoMoreInputs,workflow.steps)
         while self._anyAlive(workflow.steps):
-            time.sleep(1.0)  # reduce this after testing
+            time.sleep(0.1)
             steps_with_inputs = filter(self._sendNoMoreInputs,steps_with_inputs)
 
         if reduce(lambda b1,b2: b1 and b2, map(lambda step: step.exitcode == 0, workflow.steps)):
@@ -54,10 +54,7 @@ class WorkflowEngine(object):
                     logger.error("  %10s failed    (%s)",step.id,step.name)
                     
     def _anyAlive(self, steps):
-        for step in steps:
-            if step.is_alive():
-                return True
-        return False
+        return reduce(lambda b1,b2: b1 or b2, map(lambda step: step.is_alive(), steps), False)
 
     def _sendNoMoreInputs(self, step):
         if self._anyAlive(step.depends_on):
