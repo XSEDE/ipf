@@ -35,7 +35,7 @@ from glue2.computing_activity import *
 class NimbusActivityMixIn(object):
     def _createActivity(self, line):
         activity = ComputingActivity()
-        activity.State = "teragrid:running"
+        activity.State = ComputingActivity.STATE_RUNNING
 
         m = re.search("eprkey=(\d+)",line)
         activity.LocalIDFromManager = m.group(1)

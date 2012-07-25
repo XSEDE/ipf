@@ -1,17 +1,17 @@
 {
-  "name": "pbs_glue2_job_updates",
+  "name": "nimbus_glue2_job_updates",
   "period": 0,
   "steps": [
     { "name": "ipf/resource_name",
       "params": {
-        "resource_name": "torquemoab.alamo.futuregrid.org"
+        "resource_name": "nimbus.alamo.futuregrid.org"
       }
     },
-    { "name": "glue2/pbs/computing_activity_update" },
+    { "name": "glue2/nimbus/computing_activity_update" },
     {
       "name": "ipf/publish/amqp",
       "params": {
-        "requires_types": ["glue2/teragrid/computing_activity.json"],
+        "requires_types": ["glue2/ipf/computing_activity.json"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",

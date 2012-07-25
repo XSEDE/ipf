@@ -95,16 +95,16 @@ class MoabComputingActivitiesStep(ComputingActivitiesStep):
         job.UserDomain = jobElement.getAttribute("Account")
         job.Queue = jobElement.getAttribute("Class")
         if status == "active":
-            job.State = "teragrid:running"
+            job.State = ComputingActivity.STATE_RUNNING
         elif status == "completed":
-            job.State = "teragrid:finished"
+            job.State = ComputingActivity.STATE_FINISHED
         elif status == "eligible":
-            job.State = "teragrid:pending"
+            job.State = ComputingActivity.STATE_PENDING
         elif status == "blocked":
-            job.State = "teragrid:held"
+            job.State = ComputingActivity.STATE_HELD
         else:
-            logger.warn("found unknown Moab option '" + status + "'")
-            job.State = "teragrid:unknown"
+            logger.warn("found unknown Moab option '%s'",status)
+            job.State = ComputingActivity.STATE_UNKNOWN
 
         epoch = float(jobElement.getAttribute("SubmissionTime"))
         job.ComputingManagerSubmissionTime = datetime.datetime.fromtimestamp(epoch,localtzoffset())

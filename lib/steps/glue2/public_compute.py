@@ -31,31 +31,31 @@ class PublicComputeStep(Step):
     def __init__(self, params):
         Step.__init__(self,params)
 
-        self.name = "glue2/teragrid/public_compute"
+        self.name = "glue2/public_compute"
         self.description = "creates a single document containing all nonsensitive compute-related information"
         self.time_out = 5
         self.requires_types = ["ipf/resource_name.txt",
                                "ipf/site_name.txt",
-                               "glue2/teragrid/computing_service.json",
-                               "glue2/teragrid/computing_endpoint.json",
-                               "glue2/teragrid/computing_shares.json",
-                               "glue2/teragrid/computing_manager.json",
-                               "glue2/teragrid/execution_environments.json",]
+                               "glue2/ipf/computing_service.json",
+                               "glue2/ipf/computing_endpoint.json",
+                               "glue2/ipf/computing_shares.json",
+                               "glue2/ipf/computing_manager.json",
+                               "glue2/ipf/execution_environments.json",]
         self.produces_types = ["glue2/teragrid/public_compute.xml",
-                               "glue2/teragrid/public_compute.json"]
+                               "glue2/ipf/public_compute.json"]
 
     def run(self):
         rn_doc = self._getInput("ipf/resource_name.txt")
         sn_doc = self._getInput("ipf/site_name.txt")
-        service_doc = self._getInput("glue2/teragrid/computing_service.json")
-        shares_doc = self._getInput("glue2/teragrid/computing_shares.json")
-        manager_doc = self._getInput("glue2/teragrid/computing_manager.json")
-        environments_doc = self._getInput("glue2/teragrid/execution_environments.json")
+        service_doc = self._getInput("glue2/ipf/computing_service.json")
+        shares_doc = self._getInput("glue2/ipf/computing_shares.json")
+        manager_doc = self._getInput("glue2/ipf/computing_manager.json")
+        environments_doc = self._getInput("glue2/ipf/execution_environments.json")
 
         endpoints = []
         try:
             while True:
-                endpoint_doc = self._getInput("glue2/teragrid/computing_endpoint.json")
+                endpoint_doc = self._getInput("glue2/ipf/computing_endpoint.json")
                 endpoints.append(endpoint_doc.endpoint)
         except NoMoreInputsError:
             pass
@@ -180,7 +180,7 @@ class PublicComputeDocumentXml(Document):
 
 class PublicComputeDocumentJson(Document):
     def __init__(self, public_compute):
-        Document.__init__(self, public_compute.resource_name, "glue2/teragrid/public_compute.json")
+        Document.__init__(self, public_compute.resource_name, "glue2/ipf/public_compute.json")
         self.public_compute = public_compute
 
     def _setBody(self, body):

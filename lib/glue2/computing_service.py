@@ -39,10 +39,10 @@ class ComputingServiceStep(GlueStep):
         self.description = "This step provides a GLUE 2 ComputingService document. It is an aggregation mechanism"
         self.time_out = 10
         self.requires_types = ["ipf/resource_name.txt",
-                               "glue2/teragrid/computing_shares.json",
-                               "glue2/teragrid/computing_endpoint.json"]
+                               "glue2/ipf/computing_shares.json",
+                               "glue2/ipf/computing_endpoint.json"]
         self.produces_types = ["glue2/teragrid/computing_service.xml",
-                               "glue2/teragrid/computing_service.json"]
+                               "glue2/ipf/computing_service.json"]
 
         self.resource_name = None
         self.shares = None
@@ -51,14 +51,14 @@ class ComputingServiceStep(GlueStep):
     def run(self):
         rn_doc = self._getInput("ipf/resource_name.txt")
         self.resource_name = rn_doc.resource_name
-        shares_doc = self._getInput("glue2/teragrid/computing_shares.json")
+        shares_doc = self._getInput("glue2/ipf/computing_shares.json")
         self.shares = shares_doc.shares
-        #endpoints_doc = self._getInput("glue2/teragrid/computing_endpoints.json")
+        #endpoints_doc = self._getInput("glue2/ipf/computing_endpoints.json")
         #self.endpoints = endpoints_doc.endpoints
         self.endpoints = []
         try:
             while True:
-                endpoint_doc = self._getInput("glue2/teragrid/computing_endpoint.json")
+                endpoint_doc = self._getInput("glue2/ipf/computing_endpoint.json")
                 self.endpoints.append(endpoint_doc.endpoint)
         except NoMoreInputsError:
             pass
@@ -105,7 +105,7 @@ class ComputingServiceDocumentXml(Document):
 
 class ComputingServiceDocumentJson(Document):
     def __init__(self, resource_name, service):
-        Document.__init__(self, resource_name, "glue2/teragrid/computing_service.json")
+        Document.__init__(self, resource_name, "glue2/ipf/computing_service.json")
         self.service = service
 
     def _setBody(self, body):

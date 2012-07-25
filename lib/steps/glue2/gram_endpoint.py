@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 ###############################################################################
 #   Copyright 2011 The University of Texas at Austin                          #

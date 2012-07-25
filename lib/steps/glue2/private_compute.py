@@ -31,19 +31,19 @@ class PrivateComputeStep(Step):
     def __init__(self, params):
         Step.__init__(self,params)
 
-        self.name = "glue2/teragrid/private_compute"
+        self.name = "glue2/private_compute"
         self.description = "creates a single document containing all sensitive compute-related information"
         self.time_out = 5
         self.requires_types = ["ipf/resource_name.txt",
                                "ipf/site_name.txt",
-                               "glue2/teragrid/computing_activities.json"]
+                               "glue2/ipf/computing_activities.json"]
         self.produces_types = ["glue2/teragrid/private_compute.xml",
-                               "glue2/teragrid/private_compute.json"]
+                               "glue2/ipf/private_compute.json"]
 
     def run(self):
         rn_doc = self._getInput("ipf/resource_name.txt")
         sn_doc = self._getInput("ipf/site_name.txt")
-        activities_doc = self._getInput("glue2/teragrid/computing_activities.json")
+        activities_doc = self._getInput("glue2/ipf/computing_activities.json")
 
         private_compute = PrivateCompute()
         private_compute.resource_name = rn_doc.resource_name
@@ -127,7 +127,7 @@ class PrivateComputeDocumentXml(Document):
 
 class PrivateComputeDocumentJson(Document):
     def __init__(self, private_compute):
-        Document.__init__(self, private_compute.resource_name, "glue2/teragrid/private_compute.json")
+        Document.__init__(self, private_compute.resource_name, "glue2/ipf/private_compute.json")
         self.private_compute = private_compute
 
     def _setBody(self, body):

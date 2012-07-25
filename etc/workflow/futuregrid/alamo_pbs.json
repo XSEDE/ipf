@@ -1,0 +1,85 @@
+{
+  "name": "alamo_pbs",
+  "steps": [
+    { "name": "ipf/resource_name",
+      "params": {
+        "resource_name": "torquemoab.alamo.futuregrid.org"
+      }
+    },
+    { "name": "ipf/site_name",
+      "params": {
+        "site_name": "tacc.futuregrid.org"
+      }
+    },
+    { "name": "glue2/gram5/computing_endpoint",
+      "params": {
+        "endpoint": {
+          "Name": "gram5-fork",
+          "URL": "gram://daemon.alamo.futuregrid.org:2119/jobmanager-fork"
+        }
+      }
+    },
+    { "name": "glue2/gram5/computing_endpoint",
+      "params": {
+        "endpoint": {
+          "Name": "gram5-pbs",
+          "URL": "gram://daemon.alamo.futuregrid.org:2119/jobmanager-pbs"
+        }
+      }
+    },
+    { "name": "glue2/genesisII/computing_endpoint",
+      "params": {
+        "endpoint": {
+          "URL": "https://daemon.alamo.futuregrid.org:18443/axis/services/GeniiBESPortType?genii-container-id=98B3AC57-D09F-63F1-6EE6-2664E1EF9699"
+        }
+      }
+    },
+    { "name": "glue2/pbs/computing_activities" },
+    { "name": "glue2/pbs/computing_shares" },
+    { "name": "glue2/pbs/computing_service" },
+    { "name": "glue2/pbs/execution_environments" },
+    { "name": "glue2/pbs/computing_manager" },
+    {
+      "name": "ipf/publish/amqp",
+      "params": {
+        "requires_types": ["glue2/ipf/public_compute.json"],
+        "services": [ "inca.futuregrid.org" ],
+        "ssl_options": {
+          "keyfile":"key.pem",
+          "certfile":"cert.pem",
+          "ca_certs":"ca_certs.pem"
+        },
+	"vhost": "monitoring",
+        "exchange": "glue2.systems"
+      }
+    },
+    {
+      "name": "ipf/publish/amqp",
+      "params": {
+        "requires_types": ["glue2/ipf/private_compute.json"],
+        "services": [ "inca.futuregrid.org" ],
+        "ssl_options": {
+          "keyfile":"key.pem",
+          "certfile":"cert.pem",
+          "ca_certs":"ca_certs.pem"
+        },
+	"vhost": "monitoring",
+        "exchange": "glue2.activities"
+      }
+    },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["glue2/ipf/public_compute.json"],
+        "path": "glue2_pbs_public.json"
+      }
+    },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["glue2/ipf/private_compute.json"],
+        "path": "glue2_pbs_private.json"
+      }
+    }
+  ]
+}

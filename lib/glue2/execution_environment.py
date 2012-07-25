@@ -41,7 +41,7 @@ class ExecutionEnvironmentsStep(GlueStep):
         self.time_out = 30
         self.requires_types = ["ipf/resource_name.txt"]
         self.produces_types = ["glue2/teragrid/execution_environments.xml",
-                               "glue2/teragrid/execution_environments.json"]
+                               "glue2/ipf/execution_environments.json"]
         self.accepts_params["queues"] = "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. The expression is processed in order and the value for a queue at the end determines if it is shown."
 
         self.resource_name = None
@@ -149,7 +149,7 @@ class ExecutionEnvironmentsDocumentXml(Document):
 
 class ExecutionEnvironmentsDocumentJson(Document):
     def __init__(self, resource_name, exec_envs):
-        Document.__init__(self, resource_name, "glue2/teragrid/execution_environments.json")
+        Document.__init__(self, resource_name, "glue2/ipf/execution_environments.json")
         self.exec_envs = exec_envs
 
     def _setBody(self, body):

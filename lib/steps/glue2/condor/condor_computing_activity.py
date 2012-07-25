@@ -81,18 +81,18 @@ class CondorComputingActivitiesStep(ComputingActivitiesStep):
             if line.startswith("JobStatus = "):
                 status = line.split()[2]
                 if status == "1":
-                    job.State = "teragrid:pending"
+                    job.State = ComputingActivity.STATE_PENDING
                 elif status == "2":
-                    job.State = "teragrid:running"
+                    job.State = ComputingActivity.STATE_RUNNING
                 elif status == "3":
-                    job.State = "teragrid:terminated"
+                    job.State = ComputingActivity.STATE_TERMINATED
                 elif status == "4":
-                    job.State = "teragrid:finished"
+                    job.State = ComputingActivity.STATE_FINISHED
                 elif status == "5":
-                    job.State = "teragrid:held"
+                    job.State = ComputingActivity.STATE_HELD
                 else:
                     self.warning("found unknown Condor job status '" + status + "'")
-                    job.State = "teragrid:unknown"
+                    job.State = ComputingActivity.STATE_UNKNOWN
 
             # not sure if this is right - don't see any mpi jobs for comparison
             if line.startswith("MinHosts = "):

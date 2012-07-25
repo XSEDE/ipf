@@ -93,20 +93,20 @@ class CobaltComputingActivitiesStep(ComputingActivitiesStep):
             if line.startswith("    State "):
                 state = line.split()[2]
                 if state == "queued":
-                    job.State = "teragrid:pending"
+                    job.State = ComputingActivity.STATE_PENDING
                 elif state == "starting":
-                    job.State = "teragrid:running"
+                    job.State = ComputingActivity.STATE_RUNNING
                 elif state == "running":
-                    job.State = "teragrid:running"
+                    job.State = ComputingActivity.STATE_RUNNING
                 elif state.find("hold") != -1:
-                    job.State = "teragrid:held"
+                    job.State = ComputingActivity.STATE_HELD
                 elif state == "exiting":
-                    job.State = "teragrid:finished"
+                    job.State = ComputingActivity.STATE_FINISHED
                 elif state == "killing":
-                    job.State = "teragrid:terminated"
+                    job.State = ComputingActivity.STATE_TERMINATED
                 else:
                     self.warning("found unknown Cobalt job state '" + state + "'")
-                    job.State = "teragrid:unknown"
+                    job.State = ComputingActivity.STATE_UNKNOWN
             if line.startswith("    WallTime "):
                 wallTime = self._getDuration(line.split()[2])
                 if job.RequestedSlots != None:

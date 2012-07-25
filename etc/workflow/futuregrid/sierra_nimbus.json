@@ -1,0 +1,71 @@
+{
+  "name": "glue2_nimbus",
+  "period": 120,
+  "params": {
+    "nimbus_dir": "/opt/nimbus-2.9"
+  },
+  "steps": [
+    { "name": "ipf/resource_name",
+      "params": {
+        "resource_name": "nimbus.sierra.futuregrid.org"
+      }
+    },
+    { "name": "ipf/site_name",
+      "params": {
+        "site_name": "tacc.futuregrid.org"
+      }
+    },
+    { "name": "glue2/nimbus/computing_endpoint",
+      "params": {
+        "host_name": "s83r.idp.sdsc.futuregrid.org"
+      }
+    },
+    { "name": "glue2/nimbus/computing_activities" },
+    { "name": "glue2/nimbus/computing_shares" },
+    { "name": "glue2/nimbus/computing_service" },
+    { "name": "glue2/nimbus/execution_environments" },
+    { "name": "glue2/nimbus/computing_manager" },
+    {
+      "name": "ipf/publish/amqp",
+      "params": {
+        "requires_types": ["glue2/ipf/public_compute.json"],
+        "services": [ "inca.futuregrid.org" ],
+        "ssl_options": {
+          "keyfile":"key.pem",
+          "certfile":"cert.pem",
+          "ca_certs":"ca_certs.pem"
+        },
+	"vhost": "monitoring",
+        "exchange": "glue2.systems"
+      }
+    },
+    {
+      "name": "ipf/publish/amqp",
+      "params": {
+        "requires_types": ["glue2/ipf/private_compute.json"],
+        "services": [ "inca.futuregrid.org" ],
+        "ssl_options": {
+          "keyfile":"key.pem",
+          "certfile":"cert.pem",
+          "ca_certs":"ca_certs.pem"
+        },
+	"vhost": "monitoring",
+        "exchange": "glue2.activities"
+      }
+    },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["glue2/ipf/public_compute.json"],
+        "path": "glue2_nimbus_public.json"
+      }
+    },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["glue2/ipf/private_compute.json"],
+        "path": "glue2_nimbus_private.json"
+      }
+    }
+  ]
+}

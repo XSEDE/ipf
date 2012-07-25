@@ -100,28 +100,28 @@ class LsfComputingActivitiesStep(ComputingActivitiesStep):
             tempStr = m.group()
             status = job._betweenAngleBrackets(tempStr)
             if status == "RUN":
-                job.State = "teragrid:running"
+                job.State = ComputingActivity.STATE_RUNNING
             elif status == "PEND":
-                job.State = "teragrid:pending"
+                job.State = ComputingActivity.STATE_PENDING
             elif status == "PSUSP": # job suspended by user while pending
                 # ComputingShare has SuspendedJobs, so there should be a suspended state here
-                job.State = "teragrid:held"
+                job.State = ComputingActivity.STATE_HELD
             elif status == "USUSP":
-                job.State = "teragrid:suspended"
+                job.State = ComputingActivity.STATE_SUSPENDED
             elif status == "DONE":
-                job.State = "teragrid:finished"
+                job.State = ComputingActivity.STATE_FINISHED
             elif status == "ZOMBI":
-                job.State = "teragrid:terminated"
+                job.State = ComputingActivity.STATE_TERMINATED
             elif status == "EXIT":
-                job.State = "teragrid:terminated"
+                job.State = ComputingActivity.STATE_TERMINATED
             elif status == "UNKWN":
-                job.State = "teragrid:unknown"
+                job.State = ComputingActivity.STATE_UNKNOWN
             else:
-                self.warn("found unknown status '"+status+"'")
-                job.State = "teragrid:unknown"
+                self.warn("found unknown status '%s'",status)
+                job.State = ComputingActivity.STATE_UNKNOWN
         else:
-            self.warn("didn't find Status in "+lines[0])
-            job.State = "teragrid:unknown"
+            self.warn("didn't find Status in %s",lines[0])
+            job.State = ComputingActivity.STATE_UNKNOWN
 
         #m = re.search(r"Command <\S*>",lines[0])
         #tempStr = m.group()
@@ -167,16 +167,16 @@ class LsfComputingActivitiesStep(ComputingActivitiesStep):
                 job.ComputingManagerEndTime = job._getDateTime(lines[index])
             if lines[index].find("PENDING REASONS:") != -1:
                 if lines[index+1].find("Job's resource requirements not satisfied") != -1:
-                    # teragrid:pending is correct
+                    # pending is correct
                     pass
                 elif lines[index+1].find("New job is waiting for scheduling") != -1:
-                    # teragrid:held is probably better
-                    job.State = "teragrid:held"
+                    # held is probably better
+                    job.State = ComputingActivity.STATE_HELD
                 else:
-                    # teragrid:held is better, even though LSF calls it PEND. some examples:
+                    # held is better, even though LSF calls it PEND. some examples:
                     # Job dependency condition not satisfied;
-                    self.info("setting state to held for pending reason: "+lines[index+1])
-                    job.State = "teragrid:held"
+                    self.info("setting state to held for pending reason: %s",lines[index+1])
+                    job.State = ComputingActivity.STATE_HELD
 
         return job
 

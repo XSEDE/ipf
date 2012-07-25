@@ -38,10 +38,10 @@ class ComputingManagerStep(GlueStep):
         self.description = "This step provides documents in the GLUE 2 ComputingManager schema. For a batch scheduled system, this is typically that scheduler."
         self.time_out = 10
         self.requires_types = ["ipf/resource_name.txt",
-                               "glue2/teragrid/execution_environments.json",
-                               "glue2/teragrid/computing_shares.json"]
+                               "glue2/ipf/execution_environments.json",
+                               "glue2/ipf/computing_shares.json"]
         self.produces_types = ["glue2/teragrid/computing_manager.xml",
-                               "glue2/teragrid/computing_manager.json"]
+                               "glue2/ipf/computing_manager.json"]
 
         self.resource_name = None
         self.exec_envs = None
@@ -50,9 +50,9 @@ class ComputingManagerStep(GlueStep):
     def run(self):
         rn_doc = self._getInput("ipf/resource_name.txt")
         self.resource_name = rn_doc.resource_name
-        envs_doc = self._getInput("glue2/teragrid/execution_environments.json")
+        envs_doc = self._getInput("glue2/ipf/execution_environments.json")
         self.exec_envs = envs_doc.exec_envs
-        shares_doc = self._getInput("glue2/teragrid/computing_shares.json")
+        shares_doc = self._getInput("glue2/ipf/computing_shares.json")
         self.shares = shares_doc.shares
 
         manager = self._run()
@@ -90,7 +90,7 @@ class ComputingManagerDocumentXml(Document):
 
 class ComputingManagerDocumentJson(Document):
     def __init__(self, resource_name, manager):
-        Document.__init__(self, resource_name, "glue2/teragrid/computing_manager.json")
+        Document.__init__(self, resource_name, "glue2/ipf/computing_manager.json")
         self.manager = manager
 
     def _setBody(self, body):

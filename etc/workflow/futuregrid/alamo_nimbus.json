@@ -17,9 +17,7 @@
     },
     { "name": "glue2/nimbus/computing_endpoint",
       "params": {
-        "endpoint": {
-          "host_name": "daemon.alamo.futuregrid.org"
-        }
+        "host_name": "daemon.alamo.futuregrid.org"
       }
     },
     { "name": "glue2/nimbus/computing_activities" },
@@ -30,7 +28,7 @@
     {
       "name": "ipf/publish/amqp",
       "params": {
-        "requires_types": ["glue2/teragrid/public_compute.json"],
+        "requires_types": ["glue2/ipf/public_compute.json"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",
@@ -44,7 +42,7 @@
     {
       "name": "ipf/publish/amqp",
       "params": {
-        "requires_types": ["glue2/teragrid/private_compute.json"],
+        "requires_types": ["glue2/ipf/private_compute.json"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",
@@ -53,6 +51,20 @@
         },
 	"vhost": "monitoring",
         "exchange": "glue2.activities"
+      }
+    },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["glue2/ipf/public_compute.json"],
+        "path": "glue2_nimbus_public.json"
+      }
+    },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["glue2/ipf/private_compute.json"],
+        "path": "glue2_nimbus_private.json"
       }
     }
   ]

@@ -183,11 +183,11 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
             self.cur_job = ComputingActivity()
             self.cur_job.LocalIDFromManager = self.text
             if self.state == "running":
-                self.cur_job.State = "teragrid:running"
+                self.cur_job.State = ComputingActivity.STATE_RUNNING
             elif self.state == "pending":
-                self.cur_job.State = "teragrid:pending"
+                self.cur_job.State = ComputingActivity.STATE_PENDING
             elif self.state == "zombie":
-                self.cur_job.State = "teragrid:pending"
+                self.cur_job.State = ComputingActivity.STATE_PENDING
             else:
                 self.step.warning("unknown job state %s" % self.state)
         elif name == "JAT_prio":
@@ -199,20 +199,20 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
         elif name == "state":
             pass # switching to above
             if self.text == "r":
-                self.cur_job.State = "teragrid:running"
+                self.cur_job.State = ComputingActivity.STATE_RUNNING
             elif self.text == "R": # restarted
-                self.cur_job.State = "teragrid:running"
+                self.cur_job.State = ComputingActivity.STATE_RUNNING
             elif self.text.find("d") >= 0: # deleted
-                self.cur_job.State = "teragrid:terminated"
+                self.cur_job.State = ComputingActivity.STATE_TERMINATED
             elif self.text.find("w") >= 0: # waiting - qw, Eqw, hqw
-                self.cur_job.State = "teragrid:pending"
+                self.cur_job.State = ComputingActivity.STATE_PENDING
             elif self.text.find("h") >= 0: # held - hr
-                self.cur_job.State = "teragrid:held"
+                self.cur_job.State = ComputingActivity.STATE_HELD
             elif self.text == "t": # transfering
-                self.cur_job.State = "teragrid:pending"
+                self.cur_job.State = ComputingActivity.STATE_PENDING
             else:
                 self.step.warning("found unknown SGE job state '" + self.text + "'")
-                self.cur_job.State = "teragrid:unknown"
+                self.cur_job.State = ComputingActivity.STATE_UNKNOWN
         elif name == "slots":
             self.cur_job.RequestedSlots = int(self.text)
             if self.cur_job.StartTime != None:
@@ -391,7 +391,7 @@ class SgeComputingActivityUpdateStep(ComputingActivityUpdateStep):
         # dunno (always 1024)
 
         activity = ComputingActivity()
-        activity.State = "teragrid:pending"
+        activity.State = ComputingActivity.STATE_PENDING
         activity.ComputingManagerSubmissionTime = datetime.datetime.fromtimestamp(float(toks[2]),tzoffset(0))
         activity.LocalIDFromManager = toks[3]
         activity.Name = toks[6]
@@ -453,17 +453,17 @@ class SgeComputingActivityUpdateStep(ComputingActivityUpdateStep):
         activity.UserDomain = toks[18]
 
         if toks[3] == "pending":
-            activity.State = "teragrid:pending"
+            activity.State = ComputingActivity.STATE_PENDING
             activity.ComputingManagerSubmissionTime = event_dt
         elif toks[3] == "sent":
             # sent to execd - just ignore
             return
         elif toks[3] == "delivered":
             # job received by execd - job started
-            activity.State = "teragrid:running"
+            activity.State = ComputingActivity.STATE_RUNNING
             activity.StartTime = event_dt
         elif toks[3] == "finished":
-            activity.State = "teragrid:finished"
+            activity.State = ComputingActivity.STATE_FINISHED
             activity.ComputingManagerEndTime = event_dt
         elif toks[3] == "deleted":
             # scheduler deleting the job and a finished appears first, so ignore
@@ -472,7 +472,7 @@ class SgeComputingActivityUpdateStep(ComputingActivityUpdateStep):
             self.info("ignoring error state for job %s" % activity.LocalIDFromManager)
             return
         elif toks[3] == "restart":
-            activity.State = "teragrid:running"
+            activity.State = ComputingActivity.STATE_RUNNING
             activity.StartTime = event_dt
         else:
             self.warning("unknown job log of type %s" % toks[3])

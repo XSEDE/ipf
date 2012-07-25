@@ -38,7 +38,7 @@ class ComputingEndpointStep(GlueStep):
         self.time_out = 10
         self.requires_types = ["ipf/resource_name.txt"]
         self.produces_types = ["glue2/teragrid/computing_endpoint.xml",
-                               "glue2/teragrid/computing_endpoint.json"]
+                               "glue2/ipf/computing_endpoint.json"]
 
         self.resource_name = None
 
@@ -49,7 +49,7 @@ class ComputingEndpointStep(GlueStep):
         endpoints = self._run()
         for i in range(0,len(endpoints)):
             if endpoints[i].Name == None:
-                endpoint[i].Name = "endpoint-%d" % (i+1)
+                endpoints[i].Name = "endpoint-%d" % (i+1)
         for endpoint in endpoints:
             endpoint.ID = "urn:glue2:ComputingEndpoint:%s.%s" % (endpoint.Name,self.resource_name)
             endpoint.ComputingService = "urn:glue2:ComputingService:%s" % (self.resource_name)
@@ -100,7 +100,7 @@ class ComputingEndpointDocumentXml(Document):
 
 class ComputingEndpointDocumentJson(Document):
     def __init__(self, resource_name, endpoint):
-        Document.__init__(self, resource_name, "glue2/teragrid/computing_endpoint.json")
+        Document.__init__(self, resource_name, "glue2/ipf/computing_endpoint.json")
         self.endpoint = endpoint
 
     def _setBody(self, body):
@@ -112,10 +112,13 @@ class ComputingEndpointDocumentJson(Document):
 #######################################################################################################################
 
 class ComputingEndpoint(object):
+
+    DEFAULT_VALIDITY = 3600 # seconds
+
     def __init__(self):
         # Entity
         self.CreationTime = datetime.datetime.now(tzoffset(0))
-        self.Validity = 300
+        self.Validity = ComputingEndpoint.DEFAULT_VALIDITY
         self.ID = None      # string (uri)
         self.Name = None    # string
         self.OtherInfo = [] # list of string
@@ -431,7 +434,7 @@ class ComputingEndpoint(object):
             self.CreationTime = textToDateTime(doc["CreationTime"])
         else:
             self.CreationTime = datetime.datetime.now(tzoffset(0))
-        self.Validity = doc.get("Validity")
+        self.Validity = doc.get("Validity",ComputingEndpoint.DEFAULT_VALIDITY)
         self.ID = doc.get("ID")
         self.Name = doc.get("Name")
         self.OtherInfo = doc.get("OtherInfo",[])
@@ -481,7 +484,7 @@ class ComputingEndpoint(object):
         # Entity
         curTime = time.time()
         mstr = mstr+" CreationTime='"+epochToXmlDateTime(curTime)+"'\n"
-        mstr = mstr+indent+"                   Validity='300'>\n"
+        mstr = mstr+indent+"                   Validity='"+str(self.Validity)+"'>\n"
         mstr = mstr+indent+"  <ID>"+self.ID+"</ID>\n"
         if self.Name is not None:
             mstr = mstr+indent+"  <Name>"+self.Name+"</Name>\n"

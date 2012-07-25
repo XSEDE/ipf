@@ -15,14 +15,6 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-# TeraGrid job states:
-#
-#    teragrid:pending
-#    teragrid:held
-#    teragrid:running
-#    teragrid:terminated
-#    teragrid:finished
-
 import json    # new in Python 2.6
 import time
 from xml.dom.minidom import getDOMImplementation
@@ -45,7 +37,7 @@ class ComputingActivitiesStep(GlueStep):
         self.time_out = 30
         self.requires_types = ["ipf/resource_name.txt"]
         self.produces_types = ["glue2/teragrid/computing_activities.xml",
-                               "glue2/teragrid/computing_activities.json"]
+                               "glue2/ipf/computing_activities.json"]
         self.accepts_params["hide_job_attribs"] = "a comma-separated list of ComputingActivity attributes to hide (optional)"
         self.accepts_params["queues"] = "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown."
 
@@ -91,7 +83,7 @@ class ComputingActivityUpdateStep(GlueStep):
         self.time_out = None
         self.requires_types = ["ipf/resource_name.txt"]
         self.produces_types = ["glue2/teragrid/computing_activity.xml",
-                               "glue2/teragrid/computing_activity.json"]
+                               "glue2/ipf/computing_activity.json"]
         self.accepts_params["hide_job_attribs"] = "a comma-separated list of ComputingActivity attributes to hide (optional)"
         self.accepts_params["queues"] = "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown."
 
@@ -163,7 +155,7 @@ class ComputingActivityDocumentXml(Document):
 
 class ComputingActivitiesDocumentJson(Document):
     def __init__(self, resource_name, activities, hide):
-        Document.__init__(self, resource_name, "glue2/teragrid/computing_activities.json")
+        Document.__init__(self, resource_name, "glue2/ipf/computing_activities.json")
         self.activities = activities
         self.hide = hide
 
@@ -180,7 +172,7 @@ class ComputingActivitiesDocumentJson(Document):
 
 class ComputingActivityDocumentJson(Document):
     def __init__(self, resource_name, activity, hide):
-        Document.__init__(self, resource_name, "glue2/teragrid/computing_activity.json")
+        Document.__init__(self, resource_name, "glue2/ipf/computing_activity.json")
         self.activity = activity
         self.hide = hide
 
@@ -193,6 +185,16 @@ class ComputingActivityDocumentJson(Document):
 #######################################################################################################################
     
 class ComputingActivity(object):
+
+    STATE_PENDING = "ipf:pending"
+    STATE_HELD = "ipf:held"
+    STATE_RUNNING = "ipf:running"
+    STATE_SUSPENDED = "ipf:suspended"
+    STATE_TERMINATED = "ipf:terminated"
+    STATE_FINISHED = "ipf:finished"
+    STATE_FAILED = "ipf:failed"
+    STATE_UNKNOWN = "ipf:unknown"
+
     def __init__(self):
         # Entity
         self.CreationTime = datetime.datetime.now(tzoffset(0))

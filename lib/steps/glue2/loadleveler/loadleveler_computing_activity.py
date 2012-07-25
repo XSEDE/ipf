@@ -126,30 +126,30 @@ class LoadLevelerComputingActivitiesStep(ComputingActivitiesStep):
             if line.find("Status:") >= 0:
                 state = line[8:]
                 if state == "Completed":
-                    job.State = "teragrid:finished"
+                    job.State = ComputingActivity.STATE_FINISHED
                 elif state == "Canceled":
-                    job.State = "teragrid:terminated"
+                    job.State = ComputingActivity.STATE_TERMINATED
                 elif state == "Removed":
-                    job.State = "teragrid:terminated"
+                    job.State = ComputingActivity.STATE_TERMINATED
                 elif state == "Terminated":
-                    job.State = "teragrid:terminated"
+                    job.State = ComputingActivity.STATE_TERMINATED
                 elif state == "Remove Pending":
-                    job.State = "teragrid:terminated"
+                    job.State = ComputingActivity.STATE_TERMINATED
                 elif state == "Pending":
-                    job.State = "teragrid:pending"
+                    job.State = ComputingActivity.STATE_PENDING
                 elif state == "Idle":
-                    job.State = "teragrid:pending"
+                    job.State = ComputingActivity.STATE_PENDING
                 elif state == "Starting":
-                    job.State = "teragrid:running"
+                    job.State = ComputingActivity.STATE_RUNNING
                 elif state == "Running":
-                    job.State = "teragrid:running"
+                    job.State = ComputingActivity.STATE_RUNNING
                 elif state == "User Hold":
-                    job.State = "teragrid:held"
+                    job.State = ComputingActivity.STATE_HELD
                 elif state == "Not Queued":
-                    job.State = "teragrid:pending"
+                    job.State = ComputingActivity.STATE_PENDING
                 else:
                     self.warn("found unknown LoadLeveler job state '" + state + "'")
-                    job.State = "teragrid:unknown"
+                    job.State = ComputingActivity.STATE_UNKNOWN
             if line.find("Wall Clk Hard Limit:") >= 0:
                 wallTime = job._getDuration(line[21:])
             if line.find("Cpu Hard Limit:") >= 0:

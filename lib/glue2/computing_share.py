@@ -38,9 +38,9 @@ class ComputingSharesStep(GlueStep):
         self.description = "produces a document containing one or more GLUE 2 ComputingShare"
         self.time_out = 30
         self.requires_types = ["ipf/resource_name.txt",
-                               "glue2/teragrid/computing_activities.json"]
+                               "glue2/ipf/computing_activities.json"]
         self.produces_types = ["glue2/teragrid/computing_shares.xml",
-                               "glue2/teragrid/computing_shares.json"]
+                               "glue2/ipf/computing_shares.json"]
         self.accepts_params["queues"] = "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown."
 
         self.resource_name = None
@@ -49,7 +49,7 @@ class ComputingSharesStep(GlueStep):
     def run(self):
         rn_doc = self._getInput("ipf/resource_name.txt")
         self.resource_name = rn_doc.resource_name
-        activities_doc = self._getInput("glue2/teragrid/computing_activities.json")
+        activities_doc = self._getInput("glue2/ipf/computing_activities.json")
         self.activities = activities_doc.activities
 
         shares = self._run()
@@ -95,24 +95,24 @@ class ComputingSharesStep(GlueStep):
 
             share.computingActivity.append(activity)
             #activity.ComputingShare = [share.ID]
-            if activity.State == "teragrid:running":
+            if activity.State == ComputingActivity.STATE_RUNNING:
                 share.RunningJobs = share.RunningJobs + 1
                 share.LocalRunningJobs = share.LocalRunningJobs + 1
                 share.TotalJobs = share.TotalJobs + 1
                 share.UsedSlots = share.UsedSlots + activity.RequestedSlots
-            elif activity.State == "teragrid:pending":
+            elif activity.State == ComputingActivity.STATE_PENDING:
                 share.WaitingJobs = share.WaitingJobs + 1
                 share.LocalWaitingJobs = share.LocalWaitingJobs + 1
                 share.TotalJobs = share.TotalJobs + 1
                 share.RequestedSlots = share.RequestedSlots + activity.RequestedSlots
-            elif activity.State == "teragrid:suspended":
+            elif activity.State == ComputingActivity.STATE_SUSPENDED:
                 share.SuspendedJobs = share.SuspendedJobs + 1
                 share.LocalSuspendedJobs = share.LocalSuspendedJobs + 1
                 share.TotalJobs = share.TotalJobs + 1
                 share.RequestedSlots = share.RequestedSlots + activity.RequestedSlots
-            elif activity.State == "teragrid:finished":
+            elif activity.State == ComputingActivity.STATE_FINISHED:
                 pass
-            elif activity.State == "teragrid:terminated":
+            elif activity.State == ComputingActivity.STATE_TERMINATED:
                 pass
             else:
                 # output a warning
@@ -141,7 +141,7 @@ class ComputingSharesDocumentXml(Document):
 
 class ComputingSharesDocumentJson(Document):
     def __init__(self, resource_name, shares):
-        Document.__init__(self, resource_name, "glue2/teragrid/computing_shares.json")
+        Document.__init__(self, resource_name, "glue2/ipf/computing_shares.json")
         self.shares = shares
 
     def _setBody(self, body):

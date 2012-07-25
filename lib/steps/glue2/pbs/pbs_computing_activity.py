@@ -90,25 +90,25 @@ class PbsComputingActivitiesStep(ComputingActivitiesStep):
                 state = line.split()[2]
                 if state == "C":
                     # C is completing after having run
-                    job.State = "teragrid:finished"
+                    job.State = ComputingActivity.STATE_FINISHED
                 elif state == "E":
                     # E is exiting after having run
-                    job.State = "teragrid:terminated" #?
+                    job.State = ComputingActivity.STATE_TERMINATED #?
                 elif state == "Q":
-                    job.State = "teragrid:pending"
+                    job.State = ComputingActivity.STATE_PENDING
                 elif state == "R":
-                    job.State = "teragrid:running"
+                    job.State = ComputingActivity.STATE_RUNNING
                 elif state == "T":
-                    job.State = "teragrid:pending"
+                    job.State = ComputingActivity.STATE_PENDING
                 elif state == "Q":
-                    job.State = "teragrid:pending"
+                    job.State = ComputingActivity.STATE_PENDING
                 elif state == "S":
-                    job.State = "teragrid:suspended"
+                    job.State = ComputingActivity.STATE_SUSPENDED
                 elif state == "H":
-                    job.State = "teragrid:held"
+                    job.State = ComputingActivity.STATE_HELD
                 else:
-                    self.warning("found unknown PBS job state '" + state + "'")
-                    job.State = "teragrid:unknown"
+                    self.warning("found unknown PBS job state '%s'",state)
+                    job.State = ComputingActivity.STATE_UNKNOWN
             if line.find("Resource_List.walltime =") >= 0:
                 wallTime = self._getDuration(line.split()[2])
                 if job.RequestedSlots != None:
@@ -131,13 +131,15 @@ class PbsComputingActivitiesStep(ComputingActivitiesStep):
             if line.find("qtime =") >= 0:
                 job.ComputingManagerSubmissionTime = self._getDateTime(line[line.find("=")+2:])
             if line.find("mtime =") >= 0:
-                if job.State == "teragrid:running":
+                if job.State == ComputingActivity.STATE_RUNNING:
                     job.StartTime = self._getDateTime(line[line.find("=")+2:])
-                if (job.State == "teragrid:finished") or (job.State == "teragrid:terminated"):
+                if (job.State == ComputingActivity.STATE_FINISHED) or \
+                       (job.State == ComputingActivity.STATE_TERMINATED):
                     # this is right for terminated since terminated is set on the E state
                     job.ComputingManagerEndTime = self._getDateTime(line[line.find("=")+2:])
             #if line.find("ctime =") >= 0 and \
-            #        (job.State == "teragrid:finished" or job.State == "teragrid:terminated"):
+            #        (job.State == ComputingActivity.STATE_FINISHED or \
+            #        job.State == ComputingActivity.STATE_TERMINATED):
             #    job.ComputingManagerEndTime = self._getDateTime(line[line.find("=")+2:])
             #    job.EndTime = job.ComputingManagerEndTime
 
@@ -235,7 +237,7 @@ class PbsComputingActivityUpdateStep(ComputingActivityUpdateStep):
             activity.LocalIDFromManager = id
             self.activities[id] = activity
         if "Job Queued" in toks[5]:
-            activity.State = "teragrid:pending"
+            activity.State = ComputingActivity.STATE_PENDING
             activity.ComputingManagerSubmissionTime = self._getDateTime(toks[0])
             try:
                 m = re.search(" owner = (\w+)@(\S*),",toks[5])  # just the user part of user@host
@@ -257,26 +259,26 @@ class PbsComputingActivityUpdateStep(ComputingActivityUpdateStep):
                 self.warning("didn't find queue in log mesage: %s",toks)
                 return
         elif "Job Run" in toks[5]:
-            activity.State = "teragrid:running"
+            activity.State = ComputingActivity.STATE_RUNNING
             activity.StartTime = self._getDateTime(toks[0])
         elif "Job deleted" in toks[5]:
-            activity.State = "teragrid:terminated"
+            activity.State = ComputingActivity.STATE_TERMINATED
             activity.ComputingManagerEndTime = self._getDateTime(toks[0])
             del self.activities[id]
         elif "JOB_SUBSTATE_EXITING" in toks[5]:
-            activity.State = "teragrid:finished"
+            activity.State = ComputingActivity.STATE_FINISHED
             activity.ComputingManagerEndTime = self._getDateTime(toks[0])
             del self.activities[id]
         elif "Job sent signal SIGKILL on delete" in toks[5]:
             # job ran too long and was killed
-            activity.State = "teragrid:terminated"
+            activity.State = ComputingActivity.STATE_TERMINATED
             activity.ComputingManagerEndTime = self._getDateTime(toks[0])
             del self.activities[id]
         elif "Job Modified" in toks[5]:
             # when nodes aren't available, log has jobs that quickly go from Job Queued to Job Run to Job Modified
             # and the jobs are pending after this
-            if activity.State == "teragrid:running":
-                activity.State = "teragrid:pending"
+            if activity.State == ComputingActivity.STATE_RUNNING:
+                activity.State = ComputingActivity.STATE_PENDING
                 activity.StartTime = None
             else:
                 self.warning("not sure how to handle log event: %s",toks)

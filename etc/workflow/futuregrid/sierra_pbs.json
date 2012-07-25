@@ -1,31 +1,14 @@
 {
-  "name": "glue2_pbs",
-  "period": 120,
+  "name": "alamo_pbs",
   "steps": [
     { "name": "ipf/resource_name",
       "params": {
-        "resource_name": "torquemoab.alamo.futuregrid.org"
+        "resource_name": "torquemoab.sierra.futuregrid.org"
       }
     },
     { "name": "ipf/site_name",
       "params": {
-        "site_name": "tacc.futuregrid.org"
-      }
-    },
-    { "name": "glue2/gram5/computing_endpoint",
-      "params": {
-        "endpoint": {
-          "Name": "gram5-pbs",
-          "URL": "gram://daemon.alamo.futuregrid.org:2119/jobmanager-pbs"
-        }
-      }
-    },
-    { "name": "glue2/gram5/computing_endpoint",
-      "params": {
-        "endpoint": {
-          "Name": "gram5-fork",
-          "URL": "gram://daemon.alamo.futuregrid.org:2119/jobmanager-fork"
-        }
+        "site_name": "sdsc.futuregrid.org"
       }
     },
     { "name": "glue2/pbs/computing_activities" },
@@ -36,7 +19,7 @@
     {
       "name": "ipf/publish/amqp",
       "params": {
-        "requires_types": ["glue2/teragrid/public_compute.json"],
+        "requires_types": ["glue2/ipf/public_compute.json"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",
@@ -50,7 +33,7 @@
     {
       "name": "ipf/publish/amqp",
       "params": {
-        "requires_types": ["glue2/teragrid/private_compute.json"],
+        "requires_types": ["glue2/ipf/private_compute.json"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",
@@ -59,6 +42,20 @@
         },
 	"vhost": "monitoring",
         "exchange": "glue2.activities"
+      }
+    },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["glue2/ipf/public_compute.json"],
+        "path": "glue2_pbs_public.json"
+      }
+    },
+    {
+      "name": "ipf/publish/file",
+      "params": {
+        "requires_types": ["glue2/ipf/private_compute.json"],
+        "path": "glue2_pbs_private.json"
       }
     }
   ]
