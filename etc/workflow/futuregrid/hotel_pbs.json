@@ -1,30 +1,21 @@
 {
-  "name": "glue2_nimbus",
-  "period": 120,
-  "params": {
-    "nimbus_dir": "/opt/nimbus-2.9"
-  },
+  "name": "alamo_pbs",
   "steps": [
     { "name": "ipf/resource_name",
       "params": {
-        "resource_name": "nimbus.sierra.futuregrid.org"
+        "resource_name": "torquemoab.hotel.futuregrid.org"
       }
     },
     { "name": "ipf/site_name",
       "params": {
-        "site_name": "sdsc.futuregrid.org"
+        "site_name": "uc.futuregrid.org"
       }
     },
-    { "name": "glue2/nimbus/computing_endpoint",
-      "params": {
-        "host_name": "f1r.idp.ufl.futuregrid.org"
-      }
-    },
-    { "name": "glue2/nimbus/computing_activities" },
-    { "name": "glue2/nimbus/computing_shares" },
-    { "name": "glue2/nimbus/computing_service" },
-    { "name": "glue2/nimbus/execution_environments" },
-    { "name": "glue2/nimbus/computing_manager" },
+    { "name": "glue2/pbs/computing_activities" },
+    { "name": "glue2/pbs/computing_shares" },
+    { "name": "glue2/pbs/computing_service" },
+    { "name": "glue2/pbs/execution_environments" },
+    { "name": "glue2/pbs/computing_manager" },
     {
       "name": "ipf/publish/amqp",
       "params": {
@@ -57,14 +48,14 @@
       "name": "ipf/publish/file",
       "params": {
         "requires_types": ["glue2/ipf/public_compute.json"],
-        "path": "glue2_nimbus_public.json"
+        "path": "glue2_pbs_public.json"
       }
     },
     {
       "name": "ipf/publish/file",
       "params": {
         "requires_types": ["glue2/ipf/private_compute.json"],
-        "path": "glue2_nimbus_private.json"
+        "path": "glue2_pbs_private.json"
       }
     }
   ]

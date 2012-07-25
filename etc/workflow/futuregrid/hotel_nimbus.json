@@ -7,17 +7,17 @@
   "steps": [
     { "name": "ipf/resource_name",
       "params": {
-        "resource_name": "nimbus.sierra.futuregrid.org"
+        "resource_name": "nimbus.hotel.futuregrid.org"
       }
     },
     { "name": "ipf/site_name",
       "params": {
-        "site_name": "sdsc.futuregrid.org"
+        "site_name": "uc.futuregrid.org"
       }
     },
     { "name": "glue2/nimbus/computing_endpoint",
       "params": {
-        "host_name": "f1r.idp.ufl.futuregrid.org"
+        "host_name": "svc.uc.futuregrid.org"
       }
     },
     { "name": "glue2/nimbus/computing_activities" },
