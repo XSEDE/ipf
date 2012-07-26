@@ -22,7 +22,7 @@ import ssl
 import sys
 import time
 
-from ipf.error import NoMoreInputsError
+from ipf.error import NoMoreInputsError, StepError
 from ipf.home import IPF_HOME
 from ipf.step import Step
 
@@ -117,8 +117,7 @@ class AmqpPublishStep(Step):
         self.info("publishing document of type %s",doc.type)
         self._connectIfNecessary()
         if self.channel is None:
-            self.error("not connected to any service, will not publish document of type %s",doc.type)
-            return
+            raise StepError("not connected to any service, will not publish document of type %s" % doc.type)
         try:
             self.channel.basicPublish(doc.body,self.exchange,doc.id.encode("utf-8"))
         except MtkError:

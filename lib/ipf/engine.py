@@ -33,8 +33,9 @@ class WorkflowEngine(object):
         workflow.read(workflow_file_name,known_steps)
 
         self._setDependencies(workflow)
-        logger.info(workflow)
+        logger.debug(workflow)
 
+        logger.info("starting workflow %s",workflow.name)
         for step in workflow.steps:
             step.start()
 

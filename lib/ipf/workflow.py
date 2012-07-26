@@ -93,7 +93,7 @@ class Workflow(object):
                     raise WorkflowError("more than one step produces type '%s' - can't infer which to use" % rtype)
                 new_step = known_types[rtype][0]({})
                 self.steps.append(new_step)
-                logger.info("adding step %s" % new_step.name)
+                logger.debug("adding step %s to workflow" % new_step.name)
                 for ptype in new_step.produces_types:
                     if ptype not in ptypes:
                         ptypes[ptype] = []

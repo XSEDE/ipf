@@ -134,7 +134,7 @@ class Step(multiprocessing.Process):
     def _output(self, document):
         if document.type not in self.outputs:
             return
-        self.info("output %s",document.type)
+        self.debug("output %s",document.type)
         for step in self.outputs[document.type]:
             self.debug("sending output %s to step %s",document.type,step.id)
             # isolate any changes to the document by queuing copies

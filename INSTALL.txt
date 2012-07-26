@@ -1,0 +1,32 @@
+
+==== Installation ====
+
+To install the package:
+
+$ cd <ipf source directory>
+$ python2.6 install.py /path/to/installation/directory
+
+The Python executable that you use to run install.py will be the one used to run these scripts. Python 2.6 or
+2.7 is required.
+
+==== X.509 Configuration ====
+
+The AMQP publishing step in the pre-defined information publishing workflows authenticates via X.509
+certificates. This publishing step expects the host certificate to be in etc/cert.pem in the install
+directory, the host key to be in etc/key.pem in the install directory, and a list of CA certificated to be in
+etc/ca_certs.pem in the install directory.
+
+==== Testing ====
+
+Scripts to run the pre-defined information publishing workflows (in etc/workflow) are generated in the bin
+directory. Run these scripts by hand and look at the logging output in var to see if the script executed
+ok. If there are failures, you may need to edit the script to adjust the environment or you may need to edit
+the workflow to correct any incompatibilities with your system.
+
+==== Deployment ====
+
+This framework is typically deployed by creating cron jobs that periodically run the workflow scripts that you
+wish to use. The scripts with "_updates_" in them are typically daemons that run continuously for tasks such
+as watching scheduling log files. For these scripts, the cron jobs check that the daemon for the workflow is
+running and start it if it is not. The other scripts simple gather information, publish it, and then exit. The
+cron jobs for these scripts run this process periodically.

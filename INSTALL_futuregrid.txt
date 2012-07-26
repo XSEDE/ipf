@@ -1,0 +1,136 @@
+
+==== Setup ====
+
+The first installation step is to pick the server(s) and login account(s) that will be used to run the
+software. The constraints on the system(s) to run the software on are:
+
+* Torque/Moab: Access to the Torque commands is needed. The $PBS_HOME/spool/server_logs directory must be
+  mounted.
+* Nimbus: The server running the Nimbus services.
+* OpenStack: ?
+* Eucalyptus: ?
+
+The constraints on the user(s) to run the sofware are:
+
+* Torque/Moab: Any normal user. One possibility is the 'hpa' user. Another is the user required for any IaaS
+  platform installed on the cluster.
+* Nimbus: The nimbus user.
+* OpenStack: ?
+* Eucalyptus: ?
+
+If your cluster runs more than one of these resource management systems, you may need to install a version of
+this software for each of those resource management systems on different servers to be run by different
+users. As an example, we didn't have to do this on Alamo. On that cluster, we run both Nimbus and Torque/Moab
+publishing out of the nimbus user account.
+
+==== Installation ====
+
+For each installation, become the user you want to use on the system you want to use. Then:
+
+$ cd <glue2 source directory>
+$ python2.6 install.py /path/to/install/directory
+
+The Python executable that you use to run install.py will be the one used to run these scripts. Python 2.6 or
+2.7 is required.
+
+==== X.509 Configuration ====
+
+Documents are published to the FutureGrid RabbitMQ messaging service. To access this service, your server
+needs an X.509 certificate and key and the RabbitMQ service needs to know the DN of this certificate.
+
+If your server is being used to host Nimbus, Globus, or similar software, it already has a host certificate
+and private key that you can reuse (e.g. hostcert.pem and hostkey.pem in $NIMBUS_HOME/var). If you need a host
+certificate, you can contact your favorite Certificate Authority (e.g. InCommon, DOE, TACC) or submit a
+FutureGrid ticket requesting a host certificate from the (not very trustworthy) FutureGrid CA.
+
+The glue2 software expects the host certificate to be in etc/cert.pem in the install directory and the host
+key to be in etc/key.pem in the install directory. The already-present etc/ca_certs.pem file contains
+information about the CA that issued the certificate used by the RabbitMQ server.
+
+==== Torque Configuration ====
+
+The script bin/RESOURCE_pbs.sh (replace RESOURCE by the name of your cluster - alamo, foxtrot, hotel, india,
+sierra, xray) gathers information about the Torque nodes and jobs in your cluster and publishes a snapshot of
+their state. This script loads the torque module and runs the information publishing workflow specified in
+etc/workflow/futuregrid/RESOURCE_pbs.json. You should not need to modify either of these files, but it is
+possible you would want to edit these files to:
+
+* Modify the execution environment in bin/RESOURCE_pbs.sh before the workflow is run.
+* Modify the workflow in etc/workflow/futuregrid/RESOURCE_pbs.json to correct any mistakes.
+
+==== Torque Testing ====
+
+In one terminal, execute:
+
+$ bin/subscribe.sh torquemoab.RESOURCE.futuregrid.org
+
+This program connects to the FutureGrid RabbitMQ service, requests that glue2 messages about RESOURCE be sent to
+it, and prints those messages to the screen as they arrive.
+
+If you get an error when running this script, the most likely cause is the X.509 configuration in your
+installation or at the RabbitMQ server. Please verify that you've followed the X.509 configuration steps above
+and submit a FutureGrid ticket if you are still getting errors.
+
+In another terminal, execute:
+
+
+$ bin/RESOURCE_pbs.sh
+
+The script should complete in a few seconds at most and will log information to var/RESOURCE_pbs.log. The last
+line in that log should include the phrase "workflow succeeded" if everything goes ok. If problems occur, the
+error messages in the log should help you find causes for them. Typical problems are the environment not being
+configured correctly (e.g. Torque commands not in the path) or the user not being able to read the Torque
+server_logs directory. If you can't identify the problem, please submit a FutureGrid ticket.
+
+The terminal where you are running subscribe.sh should also show two documents once the RESOURCE_pbs.sh script
+completes. One document provides an overview of your cluster and contains information about queues
+(ComputingShares), nodes (ExecutionEnvironments) and about remote job services such as Genesis II, Globus, and
+Unicore (ComputingEndpoints). The other document provides information about each job (ComputingActivity) that
+Torque knows about.
+
+In addition, the last published versions of these documents are saved into files in var/glue2_pbs_public.json
+and var/glue2_pbs_private.json to help with debugging.
+
+You should be able to make enough sense of this document to determine if they are accurate. Additional
+information about the GLUE 2 information standard is available in the Open Grid Forum document
+https://www.ggf.org/documents/GFD.147.pdf.
+
+In the same terminal, execute:
+
+$ bin/RESOURCE_pbs_job_updates.sh
+
+This script will start a daemon that runs in the background. If you run this script again, it will notice that
+a daemon for this workflow is already running and not start another one. The information publishing workflow
+run by this script watches Torque log files for new jobs and job state changes and publishes information about
+those changes as they occur. If you have jobs changing state on your cluster (you can always submit some
+yourself), you should see ComputingActivity document appearing in your terminal that is running subscribe.sh.
+
+
+Once you finish testing, you can ctrl-C the bin/subscribe.sh script to stop it.
+
+
+==== Torque Deployment ====
+
+To activate this software with Torque, create cron jobs for the user you selected on the server you
+selected. Example cron jobs are:
+
+*/5 * * * * /path/to/installation/directory/bin/RESOURCE_pbs.sh
+*/15 * * * * /path/to/installation/directory/bin/RESOURCE_pbs_job_updates.sh
+
+The first cron job takes a snapshot of your system every 5 minutes so that the FutureGrid portal and other
+consumers have relatively up-to-date status information. The second cron job checks that the daemon that is
+watching for new Torque jobs and job updates is running every 15 mins and will start the daemon if it isn't
+running.
+
+==== Nimbus ====
+
+The nimbus configuration and testing follows the same process as for Torque. The only differences are that the
+script and workload file names have "nimbus" in them instead of "pbs".
+
+==== OpenStack ====
+
+?
+
+==== Eucalyptus ====
+
+?
