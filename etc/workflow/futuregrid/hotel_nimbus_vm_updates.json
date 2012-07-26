@@ -1,10 +1,9 @@
 {
-  "name": "nimbus_glue2_job_updates",
-  "period": 0,
+  "name": "nimbus_glue2_vm_updates",
   "steps": [
     { "name": "ipf/resource_name",
       "params": {
-        "resource_name": "nimbus.sierra.futuregrid.org"
+        "resource_name": "nimbus.hotel.futuregrid.org"
       }
     },
     { "name": "glue2/nimbus/computing_activity_update" },

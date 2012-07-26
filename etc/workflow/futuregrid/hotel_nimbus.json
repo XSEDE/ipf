@@ -1,6 +1,5 @@
 {
   "name": "glue2_nimbus",
-  "period": 120,
   "params": {
     "nimbus_dir": "/opt/nimbus-2.9"
   },
