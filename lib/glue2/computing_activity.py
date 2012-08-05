@@ -141,7 +141,8 @@ class ComputingActivitiesDocumentXml(Document):
 
 class ComputingActivityDocumentXml(Document):
     def __init__(self, resource_name, activity, hide):
-        Document.__init__(self, resource_name, "glue2/teragrid/computing_activity.xml")
+        Document.__init__(self, "%s.%s" % (activity.LocalIDFromManager,resource_name),
+                          "glue2/teragrid/computing_activity.xml")
         self.activity = activity
         self.hide = hide
 
@@ -172,7 +173,8 @@ class ComputingActivitiesDocumentJson(Document):
 
 class ComputingActivityDocumentJson(Document):
     def __init__(self, resource_name, activity, hide):
-        Document.__init__(self, resource_name, "glue2/ipf/computing_activity.json")
+        Document.__init__(self, "%s.%s" % (activity.LocalIDFromManager,resource_name),
+                          "glue2/ipf/computing_activity.json")
         self.activity = activity
         self.hide = hide
 

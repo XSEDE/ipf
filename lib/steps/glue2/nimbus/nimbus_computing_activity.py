@@ -22,7 +22,7 @@ import re
 import sys
 
 from ipf.error import StepError
-from glue2.log import LogDirectoryWatcher
+from glue2.log import LogFileWatcher
 
 from glue2.computing_activity import *
 
@@ -36,7 +36,7 @@ class NimbusActivityMixIn(object):
     def _createActivity(self, line):
         activity = ComputingActivity()
         activity.State = ComputingActivity.STATE_RUNNING
-
+        
         m = re.search("eprkey=(\d+)",line)
         activity.LocalIDFromManager = m.group(1)
 

@@ -24,6 +24,7 @@ from ipf.document import Document
 from ipf.dt import *
 from ipf.error import NoMoreInputsError,StepError
 
+from glue2.computing_activity import ComputingActivity
 from glue2.computing_share import ComputingShare
 from glue2.computing_endpoint import ComputingEndpoint
 from glue2.step import GlueStep
@@ -39,22 +40,24 @@ class ComputingServiceStep(GlueStep):
         self.description = "This step provides a GLUE 2 ComputingService document. It is an aggregation mechanism"
         self.time_out = 10
         self.requires_types = ["ipf/resource_name.txt",
+                               "glue2/ipf/computing_activities.json",
                                "glue2/ipf/computing_shares.json",
                                "glue2/ipf/computing_endpoint.json"]
         self.produces_types = ["glue2/teragrid/computing_service.xml",
                                "glue2/ipf/computing_service.json"]
 
         self.resource_name = None
+        self.activities = None
         self.shares = None
         self.endpoints = None
 
     def run(self):
         rn_doc = self._getInput("ipf/resource_name.txt")
         self.resource_name = rn_doc.resource_name
+        activities_doc = self._getInput("glue2/ipf/computing_activities.json")
+        self.activities = activities_doc.activities
         shares_doc = self._getInput("glue2/ipf/computing_shares.json")
         self.shares = shares_doc.shares
-        #endpoints_doc = self._getInput("glue2/ipf/computing_endpoints.json")
-        #self.endpoints = endpoints_doc.endpoints
         self.endpoints = []
         try:
             while True:
@@ -68,6 +71,7 @@ class ComputingServiceStep(GlueStep):
         service.ID = "urn:glue2:ComputingService:%s" % (self.resource_name)
         service.ComputingManager = "urn:glue2:ComputingManager:%s" % (self.resource_name)
 
+        service._addActivities(self.activities)
         service._addShares(self.shares)
         service._addEndpoints(self.endpoints)
 
@@ -153,36 +157,31 @@ class ComputingService(object):
         #self.computingManager = None   # ComputingManager (set by child class)
         self.StorageService = []       # list of string (uri)
 
+    def _addActivities(self, activities):
+        self.RunningJobs = 0
+        self.WaitingJobs = 0
+        self.StagingJobs = 0
+        self.SuspendedJobs = 0
+        self.PreLRMSWaitingJobs = 0
+        for activity in activities:
+            if activity.State == ComputingActivity.STATE_RUNNING:
+                self.RunningJobs = self.RunningJobs + 1
+            elif activity.State == ComputingActivity.STATE_PENDING:
+                self.WaitingJobs = self.WaitingJobs + 1
+            elif activity.State == ComputingActivity.STATE_HELD:
+                self.WaitingJobs = self.WaitingJobs + 1
+            else:
+                # output a warning
+                pass
+        self.TotalJobs = self.RunningJobs + self.WaitingJobs + self.StagingJobs + self.SuspendedJobs + \
+                         self.PreLRMSWaitingJobs
+
     def _addShares(self, shares):
         self.ComputingShare = []
         if len(shares) == 0:
             return
         for share in shares:
             self.ComputingShare.append(share.ID)
-            if share.TotalJobs is not None:
-                if self.TotalJobs == None:
-                    self.TotalJobs = 0
-                self.TotalJobs = self.TotalJobs + share.TotalJobs
-            if share.RunningJobs is not None:
-                if self.RunningJobs == None:
-                    self.RunningJobs = 0
-                self.RunningJobs = self.RunningJobs + share.RunningJobs
-            if share.WaitingJobs is not None:
-                if self.WaitingJobs == None:
-                    self.WaitingJobs = 0
-                self.WaitingJobs = self.WaitingJobs + share.WaitingJobs
-            if share.StagingJobs is not None:
-                if self.StagingJobs == None:
-                    self.StagingJobs = 0
-                self.StagingJobs = self.StagingJobs + share.StagingJobs
-            if share.SuspendedJobs is not None:
-                if self.SuspendedJobs == None:
-                    self.SuspendedJobs = 0
-                self.SuspendedJobs = self.SuspendedJobs + share.SuspendedJobs
-            if share.PreLRMSWaitingJobs is not None:
-                if self.PreLRMSWaitingJobs == None:
-                    self.PreLRMSWaitingJobs = 0
-                self.PreLRMSWaitingJobs = self.PreLRMSWaitingJobs + share.PreLRMSWaitingJobs
 
     def _addEndpoints(self, endpoints):
         self.ComputingEndpoint = []

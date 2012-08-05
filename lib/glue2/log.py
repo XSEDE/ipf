@@ -134,9 +134,9 @@ class LogDirectoryWatcher(object):
 class LogFile(object):
     def __init__(self, path, callback, st=None):
         self.path = path
-        self.id = self._getId(st)
         if st is None:
             st = os.stat(path)
+        self.id = self._getId(st)
         self.mod_time = st.st_mtime
         self.callback = callback
         self.file = None

@@ -43,10 +43,11 @@ signal.signal(signal.SIGINT, sigHandler)
 #######################################################################################################################
 
 def incoming(consumer_tag, routing_key, exchange, content):
-    print("incoming")
-    print("  key: %s" % routing_key)
-    print("  exchange: %s" % exchange)
-    print("  content: %s" % content)
+    print("|-----------------------------  message  ------------------------------")
+    print("|      key: %s" % routing_key)
+    print("| exchange: %s" % exchange)
+    print("|  content:")
+    print("%s" % content)
 
 #######################################################################################################################
 

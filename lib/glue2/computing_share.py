@@ -94,7 +94,6 @@ class ComputingSharesStep(GlueStep):
                 continue
 
             share.computingActivity.append(activity)
-            #activity.ComputingShare = [share.ID]
             if activity.State == ComputingActivity.STATE_RUNNING:
                 share.RunningJobs = share.RunningJobs + 1
                 share.LocalRunningJobs = share.LocalRunningJobs + 1

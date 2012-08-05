@@ -43,15 +43,9 @@ class PbsExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
             raise StepError("pbsnodes failed: "+output+"\n")
 
         nodeStrings = output.split("\n\n")
-
-        hosts = []
-        for nodeString in nodeStrings:
-            host = self._getHost(nodeString)
-            if not self._testProperties(host.properties):
-                continue
-            if self._goodHost(host):
-                hosts.append(host)
-
+        hosts = map(self._getHost,nodeStrings)
+        hosts = filter(self._testProperties,hosts)
+        hosts = filter(self._goodHost,hosts)
         return hosts
 
     def _getHost(self, nodeString):
@@ -129,18 +123,18 @@ class PbsExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
                 host.properties = line[18:].split(",")
         return host
         
-    def _testProperties(self, properties):
+    def _testProperties(self, host):
         nodes = self.params.get("nodes","+*")
         toks = nodes.split()
         goodSoFar = False
         for tok in toks:
             if tok[0] == '+':
                 prop = tok[1:]
-                if (prop == "*") or (prop in properties):
+                if (prop == "*") or (prop in host.properties):
                     goodSoFar = True
             elif tok[0] == '-':
                 prop = tok[1:]
-                if (prop == "*") or (prop in properties):
+                if (prop == "*") or (prop in host.properties):
                     goodSoFar = False
             else:
                 self.warn("can't parse part of nodes expression: "+tok)

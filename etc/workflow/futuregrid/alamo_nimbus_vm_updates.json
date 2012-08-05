@@ -6,7 +6,11 @@
         "resource_name": "nimbus.alamo.futuregrid.org"
       }
     },
-    { "name": "glue2/nimbus/computing_activity_update" },
+    { "name": "glue2/nimbus/computing_activity_update",
+      "params": {
+        "nimbus_dir": "/opt/nimbus-2.9"
+      }
+    },
     {
       "name": "ipf/publish/amqp",
       "params": {

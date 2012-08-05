@@ -47,14 +47,14 @@ class NimbusEndpointStep(ComputingEndpointStep):
         endpoints = []
 
         endpoint = self._getEndpoint(issuer)
-        endpoint.Name = "nimbus-wsrf"
+        endpoint.Name = "wsrf"
         endpoint.URL = "http://%s:8443" % host_name
         endpoint.Technology = "SOAP"
         endpoint.InterfaceName = "WSRF"
         endpoints.append(endpoint)
 
         endpoint = self._getEndpoint(issuer)
-        endpoint.Name = "nimbus-rest"
+        endpoint.Name = "rest"
         endpoint.URL = "http://%s:8444" % host_name
         endpoint.Technology = "REST"
         endpoint.InterfaceName = "EC2"
@@ -92,9 +92,14 @@ class NimbusEndpointStep(ComputingEndpointStep):
         cmd = grid_cert_info + " -issuer -file "+cert_file
         (status, output) = commands.getstatusoutput(cmd)
         if status == 0:
-            return output
+            try:
+                # remove the 'issuer      : ' prefix and strip off any leading and trailing whitespace
+                return output[output.index(":")+1:].strip()
+            except ValueError:
+                self.warning("getIssuer failed to process output of grid-cert-info: %s",output)
+                return None
         else:
-            self.warning("getIssuer failed on grid-cert-info: "+output)
+            self.warning("getIssuer failed on grid-cert-info: %s",output)
             return None
 
 #######################################################################################################################

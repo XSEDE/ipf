@@ -33,7 +33,7 @@ class NimbusComputingManagerStep(ComputingManagerStep):
         manager.ProductName = "Nimbus"
         manager.Name = "Nimbus"
         manager.Reservation = False
-        manager.BulkSubmission = False
+        manager.BulkSubmission = True
 
         try:
             manager.Version = self.params["nimbus_version"]

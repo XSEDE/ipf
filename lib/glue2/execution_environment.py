@@ -77,7 +77,7 @@ class ExecutionEnvironmentsStep(GlueStep):
                 if host.sameHostGroup(host_group,use_name):
                     if "UsedAverageLoad" in host.Extension:
                         host_load = host.Extension["UsedAverageLoad"]
-                        if not "UsedAverageLoad" in host_group.Extension:
+                        if "UsedAverageLoad" not in host_group.Extension:
                             host_group.Extension["UsedAverageLoad"] = host_load
                         else:
                             host_group_load = host_group.Extension["UsedAverageLoad"]
@@ -87,17 +87,22 @@ class ExecutionEnvironmentsStep(GlueStep):
                             host_group.Extension["UsedAverageLoad"] = host_group_load
                     if "AvailableAverageLoad" in host.Extension:
                         host_load = host.Extension["AvailableAverageLoad"]
-                        if not "AvailableAverageLoad" in host_group.Extension:
+                        if "AvailableAverageLoad" not in host_group.Extension:
                             host_group.Extension["AvailableAverageLoad"] = host_load
                         else:
                             host_group_load = host_group.Extension["AvailableAverageLoad"]
                             host_group_avail = host_group.TotalInstances - host_group.UsedInstances - \
                                                host_group.UnavailableInstances
                             host_avail = host.TotalInstances - host.UsedInstances - host.UnavailableInstances
-                            host_group_load = (host_group_load * host_group_avail +
-                                               host_load * host_avail) / \
-                                               (host_group_avail + host_group_avail)
+                            host_group_load = (host_group_load * host_group_avail + host_load * host_avail) / \
+                                              (host_group_avail + host_group_avail)
                             host_group.Extension["AvailableAverageLoad"] = host_group_load
+                    if "PartiallyUsedInstances" in host.Extension:
+                        if "PartiallyUsedInstances" not in host_group.Extension:
+                            host_group.Extension["PartiallyUsedInstances"] = host.Extension["PartiallyUsedInstances"]
+                        else:
+                            host_group.Extension["PartiallyUsedInstances"] = \
+                              host_group.Extension["PartiallyUsedInstances"] + host.Extension["PartiallyUsedInstances"]
                     host_group.TotalInstances += host.TotalInstances
                     host_group.UsedInstances += host.UsedInstances
                     host_group.UnavailableInstances += host.UnavailableInstances
@@ -119,7 +124,9 @@ class ExecutionEnvironmentsStep(GlueStep):
         if host.PhysicalCPUs == None:
             return False
 
-        # check that it is associated with a good queue
+        # if the host is associated with a queue, check that it is a good one
+        if len(host.ComputingShare) == 0:
+            return True
         for queue in host.ComputingShare:
             if self._includeQueue(queue):
                 return True

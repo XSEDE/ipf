@@ -61,7 +61,7 @@ class NimbusExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
             node.LogicalCPUs = self.params["cores_per_node"]
         except KeyError:
             pass
-        available_memory = None
+
         for line in lines:
             if "hostname" in line:
                 pass
@@ -73,18 +73,21 @@ class NimbusExecutionEnvironmentsStep(ExecutionEnvironmentsStep):
                 node.MainMemorySize = int(line.split()[2])
             elif "in_use" in line:
                 if line.split()[2] == "true":
-                    # only know memory allocated, so just use it
+                    # use available memory to decide if the node is fully used
                     if available_memory == 0:
                         node.UsedInstances = 1
+                        node.Extension["PartiallyUsedInstances"] = 0
                     else:
                         node.UsedInstances = 0
+                        node.Extension["PartiallyUsedInstances"] = 1
                 else:
                     node.UsedInstances = 0
+                    node.Extension["PartiallyUsedInstances"] = 0
             elif "active" in line:
                 if line.split()[2] == "true":
-                    node.UnavailableInstances = 1
-                else:
                     node.UnavailableInstances = 0
+                else:
+                    node.UnavailableInstances = 1
         return node
 
 #######################################################################################################################
