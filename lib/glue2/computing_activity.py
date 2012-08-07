@@ -19,174 +19,86 @@ import json    # new in Python 2.6
 import time
 from xml.dom.minidom import getDOMImplementation
 
-from ipf.document import Document
+from ipf.data import Data, Representation
 from ipf.dt import *
 from ipf.error import StepError
+from ipf.resource_name import ResourceName
 
 from glue2.step import GlueStep
 
 #######################################################################################################################
 
 class ComputingActivitiesStep(GlueStep):
+    def __init__(self):
+        GlueStep.__init__(self)
 
-    def __init__(self, params):
-        GlueStep.__init__(self,params)
-
-        self.name = "glue2/computing_activities"
         self.description = "produces a document containing one or more GLUE 2 ComputingActivity"
         self.time_out = 30
-        self.requires_types = ["ipf/resource_name.txt"]
-        self.produces_types = ["glue2/teragrid/computing_activities.xml",
-                               "glue2/ipf/computing_activities.json"]
-        self.accepts_params["hide_job_attribs"] = "a comma-separated list of ComputingActivity attributes to hide (optional)"
-        self.accepts_params["queues"] = "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown."
+        self.requires = [ResourceName]
+        self.produces = [ComputingActivities]
+        self._acceptParameter("hide_job_attribs",
+                              "a list of ComputingActivity attributes to hide (optional)",
+                              False)
+        self._acceptParameter("queues",
+                              "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown.",
+                              False)
 
         self.resource_name = None
         
     def run(self):
-        rn_doc = self._getInput("ipf/resource_name.txt")
-        self.resource_name = rn_doc.resource_name
+        self.resource_name = self._getInput(ResourceName).resource_name
 
         activities = self._run()
         for activity in activities:
+            activity.id = "%s.%s" % (activity.LocalIDFromManager,self.resource_name)
             activity.ID = "urn:glue2:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
             if activity.Queue is not None:
                 activity.ComputingShare = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
+            activity.hide = self.params.get("hide_job_attribs",[])
 
-        hide = self._getJobAttribsToHide()
-        self._output(ComputingActivitiesDocumentXml(self.resource_name,activities,hide))
-        self._output(ComputingActivitiesDocumentJson(self.resource_name,activities,hide))
+        self._output(ComputingActivities(self.resource_name,activities))
 
     def _run(self):
-        self.error("ComputingActivitiesStep._run not overriden")
         raise StepError("ComputingActivitiesStep._run not overriden")
-
-    def _getJobAttribsToHide(self):
-        hide = set()
-        try:
-            hideStr = self.params["hide_job_attribs"]
-            for name in hideStr.split():
-                hide.add(name)
-        except KeyError:
-            pass
-        return hide
 
 #######################################################################################################################
 
 class ComputingActivityUpdateStep(GlueStep):
+    def __init__(self):
+        GlueStep.__init__(self)
 
-    def __init__(self, params):
-        GlueStep.__init__(self,params)
-
-        self.name = "glue2/computing_activity_update"
         self.description = "produces a document containing an update to a GLUE 2 ComputingActivity"
         self.time_out = None
-        self.requires_types = ["ipf/resource_name.txt"]
-        self.produces_types = ["glue2/teragrid/computing_activity.xml",
-                               "glue2/ipf/computing_activity.json"]
-        self.accepts_params["hide_job_attribs"] = "a comma-separated list of ComputingActivity attributes to hide (optional)"
-        self.accepts_params["queues"] = "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown."
+        self.requires = [ResourceName]
+        self.produces = [ComputingActivity]
+        self._acceptParameter("hide_job_attribs",
+                              "a comma-separated list of ComputingActivity attributes to hide (optional)",
+                              False)
+        self._acceptParameter("queues",
+                              "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown.",
+                              False)
 
         self.resource_name = None
-        self.hide_attribs = self._getJobAttribsToHide()
         
     def run(self):
-        rn_doc = self._getInput("ipf/resource_name.txt")
-        self.resource_name = rn_doc.resource_name
+        self.resource_name = self._getInput(ResourceName).resource_name
         
         self._run()
 
     def output(self, activity):
+        activity.id = "%s.%s" % (activity.LocalIDFromManager,self.resource_name)
         activity.ID = "urn:glue2:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
         activity.ComputingShare = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
-
-        self._output(ComputingActivityDocumentXml(self.resource_name,activity,self.hide_attribs))
-        self._output(ComputingActivityDocumentJson(self.resource_name,activity,self.hide_attribs))
+        activity.hide = self.params.get("hide_job_attribs",[])
+        
+        self._output(activity)
 
     def _run(self):
-        self.error("ComputingActivityUpdateStep._run not overriden")
         raise StepError("ComputingActivityUpdateStep._run not overriden")
 
-    def _getJobAttribsToHide(self):
-        hide = {}
-        try:
-            hideStr = self.params["hide_job_attribs"]
-            for name in hideStr.split():
-                hide[name] = True
-        except KeyError:
-            pass
-        return hide
-
 #######################################################################################################################
 
-class ComputingActivitiesDocumentXml(Document):
-    def __init__(self, resource_name, activities, hide):
-        Document.__init__(self, resource_name, "glue2/teragrid/computing_activities.xml")
-        self.activities = activities
-        self.hide = hide
-
-    def _setBody(self, body):
-        raise DocumentError("ComputingActivitiesDocumentXml._setBody should parse the XML...")
-
-    def _getBody(self):
-        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
-                                                    "Entities",None)
-        for activity in self.activities:
-            adoc = activity.toDom(self.hide)
-            doc.documentElement.appendChild(adoc.documentElement.firstChild)
-        return doc.toxml()
-        #return doc.toprettyxml()
-
-#######################################################################################################################
-
-class ComputingActivityDocumentXml(Document):
-    def __init__(self, resource_name, activity, hide):
-        Document.__init__(self, "%s.%s" % (activity.LocalIDFromManager,resource_name),
-                          "glue2/teragrid/computing_activity.xml")
-        self.activity = activity
-        self.hide = hide
-
-    def _setBody(self, body):
-        raise DocumentError("ComputingActivityDocumentXml._setBody should parse the XML...")
-
-    def _getBody(self):
-        return self.activity.toDom(self.hide).toxml()
-
-#######################################################################################################################
-
-class ComputingActivitiesDocumentJson(Document):
-    def __init__(self, resource_name, activities, hide):
-        Document.__init__(self, resource_name, "glue2/ipf/computing_activities.json")
-        self.activities = activities
-        self.hide = hide
-
-    def _setBody(self, body):
-        raise DocumentError("ComputingActivitivitiesDocumentJson._setBody should parse the JSON...")
-
-    def _getBody(self):
-        adoc = []
-        for activity in self.activities:
-            adoc.append(activity.toJson(self.hide))
-        return json.dumps(adoc,sort_keys=True,indent=4)
-
-#######################################################################################################################
-
-class ComputingActivityDocumentJson(Document):
-    def __init__(self, resource_name, activity, hide):
-        Document.__init__(self, "%s.%s" % (activity.LocalIDFromManager,resource_name),
-                          "glue2/ipf/computing_activity.json")
-        self.activity = activity
-        self.hide = hide
-
-    def _setBody(self, body):
-        raise DocumentError("ComputingActivityDocumentJson._setBody should parse the JSON...")
-
-    def _getBody(self):
-        return json.dumps(self.activity.toJson(self.hide),sort_keys=True,indent=4)
-
-#######################################################################################################################
-    
-class ComputingActivity(object):
+class ComputingActivity(Data):
 
     STATE_PENDING = "ipf:pending"
     STATE_HELD = "ipf:held"
@@ -198,6 +110,10 @@ class ComputingActivity(object):
     STATE_UNKNOWN = "ipf:unknown"
 
     def __init__(self):
+        Data.__init__(self)
+
+        self.hide = set()    # attributes that shouldn't be published
+
         # Entity
         self.CreationTime = datetime.datetime.now(tzoffset(0))
         self.Validity = None
@@ -258,337 +174,7 @@ class ComputingActivity(object):
 
     ###################################################################################################################
 
-    def toDom(self, hide):
-        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
-                                                    "Entities",None)
-        root = doc.createElement("ComputingActivity")
-        doc.documentElement.appendChild(root)
-
-        # Entity
-        e = doc.createElement("CreationTime")
-        e.appendChild(doc.createTextNode(dateTimeToText(self.CreationTime)))
-        if self.Validity is not None:
-            e.setAttribute("Validity",str(self.Validity))
-        root.appendChild(e)
-
-        e = doc.createElement("ID")
-        e.appendChild(doc.createTextNode(self.ID))
-        root.appendChild(e)
-
-        if self.Name is not None and "Name" not in hide:
-            e = doc.createElement("Name")
-            e.appendChild(doc.createTextNode(self.Name))
-            root.appendChild(e)
-        for info in self.OtherInfo:
-            e = doc.createElement("OtherInfo")
-            e.appendChild(doc.createTextNode(info))
-            root.appendChild(e)
-        if "Extension" not in hide:
-            for key in self.Extension.keys():
-                e = doc.createElement("Extension")
-                e.setAttribute("Key",key)
-                e.appendChild(doc.createTextNode(self.Extension[key]))
-                root.appendChild(e)
-
-        # Activity
-        if self.UserDomain is not None and "UserDomain" not in hide:
-            e = doc.createElement("UserDomain")
-            e.appendChild(doc.createTextNode(self.UserDomain))
-            root.appendChild(e)
-        if self.Endpoint is not None and "Endpoint" not in hide:
-            e = doc.createElement("Endpoint")
-            e.appendChild(doc.createTextNode(self.Endpoint))
-            root.appendChild(e)
-        if self.Share is not None and "Share" not in hide:
-            e = doc.createElement("Share")
-            e.appendChild(doc.createTextNode(self.Share))
-            root.appendChild(e)
-        if self.Resource is not None and "Resource" not in hide:
-            e = doc.createElement("Resource")
-            e.appendChild(doc.createTextNode(self.Resource))
-            root.appendChild(e)
-        if "Activity" not in hide:
-            for act in self.Activity:
-                e = doc.createElement("Activity")
-                e.appendChild(doc.createTextNode(act))
-                root.appendChild(e)
-
-        # ComputingActivity
-        if self.Type is not None and "Type" not in hide:
-            e = doc.createElement("Type")
-            e.appendChild(doc.createTextNode(self.Type))
-            root.appendChild(e)
-        if self.IDFromEndpoint is not None and "IDFromEndpoint" not in hide:
-            e = doc.createElement("IDFromEndpoint")
-            e.appendChild(doc.createTextNode(self.IDFromEndpoint))
-            root.appendChild(e)
-        if self.LocalIDFromManager is not None and "LocalIDFromManager" not in hide:
-            e = doc.createElement("LocalIDFromManager")
-            e.appendChild(doc.createTextNode(self.LocalIDFromManager))
-            root.appendChild(e)
-        if self.JobDescription is not None and "JobDescription" not in hide:
-            e = doc.createElement("JobDescription")
-            e.appendChild(doc.createTextNode(self.JobDescription))
-            root.appendChild(e)
-        if self.State is not None and "State" not in hide:
-            e = doc.createElement("State")
-            e.appendChild(doc.createTextNode(self.State))
-            root.appendChild(e)
-        if self.RestartState is not None and "RestartState" not in hide:
-            e = doc.createElement("RestartState")
-            e.appendChild(doc.createTextNode(self.RestartState))
-            root.appendChild(e)
-        if self.ExitCode is not None and "ExitCode" not in hide:
-            e = doc.createElement("ExitCode")
-            e.appendChild(doc.createTextNode(str(self.ExitCode)))
-            root.appendChild(e)
-        if self.ComputingManagerExitCode is not None and "ComputingManagerExitCode" not in hide:
-            e = doc.createElement("ComputingManagerExitCode")
-            e.appendChild(doc.createTextNode(str(self.ComputingManagerExitCode)))
-            root.appendChild(e)
-        if "Error" not in hide:
-            for error in self.Error:
-                e = doc.createElement("Error")
-                e.appendChild(doc.createTextNode(error))
-                root.appendChild(e)
-        if self.WaitingPosition is not None and "WaitingPosition" not in hide:
-            e = doc.createElement("WaitingPosition")
-            e.appendChild(doc.createTextNode(str(self.WaitingPosition)))
-            root.appendChild(e)
-        #if self.UserDomain is not None and "UserDomain" not in hide:
-        #    e = doc.createElement("UserDomain")
-        #    e.appendChild(doc.createTextNode(self.UserDomain))
-        #    root.appendChild(e)
-        if self.Owner is not None and "Owner" not in hide:
-            e = doc.createElement("Owner")
-            e.appendChild(doc.createTextNode(self.Owner))
-            root.appendChild(e)
-        if self.LocalOwner is not None and "LocalOwner" not in hide:
-            e = doc.createElement("LocalOwner")
-            e.appendChild(doc.createTextNode(self.LocalOwner))
-            root.appendChild(e)
-        if self.RequestedTotalWallTime is not None and "RequestedTotalWallTime" not in hide:
-            e = doc.createElement("RequestedTotalWallTime")
-            e.appendChild(doc.createTextNode(str(self.RequestedTotalWallTime)))
-            root.appendChild(e)
-        if self.RequestedTotalCPUTime is not None and "RequestedTotalCPUTime" not in hide:
-            e = doc.createElement("RequestedTotalCPUTime")
-            e.appendChild(doc.createTextNode(str(self.RequestedTotalCPUTime)))
-            root.appendChild(e)
-        if self.RequestedSlots is not None and "RequestedSlots" not in hide:
-            e = doc.createElement("RequestedSlots")
-            e.appendChild(doc.createTextNode(str(self.RequestedSlots)))
-            root.appendChild(e)
-        if "RequestedApplicationEnvironment" not in hide:
-            for appEnv in self.RequestedApplicationEnvironment:
-                e = doc.createElement("RequestedApplicationEnvironment")
-                e.appendChild(doc.createTextNode(appEnv))
-                root.appendChild(e)
-        if self.StdIn is not None and "StdIn" not in hide:
-            e = doc.createElement("StdIn")
-            e.appendChild(doc.createTextNode(self.StdIn))
-            root.appendChild(e)
-        if self.StdOut is not None and "StdOut" not in hide:
-            e = doc.createElement("StdOut")
-            e.appendChild(doc.createTextNode(self.StdOut))
-            root.appendChild(e)
-        if self.StdErr is not None and "StdErr" not in hide:
-            e = doc.createElement("StdErr")
-            e.appendChild(doc.createTextNode(self.StdErr))
-            root.appendChild(e)
-        if self.LogDir is not None and "LogDir" not in hide:
-            e = doc.createElement("LogDir")
-            e.appendChild(doc.createTextNode(self.LogDir))
-            root.appendChild(e)
-        if "ExecutionNode" not in hide:
-            for node in self.ExecutionNode:
-                e = doc.createElement("ExecutionNode")
-                e.appendChild(doc.createTextNode(self.ExecutionNode))
-                root.appendChild(e)
-        if self.Queue is not None and "Queue" not in hide:
-            e = doc.createElement("Queue")
-            e.appendChild(doc.createTextNode(self.Queue))
-            root.appendChild(e)
-        if self.UsedTotalWallTime is not None and "UsedTotalWallTime" not in hide:
-            e = doc.createElement("UsedTotalWallTime")
-            e.appendChild(doc.createTextNode(str(self.UsedTotalWallTime)))
-            root.appendChild(e)
-        if self.UsedTotalCPUTime is not None and "UsedTotalCPUTime" not in hide:
-            e = doc.createElement("UsedTotalCPUTime")
-            e.appendChild(doc.createTextNode(str(self.UsedTotalCPUTime)))
-            root.appendChild(e)
-        if self.UsedMainMemory is not None and "UsedMainMemory" not in hide:
-            e = doc.createElement("UsedMainMemory")
-            e.appendChild(doc.createTextNode(str(self.UsedMainMemory)))
-            root.appendChild(e)
-        if self.SubmissionTime is not None and "SubmissionTime" not in hide:
-            e = doc.createElement("SubmissionTime")
-            e.appendChild(doc.createTextNode(dateTimeToText(self.SubmissionTime)))
-            root.appendChild(e)
-        if self.ComputingManagerSubmissionTime is not None and "ComputingManagerSubmissionTime" not in hide:
-            e = doc.createElement("ComputingManagerSubmissionTime")
-            e.appendChild(doc.createTextNode(dateTimeToText(self.ComputingManagerSubmissionTime)))
-            root.appendChild(e)
-        if self.StartTime is not None and "StartTime" not in hide:
-            e = doc.createElement("StartTime")
-            e.appendChild(doc.createTextNode(dateTimeToText(self.StartTime)))
-            root.appendChild(e)
-        if self.ComputingManagerEndTime is not None and "ComputingManagerEndTime" not in hide:
-            e = doc.createElement("ComputingManagerEndTime")
-            e.appendChild(doc.createTextNode(dateTimeToText(self.ComputingManagerEndTime)))
-            root.appendChild(e)
-        if self.EndTime is not None and "EndTime" not in hide:
-            e = doc.createElement("EndTime")
-            e.appendChild(doc.createTextNode(dateTimeToText(self.EndTime)))
-            root.appendChild(e)
-        if self.WorkingAreaEraseTime is not None and "WorkingAreaEraseTime" not in hide:
-            e = doc.createElement("WorkingAreaEraseTime")
-            e.appendChild(doc.createTextNode(dateTimeToText(self.WorkingAreaEraseTime)))
-            root.appendChild(e)
-        if self.ProxyExpirationTime is not None and "ProxyExpirationTime" not in hide:
-            e = doc.createElement("ProxyExpirationTime")
-            e.appendChild(doc.createTextNode(dateTimeToText(self.ProxyExpirationTime)))
-            root.appendChild(e)
-        if self.SubmissionHost is not None and "SubmissionHost" not in hide:
-            e = doc.createElement("SubmissionHost")
-            e.appendChild(doc.createTextNode(self.SubmissionHost))
-            root.appendChild(e)
-        if self.SubmissionClientName is not None and "SubmissionClientName" not in hide:
-            e = doc.createElement("SubmissionClientName")
-            e.appendChild(doc.createTextNode(self.SubmissionClientName))
-            root.appendChild(e)
-        for message in self.OtherMessages:
-            e = doc.createElement("OtherMessages")
-            e.appendChild(doc.createTextNode(message))
-            root.appendChild(e)
-        if self.ComputingEndpoint is not None:
-            e = doc.createElement("ComputingEndpoint")
-            e.appendChild(doc.createTextNode(self.ComputingEndpoint))
-            root.appendChild(e)
-        if self.ComputingShare is not None:
-            e = doc.createElement("ComputingShare")
-            e.appendChild(doc.createTextNode(self.ComputingShare))
-            root.appendChild(e)
-        if self.ExecutionEnvironment is not None:
-            e = doc.createElement("ExecutionEnvironment")
-            e.appendChild(doc.createTextNode(self.ExecutionEnvironment))
-            root.appendChild(e)
-
-        return doc
-    
-    ###################################################################################################################
-
-    def toJson(self, hide=set()):
-        doc = {}
-
-        # Entity
-        doc["CreationTime"] = dateTimeToText(self.CreationTime)
-        if self.Validity is not None:
-            doc["Validity"] = self.Validity
-        doc["ID"] = self.ID
-        if self.Name is not None and "Name" not in hide:
-            doc["Name"] = self.Name
-        if len(self.OtherInfo) > 0 and "OtherInfo" not in hide:
-            doc["OtherInfo"] = self.OtherInfo
-        if len(self.Extension) > 0 and "Extension" not in hide:
-            doc["Extension"] = self.Extension
-
-        # Activity
-        if self.UserDomain is not None and "UserDomain" not in hide:
-            doc["UserDomain"] = self.UserDomain
-        if self.Endpoint is not None and "Endpoint" not in hide:
-            doc["Endpoint"] = self.Endpoint
-        if self.Share is not None and "Share" not in hide:
-            doc["Share"] = self.Share
-        if self.Resource is not None and "Resource" not in hide:
-            doc["Resource"] = self.Resource
-        if len(self.Activity) > 0 and "Activity" not in hide:
-            doc["Activity"] = self.Activity
-
-        # ComputingActivity
-        if self.Type is not None and "Type" not in hide:
-            doc["Type"] = self.Type
-        if self.IDFromEndpoint is not None and "IDFromEndpoint" not in hide:
-            doc["ActivityFromEndpoint"] = self.IDFromEndpoint
-        if self.LocalIDFromManager is not None and "LocalIDFromManaer" not in hide:
-            doc["LocalIDFromManager"] = self.LocalIDFromManager
-        if self.JobDescription is not None and "JobDescription" not in hide:
-            doc["JobDescription"] = self.JobDescription
-        if self.State is not None and "State" not in hide:
-            doc["State"] = self.State
-        if self.RestartState is not None and "RestartState" not in hide:
-            doc["RestartState"] = self.RestartState
-        if self.ExitCode is not None and "ExitCode" not in hide:
-            doc["ExitCode"] = self.ExitCode
-        if self.ComputingManagerExitCode is not None and "ComputingManagerExitCode" not in hide:
-            doc["ComputingManagerExitCode"] = self.ComputingManagerExitCode
-        if len(self.Error) > 0 and "Error" not in hide:
-            doc["Error"] = self.Error
-        if self.WaitingPosition is not None and "WaitingPosition" not in hide:
-            doc["WaitingPosition"] = self.WaitingPosition
-        #if self.UserDomain is not None and "UserDomain" not in hide:
-        #    doc["UserDomain"] = UserDomain
-        if self.Owner is not None and "Owner" not in hide:
-            doc["Owner"] = self.Owner
-        if self.LocalOwner is not None and "LocalOwner" not in hide:
-            doc["LocalOwner"] = self.LocalOwner
-        if self.RequestedTotalWallTime is not None and "RequestedTotalWallTime" not in hide:
-            doc["RequestedTotalWallTime"] = self.RequestedTotalWallTime
-        if self.RequestedTotalCPUTime is not None and "RequestedTotalCPUTime" not in hide:
-            doc["RequestedTotalCPUTime"] = self.RequestedTotalCPUTime
-        if self.RequestedSlots is not None and "RequestedSlots" not in hide:
-            doc["RequestedSlots"] = self.RequestedSlots
-        if len(self.RequestedApplicationEnvironment) > 0 and "RequestedApplicationEnvironment" not in hide:
-            doc["RequestedApplicationEnvironment"] = self.RequestedApplicationEnvironment
-        if self.StdIn is not None and "StdIn" not in hide:
-            doc["StdIn"] = self.StdIn
-        if self.StdOut is not None and "StdOut" not in hide:
-            doc["StdOut"] = self.StdOut
-        if self.StdErr is not None and "StdErr" not in hide:
-            doc["StdErr"] = self.StdErr
-        if self.LogDir is not None and "LogDir" not in hide:
-            doc["LogDir"] = self.LogDir
-        if len(self.ExecutionNode) > 0 and "ExecutionNode" not in hide:
-            doc["ExecutionNode"] = self.ExecutionNode
-        if self.Queue is not None and "Queue" not in hide:
-            doc["Queue"] = self.Queue
-        if self.UsedTotalWallTime is not None and "UsedTotalWallTime" not in hide:
-            doc["UsedTotalWallTime"] = self.UsedTotalWallTime
-        if self.UsedTotalCPUTime is not None and "UsedTotalCPUTime" not in hide:
-            doc["UsedTotalCPUTime"] = self.UsedTotalCPUTime
-        if self.UsedMainMemory is not None and "UsedMainMemory" not in hide:
-            doc["UsedMainMemory"] = self.UsedMainMemory
-        if self.SubmissionTime is not None and "SubmissionTime" not in hide:
-            doc["SubmissionTime"] = dateTimeToText(self.SubmissionTime)
-        if self.ComputingManagerSubmissionTime is not None and "ComputingManagerSubmissionTime" not in hide:
-            doc["ComputingManagerSubmissionTime"] = dateTimeToText(self.ComputingManagerSubmissionTime)
-        if self.StartTime is not None and "StartTime" not in hide:
-            doc["StartTime"] = dateTimeToText(self.StartTime)
-        if self.ComputingManagerEndTime is not None and "ComputingManagerEndTime" not in hide:
-            doc["ComputingManagerEndTime"] = dateTimeToText(self.ComputingManagerEndTime)
-        if self.EndTime is not None and "EndTime" not in hide:
-            doc["EndTime"] = dateTimeToText(self.EndTime)
-        if self.WorkingAreaEraseTime is not None and "WorkingAreaEraseTime" not in hide:
-            doc["WorkingAreaEraseTime"] = dateTimeToText(self.WorkingAreaEraseTime)
-        if self.ProxyExpirationTime is not None and "ProxyExpirationTime" not in hide:
-            doc["ProxyExpirationTime"] = dateTimeToText(self.ProxyExpirationTime)
-        if self.SubmissionHost is not None and "SubmissionHost" not in hide:
-            doc["SubmissionHost"] = self.SubmissionHost
-        if self.SubmissionClientName is not None and "SubmissionClientName" not in hide:
-            doc["SubmissionClientName"] = self.SubmissionClientName
-        if len(self.OtherMessages) > 0 and "OtherMessages" not in hide:
-            doc["OtherMessages"] = self.OtherMessages
-        if self.ComputingEndpoint is not None and "ComputingEndpoint" not in hide:
-            doc["ComputingEndpoint"] = self.ComputingEndpoint
-        if self.ComputingShare is not None and "ComputingShare" not in hide:
-            doc["ComputingShare"] = self.ComputingShare
-        if self.ExecutionEnvironment is not None and "ExecutionEnvironment" not in hide:
-            doc["ExecutionEnvironment"] = self.ExecutionEnvironment
-
-        return doc
-    
-    ###################################################################################################################
-
+    # legacy
     def fromJson(self, doc):
         # Entity
         if "CreationTime" in doc:
@@ -648,137 +234,397 @@ class ComputingActivity(object):
         self.ComputingShare = doc.get("ComputingShare",[])
         self.ExecutionEnvironment = doc.get("ExecutionEnvironment",[])
 
-    ###################################################################################################################
+#######################################################################################################################
 
-    def toXml(self, hide, indent=""):
-        mstr = ""
-        #mstr = mstr+"<?xml version='1.0' encoding='UTF-8'?>\n"
-        #mstr = mstr+indent+"<Entities xmlns='http://info.teragrid.org/glue/2009/02/spec_2.0_r01'>\n"
+class ComputingActivityTeraGridXml(Representation):
+    data_cls = ComputingActivity
 
-        mstr = mstr+indent+"<ComputingActivity"
+    def __init__(self, data):
+        Representation.__init__(self,Representation.MIME_TEXT_XML,data)
+
+    def get(self):
+        return self.toDom(self.data).toxml()
+
+    @staticmethod
+    def toDom(activity):
+        hide = activity.hide
+        
+        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
+                                                    "Entities",None)
+        root = doc.createElement("ComputingActivity")
+        doc.documentElement.appendChild(root)
 
         # Entity
-        mstr = mstr+" CreationTime='"+dateTimeToText(self.CreationTime)+"'"
-        if Validity is not None:
-            mstr = mstr+"\n"+indent+("                   Validity='%d'>\n" % self.Validity)
-        else:
-            mstr = mstr+"\n"
-        mstr = mstr+indent+"  <ID>"+self.ID+"</ID>\n"
-        if self.Name is not None and "Name" not in hide:
-            mstr = mstr+indent+"  <Name>"+self.Name+"</Name>\n"
-        for info in self.OtherInfo:
-            mstr = mstr+indent+"  <OtherInfo>"+info+"</OtherInfo>\n"
+        e = doc.createElement("CreationTime")
+        e.appendChild(doc.createTextNode(dateTimeToText(activity.CreationTime)))
+        if activity.Validity is not None:
+            e.setAttribute("Validity",str(activity.Validity))
+        root.appendChild(e)
+
+        e = doc.createElement("ID")
+        e.appendChild(doc.createTextNode(activity.ID))
+        root.appendChild(e)
+
+        if activity.Name is not None and "Name" not in hide:
+            e = doc.createElement("Name")
+            e.appendChild(doc.createTextNode(activity.Name))
+            root.appendChild(e)
+        for info in activity.OtherInfo:
+            e = doc.createElement("OtherInfo")
+            e.appendChild(doc.createTextNode(info))
+            root.appendChild(e)
         if "Extension" not in hide:
-            for key in self.Extension.keys():
-                mstr = mstr+indent+"  <Extension Key='"+key+"'>"+self.Extension[key]+"</Extension>\n"
+            for key in activity.Extension.keys():
+                e = doc.createElement("Extension")
+                e.setAttribute("Key",key)
+                e.appendChild(doc.createTextNode(activity.Extension[key]))
+                root.appendChild(e)
 
         # Activity
-        if self.UserDomain is not None and "UserDomain" not in hide:
-            mstr = mstr+indent+"  <UserDomain>"+self.UserDomain+"</UserDomain>\n"
-        if self.Endpoint is not None and "Endpoint" not in hide:
-            mstr = mstr+indent+"  <Endpoint>"+self.Endpoint+"</Endpoint>\n"
-        if self.Share is not None and "Share" not in hide:
-            mstr = mstr+indent+"  <Share>"+self.Share+"</Share>\n"
-        if self.Resource is not None and "Resource" not in hide:
-            mstr = mstr+indent+"  <Resource>"+self.Resource+"</Resource>\n"
+        if activity.UserDomain is not None and "UserDomain" not in hide:
+            e = doc.createElement("UserDomain")
+            e.appendChild(doc.createTextNode(activity.UserDomain))
+            root.appendChild(e)
+        if activity.Endpoint is not None and "Endpoint" not in hide:
+            e = doc.createElement("Endpoint")
+            e.appendChild(doc.createTextNode(activity.Endpoint))
+            root.appendChild(e)
+        if activity.Share is not None and "Share" not in hide:
+            e = doc.createElement("Share")
+            e.appendChild(doc.createTextNode(activity.Share))
+            root.appendChild(e)
+        if activity.Resource is not None and "Resource" not in hide:
+            e = doc.createElement("Resource")
+            e.appendChild(doc.createTextNode(activity.Resource))
+            root.appendChild(e)
         if "Activity" not in hide:
-            for act in self.Activity:
-                mstr = mstr+indent+"  <Activity>"+act+"</Activity>\n"
+            for act in activity.Activity:
+                e = doc.createElement("Activity")
+                e.appendChild(doc.createTextNode(act))
+                root.appendChild(e)
 
         # ComputingActivity
-        if self.Type is not None and "Type" not in hide:
-            mstr = mstr+indent+"  <Type>"+self.Type+"</Type>\n"
-        if self.IDFromEndpoint is not None and "IDFromEndpoint" not in hide:
-            mstr = mstr+indent+"  <IDFromEndpoint>"+self.IDFromEndpoint+"</IDFromEndpoint>\n"
-        if self.LocalIDFromManager is not None and "LocalIDFromManaer" not in hide:
-            mstr = mstr+indent+"  <LocalIDFromManager>"+self.LocalIDFromManager+"</LocalIDFromManager>\n"
-        if self.JobDescription is not None and "JobDescription" not in hide:
-            mstr = mstr+indent+"  <JobDescription>"+self.JobDescription+"</JobDescription>\n"
-        if self.State is not None and "State" not in hide:
-            mstr = mstr+indent+"  <State>"+self.State+"</State>\n"
-        if self.RestartState is not None and "RestartState" not in hide:
-            mstr = mstr+indent+"  <RestartState>"+self.RestartState+"</RestartState>\n"
-        if self.ExitCode is not None and "ExitCode" not in hide:
-            mstr = mstr+indent+"  <ExitCode>"+str(self.ExitCode)+"</ExitCode>\n"
-        if self.ComputingManagerExitCode is not None and "ComputingManagerExitCode" not in hide:
-            mstr = mstr+indent+"  <ComputingManagerExitCode>"+str(self.ComputingManagerExitCode)+ \
-                   "</ComputingManagerExitCode>\n"
+        if activity.Type is not None and "Type" not in hide:
+            e = doc.createElement("Type")
+            e.appendChild(doc.createTextNode(activity.Type))
+            root.appendChild(e)
+        if activity.IDFromEndpoint is not None and "IDFromEndpoint" not in hide:
+            e = doc.createElement("IDFromEndpoint")
+            e.appendChild(doc.createTextNode(activity.IDFromEndpoint))
+            root.appendChild(e)
+        if activity.LocalIDFromManager is not None and "LocalIDFromManager" not in hide:
+            e = doc.createElement("LocalIDFromManager")
+            e.appendChild(doc.createTextNode(activity.LocalIDFromManager))
+            root.appendChild(e)
+        if activity.JobDescription is not None and "JobDescription" not in hide:
+            e = doc.createElement("JobDescription")
+            e.appendChild(doc.createTextNode(activity.JobDescription))
+            root.appendChild(e)
+        if activity.State is not None and "State" not in hide:
+            e = doc.createElement("State")
+            e.appendChild(doc.createTextNode(activity.State))
+            root.appendChild(e)
+        if activity.RestartState is not None and "RestartState" not in hide:
+            e = doc.createElement("RestartState")
+            e.appendChild(doc.createTextNode(activity.RestartState))
+            root.appendChild(e)
+        if activity.ExitCode is not None and "ExitCode" not in hide:
+            e = doc.createElement("ExitCode")
+            e.appendChild(doc.createTextNode(str(activity.ExitCode)))
+            root.appendChild(e)
+        if activity.ComputingManagerExitCode is not None and "ComputingManagerExitCode" not in hide:
+            e = doc.createElement("ComputingManagerExitCode")
+            e.appendChild(doc.createTextNode(str(activity.ComputingManagerExitCode)))
+            root.appendChild(e)
         if "Error" not in hide:
-            for error in self.Error:
-                mstr = mstr+indent+"  <Error>"+error+"</Error>\n"
-        if self.WaitingPosition is not None and "WaitingPosition" not in hide:
-            mstr = mstr+indent+"  <WaitingPosition>"+str(self.WaitingPosition)+"</WaitingPosition>\n"
-        #if self.UserDomain is not None and "UserDomain" not in hide:
-        #    mstr = mstr+indent+"  <UserDomain>"+self.UserDomain+"</UserDomain>\n"
-        if self.Owner is not None and "Owner" not in hide:
-            mstr = mstr+indent+"  <Owner>"+self.Owner+"</Owner>\n"
-        if self.LocalOwner is not None and "LocalOwner" not in hide:
-            mstr = mstr+indent+"  <LocalOwner>"+self.LocalOwner+"</LocalOwner>\n"
-        if self.RequestedTotalWallTime is not None and "RequestedTotalWallTime" not in hide:
-            mstr = mstr+indent+"  <RequestedTotalWallTime>"+str(self.RequestedTotalWallTime)+ \
-                   "</RequestedTotalWallTime>\n"
-        if self.RequestedTotalCPUTime is not None and "RequestedTotalCPUTime" not in hide:
-            mstr = mstr+indent+"  <RequestedTotalCPUTime>"+str(self.RequestedTotalCPUTime)+ \
-                   "</RequestedTotalCPUTime>\n"
-        if self.RequestedSlots is not None and "RequestedSlots" not in hide:
-            mstr = mstr+indent+"  <RequestedSlots>"+str(self.RequestedSlots)+"</RequestedSlots>\n"
+            for error in activity.Error:
+                e = doc.createElement("Error")
+                e.appendChild(doc.createTextNode(error))
+                root.appendChild(e)
+        if activity.WaitingPosition is not None and "WaitingPosition" not in hide:
+            e = doc.createElement("WaitingPosition")
+            e.appendChild(doc.createTextNode(str(activity.WaitingPosition)))
+            root.appendChild(e)
+        #if activity.UserDomain is not None and "UserDomain" not in hide:
+        #    e = doc.createElement("UserDomain")
+        #    e.appendChild(doc.createTextNode(activity.UserDomain))
+        #    root.appendChild(e)
+        if activity.Owner is not None and "Owner" not in hide:
+            e = doc.createElement("Owner")
+            e.appendChild(doc.createTextNode(activity.Owner))
+            root.appendChild(e)
+        if activity.LocalOwner is not None and "LocalOwner" not in hide:
+            e = doc.createElement("LocalOwner")
+            e.appendChild(doc.createTextNode(activity.LocalOwner))
+            root.appendChild(e)
+        if activity.RequestedTotalWallTime is not None and "RequestedTotalWallTime" not in hide:
+            e = doc.createElement("RequestedTotalWallTime")
+            e.appendChild(doc.createTextNode(str(activity.RequestedTotalWallTime)))
+            root.appendChild(e)
+        if activity.RequestedTotalCPUTime is not None and "RequestedTotalCPUTime" not in hide:
+            e = doc.createElement("RequestedTotalCPUTime")
+            e.appendChild(doc.createTextNode(str(activity.RequestedTotalCPUTime)))
+            root.appendChild(e)
+        if activity.RequestedSlots is not None and "RequestedSlots" not in hide:
+            e = doc.createElement("RequestedSlots")
+            e.appendChild(doc.createTextNode(str(activity.RequestedSlots)))
+            root.appendChild(e)
         if "RequestedApplicationEnvironment" not in hide:
-            for appEnv in self.RequestedApplicationEnvironment:
-                mstr = mstr+indent+"  <RequestedApplicationEnvironment>"+appEnv+"</RequestedApplicationEnvironment>\n"
-        if self.StdIn is not None and "StdIn" not in hide:
-            mstr = mstr+indent+"  <StdIn>"+self.StdIn+"</StdIn>\n"
-        if self.StdOut is not None and "StdOut" not in hide:
-            mstr = mstr+indent+"  <StdOut>"+self.StdOut+"</StdOut>\n"
-        if self.StdErr is not None and "StdErr" not in hide:
-            mstr = mstr+indent+"  <StdErr>"+self.StdErr+"</StdErr>\n"
-        if self.LogDir is not None and "LogDir" not in hide:
-            mstr = mstr+indent+"  <LogDir>"+self.LogDir+"</LogDir>\n"
+            for appEnv in activity.RequestedApplicationEnvironment:
+                e = doc.createElement("RequestedApplicationEnvironment")
+                e.appendChild(doc.createTextNode(appEnv))
+                root.appendChild(e)
+        if activity.StdIn is not None and "StdIn" not in hide:
+            e = doc.createElement("StdIn")
+            e.appendChild(doc.createTextNode(activity.StdIn))
+            root.appendChild(e)
+        if activity.StdOut is not None and "StdOut" not in hide:
+            e = doc.createElement("StdOut")
+            e.appendChild(doc.createTextNode(activity.StdOut))
+            root.appendChild(e)
+        if activity.StdErr is not None and "StdErr" not in hide:
+            e = doc.createElement("StdErr")
+            e.appendChild(doc.createTextNode(activity.StdErr))
+            root.appendChild(e)
+        if activity.LogDir is not None and "LogDir" not in hide:
+            e = doc.createElement("LogDir")
+            e.appendChild(doc.createTextNode(activity.LogDir))
+            root.appendChild(e)
         if "ExecutionNode" not in hide:
-            for node in self.ExecutionNode:
-                mstr = mstr+indent+"  <ExecutionNode>"+node+"</ExecutionNode>\n"
-        if self.Queue is not None and "Queue" not in hide:
-            mstr = mstr+indent+"  <Queue>"+self.Queue+"</Queue>\n"
-        if self.UsedTotalWallTime is not None and "UsedTotalWallTime" not in hide:
-            mstr = mstr+indent+"  <UsedTotalWallTime>"+str(self.UsedTotalWallTime)+"</UsedTotalWallTime>\n"
-        if self.UsedTotalCPUTime is not None and "UsedTotalCPUTime" not in hide:
-            mstr = mstr+indent+"  <UsedTotalCPUTime>"+str(self.UsedTotalCPUTime)+"</UsedTotalCPUTime>\n"
-        if self.UsedMainMemory is not None and "UsedMainMemory" not in hide:
-            mstr = mstr+indent+"  <UsedMainMemory>"+str(self.UsedMainMemory)+"</UsedMainMemory>\n"
-        if self.SubmissionTime is not None and "SubmissionTime" not in hide:
-            mstr = mstr+indent+"  <SubmissionTime>"+dateTimeToText(self.SubmissionTime)+ \
-                   "</SubmissionTime>\n" #?
-        if self.ComputingManagerSubmissionTime is not None and "ComputingManagerSubmissionTime" not in hide:
-            mstr = mstr+indent+"  <ComputingManagerSubmissionTime>"+ \
-                   dateTimeToText(self.ComputingManagerSubmissionTime)+ \
-                   "</ComputingManagerSubmissionTime>\n" #?
-        if self.StartTime is not None and "StartTime" not in hide:
-            mstr = mstr+indent+"  <StartTime>"+dateTimeToText(self.StartTime)+"</StartTime>\n" #?
-        if self.ComputingManagerEndTime is not None and "ComputingManagerEndTime" not in hide:
-            mstr = mstr+indent+"  <ComputingManagerEndTime>"+dateTimeToText(self.ComputingManagerEndTime)+\
-                   "</ComputingManagerEndTime>\n" #?
-        if self.EndTime is not None and "EndTime" not in hide:
-            mstr = mstr+indent+"  <EndTime>"+dateTimeToText(self.EndTime)+"</EndTime>\n" #?
-        if self.WorkingAreaEraseTime is not None and "WorkingAreaEraseTime" not in hide:
-            mstr = mstr+indent+"  <WorkingAreaEraseTime>"+dateTimeToText(self.WorkingAreaEraseTime)+ \
-                   "</WorkingAreaEraseTime>\n" #?
-        if self.ProxyExpirationTime is not None and "ProxyExpirationTime" not in hide:
-            mstr = mstr+indent+"  <ProxyExpirationTime>"+dateTimeToText(self.ProxyExpirationTime)+ \
-                   "</ProxyExpirationTime>\n" #?
-        if self.SubmissionHost is not None and "SubmissionHost" not in hide:
-            mstr = mstr+indent+"  <SubmissionHost>"+self.SubmissionHost+"</SubmissionHost>\n"
-        if self.SubmissionClientName is not None and "SubmissionClientName" not in hide:
-            mstr = mstr+indent+"  <SubmissionClientName>"+self.SubmissionClientName+"</SubmissionClientName>\n"
-        for message in self.OtherMessages:
-            mstr = mstr+indent+"  <OtherMessages>"+message+"</OtherMessages>\n"
-        for endpoint in self.ComputingEndpoint:
-            mstr = mstr+indent+"  <ComputingEndpoint>"+endpoint+"</ComputingEndpoint>\n"
-        for share in self.ComputingShare:
-            mstr = mstr+indent+"  <ComputingShare>"+share+"</ComputingShare>\n"
-        for execEnv in self.ExecutionEnvironment:
-            mstr = mstr+indent+"  <ExecutionEnvironment>"+execEnv+"</ExecutionEnvironment>\n"
-        mstr = mstr+indent+"</ComputingActivity>\n"
+            for node in activity.ExecutionNode:
+                e = doc.createElement("ExecutionNode")
+                e.appendChild(doc.createTextNode(activity.ExecutionNode))
+                root.appendChild(e)
+        if activity.Queue is not None and "Queue" not in hide:
+            e = doc.createElement("Queue")
+            e.appendChild(doc.createTextNode(activity.Queue))
+            root.appendChild(e)
+        if activity.UsedTotalWallTime is not None and "UsedTotalWallTime" not in hide:
+            e = doc.createElement("UsedTotalWallTime")
+            e.appendChild(doc.createTextNode(str(activity.UsedTotalWallTime)))
+            root.appendChild(e)
+        if activity.UsedTotalCPUTime is not None and "UsedTotalCPUTime" not in hide:
+            e = doc.createElement("UsedTotalCPUTime")
+            e.appendChild(doc.createTextNode(str(activity.UsedTotalCPUTime)))
+            root.appendChild(e)
+        if activity.UsedMainMemory is not None and "UsedMainMemory" not in hide:
+            e = doc.createElement("UsedMainMemory")
+            e.appendChild(doc.createTextNode(str(activity.UsedMainMemory)))
+            root.appendChild(e)
+        if activity.SubmissionTime is not None and "SubmissionTime" not in hide:
+            e = doc.createElement("SubmissionTime")
+            e.appendChild(doc.createTextNode(dateTimeToText(activity.SubmissionTime)))
+            root.appendChild(e)
+        if activity.ComputingManagerSubmissionTime is not None and "ComputingManagerSubmissionTime" not in hide:
+            e = doc.createElement("ComputingManagerSubmissionTime")
+            e.appendChild(doc.createTextNode(dateTimeToText(activity.ComputingManagerSubmissionTime)))
+            root.appendChild(e)
+        if activity.StartTime is not None and "StartTime" not in hide:
+            e = doc.createElement("StartTime")
+            e.appendChild(doc.createTextNode(dateTimeToText(activity.StartTime)))
+            root.appendChild(e)
+        if activity.ComputingManagerEndTime is not None and "ComputingManagerEndTime" not in hide:
+            e = doc.createElement("ComputingManagerEndTime")
+            e.appendChild(doc.createTextNode(dateTimeToText(activity.ComputingManagerEndTime)))
+            root.appendChild(e)
+        if activity.EndTime is not None and "EndTime" not in hide:
+            e = doc.createElement("EndTime")
+            e.appendChild(doc.createTextNode(dateTimeToText(activity.EndTime)))
+            root.appendChild(e)
+        if activity.WorkingAreaEraseTime is not None and "WorkingAreaEraseTime" not in hide:
+            e = doc.createElement("WorkingAreaEraseTime")
+            e.appendChild(doc.createTextNode(dateTimeToText(activity.WorkingAreaEraseTime)))
+            root.appendChild(e)
+        if activity.ProxyExpirationTime is not None and "ProxyExpirationTime" not in hide:
+            e = doc.createElement("ProxyExpirationTime")
+            e.appendChild(doc.createTextNode(dateTimeToText(activity.ProxyExpirationTime)))
+            root.appendChild(e)
+        if activity.SubmissionHost is not None and "SubmissionHost" not in hide:
+            e = doc.createElement("SubmissionHost")
+            e.appendChild(doc.createTextNode(activity.SubmissionHost))
+            root.appendChild(e)
+        if activity.SubmissionClientName is not None and "SubmissionClientName" not in hide:
+            e = doc.createElement("SubmissionClientName")
+            e.appendChild(doc.createTextNode(activity.SubmissionClientName))
+            root.appendChild(e)
+        for message in activity.OtherMessages:
+            e = doc.createElement("OtherMessages")
+            e.appendChild(doc.createTextNode(message))
+            root.appendChild(e)
+        if activity.ComputingEndpoint is not None:
+            e = doc.createElement("ComputingEndpoint")
+            e.appendChild(doc.createTextNode(activity.ComputingEndpoint))
+            root.appendChild(e)
+        if activity.ComputingShare is not None:
+            e = doc.createElement("ComputingShare")
+            e.appendChild(doc.createTextNode(activity.ComputingShare))
+            root.appendChild(e)
+        if activity.ExecutionEnvironment is not None:
+            e = doc.createElement("ExecutionEnvironment")
+            e.appendChild(doc.createTextNode(activity.ExecutionEnvironment))
+            root.appendChild(e)
 
-        #mstr = mstr + "</Entities>\n"
-        return mstr
+        return doc
+
+#######################################################################################################################
+
+class ComputingActivityIpfJson(Representation):
+    data_cls = ComputingActivity
+
+    def __init__(self, data):
+        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+
+    def get(self):
+        return json.dumps(self.toJson(self.data),sort_keys=True,indent=4)
+
+    @staticmethod
+    def toJson(activity):
+        hide = activity.hide
+        
+        doc = {}
+        
+        # Entity
+        doc["CreationTime"] = dateTimeToText(activity.CreationTime)
+        if activity.Validity is not None:
+            doc["Validity"] = activity.Validity
+        doc["ID"] = activity.ID
+        if activity.Name is not None and "Name" not in hide:
+            doc["Name"] = activity.Name
+        if len(activity.OtherInfo) > 0 and "OtherInfo" not in hide:
+            doc["OtherInfo"] = activity.OtherInfo
+        if len(activity.Extension) > 0 and "Extension" not in hide:
+            doc["Extension"] = activity.Extension
+
+        # Activity
+        if activity.UserDomain is not None and "UserDomain" not in hide:
+            doc["UserDomain"] = activity.UserDomain
+        if activity.Endpoint is not None and "Endpoint" not in hide:
+            doc["Endpoint"] = activity.Endpoint
+        if activity.Share is not None and "Share" not in hide:
+            doc["Share"] = activity.Share
+        if activity.Resource is not None and "Resource" not in hide:
+            doc["Resource"] = activity.Resource
+        if len(activity.Activity) > 0 and "Activity" not in hide:
+            doc["Activity"] = activity.Activity
+
+        # ComputingActivity
+        if activity.Type is not None and "Type" not in hide:
+            doc["Type"] = activity.Type
+        if activity.IDFromEndpoint is not None and "IDFromEndpoint" not in hide:
+            doc["ActivityFromEndpoint"] = activity.IDFromEndpoint
+        if activity.LocalIDFromManager is not None and "LocalIDFromManaer" not in hide:
+            doc["LocalIDFromManager"] = activity.LocalIDFromManager
+        if activity.JobDescription is not None and "JobDescription" not in hide:
+            doc["JobDescription"] = activity.JobDescription
+        if activity.State is not None and "State" not in hide:
+            doc["State"] = activity.State
+        if activity.RestartState is not None and "RestartState" not in hide:
+            doc["RestartState"] = activity.RestartState
+        if activity.ExitCode is not None and "ExitCode" not in hide:
+            doc["ExitCode"] = activity.ExitCode
+        if activity.ComputingManagerExitCode is not None and "ComputingManagerExitCode" not in hide:
+            doc["ComputingManagerExitCode"] = activity.ComputingManagerExitCode
+        if len(activity.Error) > 0 and "Error" not in hide:
+            doc["Error"] = activity.Error
+        if activity.WaitingPosition is not None and "WaitingPosition" not in hide:
+            doc["WaitingPosition"] = activity.WaitingPosition
+        #if activity.UserDomain is not None and "UserDomain" not in hide:
+        #    doc["UserDomain"] = UserDomain
+        if activity.Owner is not None and "Owner" not in hide:
+            doc["Owner"] = activity.Owner
+        if activity.LocalOwner is not None and "LocalOwner" not in hide:
+            doc["LocalOwner"] = activity.LocalOwner
+        if activity.RequestedTotalWallTime is not None and "RequestedTotalWallTime" not in hide:
+            doc["RequestedTotalWallTime"] = activity.RequestedTotalWallTime
+        if activity.RequestedTotalCPUTime is not None and "RequestedTotalCPUTime" not in hide:
+            doc["RequestedTotalCPUTime"] = activity.RequestedTotalCPUTime
+        if activity.RequestedSlots is not None and "RequestedSlots" not in hide:
+            doc["RequestedSlots"] = activity.RequestedSlots
+        if len(activity.RequestedApplicationEnvironment) > 0 and "RequestedApplicationEnvironment" not in hide:
+            doc["RequestedApplicationEnvironment"] = activity.RequestedApplicationEnvironment
+        if activity.StdIn is not None and "StdIn" not in hide:
+            doc["StdIn"] = activity.StdIn
+        if activity.StdOut is not None and "StdOut" not in hide:
+            doc["StdOut"] = activity.StdOut
+        if activity.StdErr is not None and "StdErr" not in hide:
+            doc["StdErr"] = activity.StdErr
+        if activity.LogDir is not None and "LogDir" not in hide:
+            doc["LogDir"] = activity.LogDir
+        if len(activity.ExecutionNode) > 0 and "ExecutionNode" not in hide:
+            doc["ExecutionNode"] = activity.ExecutionNode
+        if activity.Queue is not None and "Queue" not in hide:
+            doc["Queue"] = activity.Queue
+        if activity.UsedTotalWallTime is not None and "UsedTotalWallTime" not in hide:
+            doc["UsedTotalWallTime"] = activity.UsedTotalWallTime
+        if activity.UsedTotalCPUTime is not None and "UsedTotalCPUTime" not in hide:
+            doc["UsedTotalCPUTime"] = activity.UsedTotalCPUTime
+        if activity.UsedMainMemory is not None and "UsedMainMemory" not in hide:
+            doc["UsedMainMemory"] = activity.UsedMainMemory
+        if activity.SubmissionTime is not None and "SubmissionTime" not in hide:
+            doc["SubmissionTime"] = dateTimeToText(activity.SubmissionTime)
+        if activity.ComputingManagerSubmissionTime is not None and "ComputingManagerSubmissionTime" not in hide:
+            doc["ComputingManagerSubmissionTime"] = dateTimeToText(activity.ComputingManagerSubmissionTime)
+        if activity.StartTime is not None and "StartTime" not in hide:
+            doc["StartTime"] = dateTimeToText(activity.StartTime)
+        if activity.ComputingManagerEndTime is not None and "ComputingManagerEndTime" not in hide:
+            doc["ComputingManagerEndTime"] = dateTimeToText(activity.ComputingManagerEndTime)
+        if activity.EndTime is not None and "EndTime" not in hide:
+            doc["EndTime"] = dateTimeToText(activity.EndTime)
+        if activity.WorkingAreaEraseTime is not None and "WorkingAreaEraseTime" not in hide:
+            doc["WorkingAreaEraseTime"] = dateTimeToText(activity.WorkingAreaEraseTime)
+        if activity.ProxyExpirationTime is not None and "ProxyExpirationTime" not in hide:
+            doc["ProxyExpirationTime"] = dateTimeToText(activity.ProxyExpirationTime)
+        if activity.SubmissionHost is not None and "SubmissionHost" not in hide:
+            doc["SubmissionHost"] = activity.SubmissionHost
+        if activity.SubmissionClientName is not None and "SubmissionClientName" not in hide:
+            doc["SubmissionClientName"] = activity.SubmissionClientName
+        if len(activity.OtherMessages) > 0 and "OtherMessages" not in hide:
+            doc["OtherMessages"] = activity.OtherMessages
+        if activity.ComputingEndpoint is not None and "ComputingEndpoint" not in hide:
+            doc["ComputingEndpoint"] = activity.ComputingEndpoint
+        if activity.ComputingShare is not None and "ComputingShare" not in hide:
+            doc["ComputingShare"] = activity.ComputingShare
+        if activity.ExecutionEnvironment is not None and "ExecutionEnvironment" not in hide:
+            doc["ExecutionEnvironment"] = activity.ExecutionEnvironment
+
+        return doc
+
+#######################################################################################################################
+    
+class ComputingActivities(Data):
+    def __init__(self, id, activities):
+        Data.__init__(self,id)
+        self.activities = activities
+    
+#######################################################################################################################
+
+class ComputingActivitiesTeraGridXml(Representation):
+    data_cls = ComputingActivities
+
+    def __init__(self, data):
+        Representation.__init__(self,Representation.MIME_TEXT_XML,data)
+
+    def get(self):
+        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
+                                                    "Entities",None)
+        for activity in self.data.activities:
+            adoc = ComputingActivityTeraGridXml.toDom(activity)
+            doc.documentElement.appendChild(adoc.documentElement.firstChild)
+        return doc.toxml()
+        #return doc.toprettyxml()
+
+#######################################################################################################################
+
+class ComputingActivitiesIpfJson(Representation):
+    data_cls = ComputingActivities
+
+    def __init__(self, data):
+        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+
+    def get(self):
+        adoc = []
+        for activity in self.data.activities:
+            adoc.append(ComputingActivityIpfJson.toJson(activity))
+        return json.dumps(adoc,sort_keys=True,indent=4)
     
 #######################################################################################################################

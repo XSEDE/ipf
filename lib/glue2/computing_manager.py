@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2011 The University of Texas at Austin                          #
+#   Copyright 2011,2012 The University of Texas at Austin                     #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -20,43 +20,38 @@ import json
 import time
 from xml.dom.minidom import getDOMImplementation
 
-from ipf.document import Document
+from ipf.data import Data, Representation
 from ipf.dt import *
-from glue2.step import GlueStep
+from ipf.resource_name import ResourceName
 
-from glue2.computing_share import ComputingShare
-from glue2.execution_environment import ExecutionEnvironment
+from glue2.computing_share import ComputingShares
+from glue2.execution_environment import ExecutionEnvironments
+from glue2.step import GlueStep
 
 #######################################################################################################################
 
 class ComputingManagerStep(GlueStep):
 
-    def __init__(self, params):
-        GlueStep.__init__(self,params)
+    def __init__(self):
+        GlueStep.__init__(self)
 
-        self.name = "glue2/computing_manager"
         self.description = "This step provides documents in the GLUE 2 ComputingManager schema. For a batch scheduled system, this is typically that scheduler."
         self.time_out = 10
-        self.requires_types = ["ipf/resource_name.txt",
-                               "glue2/ipf/execution_environments.json",
-                               "glue2/ipf/computing_shares.json"]
-        self.produces_types = ["glue2/teragrid/computing_manager.xml",
-                               "glue2/ipf/computing_manager.json"]
+        self.requires = [ResourceName,ExecutionEnvironments,ComputingShares]
+        self.produces = [ComputingManager]
 
         self.resource_name = None
         self.exec_envs = None
         self.shares = None
 
     def run(self):
-        rn_doc = self._getInput("ipf/resource_name.txt")
-        self.resource_name = rn_doc.resource_name
-        envs_doc = self._getInput("glue2/ipf/execution_environments.json")
-        self.exec_envs = envs_doc.exec_envs
-        shares_doc = self._getInput("glue2/ipf/computing_shares.json")
-        self.shares = shares_doc.shares
+        self.resource_name = self._getInput(ResourceName).resource_name
+        self.exec_envs = self._getInput(ExecutionEnvironments).exec_envs
+        self.shares = self._getInput(ComputingShares).shares
 
         manager = self._run()
 
+        manager.id = "%s" % (self.resource_name)
         manager.ID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
         manager.ComputingService = "urn:glue2:ComputingService:%s" % (self.resource_name)
 
@@ -65,45 +60,14 @@ class ComputingManagerStep(GlueStep):
         for share in self.shares:
             manager._addComputingShare(share)
 
-        self._output(ComputingManagerDocumentXml(self.resource_name,manager))
-        self._output(ComputingManagerDocumentJson(self.resource_name,manager))
+        self._output(manager)
 
 #######################################################################################################################
 
-class ComputingManagerDocumentXml(Document):
-    def __init__(self, resource_name, manager):
-        Document.__init__(self, resource_name, "glue2/teragrid/computing_manager.xml")
-        self.manager = manager
-
-    def _setBody(self, body):
-        raise DocumentError("ComputingManagerDocumentXml._setBody should parse the XML...")
-
-    def _getBody(self):
-        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
-                                                    "Entities",None)
-        mdoc = self.manager.toDom()
-        doc.documentElement.appendChild(mdoc.documentElement.firstChild)
-        #return doc.toxml()
-        return doc.toprettyxml()
-
-#######################################################################################################################
-
-class ComputingManagerDocumentJson(Document):
-    def __init__(self, resource_name, manager):
-        Document.__init__(self, resource_name, "glue2/ipf/computing_manager.json")
-        self.manager = manager
-
-    def _setBody(self, body):
-        raise DocumentError("ComputingManagerDocumentJson._setBody should parse the JSON...")
-
-    def _getBody(self):
-        doc = self.manager.toJson()
-        return json.dumps(doc,sort_keys=True,indent=4)
-
-#######################################################################################################################
-
-class ComputingManager(object):
+class ComputingManager(Data):
     def __init__(self):
+        Data.__init__(self)
+        
         # Entity
         self.CreationTime = datetime.datetime.now(tzoffset(0))
         self.Validity = None
@@ -169,254 +133,6 @@ class ComputingManager(object):
 
     ###################################################################################################################
 
-    def toDom(self):
-        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
-                                                    "Entities",None)
-        root = doc.createElement("ComputingService")
-        doc.documentElement.appendChild(root)
-
-        # Entity
-        e = doc.createElement("CreationTime")
-        e.appendChild(doc.createTextNode(dateTimeToText(self.CreationTime)))
-        if self.Validity is not None:
-            e.setAttribute("Validity",str(self.Validity))
-        root.appendChild(e)
-
-        e = doc.createElement("ID")
-        e.appendChild(doc.createTextNode(self.ID))
-        root.appendChild(e)
-
-        if self.Name is not None:
-            e = doc.createElement("Name")
-            e.appendChild(doc.createTextNode(self.Name))
-            root.appendChild(e)
-        for info in self.OtherInfo:
-            e = doc.createElement("OtherInfo")
-            e.appendChild(doc.createTextNode(info))
-            root.appendChild(e)
-        for key in self.Extension.keys():
-            e = doc.createElement("Extension")
-            e.setAttribute("Key",key)
-            e.appendChild(doc.createTextNode(self.Extension[key]))
-            root.appendChild(e)
-
-        # Manager
-        if self.ProductName != None:
-            e = doc.createElement("ProductName")
-            e.appendChild(doc.createTextNode(self.ProductName))
-            root.appendChild(e)
-        if self.ProductVersion != None:
-            e = doc.createElement("ProductVersion")
-            e.appendChild(doc.createTextNode(self.ProductVersion))
-            root.appendChild(e)
-
-        # ComputingManager
-        if self.Version != None:
-            e = doc.createElement("Version")
-            e.appendChild(doc.createTextNode(self.Version))
-            root.appendChild(e)
-        if self.Reservation != None:
-            e = doc.createElement("Reservation")
-            if self.Reservation:
-                e.appendChild(doc.createTextNode("true"))
-            else:
-                e.appendChild(doc.createTextNode("false"))
-            root.appendChild(e)
-        if self.BulkSubmission != None:
-            e = doc.createElement("BulkSubmission")
-            if self.BulkSubmission:
-                e.appendChild(doc.createTextNode("true"))
-            else:
-                e.appendChild(doc.createTextNode("false"))
-            root.appendChild(e)
-        if self.TotalPhysicalCPUs != None:
-            e = doc.createElement("TotalPhysicalCPUs")
-            e.appendChild(doc.createTextNode(str(self.TotalPhysicalCPUs)))
-            root.appendChild(e)
-        if self.TotalLogicalCPUs != None:
-            e = doc.createElement("TotalLogicalCPUs")
-            e.appendChild(doc.createTextNode(str(self.TotalLogicalCPUs)))
-            root.appendChild(e)
-        if self.TotalSlots != None:
-            e = doc.createElement("TotalSlots")
-            e.appendChild(doc.createTextNode(str(self.TotalSlots)))
-            root.appendChild(e)
-        if self.SlotsUsedByLocalJobs != None:
-            e = doc.createElement("SlotsUsedByLocalJobs")
-            e.appendChild(doc.createTextNode(str(self.SlotsUsedByLocalJobs)))
-            root.appendChild(e)
-        if self.SlotsUsedByGridJobs != None:
-            e = doc.createElement("SlotsUsedByGridJobs")
-            e.appendChild(doc.createTextNode(str(self.SlotsUsedByGridJobs)))
-            root.appendChild(e)
-        if self.Homogeneous != None:
-            e = doc.createElement("Homogeneous")
-            if self.Homogeneous:
-                e.appendChild(doc.createTextNode("true"))
-            else:
-                e.appendChild(doc.createTextNode("false"))
-            root.appendChild(e)
-        if self.NetworkInfo != None:
-            e = doc.createElement("NetworkInfo")
-            e.appendChild(doc.createTextNode(self.NetworkInfo))
-            root.appendChild(e)
-        if self.LogicalCPUDistribution != None:
-            e = doc.createElement("LogicalCPUDistribution")
-            e.appendChild(doc.createTextNode(self.LogicalCPUDistribution))
-            root.appendChild(e)
-        if self.WorkingAreaShared != None:
-            e = doc.createElement("WorkAreaShared")
-            if self.WorkingAreaShared:
-                e.appendChild(doc.createTextNode("true"))
-            else:
-                e.appendChild(doc.createTextNode("false"))
-            root.appendChild(e)
-        if self.WorkingAreaTotal != None:
-            e = doc.createElement("WorkingAreaTotal")
-            e.appendChild(doc.createTextNode(str(self.WorkingAreaTotal)))
-            root.appendChild(e)
-        if self.WorkingAreaFree != None:
-            e = doc.createElement("WorkingAreaFree")
-            e.appendChild(doc.createTextNode(str(self.WorkingAreaFree)))
-            root.appendChild(e)
-        if self.WorkingAreaLifeTime != None:
-            e = doc.createElement("WorkingAreaLifeTime")
-            e.appendChild(doc.createTextNode(str(self.WorkingAreaLifeTime)))
-            root.appendChild(e)
-        if self.WorkingAreaMultiSlotTotal != None:
-            e = doc.createElement("WorkingAreaMultiSlotTotal")
-            e.appendChild(doc.createTextNode(str(self.WorkingAreaMultiSlotTotal)))
-            root.appendChild(e)
-        if self.WorkingAreaMultiSlotFree != None:
-            e = doc.createElement("WorkingAreaMultiSlotFree")
-            e.appendChild(doc.createTextNode(str(self.WorkingAreaMultiSlotFree)))
-            root.appendChild(e)
-        if self.WorkingAreaMultiSlotLifeTime != None:
-            e = doc.createElement("WorkingAreaMultiSlotLifeTime")
-            e.appendChild(doc.createTextNode(str(self.WorkingAreaMultiSlotLifeTime)))
-            root.appendChild(e)
-        if self.CacheTotal != None:
-            e = doc.createElement("CacheTotal")
-            e.appendChild(doc.createTextNode(str(self.CacheTotal)))
-            root.appendChild(e)
-        if self.CacheFree != None:
-            e = doc.createElement("CacheFree")
-            e.appendChild(doc.createTextNode(str(self.CacheFree)))
-            root.appendChild(e)
-        if self.TmpDir != None:
-            e = doc.createElement("TmpDir")
-            e.appendChild(doc.createTextNode(self.TmpDir))
-            root.appendChild(e)
-        if self.ScratchDir != None:
-            e = doc.createElement("ScratchDir")
-            e.appendChild(doc.createTextNode(self.ScratchDir))
-            root.appendChild(e)
-        if self.ApplicationDir != None:
-            e = doc.createElement("ApplicationDir")
-            e.appendChild(doc.createTextNode(self.ApplicationDir))
-            root.appendChild(e)
-        if self.ComputingService != None:
-            e = doc.createElement("ComputingService")
-            e.appendChild(doc.createTextNode(self.ComputingService))
-            root.appendChild(e)
-        for id in self.ExecutionEnvironment:
-            e = doc.createElement("ExecutionEnvironment")
-            e.appendChild(doc.createTextNode(id))
-            root.appendChild(e)
-        for id in self.ApplicationEnvironment:
-            e = doc.createElement("ApplicationEnvironment")
-            e.appendChild(doc.createTextNode(id))
-            root.appendChild(e)
-        for benchmark in self.Benchmark:
-            e = doc.createElement("Benchmark")
-            e.appendChild(doc.createTextNode(benchmark))
-            root.appendChild(e)
-
-        return doc
-
-    ###################################################################################################################
-
-    def toJson(self):
-        doc = {}
-
-        # Entity
-        doc["CreationTime"] = dateTimeToText(self.CreationTime)
-        if self.Validity is not None:
-            doc["Validity"] = self.Validity
-        doc["ID"] = self.ID
-        if self.Name is not None:
-            doc["Name"] = self.Name
-        if len(self.OtherInfo) > 0:
-            doc["OtherInfo"] = self.OtherInfo
-        if len(self.Extension) > 0:
-            doc["Extension"] = self.Extension
-
-        # Manager
-        if self.ProductName != None:
-            doc["ProductName"] = self.ProductName
-        if self.ProductVersion != None:
-            doc["ProductVersion"] = self.ProductVersion
-
-        # ComputingManager
-        if self.Version != None:
-            doc["Version"] = self.Version
-        if self.Reservation != None:
-            doc["Reservation"] = self.Reservation
-        if self.BulkSubmission != None:
-            doc["BulkSubmission"] = self.BulkSubmission
-        if self.TotalPhysicalCPUs != None:
-            doc["TotalPhysicalCPUs"] = self.TotalPhysicalCPUs
-        if self.TotalLogicalCPUs != None:
-            doc["TotalLogicalCPUs"] = self.TotalLogicalCPUs
-        if self.TotalSlots != None:
-            doc["TotalSlots"] = self.TotalSlots
-        if self.SlotsUsedByLocalJobs != None:
-            doc["SlotsUsedByLocalJobs"] = self.SlotsUsedByLocalJobs
-        if self.SlotsUsedByGridJobs != None:
-            doc["SlotsUsedByGridJobs"] = self.SlotsUsedByGridJobs
-        if self.Homogeneous != None:
-            doc["Homogeneous"] = self.Homogeneous
-        if self.NetworkInfo != None:
-            doc["NetworkInfo"] = self.NetworkInfo
-        if self.LogicalCPUDistribution != None:
-            doc["LogicalCPUDistribution"] = self.LogicalCPUDistribution
-        if self.WorkingAreaShared != None:
-            doc["WorkingAreaShared"] = self.WorkingAreaShared
-        if self.WorkingAreaTotal != None:
-            doc["WorkingAreaTotal"] = self.WorkingAreaTotal
-        if self.WorkingAreaFree != None:
-            doc["WorkingAreaFree"] = self.WorkingAreaFree
-        if self.WorkingAreaLifeTime != None:
-            doc["WorkingAreaLifeTime"] = self.WorkingAreaLifeTime
-        if self.WorkingAreaMultiSlotTotal != None:
-            doc["WorkingAreaMultiSlotTotal"] = self.WorkingAreaMultiSlotTotal
-        if self.WorkingAreaMultiSlotFree != None:
-            doc["WorkingAreaMultiSlotFree"] = self.WorkingAreaMultiSlotFree
-        if self.WorkingAreaMultiSlotLifeTime != None:
-            doc["WorkingAreaMultiSlotLifeTime"] = self.WorkingAreaMultiSlotLifeTime
-        if self.CacheTotal != None:
-            doc["CacheTotal"] = self.CacheTotal
-        if self.CacheFree != None:
-            doc["CacheFree"] = self.CacheFree
-        if self.TmpDir != None:
-            doc["TmpDir"] = self.TmpDir
-        if self.ScratchDir != None:
-            doc["ScratchDir"] = self.ScratchDir
-        if self.ApplicationDir != None:
-            doc["ApplicationDir"] = self.ApplicationDir
-        if self.ComputingService != None:
-            doc["ComputingService"] = self.ComputingService
-        if len(self.ExecutionEnvironment) > 0:
-            doc["ExecutionEnvironment"] = self.ExecutionEnvironment
-        if len(self.ApplicationEnvironment) > 0:
-            doc["ApplicationEnvironment"] = self.ApplicationEnvironment
-        if len(self.Benchmark) > 0:
-            doc["Benchmark"] = self.Benchmark
-
-        return doc
-
-    ###################################################################################################################
-
     def fromJson(self, doc):
         # Entity
         if "CreationTime" in doc:
@@ -462,103 +178,272 @@ class ComputingManager(object):
         self.ApplicationEnvironment = doc.get("ApplicationEnvironment",[])
         self.Benchmark = doc.get("Benchmark",[])
 
-    ###################################################################################################################
+#######################################################################################################################
 
-    def toXml(self, indent=""):
-        mstr = indent+"<ComputingManager"
+class ComputingManagerTeraGridXml(Representation):
+    data_cls = ComputingManager
+
+    def __init__(self, data):
+        Representation.__init__(self,Representation.MIME_TEXT_XML,data)
+
+    def get(self):
+        return self.toDom(self.data).toxml()
+
+    @staticmethod
+    def toDom(manager):
+        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
+                                                    "Entities",None)
+        root = doc.createElement("ComputingService")
+        doc.documentElement.appendChild(root)
 
         # Entity
-        curTime = time.time()
-        mstr = mstr+" CreationTime='"+epochToXmlDateTime(curTime)+"'"
-        if self.Validity is not None:
-            mstr = mstr+"\n"+indent+"                  Validity='300'>\n"
-        else:
-            mstr = mstr+"\n"
-        mstr = mstr+indent+"  <ID>"+self.ID+"</ID>\n"
-        if self.Name != None:
-            mstr = mstr+indent+"  <Name>"+self.Name+"</Name>\n"
-        for info in self.OtherInfo:
-            mstr = mstr+indent+"  <OtherInfo>"+info+"</OtherInfo>\n"
-        for key in self.Extension.keys():
-            mstr = mstr+indent+"  <Extension Key='"+key+"'>"+str(self.Extension[key])+"</Extension>\n"
+        e = doc.createElement("CreationTime")
+        e.appendChild(doc.createTextNode(dateTimeToText(manager.CreationTime)))
+        if manager.Validity is not None:
+            e.setAttribute("Validity",str(manager.Validity))
+        root.appendChild(e)
+
+        e = doc.createElement("ID")
+        e.appendChild(doc.createTextNode(manager.ID))
+        root.appendChild(e)
+
+        if manager.Name is not None:
+            e = doc.createElement("Name")
+            e.appendChild(doc.createTextNode(manager.Name))
+            root.appendChild(e)
+        for info in manager.OtherInfo:
+            e = doc.createElement("OtherInfo")
+            e.appendChild(doc.createTextNode(info))
+            root.appendChild(e)
+        for key in manager.Extension.keys():
+            e = doc.createElement("Extension")
+            e.setAttribute("Key",key)
+            e.appendChild(doc.createTextNode(manager.Extension[key]))
+            root.appendChild(e)
 
         # Manager
-        if self.ProductName != None:
-            mstr = mstr+indent+"  <ProductName>"+self.ProductName+"</ProductName>\n"
-        if self.ProductVersion != None:
-            mstr = mstr+indent+"  <ProductVersion>"+self.ProductVersion+"</ProductVersion>\n"
+        if manager.ProductName != None:
+            e = doc.createElement("ProductName")
+            e.appendChild(doc.createTextNode(manager.ProductName))
+            root.appendChild(e)
+        if manager.ProductVersion != None:
+            e = doc.createElement("ProductVersion")
+            e.appendChild(doc.createTextNode(manager.ProductVersion))
+            root.appendChild(e)
 
         # ComputingManager
-        if self.Version != None:
-            mstr = mstr+indent+"  <Version>"+self.Version+"</Version>\n"
-        if self.Reservation != None:
-            if self.Reservation:
-                mstr = mstr+indent+"  <Reservation>true</Reservation>\n"
+        if manager.Version != None:
+            e = doc.createElement("Version")
+            e.appendChild(doc.createTextNode(manager.Version))
+            root.appendChild(e)
+        if manager.Reservation != None:
+            e = doc.createElement("Reservation")
+            if manager.Reservation:
+                e.appendChild(doc.createTextNode("true"))
             else:
-                mstr = mstr+indent+"  <Reservation>false</Reservation>\n"
-        if self.BulkSubmission != None:
-            if self.BulkSubmission:
-                mstr = mstr+indent+"  <BulkSubmission>true</BulkSubmission>\n"
+                e.appendChild(doc.createTextNode("false"))
+            root.appendChild(e)
+        if manager.BulkSubmission != None:
+            e = doc.createElement("BulkSubmission")
+            if manager.BulkSubmission:
+                e.appendChild(doc.createTextNode("true"))
             else:
-                mstr = mstr+indent+"  <BulkSubmission>false</BulkSubmission>\n"
-        if self.TotalPhysicalCPUs != None:
-            mstr = mstr+indent+"  <TotalPhysicalCPUs>"+str(self.TotalPhysicalCPUs)+"</TotalPhysicalCPUs>\n"
-        if self.TotalLogicalCPUs != None:
-            mstr = mstr+indent+"  <TotalLogicalCPUs>"+str(self.TotalLogicalCPUs)+"</TotalLogicalCPUs>\n"
-        if self.TotalSlots != None:
-            mstr = mstr+indent+"  <TotalSlots>"+str(self.TotalSlots)+"</TotalSlots>\n"
-        if self.SlotsUsedByLocalJobs != None:
-            mstr = mstr+indent+"  <SlotsUsedByLocalJobs>"+str(self.SlotsUsedByLocalJobs)+"</SlotsUsedByLocalJobs>\n"
-        if self.SlotsUsedByGridJobs != None:
-            mstr = mstr+indent+"  <SlotsUsedByGridJobs>"+str(self.SlotsUsedByGridJobs)+"</SlotsUsedByGridJobs>\n"
-        if self.Homogeneous != None:
-            if self.Homogeneous:
-                mstr = mstr+indent+"  <Homogeneous>true</Homogeneous>\n"
+                e.appendChild(doc.createTextNode("false"))
+            root.appendChild(e)
+        if manager.TotalPhysicalCPUs != None:
+            e = doc.createElement("TotalPhysicalCPUs")
+            e.appendChild(doc.createTextNode(str(manager.TotalPhysicalCPUs)))
+            root.appendChild(e)
+        if manager.TotalLogicalCPUs != None:
+            e = doc.createElement("TotalLogicalCPUs")
+            e.appendChild(doc.createTextNode(str(manager.TotalLogicalCPUs)))
+            root.appendChild(e)
+        if manager.TotalSlots != None:
+            e = doc.createElement("TotalSlots")
+            e.appendChild(doc.createTextNode(str(manager.TotalSlots)))
+            root.appendChild(e)
+        if manager.SlotsUsedByLocalJobs != None:
+            e = doc.createElement("SlotsUsedByLocalJobs")
+            e.appendChild(doc.createTextNode(str(manager.SlotsUsedByLocalJobs)))
+            root.appendChild(e)
+        if manager.SlotsUsedByGridJobs != None:
+            e = doc.createElement("SlotsUsedByGridJobs")
+            e.appendChild(doc.createTextNode(str(manager.SlotsUsedByGridJobs)))
+            root.appendChild(e)
+        if manager.Homogeneous != None:
+            e = doc.createElement("Homogeneous")
+            if manager.Homogeneous:
+                e.appendChild(doc.createTextNode("true"))
             else:
-                mstr = mstr+indent+"  <Homogeneous>false</Homogeneous>\n"
-        if self.NetworkInfo != None:
-            mstr = mstr+indent+"  <NetworkInfo>"+self.NetworkInfo+"</NetworkInfo>\n"
-        if self.LogicalCPUDistribution != None:
-            mstr = mstr+indent+"  <LogicalCPUDistribution>"+str(self.LogicalCPUDistribution)+ \
-                   "</LogicalCPUDistribution>\n"
-        if self.WorkingAreaShared != None:
-            if self.WorkingAreaShared:
-                mstr = mstr+indent+"  <WorkingAreaShared>true</WorkingAreaShared>\n"
+                e.appendChild(doc.createTextNode("false"))
+            root.appendChild(e)
+        if manager.NetworkInfo != None:
+            e = doc.createElement("NetworkInfo")
+            e.appendChild(doc.createTextNode(manager.NetworkInfo))
+            root.appendChild(e)
+        if manager.LogicalCPUDistribution != None:
+            e = doc.createElement("LogicalCPUDistribution")
+            e.appendChild(doc.createTextNode(manager.LogicalCPUDistribution))
+            root.appendChild(e)
+        if manager.WorkingAreaShared != None:
+            e = doc.createElement("WorkAreaShared")
+            if manager.WorkingAreaShared:
+                e.appendChild(doc.createTextNode("true"))
             else:
-                mstr = mstr+indent+"  <WorkingAreaShared>false</WorkingAreaShared>\n"
-        if self.WorkingAreaTotal != None:
-            mstr = mstr+indent+"  <WorkingAreaTotal>"+str(self.WorkingAreaTotal)+"</WorkingAreaTotal>\n"
-        if self.WorkingAreaFree != None:
-            mstr = mstr+indent+"  <WorkingAreaFree>"+str(self.WorkingAreaFree)+"</WorkingAreaFree>\n"
-        if self.WorkingAreaLifeTime != None:
-            mstr = mstr+indent+"  <WorkingAreaLifeTime>"+str(self.WorkingAreaLifeTime)+"</WorkingAreaLifeTime>\n"
-        if self.WorkingAreaMultiSlotTotal != None:
-            mstr = mstr+indent+"  <WorkingAreaMultiSlotTotal>"+str(self.WorkingAreaMultiSlotTotal)+ \
-                   "</WorkingAreaMultiSLotTotal>\n"
-        if self.WorkingAreaMultiSlotFree != None:
-            mstr = mstr+indent+"  <WorkingAreaFMultiSlotree>"+str(self.WorkingAreaMultiSlotFree)+ \
-                   "</WorkingAreaMultiSlotFree>\n"
-        if self.WorkingAreaMultiSlotLifeTime != None:
-            mstr = mstr+indent+"  <WorkingAreaMultiSlotLifeTime>"+str(self.WorkingAreaMultiSlotLifeTime)+ \
-                   "</WorkingMultiSlotAreaLifeTime>\n"
-        if self.CacheTotal != None:
-            mstr = mstr+indent+"  <CacheTotal>"+str(self.CacheTotal)+"</CacheTotal>\n"
-        if self.CacheFree != None:
-            mstr = mstr+indent+"  <CacheFree>"+str(self.CacheFree)+"</CacheFree>\n"
-        if self.TmpDir != None:
-            mstr = mstr+indent+"  <TmpDir>"+self.TmpDir+"</TmpDir>\n"
-        if self.ScratchDir != None:
-            mstr = mstr+indent+"  <ScratchDir>"+self.ScratchDir+"</ScratchDir>\n"
-        if self.ApplicationDir != None:
-            mstr = mstr+indent+"  <ApplicationDir>"+self.ApplicationDir+"</ApplicationDir>\n"
-        if self.ComputingService != None:
-            mstr = mstr+indent+"  <ComputingService>"+self.ComputingService+"</ComputingService>\n"
-        for id in self.ExecutionEnvironment:
-            mstr = mstr+indent+"  <ExecutionEnvironment>"+id+"</ExecutionEnvironment>\n"
-        for appEnv in self.ApplicationEnvironment:
-            mstr = mstr+indent+"  <ApplicationEnvironment>"+appEnv+"</ApplicationEnvironment>\n"
-        for benchmark in self.Benchmark:
-            mstr = mstr+indent+"  <Benchmark>"+benchmark+"</Benchmark>\n"
-        mstr = mstr+indent+"</ComputingManager>\n"
+                e.appendChild(doc.createTextNode("false"))
+            root.appendChild(e)
+        if manager.WorkingAreaTotal != None:
+            e = doc.createElement("WorkingAreaTotal")
+            e.appendChild(doc.createTextNode(str(manager.WorkingAreaTotal)))
+            root.appendChild(e)
+        if manager.WorkingAreaFree != None:
+            e = doc.createElement("WorkingAreaFree")
+            e.appendChild(doc.createTextNode(str(manager.WorkingAreaFree)))
+            root.appendChild(e)
+        if manager.WorkingAreaLifeTime != None:
+            e = doc.createElement("WorkingAreaLifeTime")
+            e.appendChild(doc.createTextNode(str(manager.WorkingAreaLifeTime)))
+            root.appendChild(e)
+        if manager.WorkingAreaMultiSlotTotal != None:
+            e = doc.createElement("WorkingAreaMultiSlotTotal")
+            e.appendChild(doc.createTextNode(str(manager.WorkingAreaMultiSlotTotal)))
+            root.appendChild(e)
+        if manager.WorkingAreaMultiSlotFree != None:
+            e = doc.createElement("WorkingAreaMultiSlotFree")
+            e.appendChild(doc.createTextNode(str(manager.WorkingAreaMultiSlotFree)))
+            root.appendChild(e)
+        if manager.WorkingAreaMultiSlotLifeTime != None:
+            e = doc.createElement("WorkingAreaMultiSlotLifeTime")
+            e.appendChild(doc.createTextNode(str(manager.WorkingAreaMultiSlotLifeTime)))
+            root.appendChild(e)
+        if manager.CacheTotal != None:
+            e = doc.createElement("CacheTotal")
+            e.appendChild(doc.createTextNode(str(manager.CacheTotal)))
+            root.appendChild(e)
+        if manager.CacheFree != None:
+            e = doc.createElement("CacheFree")
+            e.appendChild(doc.createTextNode(str(manager.CacheFree)))
+            root.appendChild(e)
+        if manager.TmpDir != None:
+            e = doc.createElement("TmpDir")
+            e.appendChild(doc.createTextNode(manager.TmpDir))
+            root.appendChild(e)
+        if manager.ScratchDir != None:
+            e = doc.createElement("ScratchDir")
+            e.appendChild(doc.createTextNode(manager.ScratchDir))
+            root.appendChild(e)
+        if manager.ApplicationDir != None:
+            e = doc.createElement("ApplicationDir")
+            e.appendChild(doc.createTextNode(manager.ApplicationDir))
+            root.appendChild(e)
+        if manager.ComputingService != None:
+            e = doc.createElement("ComputingService")
+            e.appendChild(doc.createTextNode(manager.ComputingService))
+            root.appendChild(e)
+        for id in manager.ExecutionEnvironment:
+            e = doc.createElement("ExecutionEnvironment")
+            e.appendChild(doc.createTextNode(id))
+            root.appendChild(e)
+        for id in manager.ApplicationEnvironment:
+            e = doc.createElement("ApplicationEnvironment")
+            e.appendChild(doc.createTextNode(id))
+            root.appendChild(e)
+        for benchmark in manager.Benchmark:
+            e = doc.createElement("Benchmark")
+            e.appendChild(doc.createTextNode(benchmark))
+            root.appendChild(e)
 
-        return mstr
+        return doc
+
+#######################################################################################################################
+
+class ComputingManagerIpfJson(Representation):
+    data_cls = ComputingManager
+
+    def __init__(self, data):
+        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+
+    def get(self):
+        return json.dumps(self.toJson(self.data),sort_keys=True,indent=4)
+
+    @staticmethod
+    def toJson(manager):
+        doc = {}
+
+        # Entity
+        doc["CreationTime"] = dateTimeToText(manager.CreationTime)
+        if manager.Validity is not None:
+            doc["Validity"] = manager.Validity
+        doc["ID"] = manager.ID
+        if manager.Name is not None:
+            doc["Name"] = manager.Name
+        if len(manager.OtherInfo) > 0:
+            doc["OtherInfo"] = manager.OtherInfo
+        if len(manager.Extension) > 0:
+            doc["Extension"] = manager.Extension
+
+        # Manager
+        if manager.ProductName != None:
+            doc["ProductName"] = manager.ProductName
+        if manager.ProductVersion != None:
+            doc["ProductVersion"] = manager.ProductVersion
+
+        # ComputingManager
+        if manager.Version != None:
+            doc["Version"] = manager.Version
+        if manager.Reservation != None:
+            doc["Reservation"] = manager.Reservation
+        if manager.BulkSubmission != None:
+            doc["BulkSubmission"] = manager.BulkSubmission
+        if manager.TotalPhysicalCPUs != None:
+            doc["TotalPhysicalCPUs"] = manager.TotalPhysicalCPUs
+        if manager.TotalLogicalCPUs != None:
+            doc["TotalLogicalCPUs"] = manager.TotalLogicalCPUs
+        if manager.TotalSlots != None:
+            doc["TotalSlots"] = manager.TotalSlots
+        if manager.SlotsUsedByLocalJobs != None:
+            doc["SlotsUsedByLocalJobs"] = manager.SlotsUsedByLocalJobs
+        if manager.SlotsUsedByGridJobs != None:
+            doc["SlotsUsedByGridJobs"] = manager.SlotsUsedByGridJobs
+        if manager.Homogeneous != None:
+            doc["Homogeneous"] = manager.Homogeneous
+        if manager.NetworkInfo != None:
+            doc["NetworkInfo"] = manager.NetworkInfo
+        if manager.LogicalCPUDistribution != None:
+            doc["LogicalCPUDistribution"] = manager.LogicalCPUDistribution
+        if manager.WorkingAreaShared != None:
+            doc["WorkingAreaShared"] = manager.WorkingAreaShared
+        if manager.WorkingAreaTotal != None:
+            doc["WorkingAreaTotal"] = manager.WorkingAreaTotal
+        if manager.WorkingAreaFree != None:
+            doc["WorkingAreaFree"] = manager.WorkingAreaFree
+        if manager.WorkingAreaLifeTime != None:
+            doc["WorkingAreaLifeTime"] = manager.WorkingAreaLifeTime
+        if manager.WorkingAreaMultiSlotTotal != None:
+            doc["WorkingAreaMultiSlotTotal"] = manager.WorkingAreaMultiSlotTotal
+        if manager.WorkingAreaMultiSlotFree != None:
+            doc["WorkingAreaMultiSlotFree"] = manager.WorkingAreaMultiSlotFree
+        if manager.WorkingAreaMultiSlotLifeTime != None:
+            doc["WorkingAreaMultiSlotLifeTime"] = manager.WorkingAreaMultiSlotLifeTime
+        if manager.CacheTotal != None:
+            doc["CacheTotal"] = manager.CacheTotal
+        if manager.CacheFree != None:
+            doc["CacheFree"] = manager.CacheFree
+        if manager.TmpDir != None:
+            doc["TmpDir"] = manager.TmpDir
+        if manager.ScratchDir != None:
+            doc["ScratchDir"] = manager.ScratchDir
+        if manager.ApplicationDir != None:
+            doc["ApplicationDir"] = manager.ApplicationDir
+        if manager.ComputingService != None:
+            doc["ComputingService"] = manager.ComputingService
+        if len(manager.ExecutionEnvironment) > 0:
+            doc["ExecutionEnvironment"] = manager.ExecutionEnvironment
+        if len(manager.ApplicationEnvironment) > 0:
+            doc["ApplicationEnvironment"] = manager.ApplicationEnvironment
+        if len(manager.Benchmark) > 0:
+            doc["Benchmark"] = manager.Benchmark
+
+        return doc
+
+#######################################################################################################################

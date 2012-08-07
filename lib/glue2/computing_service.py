@@ -20,12 +20,13 @@ import json
 import time
 from xml.dom.minidom import getDOMImplementation
 
-from ipf.document import Document
+from ipf.data import Data, Representation
 from ipf.dt import *
 from ipf.error import NoMoreInputsError,StepError
+from ipf.resource_name import ResourceName
 
-from glue2.computing_activity import ComputingActivity
-from glue2.computing_share import ComputingShare
+from glue2.computing_activity import ComputingActivity, ComputingActivities
+from glue2.computing_share import ComputingShares
 from glue2.computing_endpoint import ComputingEndpoint
 from glue2.step import GlueStep
 
@@ -33,18 +34,13 @@ from glue2.step import GlueStep
 
 class ComputingServiceStep(GlueStep):
 
-    def __init__(self, params):
-        GlueStep.__init__(self,params)
+    def __init__(self):
+        GlueStep.__init__(self)
 
-        self.name = "glue2/computing_service"
         self.description = "This step provides a GLUE 2 ComputingService document. It is an aggregation mechanism"
         self.time_out = 10
-        self.requires_types = ["ipf/resource_name.txt",
-                               "glue2/ipf/computing_activities.json",
-                               "glue2/ipf/computing_shares.json",
-                               "glue2/ipf/computing_endpoint.json"]
-        self.produces_types = ["glue2/teragrid/computing_service.xml",
-                               "glue2/ipf/computing_service.json"]
+        self.requires = [ResourceName,ComputingActivities,ComputingShares,ComputingEndpoint]
+        self.produces = [ComputingService]
 
         self.resource_name = None
         self.activities = None
@@ -52,22 +48,19 @@ class ComputingServiceStep(GlueStep):
         self.endpoints = None
 
     def run(self):
-        rn_doc = self._getInput("ipf/resource_name.txt")
-        self.resource_name = rn_doc.resource_name
-        activities_doc = self._getInput("glue2/ipf/computing_activities.json")
-        self.activities = activities_doc.activities
-        shares_doc = self._getInput("glue2/ipf/computing_shares.json")
-        self.shares = shares_doc.shares
+        self.resource_name = self._getInput(ResourceName).resource_name
+        self.activities = self._getInput(ComputingActivities).activities
+        self.shares = self._getInput(ComputingShares).shares
         self.endpoints = []
         try:
             while True:
-                endpoint_doc = self._getInput("glue2/ipf/computing_endpoint.json")
-                self.endpoints.append(endpoint_doc.endpoint)
+                self.endpoints.append(self._getInput(ComputingEndpoint))
         except NoMoreInputsError:
             pass
 
         service = self._run()
 
+        service.id = self.resource_name
         service.ID = "urn:glue2:ComputingService:%s" % (self.resource_name)
         service.ComputingManager = "urn:glue2:ComputingManager:%s" % (self.resource_name)
 
@@ -80,49 +73,17 @@ class ComputingServiceStep(GlueStep):
         for endpoint in self.endpoints:
             endpoint.ComputingService = service.ID
 
-        self._output(ComputingServiceDocumentXml(self.resource_name,service))
-        self._output(ComputingServiceDocumentJson(self.resource_name,service))
+        self._output(service)
 
     def _run(self):
-        self.error("ComputingServiceStep._run not overriden")
         raise StepError("ComputingServiceStep._run not overriden")
 
 #######################################################################################################################
 
-class ComputingServiceDocumentXml(Document):
-    def __init__(self, resource_name, service):
-        Document.__init__(self, resource_name, "glue2/teragrid/computing_service.xml")
-        self.service = service
-
-    def _setBody(self, body):
-        raise DocumentError("ComputingServiceDocumentXml._setBody should parse the XML...")
-
-    def _getBody(self):
-        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
-                                                    "Entities",None)
-        sdoc = self.service.toDom()
-        doc.documentElement.appendChild(sdoc.documentElement.firstChild)
-        #return doc.toxml()
-        return doc.toprettyxml()
-
-#######################################################################################################################
-
-class ComputingServiceDocumentJson(Document):
-    def __init__(self, resource_name, service):
-        Document.__init__(self, resource_name, "glue2/ipf/computing_service.json")
-        self.service = service
-
-    def _setBody(self, body):
-        raise DocumentError("ComputingServiceDocumentJson._setBody should parse the JSON...")
-
-    def _getBody(self):
-        doc = self.service.toJson()
-        return json.dumps(doc,sort_keys=True,indent=4)
-
-#######################################################################################################################
-
-class ComputingService(object):
+class ComputingService(Data):
     def __init__(self):
+        Data.__init__(self)
+        
         # Entity
         self.CreationTime = datetime.datetime.now(tzoffset(0))
         self.Validity = None
@@ -190,182 +151,6 @@ class ComputingService(object):
 
     ###################################################################################################################
 
-    def toDom(self):
-        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
-                                                    "Entities",None)
-        root = doc.createElement("ComputingService")
-        doc.documentElement.appendChild(root)
-
-        # Entity
-        e = doc.createElement("CreationTime")
-        e.appendChild(doc.createTextNode(dateTimeToText(self.CreationTime)))
-        if self.Validity is not None:
-            e.setAttribute("Validity",str(self.Validity))
-        root.appendChild(e)
-
-        e = doc.createElement("ID")
-        e.appendChild(doc.createTextNode(self.ID))
-        root.appendChild(e)
-
-        if self.Name is not None:
-            e = doc.createElement("Name")
-            e.appendChild(doc.createTextNode(self.Name))
-            root.appendChild(e)
-        for info in self.OtherInfo:
-            e = doc.createElement("OtherInfo")
-            e.appendChild(doc.createTextNode(info))
-            root.appendChild(e)
-        for key in self.Extension.keys():
-            e = doc.createElement("Extension")
-            e.setAttribute("Key",key)
-            e.appendChild(doc.createTextNode(self.Extension[key]))
-            root.appendChild(e)
-
-        # Service
-        for capability in self.Capability:
-            e = doc.createElement("Capability")
-            e.appendChild(doc.createTextNode(capability))
-            root.appendChild(e)
-        if self.Type is not None:
-            e = doc.createElement("Type")
-            e.appendChild(doc.createTextNode(self.Type))
-            root.appendChild(e)
-        if self.QualityLevel is not None:
-            e = doc.createElement("QualityLevel")
-            e.appendChild(doc.createTextNode(self.QualityLevel))
-            root.appendChild(e)
-        for status in self.StatusInfo:
-            e = doc.createElement("StatusInfo")
-            e.appendChild(doc.createTextNode(status))
-            root.appendChild(e)
-        if self.Complexity is not None:
-            e = doc.createElement("Complexity")
-            e.appendChild(doc.createTextNode(self.Complexity))
-            root.appendChild(e)
-        for endpoint in self.Endpoint:
-            e = doc.createElement("Endpoint")
-            e.appendChild(doc.createTextNode(endpoint))
-            root.appendChild(e)
-        for id in self.Share:
-            e = doc.createElement("Share")
-            e.appendChild(doc.createTextNode(id))
-            root.appendChild(e)
-        for contact in self.Contact:
-            e = doc.createElement("Contact")
-            e.appendChild(doc.createTextNode(contact))
-            root.appendChild(e)
-        if self.Location is not None:
-            e = doc.createElement("Location")
-            e.appendChild(doc.createTextNode(self.Location))
-            root.appendChild(e)
-        for id in self.Service:
-            e = doc.createElement("Service")
-            e.appendChild(doc.createTextNode(id))
-            root.appendChild(e)
-
-        # ComputingService
-        if self.TotalJobs is not None:
-            e = doc.createElement("TotalJobs")
-            e.appendChild(doc.createTextNode(str(self.TotalJobs)))
-            root.appendChild(e)
-        if self.RunningJobs is not None:
-            e = doc.createElement("RunningJobs")
-            e.appendChild(doc.createTextNode(str(self.RunningJobs)))
-            root.appendChild(e)
-        if self.WaitingJobs is not None:
-            e = doc.createElement("WaitingJobs")
-            e.appendChild(doc.createTextNode(str(self.WaitingJobs)))
-            root.appendChild(e)
-        if self.StagingJobs is not None:
-            e = doc.createElement("StagingJobs")
-            e.appendChild(doc.createTextNode(str(self.StagingJobs)))
-            root.appendChild(e)
-        if self.SuspendedJobs is not None:
-            e = doc.createElement("SuspendedJobs")
-            e.appendChild(doc.createTextNode(str(self.SuspendedJobs)))
-            root.appendChild(e)
-        if self.PreLRMSWaitingJobs is not None:
-            e = doc.createElement("PreLRMSWaitingJobs")
-            e.appendChild(doc.createTextNode(str(self.PreLRMSWaitingJobs)))
-            root.appendChild(e)
-        for id in self.ComputingEndpoint:
-            e = doc.createElement("ComputingEndpoint")
-            e.appendChild(doc.createTextNode(id))
-            root.appendChild(e)
-        for id in self.ComputingShare:
-            e = doc.createElement("ComputingShare")
-            e.appendChild(doc.createTextNode(id))
-            root.appendChild(e)
-        if self.ComputingManager is not None:
-            e = doc.createElement("ComputingManager")
-            e.appendChild(doc.createTextNode(self.ComputingManager))
-            root.appendChild(e)
-
-        return doc
-
-    ###################################################################################################################
-
-    def toJson(self):
-        doc = {}
-
-        # Entity
-        doc["CreationTime"] = dateTimeToText(self.CreationTime)
-        if self.Validity is not None:
-            doc["Validity"] = self.Validity
-        doc["ID"] = self.ID
-        if self.Name is not None:
-            doc["Name"] = self.Name
-        if len(self.OtherInfo) > 0:
-            doc["OtherInfo"] = self.OtherInfo
-        if len(self.Extension) > 0:
-            doc["Extension"] = self.Extension
-
-        # Service
-        if len(self.Capability) > 0:
-            doc["Capability"] = self.Capability
-        if self.Type is not None:
-            doc["Type"] = self.Type
-        if self.QualityLevel is not None:
-            doc["QualityLevel"] = self.QualityLevel
-        if len(self.StatusInfo) > 0:
-            doc["StatusInfo"] = self.StatusInfo
-        if self.Complexity is not None:
-            doc["Complexity"] = self.Complexity
-        if len(self.Endpoint) > 0:
-            doc["Endpoint"] = self.Endpoint
-        if len(self.Share) > 0:
-            doc["Share"] = self.Share
-        if len(self.Contact) > 0:
-            doc["Contact"] = self.Contact
-        if self.Location is not None:
-            doc["Location"] = self.Location
-        if len(self.Service) > 0:
-            doc["Service"] = self.Service
-
-        # ComputingService
-        if self.TotalJobs is not None:
-            doc["TotalJobs"] = self.TotalJobs
-        if self.RunningJobs is not None:
-            doc["RunningJobs"] = self.RunningJobs
-        if self.WaitingJobs is not None:
-            doc["WaitingJobs"] = self.WaitingJobs
-        if self.StagingJobs is not None:
-            doc["StagingJobs"] = self.StagingJobs
-        if self.SuspendedJobs is not None:
-            doc["SuspendedJobs"] = self.SuspendedJobs
-        if self.PreLRMSWaitingJobs is not None:
-            doc["PreLRMSWaitingJobs"] = self.PreLRMSWaitingJobs
-        if len(self.ComputingEndpoint) > 0:
-            doc["ComputingEndpoint"] = self.ComputingEndpoint
-        if len(self.ComputingShare) > 0:
-            doc["ComputingShare"] = self.ComputingShare
-        if self.ComputingManager is not None:
-            doc["ComputingManager"] = self.ComputingManager
-
-        return doc
-
-    ###################################################################################################################
-
     def fromJson(self, doc):
         # Entity
         if "CreationTime" in doc:
@@ -401,67 +186,200 @@ class ComputingService(object):
         self.ComputingShare = doc.get("ComputingShare",[])
         self.ComputingManager = doc.get("ComputingManager")
 
-    ###################################################################################################################
+#######################################################################################################################
 
-    def toXml(self, indent=""):
-        mstr = indent+"<ComputingService"
+class ComputingServiceTeraGridXml(Representation):
+    data_cls = ComputingService
+
+    def __init__(self, data):
+        Representation.__init__(self,Representation.MIME_TEXT_XML,data)
+
+    def get(self):
+        return self.toDom(self.data).toxml()
+
+    @staticmethod
+    def toDom(service):
+        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
+                                                    "Entities",None)
+        root = doc.createElement("ComputingService")
+        doc.documentElement.appendChild(root)
 
         # Entity
-        curTime = time.time()
-        mstr = mstr+" CreationTime='"+epochToXmlDateTime(curTime)+"'"
-        if self.Validity is not None:
-            mstr = mstr+"\n"+indent+"                  Validity='300'>\n"
-        else:
-            mstr = mstr+"\n"
-        mstr = mstr+indent+"  <ID>"+self.ID+"</ID>\n"
-        if self.Name is not None:
-            mstr = mstr+indent+"  <Name>"+self.Name+"</Name>\n"
-        for info in self.OtherInfo:
-            mstr = mstr+indent+"  <OtherInfo>"+info+"</OtherInfo>\n"
-        for key in self.Extension.keys():
-            mstr = mstr+indent+"  <Extension Key='"++"'>"+self.Extension[key]+"</Extension>\n"
+        e = doc.createElement("CreationTime")
+        e.appendChild(doc.createTextNode(dateTimeToText(service.CreationTime)))
+        if service.Validity is not None:
+            e.setAttribute("Validity",str(service.Validity))
+        root.appendChild(e)
+
+        e = doc.createElement("ID")
+        e.appendChild(doc.createTextNode(service.ID))
+        root.appendChild(e)
+
+        if service.Name is not None:
+            e = doc.createElement("Name")
+            e.appendChild(doc.createTextNode(service.Name))
+            root.appendChild(e)
+        for info in service.OtherInfo:
+            e = doc.createElement("OtherInfo")
+            e.appendChild(doc.createTextNode(info))
+            root.appendChild(e)
+        for key in service.Extension.keys():
+            e = doc.createElement("Extension")
+            e.setAttribute("Key",key)
+            e.appendChild(doc.createTextNode(service.Extension[key]))
+            root.appendChild(e)
 
         # Service
-        for capability in self.Capability:
-            mstr = mstr+indent+"  <Capability>"+capability+"</Capability>\n"
-        if self.Type is not None:
-            mstr = mstr+indent+"  <Type>"+self.Type+"</Type>\n"
-        if self.QualityLevel is not None:
-            mstr = mstr+indent+"  <QualityLevel>"+self.QualityLevel+"</QualityLevel>\n"
-        for status in self.StatusInfo:
-            mstr = mstr+indent+"  <StatusInfo>"+status+"</StatusInfo>\n"
-        if self.Complexity is not None:
-            mstr = mstr+indent+"  <Complexity>"+self.Complexity+"</Complexity>\n"
-        for endpoint in self.Endpoint:
-            mstr = mstr+indent+"  <Endpoint>"+endpoint+"</Endpoint>\n"
-        for share in self.Share:
-            mstr = mstr+indent+"  <Share>"+Share+"</Share>\n"
-        for contact in self.Contact:
-            mstr = mstr+indent+"  <Contact>"+contact+"</Contact>\n"
-        if self.Location is not None:
-            mstr = mstr+indent+"  <Location>"+self.Location+"</Location>\n"
-        for service in self.Service:
-            mstr = mstr+indent+"  <Service>"+Service+"</Service>\n"
+        for capability in service.Capability:
+            e = doc.createElement("Capability")
+            e.appendChild(doc.createTextNode(capability))
+            root.appendChild(e)
+        if service.Type is not None:
+            e = doc.createElement("Type")
+            e.appendChild(doc.createTextNode(service.Type))
+            root.appendChild(e)
+        if service.QualityLevel is not None:
+            e = doc.createElement("QualityLevel")
+            e.appendChild(doc.createTextNode(service.QualityLevel))
+            root.appendChild(e)
+        for status in service.StatusInfo:
+            e = doc.createElement("StatusInfo")
+            e.appendChild(doc.createTextNode(status))
+            root.appendChild(e)
+        if service.Complexity is not None:
+            e = doc.createElement("Complexity")
+            e.appendChild(doc.createTextNode(service.Complexity))
+            root.appendChild(e)
+        for endpoint in service.Endpoint:
+            e = doc.createElement("Endpoint")
+            e.appendChild(doc.createTextNode(endpoint))
+            root.appendChild(e)
+        for id in service.Share:
+            e = doc.createElement("Share")
+            e.appendChild(doc.createTextNode(id))
+            root.appendChild(e)
+        for contact in service.Contact:
+            e = doc.createElement("Contact")
+            e.appendChild(doc.createTextNode(contact))
+            root.appendChild(e)
+        if service.Location is not None:
+            e = doc.createElement("Location")
+            e.appendChild(doc.createTextNode(service.Location))
+            root.appendChild(e)
+        for id in service.Service:
+            e = doc.createElement("Service")
+            e.appendChild(doc.createTextNode(id))
+            root.appendChild(e)
 
         # ComputingService
-        if self.TotalJobs is not None:
-            mstr = mstr+indent+"  <TotalJobs>"+str(self.TotalJobs)+"</TotalJobs>\n"
-        if self.RunningJobs is not None:
-            mstr = mstr+indent+"  <RunningJobs>"+str(self.RunningJobs)+"</RunningJobs>\n"
-        if self.WaitingJobs is not None:
-            mstr = mstr+indent+"  <WaitingJobs>"+str(self.WaitingJobs)+"</WaitingJobs>\n"
-        if self.StagingJobs is not None:
-            mstr = mstr+indent+"  <StagingJobs>"+str(self.StagingJobs)+"</StagingJobs>\n"
-        if self.SuspendedJobs is not None:
-            mstr = mstr+indent+"  <SuspendedJobs>"+str(self.SuspendedJobs)+"</SuspendedJobs>\n"
-        if self.PreLRMSWaitingJobs is not None:
-            mstr = mstr+indent+"  <PreLRMSWaitingJobs>"+str(self.PreLRMSWaitingJobs)+"</PreLRMSWaitingJobs>\n"
-        for id in self.ComputingEndpoint:
-            mstr = mstr+indent+"  <ComputingEndpoint>"+id+"</ComputingEndpoint>\n"
-        for id in self.ComputingShare:
-            mstr = mstr+indent+"  <ComputingShare>"+id+"</ComputingShare>\n"
-        if self.ComputingManager is not None:
-            mstr = mstr+indent+"  <ComputingManager>"+self.ComputingManager+"</ComputingManager>\n"
+        if service.TotalJobs is not None:
+            e = doc.createElement("TotalJobs")
+            e.appendChild(doc.createTextNode(str(service.TotalJobs)))
+            root.appendChild(e)
+        if service.RunningJobs is not None:
+            e = doc.createElement("RunningJobs")
+            e.appendChild(doc.createTextNode(str(service.RunningJobs)))
+            root.appendChild(e)
+        if service.WaitingJobs is not None:
+            e = doc.createElement("WaitingJobs")
+            e.appendChild(doc.createTextNode(str(service.WaitingJobs)))
+            root.appendChild(e)
+        if service.StagingJobs is not None:
+            e = doc.createElement("StagingJobs")
+            e.appendChild(doc.createTextNode(str(service.StagingJobs)))
+            root.appendChild(e)
+        if service.SuspendedJobs is not None:
+            e = doc.createElement("SuspendedJobs")
+            e.appendChild(doc.createTextNode(str(service.SuspendedJobs)))
+            root.appendChild(e)
+        if service.PreLRMSWaitingJobs is not None:
+            e = doc.createElement("PreLRMSWaitingJobs")
+            e.appendChild(doc.createTextNode(str(service.PreLRMSWaitingJobs)))
+            root.appendChild(e)
+        for id in service.ComputingEndpoint:
+            e = doc.createElement("ComputingEndpoint")
+            e.appendChild(doc.createTextNode(id))
+            root.appendChild(e)
+        for id in service.ComputingShare:
+            e = doc.createElement("ComputingShare")
+            e.appendChild(doc.createTextNode(id))
+            root.appendChild(e)
+        if service.ComputingManager is not None:
+            e = doc.createElement("ComputingManager")
+            e.appendChild(doc.createTextNode(service.ComputingManager))
+            root.appendChild(e)
 
-        mstr = mstr+indent+"</ComputingService>\n"
-        return mstr
+        return doc
+
+#######################################################################################################################
+
+class ComputingServiceIpfJson(Representation):
+    data_cls = ComputingService
+
+    def __init__(self, data):
+        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+
+    def get(self):
+        return json.dumps(self.toJson(self.data),sort_keys=True,indent=4)
+
+    @staticmethod
+    def toJson(service):
+        doc = {}
+
+        # Entity
+        doc["CreationTime"] = dateTimeToText(service.CreationTime)
+        if service.Validity is not None:
+            doc["Validity"] = service.Validity
+        doc["ID"] = service.ID
+        if service.Name is not None:
+            doc["Name"] = service.Name
+        if len(service.OtherInfo) > 0:
+            doc["OtherInfo"] = service.OtherInfo
+        if len(service.Extension) > 0:
+            doc["Extension"] = service.Extension
+
+        # Service
+        if len(service.Capability) > 0:
+            doc["Capability"] = service.Capability
+        if service.Type is not None:
+            doc["Type"] = service.Type
+        if service.QualityLevel is not None:
+            doc["QualityLevel"] = service.QualityLevel
+        if len(service.StatusInfo) > 0:
+            doc["StatusInfo"] = service.StatusInfo
+        if service.Complexity is not None:
+            doc["Complexity"] = service.Complexity
+        if len(service.Endpoint) > 0:
+            doc["Endpoint"] = service.Endpoint
+        if len(service.Share) > 0:
+            doc["Share"] = service.Share
+        if len(service.Contact) > 0:
+            doc["Contact"] = service.Contact
+        if service.Location is not None:
+            doc["Location"] = service.Location
+        if len(service.Service) > 0:
+            doc["Service"] = service.Service
+
+        # ComputingService
+        if service.TotalJobs is not None:
+            doc["TotalJobs"] = service.TotalJobs
+        if service.RunningJobs is not None:
+            doc["RunningJobs"] = service.RunningJobs
+        if service.WaitingJobs is not None:
+            doc["WaitingJobs"] = service.WaitingJobs
+        if service.StagingJobs is not None:
+            doc["StagingJobs"] = service.StagingJobs
+        if service.SuspendedJobs is not None:
+            doc["SuspendedJobs"] = service.SuspendedJobs
+        if service.PreLRMSWaitingJobs is not None:
+            doc["PreLRMSWaitingJobs"] = service.PreLRMSWaitingJobs
+        if len(service.ComputingEndpoint) > 0:
+            doc["ComputingEndpoint"] = service.ComputingEndpoint
+        if len(service.ComputingShare) > 0:
+            doc["ComputingShare"] = service.ComputingShare
+        if service.ComputingManager is not None:
+            doc["ComputingManager"] = service.ComputingManager
+
+        return doc
+
+#######################################################################################################################

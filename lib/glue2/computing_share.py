@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2011-2012 The University of Texas at Austin                     #
+#   Copyright 2011,2012 The University of Texas at Austin                     #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -20,51 +20,47 @@ import json
 import time
 from xml.dom.minidom import getDOMImplementation
 
-from ipf.document import Document
+from ipf.data import Data, Representation
 from ipf.dt import *
 from ipf.error import StepError
+from ipf.resource_name import ResourceName
 
-from glue2.computing_activity import ComputingActivity
+from glue2.computing_activity import ComputingActivity, ComputingActivities
 from glue2.step import GlueStep
 
 #######################################################################################################################
 
 class ComputingSharesStep(GlueStep):
+    def __init__(self):
+        GlueStep.__init__(self)
 
-    def __init__(self, params):
-        GlueStep.__init__(self,params)
-
-        self.name = "glue2/computing_shares"
         self.description = "produces a document containing one or more GLUE 2 ComputingShare"
         self.time_out = 30
-        self.requires_types = ["ipf/resource_name.txt",
-                               "glue2/ipf/computing_activities.json"]
-        self.produces_types = ["glue2/teragrid/computing_shares.xml",
-                               "glue2/ipf/computing_shares.json"]
-        self.accepts_params["queues"] = "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown."
+        self.requires = [ResourceName,ComputingActivities]
+        self.produces = [ComputingShares]
+        self._acceptParameter("queues",
+                              "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown.",
+                              False)
 
         self.resource_name = None
         self.activities = None
         
     def run(self):
-        rn_doc = self._getInput("ipf/resource_name.txt")
-        self.resource_name = rn_doc.resource_name
-        activities_doc = self._getInput("glue2/ipf/computing_activities.json")
-        self.activities = activities_doc.activities
+        self.resource_name = self._getInput(ResourceName).resource_name
+        self.activities = self._getInput(ComputingActivities).activities
 
         shares = self._run()
 
         for share in shares:
+            share.id = "%s.%s" % (share.MappingQueue,self.resource_name)
             share.ID = "urn:glue2:ComputingShare:%s.%s" % (share.MappingQueue,self.resource_name)
             share.ComputingService = "urn:glue2:ComputingService:%s" % (self.resource_name)
 
         self._addActivities(shares)
 
-        self._output(ComputingSharesDocumentXml(self.resource_name,shares))
-        self._output(ComputingSharesDocumentJson(self.resource_name,shares))
+        self._output(ComputingShares(self.resource_name,shares))
 
     def _run(self):
-        self.error("ComputingSharesStep._run not overriden")
         raise StepError("ComputingSharesStep._run not overriden")
 
     def _addActivities(self, shares):
@@ -119,43 +115,10 @@ class ComputingSharesStep(GlueStep):
 
 #######################################################################################################################
 
-class ComputingSharesDocumentXml(Document):
-    def __init__(self, resource_name, shares):
-        Document.__init__(self, resource_name, "glue2/teragrid/computing_shares.xml")
-        self.shares = shares
-
-    def _setBody(self, body):
-        raise DocumentError("ComputingSharesDocumentXml._setBody should parse the XML...")
-
-    def _getBody(self):
-        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
-                                                    "Entities",None)
-        for share in self.shares:
-            sdoc = share.toDom()
-            doc.documentElement.appendChild(sdoc.documentElement.firstChild)
-        #return doc.toxml()
-        return doc.toprettyxml()
-
-#######################################################################################################################
-
-class ComputingSharesDocumentJson(Document):
-    def __init__(self, resource_name, shares):
-        Document.__init__(self, resource_name, "glue2/ipf/computing_shares.json")
-        self.shares = shares
-
-    def _setBody(self, body):
-        raise DocumentError("ComputingSharesDocumentJson._setBody should parse the JSON...")
-
-    def _getBody(self):
-        sdoc = []
-        for share in self.shares:
-            sdoc.append(share.toJson())
-        return json.dumps(sdoc,sort_keys=True,indent=4)
-
-#######################################################################################################################
-
-class ComputingShare(object):
+class ComputingShare(Data):
     def __init__(self):
+        Data.__init__(self)
+        
         # Entity
         self.CreationTime = datetime.datetime.now(tzoffset(0))
         self.Validity = None
@@ -231,383 +194,6 @@ class ComputingShare(object):
 
     ###################################################################################################################
 
-    def toDom(self):
-        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
-                                                    "Entities",None)
-        root = doc.createElement("ComputingShare")
-        doc.documentElement.appendChild(root)
-
-        # Entity
-        e = doc.createElement("CreationTime")
-        e.appendChild(doc.createTextNode(dateTimeToText(self.CreationTime)))
-        if self.Validity is not None:
-            e.setAttribute("Validity",str(self.Validity))
-        root.appendChild(e)
-
-        e = doc.createElement("ID")
-        e.appendChild(doc.createTextNode(self.ID))
-        root.appendChild(e)
-
-        if self.Name is not None:
-            e = doc.createElement("Name")
-            e.appendChild(doc.createTextNode(self.Name))
-            root.appendChild(e)
-        for info in self.OtherInfo:
-            e = doc.createElement("OtherInfo")
-            e.appendChild(doc.createTextNode(info))
-            root.appendChild(e)
-        for key in self.Extension:
-            e = doc.createElement("Extension")
-            e.setAttribute("Key",key)
-            e.appendChild(doc.createTextNode(str(self.Extension[key])))
-            root.appendChild(e)
-
-        # Share
-        if self.Description is not None:
-            e = doc.createElement("Description")
-            e.appendChild(doc.createTextNode(self.Description))
-            root.appendChild(e)
-        for endpoint in self.Endpoint:
-            e = doc.createElement("Endpoint")
-            e.appendChild(doc.createTextNode(endpoint))
-            root.appendChild(e)
-        for resource in self.Resource:
-            e = doc.createElement("Resource")
-            e.appendChild(doc.createTextNode(resource))
-            root.appendChild(e)
-        if self.Service is not None:
-            e = doc.createElement("Service")
-            e.appendChild(doc.createTextNode(self.Service))
-            root.appendChild(e)
-        for activity in self.Activity:
-            e = doc.createElement("Activity")
-            e.appendChild(doc.createTextNode(activity))
-            root.appendChild(e)
-        for policy in self.MappingPolicy:
-            e = doc.createElement("MappingPolicy")
-            e.appendChild(doc.createTextNode(policy))
-            root.appendChild(e)
-
-        # ComputingShare
-        if self.MappingQueue is not None:
-            e = doc.createElement("MappingQueue")
-            e.appendChild(doc.createTextNode(self.MappingQueue))
-            root.appendChild(e)
-        if self.MaxWallTime is not None:
-            e = doc.createElement("MaxWallTime")
-            e.appendChild(doc.createTextNode(str(self.MaxWallTime)))
-            root.appendChild(e)
-        if self.MaxMultiSlotWallTime is not None:
-            e = doc.createElement("MaxMultiSlotWallTime")
-            e.appendChild(doc.createTextNode(str(self.MaxMultiSlotWallTime)))
-            root.appendChild(e)
-        if self.MinWallTime is not None:
-            e = doc.createElement("MinWallTime")
-            e.appendChild(doc.createTextNode(str(self.MinWallTime)))
-            root.appendChild(e)
-        if self.DefaultWallTime is not None:
-            e = doc.createElement("DefaultWallTime")
-            e.appendChild(doc.createTextNode(str(self.DefaultWallTime)))
-            root.appendChild(e)
-        if self.MaxCPUTime is not None:
-            e = doc.createElement("MaxCPUTime")
-            e.appendChild(doc.createTextNode(str(self.MaxCPUTime)))
-            root.appendChild(e)
-        if self.MaxTotalCPUTime is not None:
-            e = doc.createElement("MaxTotalCPUTime")
-            e.appendChild(doc.createTextNode(str(self.MaxTotalCPUTime)))
-            root.appendChild(e)
-        if self.MinCPUTime is not None:
-            e = doc.createElement("MinCPUTime")
-            e.appendChild(doc.createTextNode(str(self.MinCPUTime)))
-            root.appendChild(e)
-        if self.DefaultCPUTime is not None:
-            e = doc.createElement("DefaultCPUTime")
-            e.appendChild(doc.createTextNode(str(self.DefaultCPUTime)))
-            root.appendChild(e)
-        if self.MaxTotalJobs is not None:
-            e = doc.createElement("MaxTotalJobs")
-            e.appendChild(doc.createTextNode(str(self.MaxTotalJobs)))
-            root.appendChild(e)
-        if self.MaxRunningJobs is not None:
-            e = doc.createElement("MaxRunningJobs")
-            e.appendChild(doc.createTextNode(str(self.MaxRunningJobs)))
-            root.appendChild(e)
-        if self.MaxWaitingJobs is not None:
-            e = doc.createElement("MaxWaitingJobs")
-            e.appendChild(doc.createTextNode(str(self.MaxWaitingJobs)))
-            root.appendChild(e)
-        if self.MaxPreLRMSWaitingJobs is not None:
-            e = doc.createElement("MaxPreLRMSWaitingJobs")
-            e.appendChild(doc.createTextNode(str(self.MaxPreLRMSWaitingJobs)))
-            root.appendChild(e)
-        if self.MaxUserRunningJobs is not None:
-            e = doc.createElement("MaxUserRunningJobs")
-            e.appendChild(doc.createTextNode(str(self.MaxUserRunningJobs)))
-            root.appendChild(e)
-        if self.MaxSlotsPerJob is not None:
-            e = doc.createElement("MaxSlotsPerJob")
-            e.appendChild(doc.createTextNode(str(self.MaxSlotsPerJob)))
-            root.appendChild(e)
-        if self.MaxStageInStreams is not None:
-            e = doc.createElement("MaxStageInStreams")
-            e.appendChild(doc.createTextNode(str(self.MaxStageInStreams)))
-            root.appendChild(e)
-        if self.MaxStageOutStreams is not None:
-            e = doc.createElement("MaxStageOutStreams")
-            e.appendChild(doc.createTextNode(str(self.MaxStageOutStreams)))
-            root.appendChild(e)
-        if self.SchedulingPolicy is not None:
-            e = doc.createElement("SchedulingPolicy")
-            e.appendChild(doc.createTextNode(self.SchedulingPolicy))
-            root.appendChild(e)
-        if self.MaxMainMemory is not None:
-            e = doc.createElement("MaxMainMemory")
-            e.appendChild(doc.createTextNode(str(self.MaxMainMemory)))
-            root.appendChild(e)
-        if self.GuaranteedMainMemory is not None:
-            e = doc.createElement("GuaranteedMainMemory")
-            e.appendChild(doc.createTextNode(str(self.GuaranteedMainMemory)))
-            root.appendChild(e)
-        if self.MaxVirtualMemory is not None:
-            e = doc.createElement("MaxVirtualMemory")
-            e.appendChild(doc.createTextNode(str(self.MaxVirtualMemory)))
-            root.appendChild(e)
-        if self.GuaranteedVirtualMemory is not None:
-            e = doc.createElement("GuaranteedVirtualMemory")
-            e.appendChild(doc.createTextNode(str(self.GuaranteedVirtualMemory)))
-            root.appendChild(e)
-        if self.MaxDiskSpace is not None:
-            e = doc.createElement("MaxDiskSpace")
-            e.appendChild(doc.createTextNode(str(self.MaxDiskSpace)))
-            root.appendChild(e)
-        if self.DefaultStorageService is not None:
-            e = doc.createElement("DefaultStorageService")
-            e.appendChild(doc.createTextNode(self.DefaultStorageService))
-            root.appendChild(e)
-        if self.Preemption is not None:
-            e = doc.createElement("Preemption")
-            if self.Preemption:
-                e.appendChild(doc.createTextNode("true"))
-            else:
-                e.appendChild(doc.createTextNode("false"))
-            root.appendChild(e)
-        if self.ServingState is not None:
-            e = doc.createElement("ServingState")
-            e.appendChild(doc.createTextNode(self.ServingState))
-            root.appendChild(e)
-        if self.TotalJobs is not None:
-            e = doc.createElement("TotalJobs")
-            e.appendChild(doc.createTextNode(str(self.TotalJobs)))
-            root.appendChild(e)
-        if self.RunningJobs is not None:
-            e = doc.createElement("RunningJobs")
-            e.appendChild(doc.createTextNode(str(self.RunningJobs)))
-            root.appendChild(e)
-        if self.LocalRunningJobs is not None:
-            e = doc.createElement("LocalRunningJobs")
-            e.appendChild(doc.createTextNode(str(self.LocalRunningJobs)))
-            root.appendChild(e)
-        if self.WaitingJobs is not None:
-            e = doc.createElement("WaitingJobs")
-            e.appendChild(doc.createTextNode(str(self.WaitingJobs)))
-            root.appendChild(e)
-        if self.LocalWaitingJobs is not None:
-            e = doc.createElement("LocalWaitingJobs")
-            e.appendChild(doc.createTextNode(str(self.LocalWaitingJobs)))
-            root.appendChild(e)
-        if self.SuspendedJobs is not None:
-            e = doc.createElement("SuspendedJobs")
-            e.appendChild(doc.createTextNode(str(self.SuspendedJobs)))
-            root.appendChild(e)
-        if self.LocalSuspendedJobs is not None:
-            e = doc.createElement("LocalSuspendedJobs")
-            e.appendChild(doc.createTextNode(str(self.LocalSuspendedJobs)))
-            root.appendChild(e)
-        if self.StagingJobs is not None:
-            e = doc.createElement("StagingJobs")
-            e.appendChild(doc.createTextNode(str(self.StagingJobs)))
-            root.appendChild(e)
-        if self.PreLRMSWaitingJobs is not None:
-            e = doc.createElement("PreLRMSWaitingJobs")
-            e.appendChild(doc.createTextNode(str(self.PreLRMSWaitingJobs)))
-            root.appendChild(e)
-        if self.EstimatedAverageWaitingTime is not None:
-            e = doc.createElement("EstimatedAverageWaitingTime")
-            e.appendChild(doc.createTextNode(str(self.EstimatedAverageWaitingTime)))
-            root.appendChild(e)
-        if self.EstimatedWorstWaitingTime is not None:
-            e = doc.createElement("EstimatedWorstWaitingTime")
-            e.appendChild(doc.createTextNode(str(self.EstimatedWorstWaitingTime)))
-            root.appendChild(e)
-        if self.FreeSlots is not None:
-            e = doc.createElement("FreeSlots")
-            e.appendChild(doc.createTextNode(str(self.FreeSlots)))
-            root.appendChild(e)
-        if self.FreeSlotsWithDuration is not None:
-            e = doc.createElement("FreeSlotsWithDuration")
-            e.appendChild(doc.createTextNode(self.FreeSlotsWithDuration))
-            root.appendChild(e)
-        if self.UsedSlots is not None:
-            e = doc.createElement("UsedSlots")
-            e.appendChild(doc.createTextNode(str(self.UsedSlots)))
-            root.appendChild(e)
-        if self.RequestedSlots is not None:
-            e = doc.createElement("RequestedSlots")
-            e.appendChild(doc.createTextNode(str(self.RequestedSlots)))
-            root.appendChild(e)
-        if self.ReservationPolicy is not None:
-            e = doc.createElement("ReservationPolicy")
-            e.appendChild(doc.createTextNode(self.Service))
-            root.appendChild(e)
-        for tag in self.Tag:
-            e = doc.createElement("Tag")
-            e.appendChild(doc.createTextNode(tag))
-            root.appendChild(e)
-        for endpoint in self.ComputingEndpoint:
-            e = doc.createElement("ComputingEndpoint")
-            e.appendChild(doc.createTextNode(endpoint))
-            root.appendChild(e)
-        for environment in self.ExecutionEnvironment:
-            e = doc.createElement("ExecutionEnvironment")
-            e.appendChild(doc.createTextNode(environment))
-            root.appendChild(e)
-        if self.ComputingService is not None:
-            e = doc.createElement("ComputingService")
-            e.appendChild(doc.createTextNode(self.ComputingService))
-            root.appendChild(e)
-
-        return doc
-
-    ###################################################################################################################
-
-    def toJson(self):
-        doc = {}
-
-        # Entity
-        doc["CreationTime"] = dateTimeToText(self.CreationTime)
-        if self.Validity is not None:
-            doc["Validity"] = self.Validity
-        doc["ID"] = self.ID
-        if self.Name is not None:
-            doc["Name"] = self.Name
-        if len(self.OtherInfo) > 0:
-            doc["OtherInfo"] = self.OtherInfo
-        if len(self.Extension) > 0:
-            doc["Extension"] = self.Extension
-
-        # Share
-        if self.Description is not None:
-            doc["Description"] = self.Description
-        if len(self.Endpoint) > 0:
-            doc["Endpoint"] = self.Endpoint
-        if len(self.Resource) > 0:
-            doc["Resource"] = self.Resource
-        if self.Service is not None:
-            doc["Service"] = self.Service
-        if len(self.Activity) > 0:
-            doc["Activity"] = self.Activity
-        if len(self.MappingPolicy) > 0:
-            doc["MappingPolicy"] = self.MappingPolicy
-
-        # ComputingShare
-        if self.MappingQueue is not None:
-            doc["MappingQueue"] = self.MappingQueue
-        if self.MaxWallTime is not None:
-            doc["MaxWallTime"] = self.MaxWallTime
-        if self.MaxMultiSlotWallTime is not None:
-            doc["MaxMultiSlotWallTime"] = self.MaxMultiSlotWallTime
-        if self.MinWallTime is not None:
-            doc["MinWallTime"] = self.MinWallTime
-        if self.DefaultWallTime is not None:
-            doc["DefaultWallTime"] = self.DefaultWallTime
-        if self.MaxCPUTime is not None:
-            doc["MaxCPUTime"] = self.MaxCPUTime
-        if self.MaxTotalCPUTime is not None:
-            doc["MaxTotalCPUTime"] = self.MaxTotalCPUTime
-        if self.MinCPUTime is not None:
-            doc["MinCPUTime"] = self.MinCPUTime
-        if self.DefaultCPUTime is not None:
-            doc["DefaultCPUTime"] = self.DefaultCPUTime
-        if self.MaxTotalJobs is not None:
-            doc["MaxTotalJobs"] = self.MaxTotalJobs
-        if self.MaxRunningJobs is not None:
-            doc["MaxRunningJobs"] = self.MaxRunningJobs
-        if self.MaxWaitingJobs is not None:
-            doc["MaxWaitingJobs"] = self.MaxWaitingJobs
-        if self.MaxPreLRMSWaitingJobs is not None:
-            doc["MaxPreLRMSWaitingJobs"] = self.MaxPreLRMSWaitingJobs
-        if self.MaxUserRunningJobs is not None:
-            doc["MaxUserRunningJobs"] = self.MaxUserRunningJobs
-        if self.MaxSlotsPerJob is not None:
-            doc["MaxSlotsPerJob"] = self.MaxSlotsPerJob
-        if self.MaxStageInStreams is not None:
-            doc["MaxStageInStreams"] = self.MaxStageInStreams
-        if self.MaxStageOutStreams is not None:
-            doc["MaxStageOutStreams"] = self.MaxStageOutStreams
-        if self.SchedulingPolicy is not None:
-            doc["SchedulingPolicy"] = self.SchedulingPolicy
-        if self.MaxMainMemory is not None:
-            doc["MaxMainMemory"] = self.MaxMainMemory
-        if self.GuaranteedMainMemory is not None:
-            doc["GuaranteedMainMemory"] = self.GuaranteedMainMemory
-        if self.MaxVirtualMemory is not None:
-            doc["MaxVirtualMemory"] = self.MaxVirtualMemory
-        if self.GuaranteedVirtualMemory is not None:
-            doc["GuaranteedVirtualMemory"] = self.GuaranteedVirtualMemory
-        if self.MaxDiskSpace is not None:
-            doc["MaxDiskSpace"] = self.MaxDiskSpace
-        if self.DefaultStorageService is not None:
-            doc["DefaultStorageService"] = self.DefaultStorageService
-        if self.Preemption is not None:
-            doc["Preemption"] = self.Preemption
-        if self.ServingState is not None:
-            doc["ServingState"] = self.ServingState
-        if self.TotalJobs is not None:
-            doc["TotalJobs"] = self.TotalJobs
-        if self.RunningJobs is not None:
-            doc["RunningJobs"] = self.RunningJobs
-        if self.LocalRunningJobs is not None:
-            doc["LocalRunningJobs"] = self.LocalRunningJobs
-        if self.WaitingJobs is not None:
-            doc["WaitingJobs"] = self.WaitingJobs
-        if self.LocalWaitingJobs is not None:
-            doc["LocalWaitingJobs"] = self.LocalWaitingJobs
-        if self.SuspendedJobs is not None:
-            doc["SuspendedJobs"] = self.SuspendedJobs
-        if self.LocalSuspendedJobs is not None:
-            doc["LocalSuspendedJobs"] = self.LocalSuspendedJobs
-        if self.StagingJobs is not None:
-            doc["StagingJobs"] = self.StagingJobs
-        if self.PreLRMSWaitingJobs is not None:
-            doc["PreLRMSWaitingJobs"] = self.PreLRMSWaitingJobs
-        if self.EstimatedAverageWaitingTime is not None:
-            doc["EstimatedAverageWaitingTime"] = self.EstimatedAverageWaitingTime
-        if self.EstimatedWorstWaitingTime is not None:
-            doc["EstimatedWorstWaitingTime"] = self.EstimatedWorstWaitingTime
-        if self.FreeSlots is not None:
-            doc["FreeSlots"] = self.FreeSlots
-        if self.FreeSlotsWithDuration is not None:
-            doc["FreeSlotsWithDuration"] = self.FreeSlotsWithDuration
-        if self.UsedSlots is not None:
-            doc["UsedSlots"] = self.UsedSlots
-        if self.RequestedSlots is not None:
-            doc["RequestedSlots"] = self.RequestedSlots
-        if self.ReservationPolicy is not None:
-            doc["ReservationPolicy"] = self.ReservationPolicy
-        if len(self.Tag) > 0:
-            doc["Tag"] = self.Tag
-        if len(self.ComputingEndpoint):
-            doc["ComputingEndpoint"] = self.ComputingEndpoint
-        if len(self.ExecutionEnvironment):
-            doc["ExecutionEnvironment"] = self.ExecutionEnvironment
-        if self.ComputingService is not None:
-            doc["ComputingService"] = self.ComputingService
-
-        return doc
-
-    ###################################################################################################################
-
     def fromJson(self, doc):
         # Entity
         if "CreationTime" in doc:
@@ -675,144 +261,446 @@ class ComputingShare(object):
         self.ComputingEndpoint = doc.get("ComputingEndpoint",[])
         self.ComputingService = doc.get("ComputingService")
 
-    ###################################################################################################################
+#######################################################################################################################
 
-    def toXml(self, indent=""):
-        mstr = indent+"<ComputingShare"
+class ComputingShareTeraGridXml(Representation):
+    data_cls = ComputingShare
+
+    def __init__(self, data):
+        Representation.__init__(self,Representation.MIME_TEXT_XML,data)
+
+    def get(self):
+        return self.toDom(self.data).toxml()
+
+    @staticmethod
+    def toDom(share):
+        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
+                                                    "Entities",None)
+        root = doc.createElement("ComputingShare")
+        doc.documentElement.appendChild(root)
 
         # Entity
-        curTime = time.time()
-        mstr = mstr+" CreationTime='"+epochToXmlDateTime(curTime)+"'"
-        if self.Validity is not None:
-            mstr = mstr+"\n"+indent+"                Validity='300'>\n"
-        else:
-            mstr = mstr+"\n"
-        mstr = mstr+indent+"  <ID>"+self.ID+"</ID>\n"
-        if self.Name is not None:
-            mstr = mstr+indent+"  <Name>"+self.Name+"</Name>\n"
-        for info in self.OtherInfo:
-            mstr = mstr+indent+"  <OtherInfo>"+info+"</OtherInfo>\n"
-        for key in self.Extension:
-            mstr = mstr+indent+"  <Extension Key='"+key+"'>"+str(self.Extension[key])+"</Extension>\n"
+        e = doc.createElement("CreationTime")
+        e.appendChild(doc.createTextNode(dateTimeToText(share.CreationTime)))
+        if share.Validity is not None:
+            e.setAttribute("Validity",str(share.Validity))
+        root.appendChild(e)
+
+        e = doc.createElement("ID")
+        e.appendChild(doc.createTextNode(share.ID))
+        root.appendChild(e)
+
+        if share.Name is not None:
+            e = doc.createElement("Name")
+            e.appendChild(doc.createTextNode(share.Name))
+            root.appendChild(e)
+        for info in share.OtherInfo:
+            e = doc.createElement("OtherInfo")
+            e.appendChild(doc.createTextNode(info))
+            root.appendChild(e)
+        for key in share.Extension:
+            e = doc.createElement("Extension")
+            e.setAttribute("Key",key)
+            e.appendChild(doc.createTextNode(str(share.Extension[key])))
+            root.appendChild(e)
 
         # Share
-        if self.Description is not None:
-            mstr = mstr+indent+"  <Description>"+self.Description+"</Description>\n"
-        for endpoint in self.Endpoint:
-            mstr = mstr+indent+"  <Endpoint>"+endpoint+"</Endpoint>\n"
-        for resource in self.Resource:
-            mstr = mstr+indent+"  <Resource>"+resource+"</Resource>\n"
-        if self.Service is not None:
-            mstr = mstr+indent+"  <Service>"+self.Service+"</Service>\n"
-        for activity in self.Activity:
-            mstr = mstr+indent+"  <Activity>"+activity+"</Activity>\n"
-        for policy in self.MappingPolicy:
-            mstr = mstr+indent+"  <MappingPolicy>"+policy+"</MappingPolicy>\n"
+        if share.Description is not None:
+            e = doc.createElement("Description")
+            e.appendChild(doc.createTextNode(share.Description))
+            root.appendChild(e)
+        for endpoint in share.Endpoint:
+            e = doc.createElement("Endpoint")
+            e.appendChild(doc.createTextNode(endpoint))
+            root.appendChild(e)
+        for resource in share.Resource:
+            e = doc.createElement("Resource")
+            e.appendChild(doc.createTextNode(resource))
+            root.appendChild(e)
+        if share.Service is not None:
+            e = doc.createElement("Service")
+            e.appendChild(doc.createTextNode(share.Service))
+            root.appendChild(e)
+        for activity in share.Activity:
+            e = doc.createElement("Activity")
+            e.appendChild(doc.createTextNode(activity))
+            root.appendChild(e)
+        for policy in share.MappingPolicy:
+            e = doc.createElement("MappingPolicy")
+            e.appendChild(doc.createTextNode(policy))
+            root.appendChild(e)
 
         # ComputingShare
-        if self.MappingQueue is not None:
-            mstr = mstr+indent+"  <MappingQueue>"+self.MappingQueue+"</MappingQueue>\n"
-        if self.MaxWallTime is not None:
-            mstr = mstr+indent+"  <MaxWallTime>"+str(self.MaxWallTime)+"</MaxWallTime>\n"
-        if self.MaxMultiSlotWallTime is not None:
-            mstr = mstr+indent+"  <MaxTotalWallTime>"+str(self.MaxTotalWallTime)+"</MaxTotalWallTime>\n"
-        if self.MinWallTime is not None:
-            mstr = mstr+indent+"  <MinWallTime>"+str(self.MinWallTime)+"</MinWallTime>\n"
-        if self.DefaultWallTime is not None:
-            mstr = mstr+indent+"  <DefaultWallTime>"+str(self.DefaultWallTime)+"</DefaultWallTime>\n"
-        if self.MaxCPUTime is not None:
-            mstr = mstr+indent+"  <MaxCPUTime>"+str(self.MaxCPUTime)+"</MaxCPUTime>\n"
-        if self.MaxTotalCPUTime is not None:
-            mstr = mstr+indent+"  <MaxTotalCPUTime>"+str(self.MaxTotalCPUTime)+"</MaxTotalCPUTime>\n"
-        if self.MinCPUTime is not None:
-            mstr = mstr+indent+"  <MinCPUTime>"+str(self.MinCPUTime)+"</MinCPUTime>\n"
-        if self.DefaultCPUTime is not None:
-            mstr = mstr+indent+"  <DefaultCPUTime>"+str(self.DefaultCPUTime)+"</DefaultCPUTime>\n"
-        if self.MaxTotalJobs is not None:
-            mstr = mstr+indent+"  <MaxTotalJobs>"+str(self.MaxTotalJobs)+"</MaxTotalJobs>\n"
-        if self.MaxRunningJobs is not None:
-            mstr = mstr+indent+"  <MaxRunningJobs>"+str(self.MaxRunningJobs)+"</MaxRunningJobs>\n"
-        if self.MaxWaitingJobs is not None:
-            mstr = mstr+indent+"  <MaxWaitingJobs>"+str(self.MaxWaitingJobs)+"</MaxWaitingJobs>\n"
-        if self.MaxPreLRMSWaitingJobs is not None:
-            mstr = mstr+indent+"  <MaxPreLRMSWaitingJobs>"+str(self.MaxPreLRMSWaitingJobs)+ \
-                   "</MaxPreLRMSWaitingJobs>\n"
-        if self.MaxUserRunningJobs is not None:
-            mstr = mstr+indent+"  <MaxUserRunningJobs>"+str(self.MaxUserRunningJobs)+"</MaxUserRunningJobs>\n"
-        if self.MaxSlotsPerJob is not None:
-            mstr = mstr+indent+"  <MaxSlotsPerJob>"+str(self.MaxSlotsPerJob)+"</MaxSlotsPerJob>\n"
-        if self.MaxStageInStreams is not None:
-            mstr = mstr+indent+"  <MaxStageInStreams>"+str(self.MaxStageInStreams)+"</MaxStageInStreams>\n"
-        if self.MaxStageOutStreams is not None:
-            mstr = mstr+indent+"  <MaxStageOutStreams>"+str(self.MaxStageOutStreams)+"</MaxStageOutStreams>\n"
-        if self.SchedulingPolicy is not None:
-            mstr = mstr+indent+"  <SchedulingPolicy>"+self.SchedulingPolicy+"</SchedulingPolicy>\n"
-        if self.MaxMainMemory is not None:
-            mstr = mstr+indent+"  <MaxMainMemory>"+str(self.MaxMainMemory)+"</MaxMainMemory>\n"
-        if self.GuaranteedMainMemory is not None:
-            mstr = mstr+indent+"  <GuaranteedMainMemory>"+str(self.GuaranteedMainMemory)+"</GuaranteedMainMemory>\n"
-        if self.MaxVirtualMemory is not None:
-            mstr = mstr+indent+"  <MaxVirtualMemory>"+str(self.MaxVirtualMemory)+"</MaxVirtualMemory>\n"
-        if self.GuaranteedVirtualMemory is not None:
-            mstr = mstr+indent+"  <GuaranteedVirtualMemory>"+str(self.GuaranteedVirtualMemory)+ \
-                   "</GuaranteedVirtualMemory>\n"
-        if self.MaxDiskSpace is not None:
-            mstr = mstr+indent+"  <MaxDiskSpace>"+str(self.MaxDiskSpace)+"</MaxDiskSpace>\n"
-        if self.DefaultStorageService is not None:
-            mstr = mstr+indent+"  <DefaultStorageService>"+self.DefaultStorageService+"</DefaultStorageService>\n"
-        if self.Preemption is not None:
-            if self.Preemption:
-                mstr = mstr+indent+"  <Preemption>true</Preemption>\n"
+        if share.MappingQueue is not None:
+            e = doc.createElement("MappingQueue")
+            e.appendChild(doc.createTextNode(share.MappingQueue))
+            root.appendChild(e)
+        if share.MaxWallTime is not None:
+            e = doc.createElement("MaxWallTime")
+            e.appendChild(doc.createTextNode(str(share.MaxWallTime)))
+            root.appendChild(e)
+        if share.MaxMultiSlotWallTime is not None:
+            e = doc.createElement("MaxMultiSlotWallTime")
+            e.appendChild(doc.createTextNode(str(share.MaxMultiSlotWallTime)))
+            root.appendChild(e)
+        if share.MinWallTime is not None:
+            e = doc.createElement("MinWallTime")
+            e.appendChild(doc.createTextNode(str(share.MinWallTime)))
+            root.appendChild(e)
+        if share.DefaultWallTime is not None:
+            e = doc.createElement("DefaultWallTime")
+            e.appendChild(doc.createTextNode(str(share.DefaultWallTime)))
+            root.appendChild(e)
+        if share.MaxCPUTime is not None:
+            e = doc.createElement("MaxCPUTime")
+            e.appendChild(doc.createTextNode(str(share.MaxCPUTime)))
+            root.appendChild(e)
+        if share.MaxTotalCPUTime is not None:
+            e = doc.createElement("MaxTotalCPUTime")
+            e.appendChild(doc.createTextNode(str(share.MaxTotalCPUTime)))
+            root.appendChild(e)
+        if share.MinCPUTime is not None:
+            e = doc.createElement("MinCPUTime")
+            e.appendChild(doc.createTextNode(str(share.MinCPUTime)))
+            root.appendChild(e)
+        if share.DefaultCPUTime is not None:
+            e = doc.createElement("DefaultCPUTime")
+            e.appendChild(doc.createTextNode(str(share.DefaultCPUTime)))
+            root.appendChild(e)
+        if share.MaxTotalJobs is not None:
+            e = doc.createElement("MaxTotalJobs")
+            e.appendChild(doc.createTextNode(str(share.MaxTotalJobs)))
+            root.appendChild(e)
+        if share.MaxRunningJobs is not None:
+            e = doc.createElement("MaxRunningJobs")
+            e.appendChild(doc.createTextNode(str(share.MaxRunningJobs)))
+            root.appendChild(e)
+        if share.MaxWaitingJobs is not None:
+            e = doc.createElement("MaxWaitingJobs")
+            e.appendChild(doc.createTextNode(str(share.MaxWaitingJobs)))
+            root.appendChild(e)
+        if share.MaxPreLRMSWaitingJobs is not None:
+            e = doc.createElement("MaxPreLRMSWaitingJobs")
+            e.appendChild(doc.createTextNode(str(share.MaxPreLRMSWaitingJobs)))
+            root.appendChild(e)
+        if share.MaxUserRunningJobs is not None:
+            e = doc.createElement("MaxUserRunningJobs")
+            e.appendChild(doc.createTextNode(str(share.MaxUserRunningJobs)))
+            root.appendChild(e)
+        if share.MaxSlotsPerJob is not None:
+            e = doc.createElement("MaxSlotsPerJob")
+            e.appendChild(doc.createTextNode(str(share.MaxSlotsPerJob)))
+            root.appendChild(e)
+        if share.MaxStageInStreams is not None:
+            e = doc.createElement("MaxStageInStreams")
+            e.appendChild(doc.createTextNode(str(share.MaxStageInStreams)))
+            root.appendChild(e)
+        if share.MaxStageOutStreams is not None:
+            e = doc.createElement("MaxStageOutStreams")
+            e.appendChild(doc.createTextNode(str(share.MaxStageOutStreams)))
+            root.appendChild(e)
+        if share.SchedulingPolicy is not None:
+            e = doc.createElement("SchedulingPolicy")
+            e.appendChild(doc.createTextNode(share.SchedulingPolicy))
+            root.appendChild(e)
+        if share.MaxMainMemory is not None:
+            e = doc.createElement("MaxMainMemory")
+            e.appendChild(doc.createTextNode(str(share.MaxMainMemory)))
+            root.appendChild(e)
+        if share.GuaranteedMainMemory is not None:
+            e = doc.createElement("GuaranteedMainMemory")
+            e.appendChild(doc.createTextNode(str(share.GuaranteedMainMemory)))
+            root.appendChild(e)
+        if share.MaxVirtualMemory is not None:
+            e = doc.createElement("MaxVirtualMemory")
+            e.appendChild(doc.createTextNode(str(share.MaxVirtualMemory)))
+            root.appendChild(e)
+        if share.GuaranteedVirtualMemory is not None:
+            e = doc.createElement("GuaranteedVirtualMemory")
+            e.appendChild(doc.createTextNode(str(share.GuaranteedVirtualMemory)))
+            root.appendChild(e)
+        if share.MaxDiskSpace is not None:
+            e = doc.createElement("MaxDiskSpace")
+            e.appendChild(doc.createTextNode(str(share.MaxDiskSpace)))
+            root.appendChild(e)
+        if share.DefaultStorageService is not None:
+            e = doc.createElement("DefaultStorageService")
+            e.appendChild(doc.createTextNode(share.DefaultStorageService))
+            root.appendChild(e)
+        if share.Preemption is not None:
+            e = doc.createElement("Preemption")
+            if share.Preemption:
+                e.appendChild(doc.createTextNode("true"))
             else:
-                mstr = mstr+indent+"  <Preemption>false</Preemption>\n"
-        if self.ServingState is not None:
-            mstr = mstr+indent+"  <ServingState>"+self.ServingState+"</ServingState>\n"
-        if self.TotalJobs is not None:
-            mstr = mstr+indent+"  <TotalJobs>"+str(self.TotalJobs)+"</TotalJobs>\n"
-        if self.RunningJobs is not None:
-            mstr = mstr+indent+"  <RunningJobs>"+str(self.RunningJobs)+"</RunningJobs>\n"
-        if self.LocalRunningJobs is not None:
-            mstr = mstr+indent+"  <LocalRunningJobs>"+str(self.LocalRunningJobs)+"</LocalRunningJobs>\n"
-        if self.WaitingJobs is not None:
-            mstr = mstr+indent+"  <WaitingJobs>"+str(self.WaitingJobs)+"</WaitingJobs>\n"
-        if self.LocalWaitingJobs is not None:
-            mstr = mstr+indent+"  <LocalWaitingJobs>"+str(self.LocalWaitingJobs)+"</LocalWaitingJobs>\n"
-        if self.SuspendedJobs is not None:
-            mstr = mstr+indent+"  <SuspendedJobs>"+str(self.SuspendedJobs)+"</SuspendedJobs>\n"
-        if self.LocalSuspendedJobs is not None:
-            mstr = mstr+indent+"  <LocalSuspendedJobs>"+str(self.LocalSuspendedJobs)+"</LocalSuspendedJobs>\n"
-        if self.StagingJobs is not None:
-            mstr = mstr+indent+"  <StagingJobs>"+str(self.StagingJobs)+"</StagingJobs>\n"
-        if self.PreLRMSWaitingJobs is not None:
-            mstr = mstr+indent+"  <PreLRMSWaitingJobs>"+str(self.PreLRMSWaitingJobs)+"</PreLRMSWaitingJobs>\n"
-        if self.EstimatedAverageWaitingTime is not None:
-            mstr = mstr+indent+"  <EstimatedAverageWaitingTime>"+str(self.EstimatedAverageWaitingTime)+ \
-                   "  </EstimatedAverageWaitingTime>\n"
-        if self.EstimatedWorstWaitingTime is not None:
-            mstr = mstr+indent+"  <EstimatedWorstWaitingTime>"+str(self.EstimatedWorstWaitingTime)+ \
-                   "  </EstimatedWorstWaitingTime>\n"
-        if self.FreeSlots is not None:
-            mstr = mstr+indent+"  <FreeSlots>"+str(self.FreeSlots)+"</FreeSlots>\n"
-        if self.FreeSlotsWithDuration is not None:
-            mstr = mstr+indent+"  <FreeSlotsWithDuration>"+str(self.FreeSlotsWithDuration)+ \
-                   "</FreeSlotsWithDuration>\n"
-        if self.UsedSlots is not None:
-            mstr = mstr+indent+"  <UsedSlots>"+str(self.UsedSlots)+"</UsedSlots>\n"
-        if self.RequestedSlots is not None:
-            mstr = mstr+indent+"  <RequestedSlots>"+str(self.RequestedSlots)+"</RequestedSlots>\n"
-        if self.ReservationPolicy is not None:
-            mstr = mstr+indent+"  <ReservationPolicy>"+str(self.ReservationPolicy)+"</ReservationPolicy>\n"
-        for tag in self.Tag:
-            mstr = mstr+indent+"  <Tag>"+tag+"</Tag>\n"
-        for endpoint in self.ComputingEndpoint:
-            mstr = mstr+indent+"  <ComputingEndpoint>"+endpoint+"</ComputingEndpoint>\n"
-        for environment in self.ExecutionEnvironment:
-            mstr = mstr+indent+"  <ExecutionEnvironment>"+environment+"</ExecutionEnvironment>\n"
-        if self.ComputingService is not None:
-            mstr = mstr+indent+"  <ComputingService>"+str(self.ComputingService)+"</ComputingService>\n"
-        # not outputting activity info for privacy/security
-        #for activity in self.computingActivity:
-        #    mstr = mstr+indent+"  <ComputingActivity>"+activity.ID+"</ComputingActivity>\n"
-        mstr = mstr+indent+"</ComputingShare>\n"
+                e.appendChild(doc.createTextNode("false"))
+            root.appendChild(e)
+        if share.ServingState is not None:
+            e = doc.createElement("ServingState")
+            e.appendChild(doc.createTextNode(share.ServingState))
+            root.appendChild(e)
+        if share.TotalJobs is not None:
+            e = doc.createElement("TotalJobs")
+            e.appendChild(doc.createTextNode(str(share.TotalJobs)))
+            root.appendChild(e)
+        if share.RunningJobs is not None:
+            e = doc.createElement("RunningJobs")
+            e.appendChild(doc.createTextNode(str(share.RunningJobs)))
+            root.appendChild(e)
+        if share.LocalRunningJobs is not None:
+            e = doc.createElement("LocalRunningJobs")
+            e.appendChild(doc.createTextNode(str(share.LocalRunningJobs)))
+            root.appendChild(e)
+        if share.WaitingJobs is not None:
+            e = doc.createElement("WaitingJobs")
+            e.appendChild(doc.createTextNode(str(share.WaitingJobs)))
+            root.appendChild(e)
+        if share.LocalWaitingJobs is not None:
+            e = doc.createElement("LocalWaitingJobs")
+            e.appendChild(doc.createTextNode(str(share.LocalWaitingJobs)))
+            root.appendChild(e)
+        if share.SuspendedJobs is not None:
+            e = doc.createElement("SuspendedJobs")
+            e.appendChild(doc.createTextNode(str(share.SuspendedJobs)))
+            root.appendChild(e)
+        if share.LocalSuspendedJobs is not None:
+            e = doc.createElement("LocalSuspendedJobs")
+            e.appendChild(doc.createTextNode(str(share.LocalSuspendedJobs)))
+            root.appendChild(e)
+        if share.StagingJobs is not None:
+            e = doc.createElement("StagingJobs")
+            e.appendChild(doc.createTextNode(str(share.StagingJobs)))
+            root.appendChild(e)
+        if share.PreLRMSWaitingJobs is not None:
+            e = doc.createElement("PreLRMSWaitingJobs")
+            e.appendChild(doc.createTextNode(str(share.PreLRMSWaitingJobs)))
+            root.appendChild(e)
+        if share.EstimatedAverageWaitingTime is not None:
+            e = doc.createElement("EstimatedAverageWaitingTime")
+            e.appendChild(doc.createTextNode(str(share.EstimatedAverageWaitingTime)))
+            root.appendChild(e)
+        if share.EstimatedWorstWaitingTime is not None:
+            e = doc.createElement("EstimatedWorstWaitingTime")
+            e.appendChild(doc.createTextNode(str(share.EstimatedWorstWaitingTime)))
+            root.appendChild(e)
+        if share.FreeSlots is not None:
+            e = doc.createElement("FreeSlots")
+            e.appendChild(doc.createTextNode(str(share.FreeSlots)))
+            root.appendChild(e)
+        if share.FreeSlotsWithDuration is not None:
+            e = doc.createElement("FreeSlotsWithDuration")
+            e.appendChild(doc.createTextNode(share.FreeSlotsWithDuration))
+            root.appendChild(e)
+        if share.UsedSlots is not None:
+            e = doc.createElement("UsedSlots")
+            e.appendChild(doc.createTextNode(str(share.UsedSlots)))
+            root.appendChild(e)
+        if share.RequestedSlots is not None:
+            e = doc.createElement("RequestedSlots")
+            e.appendChild(doc.createTextNode(str(share.RequestedSlots)))
+            root.appendChild(e)
+        if share.ReservationPolicy is not None:
+            e = doc.createElement("ReservationPolicy")
+            e.appendChild(doc.createTextNode(share.Service))
+            root.appendChild(e)
+        for tag in share.Tag:
+            e = doc.createElement("Tag")
+            e.appendChild(doc.createTextNode(tag))
+            root.appendChild(e)
+        for endpoint in share.ComputingEndpoint:
+            e = doc.createElement("ComputingEndpoint")
+            e.appendChild(doc.createTextNode(endpoint))
+            root.appendChild(e)
+        for environment in share.ExecutionEnvironment:
+            e = doc.createElement("ExecutionEnvironment")
+            e.appendChild(doc.createTextNode(environment))
+            root.appendChild(e)
+        if share.ComputingService is not None:
+            e = doc.createElement("ComputingService")
+            e.appendChild(doc.createTextNode(share.ComputingService))
+            root.appendChild(e)
 
-        return mstr
+        return doc
+
+#######################################################################################################################
+
+class ComputingShareIpfJson(Representation):
+    data_cls = ComputingShare
+
+    def __init__(self, data):
+        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+
+    def get(self):
+        return json.dumps(self.toJson(self.data),sort_keys=True,indent=4)
+
+    @staticmethod
+    def toJson(share):
+        doc = {}
+
+        # Entity
+        doc["CreationTime"] = dateTimeToText(share.CreationTime)
+        if share.Validity is not None:
+            doc["Validity"] = share.Validity
+        doc["ID"] = share.ID
+        if share.Name is not None:
+            doc["Name"] = share.Name
+        if len(share.OtherInfo) > 0:
+            doc["OtherInfo"] = share.OtherInfo
+        if len(share.Extension) > 0:
+            doc["Extension"] = share.Extension
+
+        # Share
+        if share.Description is not None:
+            doc["Description"] = share.Description
+        if len(share.Endpoint) > 0:
+            doc["Endpoint"] = share.Endpoint
+        if len(share.Resource) > 0:
+            doc["Resource"] = share.Resource
+        if share.Service is not None:
+            doc["Service"] = share.Service
+        if len(share.Activity) > 0:
+            doc["Activity"] = share.Activity
+        if len(share.MappingPolicy) > 0:
+            doc["MappingPolicy"] = share.MappingPolicy
+
+        # ComputingShare
+        if share.MappingQueue is not None:
+            doc["MappingQueue"] = share.MappingQueue
+        if share.MaxWallTime is not None:
+            doc["MaxWallTime"] = share.MaxWallTime
+        if share.MaxMultiSlotWallTime is not None:
+            doc["MaxMultiSlotWallTime"] = share.MaxMultiSlotWallTime
+        if share.MinWallTime is not None:
+            doc["MinWallTime"] = share.MinWallTime
+        if share.DefaultWallTime is not None:
+            doc["DefaultWallTime"] = share.DefaultWallTime
+        if share.MaxCPUTime is not None:
+            doc["MaxCPUTime"] = share.MaxCPUTime
+        if share.MaxTotalCPUTime is not None:
+            doc["MaxTotalCPUTime"] = share.MaxTotalCPUTime
+        if share.MinCPUTime is not None:
+            doc["MinCPUTime"] = share.MinCPUTime
+        if share.DefaultCPUTime is not None:
+            doc["DefaultCPUTime"] = share.DefaultCPUTime
+        if share.MaxTotalJobs is not None:
+            doc["MaxTotalJobs"] = share.MaxTotalJobs
+        if share.MaxRunningJobs is not None:
+            doc["MaxRunningJobs"] = share.MaxRunningJobs
+        if share.MaxWaitingJobs is not None:
+            doc["MaxWaitingJobs"] = share.MaxWaitingJobs
+        if share.MaxPreLRMSWaitingJobs is not None:
+            doc["MaxPreLRMSWaitingJobs"] = share.MaxPreLRMSWaitingJobs
+        if share.MaxUserRunningJobs is not None:
+            doc["MaxUserRunningJobs"] = share.MaxUserRunningJobs
+        if share.MaxSlotsPerJob is not None:
+            doc["MaxSlotsPerJob"] = share.MaxSlotsPerJob
+        if share.MaxStageInStreams is not None:
+            doc["MaxStageInStreams"] = share.MaxStageInStreams
+        if share.MaxStageOutStreams is not None:
+            doc["MaxStageOutStreams"] = share.MaxStageOutStreams
+        if share.SchedulingPolicy is not None:
+            doc["SchedulingPolicy"] = share.SchedulingPolicy
+        if share.MaxMainMemory is not None:
+            doc["MaxMainMemory"] = share.MaxMainMemory
+        if share.GuaranteedMainMemory is not None:
+            doc["GuaranteedMainMemory"] = share.GuaranteedMainMemory
+        if share.MaxVirtualMemory is not None:
+            doc["MaxVirtualMemory"] = share.MaxVirtualMemory
+        if share.GuaranteedVirtualMemory is not None:
+            doc["GuaranteedVirtualMemory"] = share.GuaranteedVirtualMemory
+        if share.MaxDiskSpace is not None:
+            doc["MaxDiskSpace"] = share.MaxDiskSpace
+        if share.DefaultStorageService is not None:
+            doc["DefaultStorageService"] = share.DefaultStorageService
+        if share.Preemption is not None:
+            doc["Preemption"] = share.Preemption
+        if share.ServingState is not None:
+            doc["ServingState"] = share.ServingState
+        if share.TotalJobs is not None:
+            doc["TotalJobs"] = share.TotalJobs
+        if share.RunningJobs is not None:
+            doc["RunningJobs"] = share.RunningJobs
+        if share.LocalRunningJobs is not None:
+            doc["LocalRunningJobs"] = share.LocalRunningJobs
+        if share.WaitingJobs is not None:
+            doc["WaitingJobs"] = share.WaitingJobs
+        if share.LocalWaitingJobs is not None:
+            doc["LocalWaitingJobs"] = share.LocalWaitingJobs
+        if share.SuspendedJobs is not None:
+            doc["SuspendedJobs"] = share.SuspendedJobs
+        if share.LocalSuspendedJobs is not None:
+            doc["LocalSuspendedJobs"] = share.LocalSuspendedJobs
+        if share.StagingJobs is not None:
+            doc["StagingJobs"] = share.StagingJobs
+        if share.PreLRMSWaitingJobs is not None:
+            doc["PreLRMSWaitingJobs"] = share.PreLRMSWaitingJobs
+        if share.EstimatedAverageWaitingTime is not None:
+            doc["EstimatedAverageWaitingTime"] = share.EstimatedAverageWaitingTime
+        if share.EstimatedWorstWaitingTime is not None:
+            doc["EstimatedWorstWaitingTime"] = share.EstimatedWorstWaitingTime
+        if share.FreeSlots is not None:
+            doc["FreeSlots"] = share.FreeSlots
+        if share.FreeSlotsWithDuration is not None:
+            doc["FreeSlotsWithDuration"] = share.FreeSlotsWithDuration
+        if share.UsedSlots is not None:
+            doc["UsedSlots"] = share.UsedSlots
+        if share.RequestedSlots is not None:
+            doc["RequestedSlots"] = share.RequestedSlots
+        if share.ReservationPolicy is not None:
+            doc["ReservationPolicy"] = share.ReservationPolicy
+        if len(share.Tag) > 0:
+            doc["Tag"] = share.Tag
+        if len(share.ComputingEndpoint):
+            doc["ComputingEndpoint"] = share.ComputingEndpoint
+        if len(share.ExecutionEnvironment):
+            doc["ExecutionEnvironment"] = share.ExecutionEnvironment
+        if share.ComputingService is not None:
+            doc["ComputingService"] = share.ComputingService
+
+        return doc
+
+#######################################################################################################################
+
+class ComputingShares(Data):
+    def __init__(self, id, shares):
+        Data.__init__(self,id)
+        self.shares = shares
+
+#######################################################################################################################
+
+class ComputingSharesTeraGridXml(Representation):
+    data_cls = ComputingShares
+
+    def __init__(self, data):
+        Representation.__init__(self,Representation.MIME_TEXT_XML,data)
+
+    def get(self):
+        return self.toDom(self.data.shares).toprettyxml()
+
+    @staticmethod
+    def toDom(shares):
+        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
+                                                    "Entities",None)
+        for share in shares:
+            sdoc = ComputingShareTeraGridXml.toDom(share)
+            doc.documentElement.appendChild(sdoc.documentElement.firstChild)
+        return doc
+
+#######################################################################################################################
+
+class ComputingSharesIpfJson(Representation):
+    data_cls = ComputingShares
+
+    def __init__(self, data):
+        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+
+    def get(self):
+        return json.dumps(self.toJson(self.data.shares),sort_keys=True,indent=4)
+
+    @staticmethod
+    def toJson(shares):
+        sdoc = []
+        for share in shares:
+            sdoc.append(ComputingShareIpfJson.toJson(share))
+        return sdoc
+
+#######################################################################################################################

@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2011 The University of Texas at Austin                          #
+#   Copyright 2011,2012 The University of Texas at Austin                     #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -24,63 +24,84 @@ import os
 import threading
 import urlparse
 
-from ipf.document import Document
-from ipf.error import NoMoreInputsError
-from ipf.error import StepError
+from ipf.data import Data,Representation
+from ipf.home import IPF_HOME
+from ipf.error import NoMoreInputsError, StepError
 
 #######################################################################################################################
 
 class Step(multiprocessing.Process):
-    NO_MORE_INPUTS = "NO_MORE_INPUTS"
 
-    def __init__(self, params):
+    def __init__(self):
         multiprocessing.Process.__init__(self)
 
-        self.name = ""
         self.description = None
         self.time_out = None
-        self.requires_types = []
-        self.produces_types = []
-        self.accepts_params = {"id": "an identifier for this step",
-                               "requested_types": "comma-separated list of the types this step should produce"}
+        self.requires = []    # Data or Representation that this step requires
+        self.produces = []    # Data that this step produces
 
-        try:
-            self.id = params["id"]
-            del params["id"]
-        except KeyError:
-            self.id = None
-        # delete?
-        try:
-            self.requested_types = params["requested_types"]
-            del params["requested_types"]
-        except KeyError:
-            self.requested_types = self.produces_types
-        # to hard code links between steps
-        try:
-            self.output_ids = params["outputs"]
-            del params["outputs"]
-        except KeyError:
-            self.output_ids = None
-
-        # should test that params is valid against accepts_params
-        self.params = params
+        self.accepts_params = {}
+        self._acceptParameter("id","an identifier for this step",False)
+        self._acceptParameter("requires","list of additional types this step requires",False)
+        self._acceptParameter("outputs","list of ids for steps that output should be sent to (typically not needed)",
+                              False)
         
         self.input_queue = multiprocessing.Queue()
-        self.inputs = []  # input documents received from input_queue, but not yet wanted
+        self.inputs = []  # input data received from input_queue, but not yet wanted
         self.no_more_inputs = False
 
-        self.outputs = {}  # steps to send outputs to. keys are document.type, values are lists of steps
+        self.outputs = {}  # steps to send outputs to. keys are data.name, values are lists of steps
 
         self.logger = logging.getLogger(self._logName())
+
+    def setParameters(self, params):
+        self.id = params.get("id",None)
+
+        self._checkParameters(params)
+        self.params = params
+
+        from ipf.catalog import catalog    # can't import this at the top - circular import
+        for name in params.get("requires",[]):
+            try:
+                cls = catalog.data[name]
+            except KeyError:
+                raise StepError("%s is not a known data" % name)
+            self.requires.append(cls)
+
+        try:
+            self.output_ids = params["outputs"]
+        except KeyError:
+            self.output_ids = []
+
+    def _acceptParameter(self, name, description, required):
+        self.accepts_params[name] = (description,required)
+
+    def _checkParameters(self, params):
+        for name in params:
+            if not self._acceptsParameter(name):
+                self.warning("received an unexpected parameter: %s - %s",name,params[name])
+        for name in self.accepts_params:
+            if self._requiresParameter(name):
+                if name not in params:
+                    raise StepError("required parameter %s not provided" % name)
+
+    def _acceptsParameter(self, name):
+        if name in self.accepts_params:
+            return True
+        return False
+
+    def _requiresParameter(self, name):
+        if name not in self.accepts_params:
+            return False
+        return self.accepts_params[name][1]
 
     def __str__(self, indent=""):
         if self.id is None:
             sstr = indent+"Step:\n"
         else:
             sstr = indent+"Step %s:\n" % self.id
-        sstr += indent+"  name:  %s\n" % self.name
+        sstr += indent+"  name: %s.%s\n" % (self.__module__,self.__class__.__name__)
         sstr += indent+"  description: %s\n" % self.description
-        sstr += indent+"  class: %s.%s\n" % (self.__module__,self.__class__.__name__)
         if self.time_out is None:
             sstr += indent+"  time out: None\n"
         else:
@@ -89,56 +110,50 @@ class Step(multiprocessing.Process):
             sstr += indent+"  parameters:\n"
             for param in self.params:
                 sstr += indent+"    %s: %s\n" % (param,self.params[param])
-        sstr += indent+"  requires types:\n"
-        for type in self.requires_types:
-            sstr += indent+"    %s\n" % type
-        sstr += indent+"  produces types:\n"
-        for type in self.produces_types:
-            sstr += indent+"    %s\n" % type
-        if len(self.requested_types) > 0:
-            sstr += indent+"  requested types:\n"
-            for type in self.requested_types:
-                sstr += indent+"    %s\n" % type
+        sstr += indent+"  requires:\n"
+        for cls in self.requires:
+            sstr += indent+"    %s\n" % cls
+        sstr += indent+"  produces:\n"
+        for cls in self.produces:
+            sstr += indent+"    %s\n" % cls
         if len(self.outputs) > 0:
             sstr += indent+"  outputs:\n"
-            for type in self.outputs:
-                for step in self.outputs[type]:
-                    sstr += indent+"    %s -> %s\n" % (type,step.id)
+            for cls in self.outputs:
+                for step in self.outputs[cls]:
+                    sstr += indent+"    %s -> %s\n" % (cls,step.id)
 
         return sstr
 
-    def _getInput(self, type):
+    def _getInput(self, cls):
+        # need to handle Representations, too
         for index in range(0,len(self.inputs)):
-            if self.inputs[index].type == type:
+            if self.inputs[index].__class__ == cls:
                 return self.inputs.pop(index)
         if self.no_more_inputs:
-            waiting = []
-            for input in self.inputs:
-                waiting.append(input.type)
-            raise NoMoreInputsError("No more inputs and no waiting message of type %s. Waiting messages: %s" %
-                                    (type,waiting))
+            raise NoMoreInputsError("No more inputs and none of the %d waiting message is a %s." %
+                                    (len(self.inputs),cls))
         while True:
-            doc = self.input_queue.get(True)
-            if doc == Step.NO_MORE_INPUTS:
+            data = self.input_queue.get(True)
+            if data == None:
                 self.no_more_inputs = True
-                raise NoMoreInputsError("no more inputs while waiting for %s" % type)
-            if doc.type == type:
-                return doc
+                raise NoMoreInputsError("no more inputs while waiting for %s" % cls)
+            if data.__class__ == cls:
+                return data
             else:
-                self.inputs.append(doc)
+                self.inputs.append(data)
 
     def run(self):
         """Run the step - the Engine will have this in its own thread."""
         raise StepError("Step.run not overridden")
 
-    def _output(self, document):
-        if document.type not in self.outputs:
+    def _output(self, data):
+        if data.__class__ not in self.outputs:
             return
-        self.debug("output %s",document.type)
-        for step in self.outputs[document.type]:
-            self.debug("sending output %s to step %s",document.type,step.id)
-            # isolate any changes to the document by queuing copies
-            step.input_queue.put(copy.deepcopy(document))
+        self.debug("output %s",data)
+        for step in self.outputs[data.__class__]:
+            self.debug("sending output %s to step %s",data,step.id)
+            # isolate any changes to the data by queuing copies
+            step.input_queue.put(copy.deepcopy(data))
 
     def _logName(self):
         return self.__module__ + "." + self.__class__.__name__
@@ -158,5 +173,34 @@ class Step(multiprocessing.Process):
     def debug(self, msg, *args, **kwargs):
         args2 = (self.id,)+args
         self.logger.debug("%s - "+msg,*args2,**kwargs)
+
+#######################################################################################################################
+
+class PublishStep(Step):
+
+    def __init__(self):
+        Step.__init__(self)
+
+        self.accepts_params = {}
+        self._acceptParameter("publish","a list of representations to publish",True)
+
+        self.publish = []
+
+    def setParameters(self, params):
+        Step.setParameters(self,params)
+        try:
+            publish_names = self.params["publish"]
+        except KeyError:
+            raise StepError("required parameter 'publish' not specified")
+
+        from ipf.catalog import catalog    # can't import this at the top - circular import
+        for name in publish_names:
+            try:
+                rep_class = catalog.representations[name]
+                self.publish.append(rep_class)
+            except KeyError:
+                raise StepError("unknown representation %s" % name)
+            if not rep_class.data_cls in self.requires:
+                self.requires.append(rep_class.data_cls)
 
 #######################################################################################################################

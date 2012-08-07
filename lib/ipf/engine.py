@@ -1,4 +1,19 @@
-#!/usr/bin/env python
+
+###############################################################################
+#   Copyright 2012 The University of Texas at Austin                          #
+#                                                                             #
+#   Licensed under the Apache License, Version 2.0 (the "License");           #
+#   you may not use this file except in compliance with the License.          #
+#   You may obtain a copy of the License at                                   #
+#                                                                             #
+#       http://www.apache.org/licenses/LICENSE-2.0                            #
+#                                                                             #
+#   Unless required by applicable law or agreed to in writing, software       #
+#   distributed under the License is distributed on an "AS IS" BASIS,         #
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+#   See the License for the specific language governing permissions and       #
+#   limitations under the License.                                            #
+###############################################################################
 
 import copy
 import json
@@ -9,8 +24,6 @@ import sys
 import time
 import traceback
 
-from ipf.document import Document
-from ipf.error import IpfError, ReadDocumentError
 from ipf.home import IPF_HOME
 from ipf.step import Step
 from ipf.workflow import Workflow
@@ -27,10 +40,8 @@ class WorkflowEngine(object):
         pass
         
     def run(self, workflow_file_name):
-        known_steps = self.readKnownSteps()
-
         workflow = Workflow()
-        workflow.read(workflow_file_name,known_steps)
+        workflow.read(workflow_file_name)
 
         self._setDependencies(workflow)
         logger.debug(workflow)
@@ -50,9 +61,9 @@ class WorkflowEngine(object):
             logger.error("workflow failed")
             for step in workflow.steps:
                 if step.exitcode == 0:
-                    logger.info("  %10s succeeded (%s)",step.id,step.name)
+                    logger.info("  %10s succeeded (%s)",step.id,step.__class__.__name__)
                 else:
-                    logger.error("  %10s failed    (%s)",step.id,step.name)
+                    logger.error("  %10s failed    (%s)",step.id,step.__class__.__name__)
                     
     def _anyAlive(self, steps):
         return reduce(lambda b1,b2: b1 or b2, map(lambda step: step.is_alive(), steps), False)
@@ -61,7 +72,7 @@ class WorkflowEngine(object):
         if self._anyAlive(step.depends_on):
             return True
         logger.debug("no more inputs to step %s",step.id)
-        step.input_queue.put(Step.NO_MORE_INPUTS)
+        step.input_queue.put(None)
         return False
     
     def _setDependencies(self, workflow):
@@ -71,42 +82,5 @@ class WorkflowEngine(object):
             for type in step.outputs:
                 for dstep in step.outputs[type]:
                     dstep.depends_on.append(step)
-
-    def readKnownSteps(self):
-        path = os.path.join(IPF_HOME,"lib","steps")
-        mod_path = "steps"
-        modules = self._readModules(path, mod_path)
-
-        for module in modules:
-            logger.debug("loading %s",module)
-            try:
-                __import__(module)
-            except ImportError:
-                traceback.print_exc()
-
-        classes = {}
-        stack = Step.__subclasses__()
-        while len(stack) > 0:
-            cls = stack.pop(0)
-            step = cls({})
-            if step.name in classes:
-                logger.warn("multiple step classes with name %s - ignoring all but first",step.name)
-            else:
-                classes[step.name] = cls
-            stack.extend(cls.__subclasses__())
-
-        return classes
-
-    def _readModules(self, path, mod_path):
-        modules = []
-        for file in os.listdir(path):
-            if os.path.isdir(os.path.join(path,file)):
-                mods = self._readModules(os.path.join(path,file),mod_path+"."+file)
-                modules.extend(mods)
-            elif os.path.isfile(os.path.join(path,file)):
-                if file.endswith(".py") and file != "__init__.py":
-                    mod,ext = os.path.splitext(file)
-                    modules.append(mod_path+"."+mod)
-        return modules
 
 #######################################################################################################################

@@ -1,4 +1,19 @@
-#!/usr/bin/env python
+
+###############################################################################
+#   Copyright 2012 The University of Texas at Austin                          #
+#                                                                             #
+#   Licensed under the Apache License, Version 2.0 (the "License");           #
+#   you may not use this file except in compliance with the License.          #
+#   You may obtain a copy of the License at                                   #
+#                                                                             #
+#       http://www.apache.org/licenses/LICENSE-2.0                            #
+#                                                                             #
+#   Unless required by applicable law or agreed to in writing, software       #
+#   distributed under the License is distributed on an "AS IS" BASIS,         #
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+#   See the License for the specific language governing permissions and       #
+#   limitations under the License.                                            #
+###############################################################################
 
 import copy
 import json
@@ -9,7 +24,7 @@ import threading
 import time
 import Queue
 
-from ipf.document import Document
+from ipf.catalog import catalog
 from ipf.error import *
 from ipf.step import Step
 
@@ -28,8 +43,7 @@ class Workflow(object):
             wstr += step.__str__("  ")
         return wstr
 
-    def read(self, file_name, known_steps):
-
+    def read(self, file_name):
         file = open(file_name,"r")
         try:
             doc = json.load(file)
@@ -42,68 +56,58 @@ class Workflow(object):
 
         self.name = doc.get("name","workflow")
         for step_doc in doc["steps"]:
-            params = dict(doc.get("params",{}).items()+step_doc.get("params",{}).items())
-            #params["id"] = step_doc.get("id")
-            #params["requires_types"] = step_doc.get("requires_types",[])
-
             if "name" not in step_doc:
                 raise WorkflowError("workflow step does not specify the 'name' of the step to run")
             try:
-                step = known_steps[step_doc["name"]](params)
+                step = catalog.steps[step_doc["name"]]()
+                step.setParameters(dict(doc.get("params",{}).items()+step_doc.get("params",{}).items()))
             except KeyError:
                 raise WorkflowError("no step is known with name '%s'" % step_doc["name"])
 
             self.steps.append(step)
 
-        self._inferDetails(known_steps)
+        self._inferDetails()
 
-    def _inferDetails(self, known_steps):
-        known_types = {}
-        for kstep in known_steps.values():
-            for type in kstep({}).produces_types:
-                if type not in known_types:
-                    known_types[type] = []
-                known_types[type].append(kstep)
-
-        self._addMissingSteps(known_types)
+    def _inferDetails(self):
+        self._addMissingSteps()
         self._connectSteps()
 
-    def _addMissingSteps(self, known_types):
-        ptypes = {}
-        rtypes = {}
+    def _addMissingSteps(self):
+        required = set()
         for step in self.steps:
-            for ptype in step.produces_types:
-                if ptype not in ptypes:
-                    ptypes[ptype] = []
-                ptypes[ptype].append(step)
-            for rtype in step.requires_types:
-                if rtype not in rtypes:
-                    rtypes[rtype] = []
-                rtypes[rtype].append(step)
+            for cls in step.requires:
+                required.add(cls)
+            
+        for step in self.steps:
+            self._removeProduced(step,required)
 
-        added_step = True
-        while added_step:
-            added_step = False
-            for rtype in rtypes:
-                if rtype in ptypes:
-                    continue
-                if rtype not in known_types:
-                    raise WorkflowError("no known step that produces type '%s'" % rtype)
-                if len(known_types[rtype]) > 1:
-                    raise WorkflowError("more than one step produces type '%s' - can't infer which to use" % rtype)
-                new_step = known_types[rtype][0]({})
-                self.steps.append(new_step)
-                logger.debug("adding step %s to workflow" % new_step.name)
-                for ptype in new_step.produces_types:
-                    if ptype not in ptypes:
-                        ptypes[ptype] = []
-                    ptypes[ptype].append(new_step)
-                for rtype in new_step.requires_types:
-                    if not rtype in rtypes:
-                        rtypes[rtype] = []
-                    rtypes[rtype].append(new_step)
-                added_step = True
-                break
+        while len(required) > 0:
+            cls = required.pop()
+            producers = catalog.producers.get(cls,[])
+            if len(producers) == 0:
+                raise WorkflowError("no known step that produces %s" % cls)
+            if len(producers) > 1:
+                raise WorkflowError("more than one step produces %s - can't infer which to use" % cls)
+            step = producers[0]()
+            step.setParameters({})
+            self.steps.append(step)
+            self._removeProduced(step,required)
+
+    def _removeProduced(self, step, required):
+        for data in step.produces:
+            try:
+                required.remove(data)
+            except KeyError:
+                pass
+            try:
+                reps = catalog.reps_for_data.get(data,[])
+                for rep in reps:
+                    try:
+                        required.remove(rep)
+                    except KeyError:
+                        pass
+            except KeyError:
+                pass
 
     def _connectSteps(self):
         for i in range(0,len(self.steps)):
@@ -115,34 +119,18 @@ class Workflow(object):
                 raise WorkflowError("at least two steps have an id of '%s'" % step.id)
             ids.add(step.id)
 
-        rtypes = {}
+        outputs = {}
         for step in self.steps:
-            for rtype in step.requires_types:
-                if rtype not in rtypes:
-                    rtypes[rtype] = []
-                rtypes[rtype].append(step)
-
-        step_map = {}
-        for step in self.steps:
-            step_map[step.id] = step
+            for data in step.requires:
+                if not data in outputs:
+                    outputs[data] = []
+                outputs[data].append(step)
 
         for step in self.steps:
             step.outputs = {}
-            if step.output_ids is not None:
-                for type in step.output_ids:
-                    step.outputs[type] = []
-                    for id in step.output_ids[type]:
-                        try:
-                            step.outputs[type].append(step_map[id])
-                        except KeyError:
-                            raise WorkflowError("step %s wants to send output to unknown step %s" % (step.id,id))
-            else:
-                for ptype in step.produces_types:
-                    if ptype in rtypes:
-                        step.outputs[ptype] = rtypes[ptype]
-            step.requested_types = []
-            for type in step.outputs:
-                step.requested_types.append(type)
+            for data in step.produces:
+                if data in outputs:
+                    step.outputs[data] = outputs[data]
 
     def _checkConnections(self):
         pass

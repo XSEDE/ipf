@@ -6,8 +6,8 @@ from ipf.step import Step
 #######################################################################################################################
 
 class GlueStep(Step):
-    def __init__(self, params):
-        Step.__init__(self,params)
+    def __init__(self):
+        Step.__init__(self)
 
     def _includeQueue(self, queue_name, no_queue_name_return=False):
         if queue_name == None:

@@ -17,15 +17,16 @@
 
 import copy
 
+from teragrid.platform import TeraGridPlatform
+
 class PlatformMixIn(object):
     """Assumes that it is being mixed in with a Step."""
 
     def __init__(self):
-        self.requires_types.append("teragrid/platform.txt")
+        self.requires.append(TeraGridPlatform)
         self.platform = None
 
     def addTeraGridPlatform(self, environments):
-        platform_doc = self._getInput("teragrid/platform.txt")
-        self.platform = platform_doc.platform
+        self.platform = self._getInput(TeraGridPlatform).platform
         for env in environments:
             env.Extension["TeraGridPlatform"] = self.platform

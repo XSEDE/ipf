@@ -39,6 +39,12 @@ class StepError(IpfError):
     def __str__(self):
         return repr(self.value)
 
+class RepresentationError(IpfError):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
 class NoMoreInputsError(StepError):
     def __init__(self, value="no more inputs"):
         StepError.__init__(self,value)
