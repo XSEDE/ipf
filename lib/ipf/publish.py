@@ -15,6 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
+import httplib
 import os
 import random
 import ssl
@@ -29,7 +30,45 @@ from mtk.amqp_0_9_1 import *
 
 #######################################################################################################################
 
-class AmqpPublishStep(PublishStep):
+class FileStep(PublishStep):
+    def __init__(self):
+        PublishStep.__init__(self)
+
+        self.description = "publishes documents by writing them to a file"
+        self.time_out = 5
+        self._acceptParameter("path",
+                              "Path to the file to write. If the path is relative, it is relative to $IPF_HOME/var/.",
+                              True)
+
+
+    def run(self):
+        file = open(self._getPath(),"w")
+        while True:
+            data = self.input_queue.get(True)
+            if data == None:
+                break
+            for rep_class in self.publish:
+                if rep_class.data_cls != data.__class__:
+                    continue
+                rep = rep_class(data)
+                self.info("writing data %s with id '%s' using representation %s",data.__class__,data.id,rep_class)
+                file.write(rep.get())
+                file.flush()
+                break
+        file.close()
+
+    def _getPath(self):
+        try:
+            path = self.params["path"]
+        except KeyError:
+            raise StepError("path parameter not specified")
+        if os.path.isabs(path):
+            return path
+        return os.path.join(IPF_HOME,"var",path)
+
+#######################################################################################################################
+
+class AmqpStep(PublishStep):
     def __init__(self):
         PublishStep.__init__(self)
 
@@ -108,10 +147,16 @@ class AmqpPublishStep(PublishStep):
                 self._publish(rep)
                 break
 
+        try:
+            self.connection.close()
+        except MtkError:
+            pass
+
     def _publish(self, representation):
         self.info("publishing representation %s",representation.__class__)
         self.debug("  with routing key '%s' to exchange '%s'",representation.data.id.encode("utf-8"),self.exchange)
-        self._connectIfNecessary()
+        #self._connectIfNecessary()
+        self._connect()
         if self.channel is None:
             raise StepError("not connected to any service, will not publish %s" % doc.__class__)
         try:
@@ -119,7 +164,7 @@ class AmqpPublishStep(PublishStep):
                                       self.exchange,
                                       representation.data.id.encode("utf-8"))
         except MtkError:
-            self.warning("first publish failed, will try to another service")
+            self.warning("first publish failed, trying again")
             try:
                 self._connect()
                 self.channel.basicPublish(representation.get(),
@@ -127,6 +172,7 @@ class AmqpPublishStep(PublishStep):
                                           representation.data.id.encode("utf-8"))
             except MtkError:
                 raise StepError("not connected to any service, will not publish %s" % doc.__class__)
+        self._close() # having some problems with connections that are open a long time without much traffic
 
     def _connectIfNecessary(self):
         if self.channel is not None:
@@ -141,12 +187,7 @@ class AmqpPublishStep(PublishStep):
 
     def _connect(self):
         if self.connection is not None:
-            try:
-                self.connection.close()
-            except:
-                pass
-            self.connection = None
-            self.channel = None
+            self._close()
 
         service = self._selectService()
         toks = service.split(":")
@@ -185,5 +226,63 @@ class AmqpPublishStep(PublishStep):
         else:
             self.cur_service = (self.cur_service+1) % len(self.services)  # round robin after that
         return self.services[self.cur_service]
-    
-#######################################################################################################################
+
+    def _close(self):
+        if self.connection is None:
+            return
+        try:
+            self.connection.close()
+        except:
+            pass
+        self.channel = None
+        self.connection = None
+
+##############################################################################################################
+
+class HttpStep(PublishStep):
+    def __init__(self):
+        PublishStep.__init__(self)
+
+        self.description = "publishes documents by PUTing or POSTing them"
+        self.time_out = 10
+        self._acceptParameter("host","The host name of the server to publish to",True)
+        self._acceptParameter("port","The port to publish to",False)
+        self._acceptParameter("path","The path part of the URL",True)
+        self._acceptParameter("method","PUT or POST (default PUT)",False)
+
+    def run(self):
+        try:
+            host = self.params["host"]
+        except KeyError:
+            raise StepError("host not specified")
+        try:
+            port = self.params["port"]
+        except KeyError:
+            port = 80
+        try:
+            method = self.params["method"]
+        except KeyError:
+            method = "PUT"
+        try:
+            path = self.params["path"]
+        except ConfigParser.Error:
+            raise StepError("path not specified")
+
+        connection = httplib.HTTPConnection(host+":"+str(port))
+        while True:
+            data = self.input_queue.get(True)
+            if data == None:
+                break
+            if data.name not in self.params["representations"]:
+                self.warning("no representation know for data %s with name %s",data.id,data.name)
+                continue
+            cls = self._getRepresentationClass(data)
+            representation = cls(data)
+            self.info("publishing data %s with name %s using representation %s",data.id,data.name,representation.name)
+
+            connection.request(method,path,doc.body,{"Content-Type": representation.mime_type})
+            response = httplib.getresponse()
+            if not (response.status == httplib.OK or response.status == httplib.CREATED):
+                self.error("failed to '"+method+"' to http://"+host+":"+port+path+" - "+
+                           str(response.status)+" "+response.reason)
+        connection.close()

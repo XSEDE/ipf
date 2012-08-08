@@ -1,25 +1,25 @@
 {
-  "name": "alamo_pbs",
+  "name": "sierra_pbs",
   "steps": [
-    { "name": "ipf/resource_name",
+    { "name": "ipf.name.ResourceNameStep",
       "params": {
         "resource_name": "torquemoab.sierra.futuregrid.org"
       }
     },
-    { "name": "ipf/site_name",
+    { "name": "ipf.name.SiteNameStep",
       "params": {
         "site_name": "sdsc.futuregrid.org"
       }
     },
-    { "name": "glue2/pbs/computing_activities" },
-    { "name": "glue2/pbs/computing_shares" },
-    { "name": "glue2/pbs/computing_service" },
-    { "name": "glue2/pbs/execution_environments" },
-    { "name": "glue2/pbs/computing_manager" },
+    { "name": "glue2.pbs.ComputingActivitiesStep" },
+    { "name": "glue2.pbs.ComputingSharesStep" },
+    { "name": "glue2.pbs.ComputingServiceStep" },
+    { "name": "glue2.pbs.ExecutionEnvironmentsStep" },
+    { "name": "glue2.pbs.ComputingManagerStep" },
     {
-      "name": "ipf/publish/amqp",
+      "name": "ipf.publish.AmqpStep",
       "params": {
-        "requires_types": ["glue2/ipf/public_compute.json"],
+        "publish": ["glue2.compute.PublicIpfJson"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",
@@ -31,9 +31,9 @@
       }
     },
     {
-      "name": "ipf/publish/amqp",
+      "name": "ipf.publish.AmqpStep",
       "params": {
-        "requires_types": ["glue2/ipf/private_compute.json"],
+        "publish": ["glue2.compute.PrivateIpfJson"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",
@@ -45,16 +45,16 @@
       }
     },
     {
-      "name": "ipf/publish/file",
+      "name": "ipf.publish.FileStep",
       "params": {
-        "requires_types": ["glue2/ipf/public_compute.json"],
+        "publish": ["glue2.compute.PublicIpfJson"],
         "path": "glue2_pbs_public.json"
       }
     },
     {
-      "name": "ipf/publish/file",
+      "name": "ipf.publish.FileStep",
       "params": {
-        "requires_types": ["glue2/ipf/private_compute.json"],
+        "publish": ["glue2.compute.PrivateIpfJson"],
         "path": "glue2_pbs_private.json"
       }
     }

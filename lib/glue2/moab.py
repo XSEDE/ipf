@@ -25,14 +25,14 @@ import xml.dom.minidom
 from ipf.error import StepError
 from glue2.log import LogDirectoryWatcher
 
-from glue2.computing_activity import *
+import glue2.computing_activity
 
 ##############################################################################################################
 
-class MoabComputingActivitiesStep(ComputingActivitiesStep):
+class MoabComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
 
     def __init__(self):
-        ComputingActivitiesStep.__init__(self)
+        glue2.computing_activity.ComputingActivitiesStep.__init__(self)
 
         self._acceptParameter("showq","the path to the Moab showq program (default 'showq')",False)
 
@@ -86,7 +86,7 @@ class MoabComputingActivitiesStep(ComputingActivitiesStep):
         return jobs
 
     def _getJob(self, jobElement, procsPerNode, status):
-        job = ComputingActivity()
+        job = glue2.computing_activity.ComputingActivity()
 
         job.LocalIDFromManager = jobElement.getAttribute("JobID")
         job.Name = jobElement.getAttribute("JobName") # showing as NONE
@@ -94,16 +94,16 @@ class MoabComputingActivitiesStep(ComputingActivitiesStep):
         job.UserDomain = jobElement.getAttribute("Account")
         job.Queue = jobElement.getAttribute("Class")
         if status == "active":
-            job.State = ComputingActivity.STATE_RUNNING
+            job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
         elif status == "completed":
-            job.State = ComputingActivity.STATE_FINISHED
+            job.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
         elif status == "eligible":
-            job.State = ComputingActivity.STATE_PENDING
+            job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
         elif status == "blocked":
-            job.State = ComputingActivity.STATE_HELD
+            job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
         else:
             logger.warn("found unknown Moab option '%s'",status)
-            job.State = ComputingActivity.STATE_UNKNOWN
+            job.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
 
         epoch = float(jobElement.getAttribute("SubmissionTime"))
         job.ComputingManagerSubmissionTime = datetime.datetime.fromtimestamp(epoch,localtzoffset())

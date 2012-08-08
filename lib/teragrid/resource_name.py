@@ -19,13 +19,13 @@ import commands
 import socket
 import sys
 
-from ipf.resource_name import *
+import ipf.name
 
 #######################################################################################################################
 
-class TeraGridResourceNameStep(ResourceNameStep):
+class TeraGridResourceNameStep(ipf.name.ResourceNameStep):
     def __init__(self):
-        ResourceNameStep.__init__(self)
+        ipf.name.ResourceNameStep.__init__(self)
         self.description = "produces a resource name document using tgwhereami"
         self._acceptParameter("tgwheremi","path to the tgwhereami program (default 'tgwhereami')",False)
 

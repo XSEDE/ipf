@@ -24,14 +24,56 @@ import xml.sax.handler
 
 from ipf.error import StepError
 
-from glue2.computing_activity import *
+import glue2.computing_activity
+import glue2.computing_manager
+import glue2.computing_service
+import glue2.computing_share
+import glue2.execution_environment
+from glue2.teragrid.platform import PlatformMixIn
 
 #######################################################################################################################
 
-class SgeComputingActivitiesStep(ComputingActivitiesStep):
+class ComputingServiceStep(glue2.computing_service.ComputingServiceStep):
 
     def __init__(self):
-        ComputingActivitiesStep.__init__(self)
+        glue2.computing_service.ComputingServiceStep.__init__(self)
+
+    def _run(self):
+        service = glue2.computing_service.ComputingService()
+        service.Name = "SGE"
+        service.Capability = ["executionmanagement.jobexecution",
+                              "executionmanagement.jobdescription",
+                              "executionmanagement.jobmanager",
+                              "executionmanagement.executionandplanning",
+                              "executionmanagement.reservation",
+                              ]
+        service.Type = "org.teragrid.SGE"
+        service.QualityLevel = "production"
+
+        return service
+
+#######################################################################################################################
+
+class ComputingManagerStep(glue2.computing_manager.ComputingManagerStep):
+
+    def __init__(self):
+        glue2.computing_manager.ComputingManagerStep.__init__(self)
+
+    def _run(self):
+        manager = glue2.computing_manager.ComputingManager()
+        manager.ProductName = "SGE"
+        manager.Name = "SGE"
+        manager.Reservation = True
+        #self.BulkSubmission = True
+
+        return manager
+
+#######################################################################################################################
+
+class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
+
+    def __init__(self):
+        glue2.computing_activity.ComputingActivitiesStep.__init__(self)
 
         self._acceptParameter("qstat","the path to the SGE qstat program (default 'qstat')",False)
 
@@ -178,14 +220,14 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
         if name == "JB_job_number":
             if self.cur_job != None:
                 self.jobs.append(self.cur_job)
-            self.cur_job = ComputingActivity()
+            self.cur_job = glue2.computing_activity.ComputingActivity()
             self.cur_job.LocalIDFromManager = self.text
             if self.state == "running":
-                self.cur_job.State = ComputingActivity.STATE_RUNNING
+                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
             elif self.state == "pending":
-                self.cur_job.State = ComputingActivity.STATE_PENDING
+                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
             elif self.state == "zombie":
-                self.cur_job.State = ComputingActivity.STATE_PENDING
+                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
             else:
                 self.step.warning("unknown job state %s" % self.state)
         elif name == "JAT_prio":
@@ -197,20 +239,20 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
         elif name == "state":
             pass # switching to above
             if self.text == "r":
-                self.cur_job.State = ComputingActivity.STATE_RUNNING
+                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
             elif self.text == "R": # restarted
-                self.cur_job.State = ComputingActivity.STATE_RUNNING
+                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
             elif self.text.find("d") >= 0: # deleted
-                self.cur_job.State = ComputingActivity.STATE_TERMINATED
+                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
             elif self.text.find("w") >= 0: # waiting - qw, Eqw, hqw
-                self.cur_job.State = ComputingActivity.STATE_PENDING
+                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
             elif self.text.find("h") >= 0: # held - hr
-                self.cur_job.State = ComputingActivity.STATE_HELD
+                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
             elif self.text == "t": # transfering
-                self.cur_job.State = ComputingActivity.STATE_PENDING
+                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
             else:
                 self.step.warning("found unknown SGE job state '" + self.text + "'")
-                self.cur_job.State = ComputingActivity.STATE_UNKNOWN
+                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
         elif name == "slots":
             self.cur_job.RequestedSlots = int(self.text)
             if self.cur_job.StartTime != None:
@@ -316,10 +358,10 @@ def _getDateTime(dtStr):
 
 #######################################################################################################################
 
-class SgeComputingActivityUpdateStep(ComputingActivityUpdateStep):
+class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpdateStep):
 
     def __init__(self):
-        ComputingActivityUpdateStep.__init__(self)
+        glue2.computing_activity.ComputingActivityUpdateStep.__init__(self)
 
         self._acceptParameter("reporting_file","the path to the SGE reporting file (optional)",False)
 
@@ -387,8 +429,8 @@ class SgeComputingActivityUpdateStep(ComputingActivityUpdateStep):
         # charge account
         # dunno (always 1024)
 
-        activity = ComputingActivity()
-        activity.State = ComputingActivity.STATE_PENDING
+        activity = glue2.computing_activity.ComputingActivity()
+        activity.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
         activity.ComputingManagerSubmissionTime = datetime.datetime.fromtimestamp(float(toks[2]),tzoffset(0))
         activity.LocalIDFromManager = toks[3]
         activity.Name = toks[6]
@@ -438,7 +480,7 @@ class SgeComputingActivityUpdateStep(ComputingActivityUpdateStep):
             # these are redundant to what master logs, so ignore
             return
 
-        activity = ComputingActivity()
+        activity = sge.computing_activity.ComputingActivity()
 
         event_dt = datetime.datetime.fromtimestamp(float(toks[2]),tzoffset(0))
         activity.LocalIDFromManager = toks[4]
@@ -450,17 +492,17 @@ class SgeComputingActivityUpdateStep(ComputingActivityUpdateStep):
         activity.UserDomain = toks[18]
 
         if toks[3] == "pending":
-            activity.State = ComputingActivity.STATE_PENDING
+            activity.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
             activity.ComputingManagerSubmissionTime = event_dt
         elif toks[3] == "sent":
             # sent to execd - just ignore
             return
         elif toks[3] == "delivered":
             # job received by execd - job started
-            activity.State = ComputingActivity.STATE_RUNNING
+            activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
             activity.StartTime = event_dt
         elif toks[3] == "finished":
-            activity.State = ComputingActivity.STATE_FINISHED
+            activity.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
             activity.ComputingManagerEndTime = event_dt
         elif toks[3] == "deleted":
             # scheduler deleting the job and a finished appears first, so ignore
@@ -469,7 +511,7 @@ class SgeComputingActivityUpdateStep(ComputingActivityUpdateStep):
             self.info("ignoring error state for job %s" % activity.LocalIDFromManager)
             return
         elif toks[3] == "restart":
-            activity.State = ComputingActivity.STATE_RUNNING
+            activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
             activity.StartTime = event_dt
         else:
             self.warning("unknown job log of type %s" % toks[3])
@@ -477,4 +519,192 @@ class SgeComputingActivityUpdateStep(ComputingActivityUpdateStep):
         if self._includeQueue(activity.Queue):
             self.output(activity)
 
+#######################################################################################################################
+
+class ComputingSharesStep(glue2.computing_share.ComputingSharesStep):
+
+    def __init__(self):
+        glue2.computing_share.ComputingSharesStep.__init__(self)
+
+        self._acceptParameter("qconf","the path to the SGE qconf program (default 'qconf')",False)
+
+    def _run(self):
+        try:
+            qconf = self.params["qconf"]
+        except KeyError:
+            qconf = "qconf"
+        cmd = qconf + " -sq \**"
+        self.debug("running "+cmd)
+        status, output = commands.getstatusoutput(cmd)
+        if status != 0:
+            self.error("qconf failed: "+output+"\n")
+            raise StepError("qconf failed: "+output+"\n")
+
+        queues = []
+        queueStrings = output.split("\n\n")
+        for queueString in queueStrings:
+            queue = self._getQueue(queueString)
+            if self._includeQueue(queue.Name):
+                queues.append(queue)
+        return queues
+
+    def _getQueue(self, queueString):
+        queue = ComputingShare()
+
+        lines = queueString.split("\n")
+        queueName = None
+        for line in lines:
+            if line.startswith("qname "):
+                queueName = line[5:].lstrip()
+                break
+
+        queue.Name = queueName
+        queue.MappingQueue = queue.Name
+
+        for line in lines:
+            if line.startswith("s_rt "):
+                value = line[4:].lstrip()
+                if value != "INFINITY":
+                    queue.MaxWallTime = self._getDuration(value)
+            if line.startswith("s_cpu "):
+                value = line[5:].lstrip()
+                if value != "INFINITY":
+                    queue.MaxTotalCPUTime = self._getDuration(value)
+            if line.startswith("h_data "):
+                value = line[6:].lstrip()
+                if value != "INFINITY":
+                    queue.MaxMemory = self._getDuration(value)
+        return queue
+    
+    def _getDuration(self, dStr):
+        (hour,minute,second)=dStr.split(":")
+        return int(hour)*60*60 + int(minute)*60 + int(second)
+
+#######################################################################################################################
+
+class ExecutionEnvironmentsStep(glue2.execution_environment.ExecutionEnvironmentsStep):
+
+    def __init__(self):
+        glue2.execution_environment.ExecutionEnvironmentsStep.__init__(self)
+
+        self._acceptParameter("qhost","the path to the SGE qhost program (default 'qhost')",False)
+
+    def _run(self):
+        try:
+            qhost = self.params["qhost"]
+        except KeyError:
+            qhost = "qhost"
+
+        cmd = qhost + " -xml -q"
+        self.debug("running "+cmd)
+        status, output = commands.getstatusoutput(cmd)
+        if status != 0:
+            self.error("qhost failed: "+output+"\n")
+            raise StepError("qhost failed: "+output+"\n")
+
+        handler = HostsHandler(self)
+        xml.sax.parseString(output,handler)
+
+        hosts = []
+        for host in handler.hosts:
+            if self._goodHost(host):
+                hosts.append(host)
+
+        return hosts
+
+#######################################################################################################################
+
+class TeraGridExecutionEnvironmentsStep(ExecutionEnvironmentsStep, PlatformMixIn):
+
+    def __init__(self):
+        ExecutionEnvironmentsStep.__init__(self)
+        PlatformMixIn.__init__(self)
+
+    def _run(self):
+        hosts = ExecutionEnvironmentsStep._run(self)
+        self.addTeraGridPlatform(hosts)
+        return hosts
+
+#######################################################################################################################
+
+class HostsHandler(xml.sax.handler.ContentHandler):
+
+    def __init__(self, step):
+        self.step = step
+        self.cur_host = None
+        self.hosts = []
+        self.cur_time = time.time()
+        self.hostvalue_name = None
+        self.text = ""
+
+    def startDocument(self):
+        pass
+
+    def endDocument(self):
+        if self.cur_host != None and self._goodHost(self.cur_host):
+            self.hosts.append(self.cur_host)
+
+    def startElement(self, name, attrs):
+        if name == "host":
+            self.cur_host = ExecutionEnvironment()
+            self.cur_host.Name = attrs.getValue("name")
+            self.cur_host.TotalInstances = 1
+            self.cur_host.ComputingManager = "http://"+self.step.resource_name+"/glue2/ComputingManager"
+        elif name == "queue":
+            self.cur_host.ComputingShare.append(attrs.getValue("name")) # LocalID
+        elif name == "hostvalue":
+            self.hostvalue_name = attrs.getValue("name")
+        
+    def endElement(self, name):
+        if name == "host":
+            if self.cur_host.PhysicalCPUs != None:
+                self.hosts.append(self.cur_host)
+            self.cur_host = None
+
+        self.text = self.text.lstrip().rstrip()
+        if name == "hostvalue":
+            if self.hostvalue_name == "arch_string":
+                # SGE does some unknown crazy stuff to get their arch string. Just use the defaults.
+                pass
+            elif self.hostvalue_name == "num_proc":
+                if self.text != "-":
+                    self.cur_host.PhysicalCPUs = int(self.text)
+                    self.cur_host.LogicalCPUs = self.cur_host.PhysicalCPUs  # don't have enough info for something else
+            elif self.hostvalue_name == "load_avg":
+                if self.text == "-":
+                    self.cur_host.UsedInstances = 0
+                    self.cur_host.UnavailableInstances = 1
+                else:
+                    load = float(self.text)
+                    if load > float(self.cur_host.PhysicalCPUs)/2:
+                        self.cur_host.Extension["UsedAverageLoad"] = load
+                        self.cur_host.UsedInstances = 1
+                        self.cur_host.UnavailableInstances = 0
+                    else:
+                        self.cur_host.Extension["AvailableAverageLoad"] = load
+                        self.cur_host.UsedInstances = 0
+                        self.cur_host.UnavailableInstances = 0
+            elif self.hostvalue_name == "mem_total":
+                if self.text != "-":
+                    units = self.text[len(self.text)-1:]    # 'M' or 'G'
+                    memSize = float(self.text[:len(self.text)-1])
+                    if units == "G":
+                        self.cur_host.MainMemorySize = int(memSize * 1024)
+                    elif units == "M":
+                        self.cur_host.MainMemorySize = int(memSize)
+                    else:
+                        self.step.warning("couldn't handle memory units of '"+units+"'")
+            elif self.hostvalue_name == "mem_used":
+                pass
+            elif self.hostvalue_name == "swap_total":
+                pass
+            elif self.hostvalue_name == "swap_used":
+                pass
+            self.hostvalue_name = None
+        self.text = ""
+
+    def characters(self, ch):
+        # all of the text for an element may not come at once
+        self.text = self.text + ch
+        
 #######################################################################################################################

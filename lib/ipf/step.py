@@ -79,7 +79,7 @@ class Step(multiprocessing.Process):
     def _checkParameters(self, params):
         for name in params:
             if not self._acceptsParameter(name):
-                self.warning("received an unexpected parameter: %s - %s",name,params[name])
+                self.info("received an unexpected parameter: %s - %s",name,params[name])
         for name in self.accepts_params:
             if self._requiresParameter(name):
                 if name not in params:

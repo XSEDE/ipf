@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2011 The University of Texas at Austin                          #
+#   Copyright 2011,2012 The University of Texas at Austin                     #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -20,17 +20,17 @@ import os
 import re
 import sys
 
-from glue2.computing_endpoint import *
+import glue2.computing_endpoint
 
 #######################################################################################################################
 
-class GramEndpointStep(ParamComputingEndpointStep):
+class EndpointStep(glue2.computing_endpoint.ParamComputingEndpointStep):
     def __init__(self):
-        ParamComputingEndpointStep.__init__(self)
+        glue2.computing_endpoint.ParamComputingEndpointStep.__init__(self)
         self.description = "create a ComputingEndpoint for GRAM using parameters"
 
     def _run(self):
-        endpoints = ParamComputingEndpointStep._run(self)
+        endpoints = glue2.computing_endpoint.ParamComputingEndpointStep._run(self)
         for endpoint in endpoints:
             endpoint.Capability = ["executionmanagement.jobdescription",
                                    "executionmanagement.jobexecution",
@@ -42,13 +42,13 @@ class GramEndpointStep(ParamComputingEndpointStep):
 
 #######################################################################################################################
 
-class Gram2EndpointStep(GramEndpointStep):
+class Version2EndpointStep(EndpointStep):
     def __init__(self):
-        GramEndpointStep.__init__(self)
+        EndpointStep.__init__(self)
         self.description = "create a ComputingEndpoint for GRAM2 using parameters"
 
     def _run(self):
-        endpoints = GramEndpointStep._run(self)
+        endpoints = EndpointStep._run(self)
         for endpoint in endpoints:
             endpoint.Technology = "legacy"
             endpoint.InterfaceName = "globus.prews-gram"
@@ -58,14 +58,13 @@ class Gram2EndpointStep(GramEndpointStep):
 
 #######################################################################################################################
 
-class Gram4EndpointStep(GramEndpointStep):
+class Version4EndpointStep(EndpointStep):
     def __init__(self):
-        GramEndpointStep.__init__(self)
-        self.name = "glue2/gram4/computing_endpoint"
+        EndpointStep.__init__(self)
         self.description = "create a ComputingEndpoint for GRAM4 (WS-GRAM) using parameters"
 
     def _run(self):
-        endpoints = GramEndpointStep._run(self)
+        endpoints = EndpointStep._run(self)
         for endpoint in endpoints:
             endpoint.Technology = "webservice"
             endpoint.InterfaceName = "globus.ws-gram"
@@ -75,14 +74,13 @@ class Gram4EndpointStep(GramEndpointStep):
 
 #######################################################################################################################
 
-class Gram5EndpointStep(GramEndpointStep):
+class Version5EndpointStep(EndpointStep):
     def __init__(self):
-        GramEndpointStep.__init__(self)
-        self.name = "glue2/gram5/computing_endpoint"
+        EndpointStep.__init__(self)
         self.description = "create a ComputingEndpoint for GRAM5 using parameters"
 
     def _run(self):
-        endpoints = GramEndpointStep._run(self)
+        endpoints = EndpointStep._run(self)
         for endpoint in endpoints:
             endpoint.Technology = "legacy"
             endpoint.InterfaceName = "globus.gram5"

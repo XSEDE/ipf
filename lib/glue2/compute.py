@@ -26,6 +26,7 @@ from ipf.name import ResourceName
 from ipf.name import SiteName
 from ipf.step import Step
 
+from glue2.computing_activity import ComputingActivities, ComputingActivityTeraGridXml, ComputingActivityIpfJson
 from glue2.computing_endpoint import ComputingEndpoint, ComputingEndpointTeraGridXml, ComputingEndpointIpfJson
 from glue2.computing_manager import ComputingManager, ComputingManagerTeraGridXml, ComputingManagerIpfJson
 from glue2.computing_service import ComputingService, ComputingServiceTeraGridXml, ComputingServiceIpfJson
@@ -36,7 +37,7 @@ from glue2.execution_environment import ExecutionEnvironmentIpfJson
 
 #######################################################################################################################
 
-class PublicComputeStep(Step):
+class PublicStep(Step):
     def __init__(self):
         Step.__init__(self)
 
@@ -44,28 +45,28 @@ class PublicComputeStep(Step):
         self.time_out = 5
         self.requires = [ResourceName,SiteName,
                          ComputingService,ComputingEndpoint,ComputingShares,ComputingManager,ExecutionEnvironments]
-        self.produces = [PublicCompute]
+        self.produces = [Public]
 
     def run(self):
-        public_compute = PublicCompute()
-        public_compute.resource_name = self._getInput(ResourceName).resource_name
-        public_compute.site_name = self._getInput(SiteName).site_name
-        public_compute.service = self._getInput(ComputingService)
-        public_compute.shares = self._getInput(ComputingShares).shares
-        public_compute.manager = self._getInput(ComputingManager)
-        public_compute.environments = self._getInput(ExecutionEnvironments).exec_envs
+        public = Public()
+        public.resource_name = self._getInput(ResourceName).resource_name
+        public.site_name = self._getInput(SiteName).site_name
+        public.service = self._getInput(ComputingService)
+        public.shares = self._getInput(ComputingShares).shares
+        public.manager = self._getInput(ComputingManager)
+        public.environments = self._getInput(ExecutionEnvironments).exec_envs
         try:
             while True:
-                public_compute.endpoints.append(self._getInput(ComputingEndpoint))
+                public.endpoints.append(self._getInput(ComputingEndpoint))
         except NoMoreInputsError:
             pass
-        public_compute.id = public_compute.resource_name
+        public.id = public.resource_name
 
-        self._output(public_compute)
+        self._output(public)
 
 #######################################################################################################################
 
-class PublicCompute(Data):
+class Public(Data):
     def __init__(self):
         Data.__init__(self)
 
@@ -94,8 +95,8 @@ class PublicCompute(Data):
 
 #######################################################################################################################
 
-class PublicComputeTeraGridXml(Representation):
-    data_cls = PublicCompute
+class PublicTeraGridXml(Representation):
+    data_cls = Public
 
     def __init__(self, data):
         Representation.__init__(self,Representation.MIME_TEXT_XML,data)
@@ -104,42 +105,42 @@ class PublicComputeTeraGridXml(Representation):
         return self.toDom(self.data).toxml()
 
     @staticmethod
-    def toDom(public_compute):
+    def toDom(public):
         doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
                                                     "glue2",None)
 
-        if public_compute.resource_name is None:
+        if public.resource_name is None:
             raise StepError("resource name is not set")
         e = doc.createElement("ResourceID")
-        e.appendChild(doc.createTextNode(public_compute.resource_name))
+        e.appendChild(doc.createTextNode(public.resource_name))
         doc.documentElement.appendChild(e)
 
-        if public_compute.site_name is None:
+        if public.site_name is None:
             raise StepError("site name is not set")
         e = doc.createElement("SiteID")
-        e.appendChild(doc.createTextNode(public_compute.site_name))
+        e.appendChild(doc.createTextNode(public.site_name))
         doc.documentElement.appendChild(e)
 
         root = doc.createElement("Entities")
         doc.documentElement.appendChild(root)
 
-        if public_compute.service is not None:
-            root.appendChild(ComputingServiceTeraGridXml.toDom(public_compute.service).documentElement.firstChild)
-        for endpoint in public_compute.endpoints:
+        if public.service is not None:
+            root.appendChild(ComputingServiceTeraGridXml.toDom(public.service).documentElement.firstChild)
+        for endpoint in public.endpoints:
             root.appendChild(ComputingEndpointTeraGridXml.toDom(endpoint).documentElement.firstChild)
-        for share in public_compute.shares:
+        for share in public.shares:
             root.appendChild(ComputingShareTeraGridXml.toDom(share).documentElement.firstChild)
-        if public_compute.manager is not None:
-            root.appendChild(ComputingManagerTeraGridXml.toDom(public_compute.manager).documentElement.firstChild)
-        for environment in public_compute.environments:
+        if public.manager is not None:
+            root.appendChild(ComputingManagerTeraGridXml.toDom(public.manager).documentElement.firstChild)
+        for environment in public.environments:
             root.appendChild(ExecutionEnvironmentTeraGridXml.toDom(environment).documentElement.firstChild)
 
         return doc
 
 #######################################################################################################################
 
-class PublicComputeIpfJson(Representation):
-    data_cls = PublicCompute
+class PublicIpfJson(Representation):
+    data_cls = Public
 
     def __init__(self, data):
         Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
@@ -148,35 +149,136 @@ class PublicComputeIpfJson(Representation):
         return json.dumps(self.toJson(self.data),indent=4)
 
     @staticmethod
-    def toJson(public_compute):
+    def toJson(public):
         doc = {}
 
-        if public_compute.resource_name is None:
+        if public.resource_name is None:
             raise StepError("resource name is not set")
-        doc["ResourceID"] = public_compute.resource_name
-        if public_compute.site_name is None:
+        doc["ResourceID"] = public.resource_name
+        if public.site_name is None:
             raise StepError("site name is not set")
-        doc["SiteID"] = public_compute.site_name
+        doc["SiteID"] = public.site_name
 
-        if public_compute.service is not None:
-            doc["ComputingService"] = ComputingServiceIpfJson.toJson(public_compute.service)
-        if len(public_compute.endpoints) > 0:
+        if public.service is not None:
+            doc["ComputingService"] = ComputingServiceIpfJson.toJson(public.service)
+        if len(public.endpoints) > 0:
             endpoints = []
-            for endpoint in public_compute.endpoints:
+            for endpoint in public.endpoints:
                 endpoints.append(ComputingEndpointIpfJson.toJson(endpoint))
             doc["ComputingEndpoints"] = endpoints
-        if len(public_compute.shares) > 0:
+        if len(public.shares) > 0:
             shares = []
-            for share in public_compute.shares:
+            for share in public.shares:
                 shares.append(ComputingShareIpfJson.toJson(share))
             doc["ComputingShares"] = shares
-        if public_compute.manager is not None:
-            doc["ComputingManager"] = ComputingManagerIpfJson.toJson(public_compute.manager)
-        if len(public_compute.environments) > 0:
+        if public.manager is not None:
+            doc["ComputingManager"] = ComputingManagerIpfJson.toJson(public.manager)
+        if len(public.environments) > 0:
             envs = []
-            for env in public_compute.environments:
+            for env in public.environments:
                 envs.append(ExecutionEnvironmentIpfJson.toJson(env))
             doc["ExecutionEnvironments"] = envs
+        
+        return doc
+
+#######################################################################################################################
+
+class PrivateStep(Step):
+    def __init__(self):
+        Step.__init__(self)
+
+        self.description = "creates a single data containing all sensitive compute-related information"
+        self.time_out = 5
+        self.requires = [ResourceName,SiteName,ComputingActivities]
+        self.produces = [Private]
+
+    def run(self):
+        private = Private()
+        private.resource_name = self._getInput(ResourceName).resource_name
+        private.site_name = self._getInput(SiteName).site_name
+        private.activities = self._getInput(ComputingActivities).activities
+        private.id = private.resource_name
+        
+        self._output(private)
+
+#######################################################################################################################
+
+class Private(Data):
+    def __init__(self):
+        Data.__init__(self)
+
+        self.resource_name = None
+        self.site_name = None
+        self.activities = []
+
+    def fromJson(self, doc):
+        self.resource_name = doc.get("ResourceID")
+        self.site_name = doc.get("SiteID")
+        self.activities = doc.get("ComputingActivities",[])
+
+#######################################################################################################################
+
+class PrivateCTeraGridXml(Representation):
+    data_cls = Private
+
+    def __init__(self, data):
+        Representation.__init__(self,Representation.MIME_TEXT_XML,data)
+
+    def get(self):
+        return self.toDom(self.data).toxml()
+
+    @staticmethod
+    def toDom(private):
+        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
+                                                    "glue2",None)
+
+        if private.resource_name is None:
+            raise StepError("resource name is not set")
+        e = doc.createElement("ResourceID")
+        e.appendChild(doc.createTextNode(private.resource_name))
+        doc.documentElement.appendChild(e)
+
+        if private.site_name is None:
+            raise StepError("site name is not set")
+        e = doc.createElement("SiteID")
+        e.appendChild(doc.createTextNode(private.site_name))
+        doc.documentElement.appendChild(e)
+
+        root = doc.createElement("Entities")
+        doc.documentElement.appendChild(root)
+
+        for activity in private.activities:
+            root.appendChild(ComputingActivityTeraGridXml.toDom(activity).documentElement.firstChild)
+        return doc
+
+
+#######################################################################################################################
+
+class PrivateIpfJson(Representation):
+    data_cls = Private
+
+    def __init__(self, data):
+        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+
+    def get(self):
+        return json.dumps(self.toJson(self.data),indent=4)
+
+    @staticmethod
+    def toJson(private):
+        doc = {}
+
+        if private.resource_name is None:
+            raise StepError("resource name is not set")
+        doc["ResourceID"] = private.resource_name
+        if private.site_name is None:
+            raise StepError("site name is not set")
+        doc["SiteID"] = private.site_name
+
+        if len(private.activities) > 0:
+            docs = []
+            for activity in private.activities:
+                docs.append(ComputingActivityIpfJson.toJson(activity))
+            doc["ComputingActivities"] = docs
         
         return doc
 

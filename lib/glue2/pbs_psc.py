@@ -19,19 +19,21 @@ import copy
 
 from ipf.error import StepError
 
-from glue2.pbs.pbs_computing_activity import *
+import glue2.pbs
 
 #######################################################################################################################
 
-class PscPbsComputingActivitiesStep(PbsComputingActivitiesStep):
+class ComputingActivitiesStep(glue2.pbs.ComputingActivitiesStep):
     def __init__(self):
-        ComputingActivitiesStep.__init__(self)
+        glue2.pbs.ComputingActivitiesStep.__init__(self)
 
-        self.accepts_params["job_list_file"] = "the path to the PSC file containing the list of jobs in schedule order"
+        self._acceptParameter("job_list_file",
+                              "the path to the PSC file containing the list of jobs in schedule order",
+                              True)
 
     def _run(self):
         self.info("running")
-        jobs = PbsComputingActivitiesStep._run(self)
+        jobs = glue2.pbs.ComputingActivitiesStep._run(self)
 
         try:
             job_list_file = self.params["job_list_file"]

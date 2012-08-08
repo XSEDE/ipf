@@ -19,14 +19,14 @@ import commands
 import socket
 import sys
 
-from ipf.site_name import *
+import ipf.name
 
 #######################################################################################################################
 
-class TeraGridSiteNameStep(SiteNameStep):
+class TeraGridSiteNameStep(ipf.name.SiteNameStep):
 
     def __init__(self):
-        SiteNameStep.__init__(self)
+        ipf.name.SiteNameStep.__init__(self)
 
         self.description = "produces a site name document using tgwhereami"
         self._acceptParameter("tgwheremi","path to the tgwhereami program (default 'tgwhereami')",False)

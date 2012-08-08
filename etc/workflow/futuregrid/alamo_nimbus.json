@@ -4,30 +4,30 @@
     "nimbus_dir": "/opt/nimbus-2.9"
   },
   "steps": [
-    { "name": "ipf.resource_name.ResourceNameStep",
+    { "name": "ipf.name.ResourceNameStep",
       "params": {
         "resource_name": "nimbus.alamo.futuregrid.org"
       }
     },
-    { "name": "ipf.site_name.SiteNameStep",
+    { "name": "ipf.name.SiteNameStep",
       "params": {
         "site_name": "tacc.futuregrid.org"
       }
     },
-    { "name": "glue2.nimbus.nimbus_computing_endpoint.NimbusEndpointStep",
+    { "name": "glue2.nimbus.EndpointStep",
       "params": {
         "host_name": "daemon.alamo.futuregrid.org"
       }
     },
-    { "name": "glue2.nimbus.nimbus_computing_activity.NimbusComputingActivitiesStep" },
-    { "name": "glue2.nimbus.nimbus_computing_share.NimbusComputingSharesStep" },
-    { "name": "glue2.nimbus.nimbus_computing_service.NimbusComputingServiceStep" },
-    { "name": "glue2.nimbus.nimbus_execution_environment.NimbusExecutionEnvironmentsStep" },
-    { "name": "glue2.nimbus.nimbus_computing_manager.NimbusComputingManagerStep" },
+    { "name": "glue2.nimbus.ComputingActivitiesStep" },
+    { "name": "glue2.nimbus.ComputingSharesStep" },
+    { "name": "glue2.nimbus.ComputingServiceStep" },
+    { "name": "glue2.nimbus.ExecutionEnvironmentsStep" },
+    { "name": "glue2.nimbus.ComputingManagerStep" },
     {
-      "name": "ipf.amqp.AmqpPublishStep",
+      "name": "ipf.publish.AmqpStep",
       "params": {
-        "publish": ["glue2.public_compute.PublicComputeIpfJson"],
+        "publish": ["glue2.compute.PublicIpfJson"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",
@@ -39,9 +39,9 @@
       }
     },
     {
-      "name": "ipf.amqp.AmqpPublishStep",
+      "name": "ipf.publish.AmqpStep",
       "params": {
-        "publish": ["glue2.private_compute.PrivateComputeIpfJson"],
+        "publish": ["glue2.compute.PrivateIpfJson"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",
@@ -53,16 +53,16 @@
       }
     },
     {
-      "name": "ipf.file.FilePublishStep",
+      "name": "ipf.publish.FileStep",
       "params": {
-        "publish": ["glue2.public_compute.PublicComputeIpfJson"],
+        "publish": ["glue2.compute.PublicIpfJson"],
         "path": "glue2_nimbus_public.json"
       }
     },
     {
-      "name": "ipf.file.FilePublishStep",
+      "name": "ipf.publish.FileStep",
       "params": {
-        "publish": ["glue2.private_compute.PrivateComputeIpfJson"],
+        "publish": ["glue2.compute.PrivateIpfJson"],
         "path": "glue2_nimbus_private.json"
       }
     }

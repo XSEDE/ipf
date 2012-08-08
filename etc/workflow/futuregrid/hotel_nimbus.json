@@ -4,30 +4,30 @@
     "nimbus_dir": "/opt/nimbus-2.9"
   },
   "steps": [
-    { "name": "ipf/resource_name",
+    { "name": "ipf.name.ResourceNameStep",
       "params": {
         "resource_name": "nimbus.hotel.futuregrid.org"
       }
     },
-    { "name": "ipf/site_name",
+    { "name": "ipf.name.SiteNameStep",
       "params": {
         "site_name": "uc.futuregrid.org"
       }
     },
-    { "name": "glue2/nimbus/computing_endpoint",
+    { "name": "glue2.nimbus.EndpointStep",
       "params": {
         "host_name": "svc.uc.futuregrid.org"
       }
     },
-    { "name": "glue2/nimbus/computing_activities" },
-    { "name": "glue2/nimbus/computing_shares" },
-    { "name": "glue2/nimbus/computing_service" },
-    { "name": "glue2/nimbus/execution_environments" },
-    { "name": "glue2/nimbus/computing_manager" },
+    { "name": "glue2.nimbus.ComputingActivitiesStep" },
+    { "name": "glue2.nimbus.ComputingSharesStep" },
+    { "name": "glue2.nimbus.ComputingServiceStep" },
+    { "name": "glue2.nimbus.ExecutionEnvironmentsStep" },
+    { "name": "glue2.nimbus.ComputingManagerStep" },
     {
-      "name": "ipf/publish/amqp",
+      "name": "ipf.publish.AmqpStep",
       "params": {
-        "requires_types": ["glue2/ipf/public_compute.json"],
+        "publish": ["glue2.compute.PublicIpfJson"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",
@@ -39,9 +39,9 @@
       }
     },
     {
-      "name": "ipf/publish/amqp",
+      "name": "ipf.publish.AmqpStep",
       "params": {
-        "requires_types": ["glue2/ipf/private_compute.json"],
+        "publish": ["glue2.compute.PrivateIpfJson"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",
@@ -53,16 +53,16 @@
       }
     },
     {
-      "name": "ipf/publish/file",
+      "name": "ipf.publish.FileStep",
       "params": {
-        "requires_types": ["glue2/ipf/public_compute.json"],
+        "publish": ["glue2.compute.PublicIpfJson"],
         "path": "glue2_nimbus_public.json"
       }
     },
     {
-      "name": "ipf/publish/file",
+      "name": "ipf.publish.FileStep",
       "params": {
-        "requires_types": ["glue2/ipf/private_compute.json"],
+        "publish": ["glue2.compute.PrivateIpfJson"],
         "path": "glue2_nimbus_private.json"
       }
     }

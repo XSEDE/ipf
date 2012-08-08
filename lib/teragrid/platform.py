@@ -21,7 +21,7 @@ import sys
 
 from ipf.data import Data, Representation
 from ipf.step import Step
-from ipf.resource_name import ResourceName
+from ipf.name import ResourceName
 
 #######################################################################################################################
 

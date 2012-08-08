@@ -1,14 +1,14 @@
 {
-  "name": "pbs_glue2_job_updates",
+  "name": "alamo_pbs_glue2_job_updates",
   "steps": [
-    { "name": "ipf.resource_name.ResourceNameStep",
+    { "name": "ipf.name.ResourceNameStep",
       "params": {
         "resource_name": "torquemoab.alamo.futuregrid.org"
       }
     },
-    { "name": "glue2.pbs.pbs_computing_activity.PbsComputingActivityUpdateStep" },
+    { "name": "glue2.pbs.ComputingActivityUpdateStep" },
     {
-      "name": "ipf.amqp.AmqpPublishStep",
+      "name": "ipf.publish.AmqpStep",
       "params": {
         "publish": ["glue2.computing_activity.ComputingActivityIpfJson"],
         "services": [ "inca.futuregrid.org" ],

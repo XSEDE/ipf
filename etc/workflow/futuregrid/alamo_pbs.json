@@ -1,17 +1,17 @@
 {
   "name": "alamo_pbs",
   "steps": [
-    { "name": "ipf.resource_name.ResourceNameStep",
+    { "name": "ipf.name.ResourceNameStep",
       "params": {
         "resource_name": "torquemoab.alamo.futuregrid.org"
       }
     },
-    { "name": "ipf.site_name.SiteNameStep",
+    { "name": "ipf.name.SiteNameStep",
       "params": {
         "site_name": "tacc.futuregrid.org"
       }
     },
-    { "name": "glue2.gram_endpoint.Gram5EndpointStep",
+    { "name": "glue2.gram.Version5EndpointStep",
       "params": {
         "endpoint": {
           "Name": "gram5-fork",
@@ -19,7 +19,7 @@
         }
       }
     },
-    { "name": "glue2.gram_endpoint.Gram5EndpointStep",
+    { "name": "glue2.gram.Version5EndpointStep",
       "params": {
         "endpoint": {
           "Name": "gram5-pbs",
@@ -27,22 +27,22 @@
         }
       }
     },
-    { "name": "glue2.genesis_endpoint.GenesisIIEndpointStep",
+    { "name": "glue2.genesisII.EndpointStep",
       "params": {
         "endpoint": {
           "URL": "https://daemon.alamo.futuregrid.org:18443/axis/services/GeniiBESPortType?genii-container-id=98B3AC57-D09F-63F1-6EE6-2664E1EF9699"
         }
       }
     },
-    { "name": "glue2.pbs.pbs_computing_activity.PbsComputingActivitiesStep" },
-    { "name": "glue2.pbs.pbs_computing_share.PbsComputingSharesStep" },
-    { "name": "glue2.pbs.pbs_computing_service.PbsComputingServiceStep" },
-    { "name": "glue2.pbs.pbs_execution_environment.PbsExecutionEnvironmentsStep" },
-    { "name": "glue2.pbs.pbs_computing_manager.PbsComputingManagerStep" },
+    { "name": "glue2.pbs.ComputingActivitiesStep" },
+    { "name": "glue2.pbs.ComputingSharesStep" },
+    { "name": "glue2.pbs.ComputingServiceStep" },
+    { "name": "glue2.pbs.ExecutionEnvironmentsStep" },
+    { "name": "glue2.pbs.ComputingManagerStep" },
     {
-      "name": "ipf.amqp.AmqpPublishStep",
+      "name": "ipf.publish.AmqpStep",
       "params": {
-        "publish": ["glue2.public_compute.PublicComputeIpfJson"],
+        "publish": ["glue2.compute.PublicIpfJson"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",
@@ -54,9 +54,9 @@
       }
     },
     {
-      "name": "ipf.amqp.AmqpPublishStep",
+      "name": "ipf.publish.AmqpStep",
       "params": {
-        "publish": ["glue2.private_compute.PrivateComputeIpfJson"],
+        "publish": ["glue2.compute.PrivateIpfJson"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",
@@ -68,16 +68,16 @@
       }
     },
     {
-      "name": "ipf.file.FilePublishStep",
+      "name": "ipf.publish.FileStep",
       "params": {
-        "publish": ["glue2.public_compute.PublicComputeIpfJson"],
+        "publish": ["glue2.compute.PublicIpfJson"],
         "path": "glue2_pbs_public.json"
       }
     },
     {
-      "name": "ipf.file.FilePublishStep",
+      "name": "ipf.publish.FileStep",
       "params": {
-        "publish": ["glue2.private_compute.PrivateComputeIpfJson"],
+        "publish": ["glue2.compute.PrivateIpfJson"],
         "path": "glue2_pbs_private.json"
       }
     }

@@ -21,8 +21,8 @@ from xml.dom.minidom import getDOMImplementation
 
 from ipf.data import Data, Representation
 from ipf.error import StepError
-from ipf.resource_name import ResourceName
-from ipf.site_name import SiteName
+from ipf.name import ResourceName
+from ipf.name import SiteName
 from ipf.step import Step
 
 from glue2.computing_activity import ComputingActivities, ComputingActivityTeraGridXml, ComputingActivityIpfJson

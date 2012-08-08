@@ -1,16 +1,20 @@
 {
   "name": "nimbus_glue2_vm_updates",
   "steps": [
-    { "name": "ipf/resource_name",
+    { "name": "ipf.name.ResourceNameStep",
       "params": {
         "resource_name": "nimbus.hotel.futuregrid.org"
       }
     },
-    { "name": "glue2/nimbus/computing_activity_update" },
-    {
-      "name": "ipf/publish/amqp",
+    { "name": "glue2.nimbus.ComputingActivityUpdateStep",
       "params": {
-        "requires_types": ["glue2/ipf/computing_activity.json"],
+        "nimbus_dir": "/opt/nimbus-2.9"
+      }
+    },
+    {
+      "name": "ipf.publish.AmqpStep",
+      "params": {
+        "publish": ["glue2.computing_activity.ComputingActivityIpfJson"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",

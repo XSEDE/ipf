@@ -22,17 +22,17 @@ import socket
 
 from ipf.error import StepError
 
-from glue2.sge.sge_computing_share import *
+import glue2.sge
 
 ##############################################################################################################
 
-class TaccSgeComputingSharesStep(SgeComputingSharesStep):
+class ComputingSharesStep(glue2.sge.ComputingSharesStep):
 
     def __init__(self):
-        SgeComputingSharesStep.__init__(self)
+        glue2.sge.ComputingSharesStep.__init__(self)
 
     def _run(self):
-        queues = SgeComputingSharesStep._run(self)
+        queues = glue2.sge.ComputingSharesStep._run(self)
 
         try:
             job_policy_file = self.config.get("tacc","job_policy_file")
@@ -68,6 +68,3 @@ class TaccSgeComputingSharesStep(SgeComputingSharesStep):
 
 ##############################################################################################################
 
-if __name__ == "__main__":
-    agent = TaccSgeQueuesAgent.createFromCommandLine()
-    agent.runStdinStdout()

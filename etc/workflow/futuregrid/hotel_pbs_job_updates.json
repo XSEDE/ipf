@@ -1,16 +1,16 @@
 {
   "name": "pbs_glue2_job_updates",
   "steps": [
-    { "name": "ipf/resource_name",
+    { "name": "ipf.name.ResourceNameStep",
       "params": {
         "resource_name": "torquemoab.hotel.futuregrid.org"
       }
     },
-    { "name": "glue2/pbs/computing_activity_update" },
+    { "name": "glue2.pbs.ComputingActivityUpdateStep" },
     {
-      "name": "ipf/publish/amqp",
+      "name": "ipf.publish.AmqpStep",
       "params": {
-        "requires_types": ["glue2/ipf/computing_activity.json"],
+        "publish": ["glue2.computing_activity.ComputingActivityIpfJson"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",
