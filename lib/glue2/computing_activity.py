@@ -50,7 +50,7 @@ class ComputingActivitiesStep(GlueStep):
 
         activities = self._run()
         for activity in activities:
-            activity.id = "%s.%s" % (activity.LocalIDFromManager,self.resource_name)
+            activity.id = "%s.%s.%s" % (activity.LocalIDFromManager,activity.LocalOwner,self.resource_name)
             activity.ID = "urn:glue2:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
             if activity.Queue is not None:
                 activity.ComputingShare = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
@@ -86,9 +86,10 @@ class ComputingActivityUpdateStep(GlueStep):
         self._run()
 
     def output(self, activity):
-        activity.id = "%s.%s" % (activity.LocalIDFromManager,self.resource_name)
+        activity.id = "%s.%s.%s" % (activity.LocalIDFromManager,activity.LocalOwner,self.resource_name)
         activity.ID = "urn:glue2:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
-        activity.ComputingShare = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
+        if activity.Queue is not None:
+            activity.ComputingShare = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
         activity.hide = self.params.get("hide_job_attribs",[])
         
         self._output(activity)
