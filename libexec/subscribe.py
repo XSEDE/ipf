@@ -66,7 +66,8 @@ if __name__ == "__main__":
                       ssl_options={"keyfile":os.path.join(IPF_HOME,"etc","key.pem"),
                                    "certfile":os.path.join(IPF_HOME,"etc","cert.pem"),
                                    "cert_reqs":ssl.CERT_REQUIRED,
-                                   "ca_certs":os.path.join(IPF_HOME,"etc","ca_certs.pem")})
+                                   "ca_certs":os.path.join(IPF_HOME,"etc","ca_certs.pem")},
+                      heartbeat=60)
     channel = Channel(conn)
 
     queue = channel.queueDeclare()
