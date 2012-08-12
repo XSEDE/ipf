@@ -155,8 +155,7 @@ class AmqpStep(PublishStep):
     def _publish(self, representation):
         self.info("publishing representation %s",representation.__class__)
         self.debug("  with routing key '%s' to exchange '%s'",representation.data.id.encode("utf-8"),self.exchange)
-        #self._connectIfNecessary()
-        self._connect()
+        self._connectIfNecessary()
         if self.channel is None:
             raise StepError("not connected to any service, will not publish %s" % doc.__class__)
         try:
@@ -172,7 +171,6 @@ class AmqpStep(PublishStep):
                                           representation.data.id.encode("utf-8"))
             except MtkError:
                 raise StepError("not connected to any service, will not publish %s" % doc.__class__)
-        self._close() # having some problems with connections that are open a long time without much traffic
 
     def _connectIfNecessary(self):
         if self.channel is not None:
@@ -204,20 +202,24 @@ class AmqpStep(PublishStep):
             self.connection = Connection(host,
                                          port,
                                          self.vhost,
-                                         PlainMechanism(self.username,self.password))
+                                         PlainMechanism(self.username,self.password),
+                                         None,
+                                         60)
         else:
             if "keyfile" in self.ssl_options:
                 self.connection = Connection(host,
                                              port,
                                              self.vhost,
                                              X509Mechanism(),
-                                             self.ssl_options)
+                                             self.ssl_options,
+                                             60)
             else:
                 self.connection = Connection(host,
                                              port,
                                              self.vhost,
                                              PlainMechanism(self.username,self.password),
-                                             self.ssl_options)
+                                             self.ssl_options,
+                                             60)
         self.channel = self.connection.channel()
 
     def _selectService(self):
