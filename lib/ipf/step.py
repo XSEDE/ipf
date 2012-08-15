@@ -54,14 +54,15 @@ class Step(multiprocessing.Process):
 
         self.logger = logging.getLogger(self._logName())
 
-    def setParameters(self, params):
-        self.id = params.get("id",None)
+    def setParameters(self, workflow_params, step_params):
+        self._checkUnexpectedParameters(step_params)
+        self.params = dict(workflow_params.items()+step_params.items())
+        self._checkExpectedParameters(self.params)
 
-        self._checkParameters(params)
-        self.params = params
+        self.id = self.params.get("id",None)
 
         from ipf.catalog import catalog    # can't import this at the top - circular import
-        for name in params.get("requires",[]):
+        for name in self.params.get("requires",[]):
             try:
                 cls = catalog.data[name]
             except KeyError:
@@ -69,17 +70,19 @@ class Step(multiprocessing.Process):
             self.requires.append(cls)
 
         try:
-            self.output_ids = params["outputs"]
+            self.output_ids = self.params["outputs"]
         except KeyError:
             self.output_ids = []
 
     def _acceptParameter(self, name, description, required):
         self.accepts_params[name] = (description,required)
 
-    def _checkParameters(self, params):
+    def _checkUnexpectedParameters(self, params):
         for name in params:
             if not self._acceptsParameter(name):
                 self.info("received an unexpected parameter: %s - %s",name,params[name])
+
+    def _checkExpectedParameters(self, params):
         for name in self.accepts_params:
             if self._requiresParameter(name):
                 if name not in params:
@@ -186,8 +189,8 @@ class PublishStep(Step):
 
         self.publish = []
 
-    def setParameters(self, params):
-        Step.setParameters(self,params)
+    def setParameters(self, workflow_params, step_params):
+        Step.setParameters(self,workflow_params,step_params)
         try:
             publish_names = self.params["publish"]
         except KeyError:

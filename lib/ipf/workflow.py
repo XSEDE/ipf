@@ -60,7 +60,7 @@ class Workflow(object):
                 raise WorkflowError("workflow step does not specify the 'name' of the step to run")
             try:
                 step = catalog.steps[step_doc["name"]]()
-                step.setParameters(dict(doc.get("params",{}).items()+step_doc.get("params",{}).items()))
+                step.setParameters(doc.get("params",{}),step_doc.get("params",{}))
             except KeyError:
                 raise WorkflowError("no step is known with name '%s'" % step_doc["name"])
 
@@ -89,7 +89,7 @@ class Workflow(object):
             if len(producers) > 1:
                 raise WorkflowError("more than one step produces %s - can't infer which to use" % cls)
             step = producers[0]()
-            step.setParameters({})
+            step.setParameters({},{})
             self.steps.append(step)
             self._removeProduced(step,required)
 
