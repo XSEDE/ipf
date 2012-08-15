@@ -157,76 +157,7 @@ class EndpointStep(glue2.computing_endpoint.ComputingEndpointStep):
 
 #######################################################################################################################
 
-# dn="/O=Auto/OU=FutureGridNimbus/CN=smithd", minutes=18000, uuid="1798eca6-3f31-4592-89d5-4d79956dc3b3", eprkey=943, creation="Jun 8, 2012 3:49:42 PM"
-
-# CREATED: time="Jun 17, 2012 2:45:07 AM", uuid="5e2db9fa-fe87-4146-89ea-788097cedcce", eprkey=980, dn="/O=Auto/OU=FutureGridNimbus/CN=inca", requestMinutes=60, charge=60, chargeRatio=1.0, CPUCount=1, memory=1280, clientLaunchName='https://master1.futuregrid.tacc.utexas.edu:8443/head-node', network='publicnic;public;A2:AA:BB:84:F5:08;Bridged;AllocateAndConfigure;129.114.32.106;129.114.32.1;192.114.32.255;255.255.255.0;129.114.4.18;vm-106.alamo.futuregrid.org;null;null;null;null'
-
-class NimbusActivityMixIn(object):
-    def _createActivity(self, line):
-        activity = glue2.computing_activity.ComputingActivity()
-        activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
-        
-        m = re.search("eprkey=(\d+)",line)
-        activity.LocalIDFromManager = m.group(1)
-
-        try:
-            m = re.search("clientLaunchName='(\S+)'",line)
-            activity.Name = m.group(1)
-        except AttributeError:
-            pass  # not in current-reservations.txt
-
-        try:
-            m = re.search("dn=\"([^\"]+)\"",line)
-            activity.Owner = m.group(1)
-            m = re.search("dn=\".*CN=([^\"]+)\"",line)
-            activity.LocalOwner = m.group(1)
-        except AttributeError:
-            pass
-
-        try:
-            m = re.search("creation=\"([^\"]+)\"",line) # current-reservations.txt
-            start_str = m.group(1)
-        except AttributeError:
-            try:
-                m = re.search("time=\"([^\"]+)\"",line) # accounting-events.txt
-                start_str = m.group(1)
-            except AttributeError:
-                self.warning("didn't find creation time for VM in %s",line)
-                start_str = None
-        if start_str is not None:
-            activity.StartTime = self._getDateTime(start_str)
-
-        try:
-            m = re.search("CPUCount=(\d+)",line)
-            activity.RequestedSlots = int(m.group(1))
-            if activity.StartTime is not None:
-                usedWallTime = time.mktime(activity.CreationTime.timetuple()) - \
-                               time.mktime(activity.StartTime.timetuple())
-                activity.UsedTotalWallTime = usedWallTime * activity.RequestedSlots
-        except AttributeError:
-            pass  # cpuCount not in current-reservations.txt
-
-        if activity.RequestedSlots is not None:
-            try:
-                m = re.search("minutes=(\d+)",line)             # current-reservations.txt
-                activity.RequestedTotalWallTime = int(m.group(1)) * 60 * activity.RequestedSlots
-            except AttributeError:
-                try:
-                    m = re.search("requestMinutes=(\d+)",line)  # accounting-events.txt
-                    activity.RequestedTotalWallTime = int(m.group(1)) * 60 * activity.RequestedSlots
-                except AttributeError:
-                    self.warning("didn't find requested minutes for VM in %s",line)
-
-        return activity
-
-    def _getDateTime(self, dtStr):
-        # Example: Jun 17, 2012 2:45:07 AM
-        d = datetime.datetime.strptime(dtStr,"%b %d, %Y %I:%M:%S %p")
-        return datetime.datetime(d.year,d.month,d.day,d.hour,d.minute,d.second,d.microsecond,localtzoffset())
-
-#######################################################################################################################
-
-class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep, NimbusActivityMixIn):
+class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
     def __init__(self):
         glue2.computing_activity.ComputingActivitiesStep.__init__(self)
 
@@ -238,43 +169,90 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep, 
         except KeyError:
             raise StepError("nimbus_dir parameter not specified")
 
-        rsv_dict = self._getCurrentReservations()
-        self._addAccountingInformation(rsv_dict)
-        return map(self._createActivity,rsv_dict.values())
+        activities = self._fromCurrentReservations()
+        #return self._substituteAccountingInformation(activities)
+        return self._substituteServicesLogInformation(activities)
 
-    def _getCurrentReservations(self):
+    def _fromCurrentReservations(self):
+        activities = []
+
         file = open(os.path.join(self.nimbus_dir,"services","var","nimbus","current-reservations.txt"),"r")
-        lines = file.readlines()
+        for line in file:
+            activities.append(_activityFromCurrentReservation(line))
         file.close()
 
-        rsv_dict={}
-        for line in lines:
-            m = re.search("eprkey=(\d+)",line)
-            rsv_dict[m.group(1)] = line
-        return rsv_dict
+        return activities
 
-    def _addAccountingInformation(self, rsv_dict):
+    def _substituteAccountingInformation(self, cr_activities):
         file = ReverseFileReader(os.path.join(self.nimbus_dir,"services","var","nimbus","accounting-events.txt"))
-        found = set()
+        keys = set()
+        for activity in cr_activities:
+            keys.add(activity.LocalIDFromManager)
+        acct_activities = {}
         line = file.readline()
-        while line is not None and len(found) < len(rsv_dict):
+        while line is not None and len(keys) > 0:
             if line.startswith("CREATED: "):
-                try:
-                    m = re.search("eprkey=(\d+)",line)
-                    eprkey = m.group(1)
-                except AttributeError:
-                    self.warning("didn't find eprkey in %s",line)
-                    continue
-                if eprkey in rsv_dict:
-                    rsv_dict[eprkey] = line
-                    found.add(eprkey)
+                activity = _activityFromAccountingEvent(line)
+                if activity.LocalIDFromManager in keys:
+                    acct_activities[activity.LocalIDFromManager] = activity
+                    keys.remove(activity.LocalIDFromManager)
             elif line.startswith("REMOVED: "):
-                # pick up any VMs that stopped in the last 10 mins?
+                # include any VMs that stopped in the last, say, 10 mins?
                 pass
             else:
                 self.info("unhandled accounting log entry: %s",line)
             line = file.readline()
         file.close()
+
+        activities = []
+        for activity in cr_activities:
+            if activity.LocalIDFromManager in acct_activities:
+                activities.append(acct_activities[activity.LocalIDFromManager])
+            else:
+                activities.append(activity)
+        return activities
+
+    def _substituteServicesLogInformation(self, cr_activities):
+        file = ReverseFileReader(os.path.join(self.nimbus_dir,"var","services.log"))
+        keys = set()
+        for activity in cr_activities:
+            keys.add(activity.LocalIDFromManager)
+
+        acct_activities = {}
+        last_node_reserved = None
+
+        start_time = time.time()
+        line = file.readline()
+        # only look through the log file for a few seconds
+        while line is not None and len(keys) > 0 and time.time() < start_time + 2:
+            if "defaults.ResourcepoolUtil" in line:
+                try:
+                    m = re.search("resource pool entry '(\S+)'",line)
+                    last_node_reserved = m.group(1)
+                except AttributeError:
+                    logger.warn("expected to parse entry, but couldn't: %s",line)
+            elif "dbdefault.DBAccountingAdapter" in line:
+                if "create" in line:
+                    activity = _activityCreateFromServicesLog(line,last_node_reserved)
+                    if activity.LocalIDFromManager in keys:
+                        acct_activities[activity.LocalIDFromManager] = activity
+                        keys.remove(activity.LocalIDFromManager)
+                elif "destroy" in line:
+                    pass # could include any that stopped in the last, say 10 mins
+                else:
+                    pass  # ignore
+            else:
+                pass  # ignore
+            line = file.readline()
+        file.close()
+
+        activities = []
+        for activity in cr_activities:
+            if activity.LocalIDFromManager in acct_activities:
+                activities.append(acct_activities[activity.LocalIDFromManager])
+            else:
+                activities.append(activity)
+        return activities
 
 #######################################################################################################################
 
@@ -316,11 +294,13 @@ class ReverseFileReader(object):
 
 #######################################################################################################################
 
-class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpdateStep, NimbusActivityMixIn):
+class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpdateStep):
     def __init__(self):
         glue2.computing_activity.ComputingActivityUpdateStep.__init__(self)
 
         self._acceptParameter("nimbus_dir","the path to the NIMBUS directory",True)
+
+        self.last_activity = None
 
     def _run(self):
         self.info("running")
@@ -329,14 +309,214 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         except KeyError:
             raise StepError("nimbus_dir parameter not specified")
 
+        #watcher = LogFileWatcher(self._logEntry,
+        #                         os.path.join(nimbus_dir,"services","var","nimbus","accounting-events.txt"))
         watcher = LogFileWatcher(self._logEntry,
-                                 os.path.join(nimbus_dir,"services","var","nimbus","accounting-events.txt"))
+                                 os.path.join(nimbus_dir,"var","services.log"))
         watcher.run()
 
-    def _logEntry(self, log_file_name, entry):
-        activity = self._createActivity(entry)
-        if activity.Queue is None or self._includeQueue(activity.Queue):
-            self.output(activity)
+    def _logEntry(self, log_file_name, line):
+        #activity = _activityFromAccountingEvent(entry)
+
+        if "dbdefault.DBAccountingAdapter" in line:
+            if "create" in line:
+                activity = _activityCreateFromServicesLog(line)
+                if activity.ExecutionNode is not None:   # we know what node it's on, publish
+                    self.output(activity)
+                    self.last_activity = None
+                else:  # we don't know what node it's on, wait
+                    self.last_activity = activity
+            elif "destroy" in line:
+                self.output(_activityDestroyFromServicesLog(line))
+            else:
+                pass  # ignore
+        elif "defaults.ResourcepoolUtil" in line:
+            if self.last_activity is not None:  # VMM wasn't in the create record, so get it here and publish
+                try:
+                    m = re.search("resource pool entry '(\S+)'",line)
+                    self.last_activity.ExecutionNode = [m.group(1)]
+                    self.output(self.last_activity)
+                    self.last_activity = None
+                except AttributeError:
+                    logger.warn("expected to parse entry, but couldn't: %s",line)
+        else:
+            pass  # ignore
+
+#######################################################################################################################
+
+# dn="/O=Auto/OU=FutureGridNimbus/CN=smithd", minutes=18000, uuid="1798eca6-3f31-4592-89d5-4d79956dc3b3", eprkey=943, creation="Jun 8, 2012 3:49:42 PM"
+def _activityFromCurrentReservation(line):
+    activity = glue2.computing_activity.ComputingActivity()
+    activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+        
+    m = re.search("eprkey=(\d+)",line)
+    activity.LocalIDFromManager = m.group(1)
+
+    try:
+        m = re.search("dn=\"([^\"]+)\"",line)
+        activity.Owner = m.group(1)
+        m = re.search("dn=\".*CN=([^\"]+)\"",line)
+        activity.LocalOwner = m.group(1)
+    except AttributeError:
+        m = re.search("uuid=\"([^\"]+)\"",line)
+        activity.LocalOwner = m.group(1)
+
+    try:
+        m = re.search("creation=\"([^\"]+)\"",line)
+        activity.StartTime = _getDateTime(m.group(1))
+    except AttributeError:
+        raise StepError("didn't find creation in: %s" % line)
+
+    return activity
+
+#######################################################################################################################
+
+def _activityFromAccountingEvent(line):
+    activity = glue2.computing_activity.ComputingActivity()
+        
+    m = re.search("eprkey=(\d+)",line)
+    activity.LocalIDFromManager = m.group(1)
+
+    try:
+        m = re.search("dn=\"([^\"]+)\"",line)
+        activity.Owner = m.group(1)
+        m = re.search("dn=\".*CN=([^\"]+)\"",line)
+        activity.LocalOwner = m.group(1)
+    except AttributeError:
+        m = re.search("uuid=\"([^\"]+)\"",line)
+        activity.LocalOwner = m.group(1)
+
+    if "CREATED" in line:
+        _addCreatedAccountingEvent(activity,line)
+    elif "REMOVED" in line:
+        _addFromRemovedAccountingEvent(activity,line)
+    else:
+        raise StepError("didn't find 'CREATED' or 'REMOVED' in accounting events entry")
+
+    return activity
+
+    # CREATED: time="Jun 17, 2012 2:45:07 AM", uuid="5e2db9fa-fe87-4146-89ea-788097cedcce", eprkey=980, dn="/O=Auto/OU=FutureGridNimbus/CN=inca", requestMinutes=60, charge=60, chargeRatio=1.0, CPUCount=1, memory=1280, clientLaunchName='https://master1.futuregrid.tacc.utexas.edu:8443/head-node', network='publicnic;public;A2:AA:BB:84:F5:08;Bridged;AllocateAndConfigure;129.114.32.106;129.114.32.1;192.114.32.255;255.255.255.0;129.114.4.18;vm-106.alamo.futuregrid.org;null;null;null;null'
+def _addCreatedAccountingEvent(activity, line):
+    activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+
+    m = re.search("time=\"([^\"]+)\"",line)
+    activity.StartTime = _getDateTime(m.group(1))
+
+    try:
+        m = re.search("clientLaunchName='(\S+)'",line)
+        activity.Name = m.group(1)
+    except AttributeError:
+        pass
+
+    try:
+        m = re.search("CPUCount=(\d+)",line)
+        activity.RequestedSlots = int(m.group(1))
+    except AttributeError:
+        raise StepError("didn't find CPUCount in: %s" % line)
+
+    try:
+        m = re.search("requestMinutes=(\d+)",line)
+        activity.RequestedTotalWallTime = int(m.group(1)) * 60 * activity.RequestedSlots
+    except AttributeError:
+        pass
+
+    try:
+        m = re.search("memory=(\d+)",line)
+        activity.UsedMainMemory = int(m.group(1))
+    except AttributeError:
+        raise StepError("didn't find memory in: %s" % line)
+
+    try:
+        m = re.search("vmm=(\S+)",line)
+        activity.ExecutionNode = [m.group(1)]
+    except AttributeError:
+        # VMs that are part of a cluster don't have a vmm specified
+        pass
+    
+# REMOVED: time="Aug 8, 2012 9:10:34 AM", uuid="0b68d4f4-96d4-475b-bbbd-cb2fe3dd1803", eprkey=1413, dn="/O=Auto/OU=FutureGridNimbus/CN=wsmith", charge=8
+def _addRemovedAccountingEvent(activity, line):
+    activity.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
+
+    try:
+        m = re.search("time=\"([^\"]+)\"",line)
+        activity.EndTime = _getDateTime(m.group(1))
+    except AttributeError:
+        raise StepError("didn't find time in: %s" % line)
+
+#######################################################################################################################
+
+#2012-08-08 07:52:04,419 INFO  dbdefault.DBAccountingAdapter [ServiceThread-212,create:299] [NIMBUS-EVENT][id-1408]: accounting: ownerDN = '/O=Auto/OU=FutureGridNimbus/CN=enstrom', minutesRequested = 1440, minutes reserved = 1440, charge ratio = 1.0, CPUCount = 1, memory = 1280, uuid = '9fc8101e-fc8c-4481-ab04-ce00555d9f1f', clientLaunchName='https://master1.futuregrid.tacc.utexas.edu:8443/Pegasus_Submit_Host', network='publicnic;public;A2:AA:BB:3A:FF:DE;Bridged;AllocateAndConfigure;129.114.32.102;129.114.32.1;192.114.32.255;255.255.255.0;129.114.4.18;vm-102.alamo.futuregrid.org;null;null;null;null'
+def _activityCreateFromServicesLog(line, last_node_reserved=None):
+    activity = glue2.computing_activity.ComputingActivity()
+    activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+
+    activity.StartTime = _getServicesLogDateTime(line[:23])
+        
+    m = re.search("id-(\d+)",line)
+    activity.LocalIDFromManager = m.group(1)
+
+    try:
+        m = re.search("ownerDN = '([^']+)'",line)
+        activity.Owner = m.group(1)
+        m = re.search("ownerDN = '.*CN=([^']+)'",line)
+        activity.LocalOwner = m.group(1)
+    except AttributeError:
+        m = re.search("uuid = '([^\"]+)'",line)
+        activity.LocalOwner = m.group(1)
+
+    try:
+        m = re.search("clientLaunchName='(\S+)'",line)
+        activity.Name = m.group(1)
+    except AttributeError:
+        pass
+
+    try:
+        m = re.search("CPUCount = (\d+)",line)
+        activity.RequestedSlots = int(m.group(1))
+    except AttributeError:
+        raise StepError("didn't find CPUCount in: %s" % line)
+
+    try:
+        m = re.search("minutesRequested = (\d+)",line)
+        activity.RequestedTotalWallTime = int(m.group(1)) * 60 * activity.RequestedSlots
+    except AttributeError:
+        pass
+
+    try:
+        m = re.search("memory = (\d+)",line)
+        activity.UsedMainMemory = int(m.group(1))
+    except AttributeError:
+        raise StepError("didn't find memory in: %s" % line)
+
+    try:
+        m = re.search("vmm='(\S+)'",line)
+        activity.ExecutionNode = [m.group(1)]
+    except AttributeError:
+        if last_node_reserved is not None:
+            activity.ExecutionNode = [last_node_reserved]
+
+    return activity
+
+#2012-08-08 12:07:02,707 INFO  dbdefault.DBAccountingAdapter [pool-1-thread-8556,destroy:349] [NIMBUS-EVENT][id-1419]: accounting: ownerDN = '/O=Auto/OU=FutureGridNimbus/CN=inca', minutesElapsed = 5, chargeRatio = 1.0, real usage = 5, uuid = 'e7db5c02-a754-4302-ace7-dd6e288daead'
+def _activityDestroyFromServicesLog(line):
+    activity = glue2.computing_activity.ComputingActivity()
+    activity.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
+
+    activity.EndTime = _getServicesLogDateTime(line[:23])
+        
+    m = re.search("id-(\d+)",line)
+    activity.LocalIDFromManager = m.group(1)
+
+    try:
+        m = re.search("ownerDN = '([^']+)'",line)
+        activity.Owner = m.group(1)
+        m = re.search("ownerDN = '.*CN=([^']+)'",line)
+        activity.LocalOwner = m.group(1)
+    except AttributeError:
+        m = re.search("uuid = '([^\"]+)'",line)
+        activity.LocalOwner = m.group(1)
+
+    return activity
 
 #######################################################################################################################
 
@@ -410,5 +590,17 @@ class ExecutionEnvironmentsStep(glue2.execution_environment.ExecutionEnvironment
                 else:
                     node.UnavailableInstances = 1
         return node
+
+#######################################################################################################################
+
+def _getDateTime(dtStr):
+    # Example: Jun 17, 2012 2:45:07 AM
+    d = datetime.datetime.strptime(dtStr,"%b %d, %Y %I:%M:%S %p")
+    return datetime.datetime(d.year,d.month,d.day,d.hour,d.minute,d.second,d.microsecond,localtzoffset())
+
+def _getServicesLogDateTime(dtStr):
+    # Example: 2012-08-08 07:52:04,419
+    d = datetime.datetime.strptime(dtStr,"%Y-%m-%d %H:%M:%S,%f")
+    return datetime.datetime(d.year,d.month,d.day,d.hour,d.minute,d.second,d.microsecond,localtzoffset())
 
 #######################################################################################################################

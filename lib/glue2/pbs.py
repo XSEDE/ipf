@@ -79,6 +79,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
     def _run(self):
         qstat = self.params.get("qstat","qstat")
 
+        # what flavors is -x (xml) available in?
         cmd = qstat + " -f"
         self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
@@ -109,7 +110,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
         job = glue2.computing_activity.ComputingActivity()
 
         # put multi-lines on one line
-        jobString.replace("\n\t","")
+        jobString = jobString.replace("\n\t","")
 
         m = re.search("Job Id: (\S+)",jobString)
         if m is not None:
@@ -193,6 +194,13 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
                    (job.State == glue2.computing_activity.ComputingActivity.STATE_TERMINATED):
                 # this is right for terminated since terminated is set on the E state
                 job.ComputingManagerEndTime = self._getDateTime(m.group(1))
+
+        m = re.search("exec_host = (\S+)",jobString)
+        if m is not None:
+            # exec_host = c013.cm.cluster/7+c013.cm.cluster/6+...
+            nodes = set(map(lambda s: s.split("/")[0], m.group(1).split("+")))
+            job.ExecutionNode = list(nodes)
+
         #m = re.search("ctime = (\S+)",jobString)
         #if m is not None:
         #    if line.find("ctime =") >= 0 and \
@@ -245,6 +253,8 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         # caching job information may not be the best idea for systems with very large queues...
         self.activities = {}
 
+        self.nodes = {}    # save a list of nodes allocated to a job
+
     def _run(self):
         try:
             dir_name = self.params["server_logs_dir"]
@@ -280,11 +290,27 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         elif type == "0010":
             # job resource usage
             pass
+        elif type == "0040":
+            # server sending requests (including allocation)
+            self._handleRequest(toks)
         else:
             #self.debug("unknown type %s",type)
             pass
         return True
 
+    def _handleRequest(self, toks):
+        if toks[4] != "set_nodes":
+            return
+        m = re.search("job (\S+) ",toks[5])
+        if m is None:
+            return
+        id = m.group(1).split(".")[0]  # just the id part of id.host.name
+
+        m = re.search(" \(nodelist=([^\)]+)\)",toks[5])
+        if m is None:
+            return
+        self.nodes[id] = list(set(map(lambda s: s.split("/")[0], m.group(1).split("+"))))
+            
     def _handleJobEntry(self, toks):
         id = toks[4].split(".")[0]  # just the id part of id.host.name
         try:
@@ -318,6 +344,11 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         elif "Job Run" in toks[5]:
             activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
             activity.StartTime = self._getDateTime(toks[0])
+            try:
+                activity.ExecutionNode = self.nodes[activity.LocalIDFromManager]
+                del self.nodes[activity.LocalIDFromManager]
+            except KeyError:
+                pass
         elif "Job deleted" in toks[5]:
             activity.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
             activity.ComputingManagerEndTime = self._getDateTime(toks[0])
