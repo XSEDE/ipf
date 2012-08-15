@@ -1,0 +1,52 @@
+
+Overview
+--------
+
+The Information Publishing Framework (IPF) is a generic framework for gathering and publishing
+information. This project is narrowly focused on those topics and does not include mechanisms to analyze or
+visualize information. IPF grew out of work to publish information about TeraGrid compute resources according
+to the [GLUE 2 specification](http://www.ogf.org/documents/GFD.147.pdf) and that continues to be one of the
+main goals of this project.
+
+IPF gathers and publishes information using simple workflows. These workflows are defined using JSON (see the
+etc/workflows directory) and steps in the workflows are implemented as Python classes. Each step in the
+workflow can require input Data, can produce output Data, and can publish Representations of Data. A typical
+workflow consists of a number of information gathering steps and a few steps that publish Representations to
+files or to remote services (e.g. REST, messaging).
+
+Workflow steps specify what Data they require and what Data they produce. This allows IPF to construct
+workflows based on partial information - in the case where there are not steps that produce the same Data, an
+entire workflow can be constructed from a single publish step and its required input Data. At the other
+extreme, workflows can be exactly specified with specific steps identified and the outputs of steps bound to
+the inputs of other steps. A typical workflow (e.g. GLUE 2) specifies what steps to include but lets IPF
+automatically link outputs to inputs of these steps.
+
+Workflows can run to completion relatively quickly or they can continuously run. The first type of workflow
+can be used to run a few commands or look at status files and publish that information. The second type of
+workflow can be used to monitor log files and publish entries written to those files. Workflows are typically
+run periodically as cron jobs.  The program libexec/run_workflow.py is for executing workflows that complete
+quickly and the program libexec/run_workflow_daemon.py is used to manage long-running workflows. The daemon
+program only starts a workflow if that workflow is not already running.
+
+Packaging (Incomplete)
+----------------------
+
+To make installation easier for specific projects and non-Python folks, the sbin directory contains programs
+to create tar.gz files that are customized to specific projects (e.g. FutureGrid, XSEDE) that can be provided
+to system administrators.
+
+Installation
+------------
+
+Installing a package is a matter of untarring it and then running 'python install.py <installation
+directory>'. The python program used in this step will be used by that installation of IPF.
+
+The system administrator can then perform some testing and setup cron jobs to run the appropriate
+workflows. The INSTALL.txt files in the tar files contain additional information and are renamed versions of
+the INSTALL_PROJECT.txt files in the source.
+
+Acknowledgements
+----------------
+
+This work was supported by the TeraGrid, XSEDE, and FutureGrid projects under National Science Foundation
+grants 0503697, 1053575, and 0910812.
