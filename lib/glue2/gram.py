@@ -54,6 +54,7 @@ class Version2EndpointStep(EndpointStep):
             endpoint.InterfaceName = "globus.prews-gram"
             if endpoint.ImplementationVersion == None:
                 endpoint.ImplementationVersion = "2"
+            endpoint.JobDescription = ["globus.rsl"]
         return endpoints
 
 #######################################################################################################################
@@ -70,6 +71,7 @@ class Version4EndpointStep(EndpointStep):
             endpoint.InterfaceName = "globus.ws-gram"
             if endpoint.ImplementationVersion == None:
                 endpoint.ImplementationVersion = "4"
+            endpoint.JobDescription = ["globus.rsl"]
         return endpoints
 
 #######################################################################################################################
@@ -86,6 +88,7 @@ class Version5EndpointStep(EndpointStep):
             endpoint.InterfaceName = "globus.gram5"
             if endpoint.ImplementationVersion == None:
                 endpoint.ImplementationVersion = "5"
+            endpoint.JobDescription = ["globus.rsl"]
         return endpoints
 
 #######################################################################################################################

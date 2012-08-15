@@ -27,7 +27,7 @@ import glue2.computing_endpoint
 class EndpointStep(glue2.computing_endpoint.ParamComputingEndpointStep):
     def __init__(self):
         glue2.computing_endpoint.ParamComputingEndpointStep.__init__(self)
-        self.description = "create a ComputingEndpoint for Genesis II using parameters"
+        self.description = "create a ComputingEndpoint for Unicore using parameters"
 
     def _run(self):
         endpoints = glue2.computing_endpoint.ParamComputingEndpointStep._run(self)
@@ -36,8 +36,8 @@ class EndpointStep(glue2.computing_endpoint.ParamComputingEndpointStep):
                                    "executionmanagement.jobexecution",
                                    "executionmanagement.jobmanager",
                                    ]
-            endpoint.Implementor = "University of Virginia"
-            endpoint.ImplementationName = "Genesis II"
+            endpoint.Implementor = "Julich Supercomputing Center"
+            endpoint.ImplementationName = "Unicore"
             endpoint.Technology = "webservice"
             endpoint.InterfaceName = "ogf.bes"
             endpoint.JobDescription = ["ogf.jsdl:1.0"]
