@@ -11,6 +11,29 @@
         "site_name": "uc.futuregrid.org"
       }
     },
+    { "name": "glue2.gram.Version5EndpointStep",
+      "params": {
+        "endpoint": {
+          "Name": "gram5-fork",
+          "URL": "gram://"
+        }
+      }
+    },
+    { "name": "glue2.gram.Version5EndpointStep",
+      "params": {
+        "endpoint": {
+          "Name": "gram5-pbs",
+          "URL": "gram://"
+        }
+      }
+    },
+    { "name": "glue2.genesisII.EndpointStep",
+      "params": {
+        "endpoint": {
+          "URL": "https://login2.uc.futuregrid.org:18443/axis/services/GeniiBESPortType?genii-container-id=382A19BD-DAD8-C1D1-52E0-F51DF72207EA"
+        }
+      }
+    },
     { "name": "glue2.pbs.ComputingActivitiesStep" },
     { "name": "glue2.pbs.ComputingSharesStep" },
     { "name": "glue2.pbs.ComputingServiceStep" },

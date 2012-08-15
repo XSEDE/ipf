@@ -62,7 +62,7 @@ possible you would want to edit these files to:
 
 In one terminal, execute:
 
-$ bin/subscribe.sh torquemoab.RESOURCE.futuregrid.org
+$ bin/subscribe.sh #.RESOURCE.futuregrid.org
 
 This program connects to the FutureGrid RabbitMQ service, requests that glue2 messages about RESOURCE be sent to
 it, and prints those messages to the screen as they arrive.
@@ -73,7 +73,6 @@ and submit a FutureGrid ticket if you are still getting errors.
 
 In another terminal, execute:
 
-
 $ bin/RESOURCE_pbs.sh
 
 The script should complete in a few seconds at most and will log information to var/RESOURCE_pbs.log. The last
@@ -82,7 +81,7 @@ error messages in the log should help you find causes for them. Typical problems
 configured correctly (e.g. Torque commands not in the path) or the user not being able to read the Torque
 server_logs directory. If you can't identify the problem, please submit a FutureGrid ticket.
 
-The terminal where you are running subscribe.sh should also show two documents once the RESOURCE_pbs.sh script
+The terminal where you are running subscribe.sh should show two documents once the RESOURCE_pbs.sh script
 completes. One document provides an overview of your cluster and contains information about queues
 (ComputingShares), nodes (ExecutionEnvironments) and about remote job services such as Genesis II, Globus, and
 Unicore (ComputingEndpoints). The other document provides information about each job (ComputingActivity) that
@@ -105,9 +104,12 @@ run by this script watches Torque log files for new jobs and job state changes a
 those changes as they occur. If you have jobs changing state on your cluster (you can always submit some
 yourself), you should see ComputingActivity document appearing in your terminal that is running subscribe.sh.
 
+If you wish to stop this daemon, just execute:
+
+$ pkill -TERM -P `cat var/RESOURCE_pbs_job_updates.pid`
+
 
 Once you finish testing, you can ctrl-C the bin/subscribe.sh script to stop it.
-
 
 ==== Torque Deployment ====
 
@@ -124,8 +126,8 @@ running.
 
 ==== Nimbus ====
 
-The nimbus configuration and testing follows the same process as for Torque. The only differences are that the
-script and workload file names have "nimbus" in them instead of "pbs".
+The Nimbus configuration, testing, and deployment follow the same process as for Torque. The only differences
+are that the script and workload file names have "nimbus" in them instead of "pbs".
 
 ==== OpenStack ====
 

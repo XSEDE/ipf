@@ -1,31 +1,30 @@
 {
-  "name": "glue2_nimbus",
-  "params": {
-    "nimbus_dir": "/N/u/nimbus/current"
-  },
+  "name": "alamo_pbs",
   "steps": [
     { "name": "ipf.name.ResourceNameStep",
       "params": {
-        "resource_name": "nimbus.foxtrot.futuregrid.org"
+        "resource_name": "torquemoab.india.futuregrid.org"
       }
     },
     { "name": "ipf.name.SiteNameStep",
       "params": {
-        "site_name": "uf.futuregrid.org"
+        "site_name": "iu.futuregrid.org"
       }
     },
-    { "name": "glue2.nimbus.ComputingEndpointStep",
+    { "name": "glue2.genesisII.EndpointStep",
       "params": {
-        "host_name": "s83r.idp.sdsc.futuregrid.org"
+        "endpoint": {
+          "URL": "https://149.165.146.134:18443/axis/services/GeniiBESPortType?genii-container-id=ECBCAEC8-5FFF-11E0-B887-28C73890A7D4"
+        }
       }
     },
-    { "name": "glue2.nimbus.ComputingActivitiesStep" },
-    { "name": "glue2.nimbus.ComputingSharesStep" },
-    { "name": "glue2.nimbus.ComputingServiceStep" },
-    { "name": "glue2.nimbus.ExecutionEnvironmentsStep" },
-    { "name": "glue2.nimbus.ComputingManagerStep" },
+    { "name": "glue2.pbs.ComputingActivitiesStep" },
+    { "name": "glue2.pbs.ComputingSharesStep" },
+    { "name": "glue2.pbs.ComputingServiceStep" },
+    { "name": "glue2.pbs.ExecutionEnvironmentsStep" },
+    { "name": "glue2.pbs.ComputingManagerStep" },
     {
-      "name": "ipf.publish/AmqpStep",
+      "name": "ipf.publish.AmqpStep",
       "params": {
         "publish": ["glue2.compute.PublicIpfJson"],
         "services": [ "inca.futuregrid.org" ],
@@ -39,7 +38,7 @@
       }
     },
     {
-      "name": "ipf.publish/AmqpStep",
+      "name": "ipf.publish.AmqpStep",
       "params": {
         "publish": ["glue2.compute.PrivateIpfJson"],
         "services": [ "inca.futuregrid.org" ],
@@ -56,14 +55,14 @@
       "name": "ipf.publish.FileStep",
       "params": {
         "publish": ["glue2.compute.PublicIpfJson"],
-        "path": "glue2_nimbus_public.json"
+        "path": "glue2_pbs_public.json"
       }
     },
     {
       "name": "ipf.publish.FileStep",
       "params": {
         "publish": ["glue2.compute.PrivateIpfJson"],
-        "path": "glue2_nimbus_private.json"
+        "path": "glue2_pbs_private.json"
       }
     }
   ]

@@ -11,6 +11,21 @@
         "site_name": "sdsc.futuregrid.org"
       }
     },
+    { "name": "glue2.unicore.EndpointStep",
+      "params": {
+        "endpoint": {
+          "ImplementationVersion": "6",
+          "URL": "https://198.202.120.85:8081/DEMO-SITE/services/BESFactory?res=default_bes_factory"
+        }
+      }
+    },
+    { "name": "glue2.genesisII.EndpointStep",
+      "params": {
+        "endpoint": {
+          "URL": "https://198.202.120.85:18443/axis/services/GeniiBESPortType?genii-container-id=709210EA-4B1A-84B9-563F-C83D85FDDCBF"
+        }
+      }
+    },
     { "name": "glue2.pbs.ComputingActivitiesStep" },
     { "name": "glue2.pbs.ComputingSharesStep" },
     { "name": "glue2.pbs.ComputingServiceStep" },
