@@ -112,10 +112,8 @@ class ComputingService(Data):
         self.SuspendedJobs = None      # integer
         self.PreLRMSWaitingJobs = None # integer
         self.ComputingEndpoint = []   # list of string (uri)
-        #self.computingEndpoint = []    # list of ComputingEndpoint
         self.ComputingShare = []      # list of string (uri)
         self.ComputingManager = None  # string (uri)
-        #self.computingManager = None   # ComputingManager (set by child class)
         self.StorageService = []       # list of string (uri)
 
     def _addActivities(self, activities):
