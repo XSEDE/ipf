@@ -5,7 +5,7 @@ import os
 import shutil
 import tempfile
 
-version = "1.0b1"
+version = "1.0b2"
 
 os.umask(0)
 
