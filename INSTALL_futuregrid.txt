@@ -62,7 +62,7 @@ possible you would want to edit these files to:
 
 In one terminal, execute:
 
-$ bin/subscribe.sh #.RESOURCE.futuregrid.org
+$ bin/subscribe.sh "#.RESOURCE.futuregrid.org"
 
 This program connects to the FutureGrid RabbitMQ service, requests that glue2 messages about RESOURCE be sent to
 it, and prints those messages to the screen as they arrive.
