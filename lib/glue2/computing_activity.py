@@ -50,7 +50,10 @@ class ComputingActivitiesStep(GlueStep):
 
         activities = self._run()
         for activity in activities:
-            activity.id = "%s.%s.%s" % (activity.LocalIDFromManager,activity.LocalOwner,self.resource_name)
+            if activity.LocalOwner is None:
+                activity.id = "%s.unknown.%s" % (activity.LocalIDFromManager,self.resource_name)
+            else:
+                activity.id = "%s.%s.%s" % (activity.LocalIDFromManager,activity.LocalOwner,self.resource_name)
             activity.ID = "urn:glue2:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
             if activity.Queue is not None:
                 activity.ComputingShare = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
@@ -86,7 +89,10 @@ class ComputingActivityUpdateStep(GlueStep):
         self._run()
 
     def output(self, activity):
-        activity.id = "%s.%s.%s" % (activity.LocalIDFromManager,activity.LocalOwner,self.resource_name)
+        if activity.LocalOwner is None:
+            activity.id = "%s.unknown.%s" % (activity.LocalIDFromManager,self.resource_name)
+        else:
+            activity.id = "%s.%s.%s" % (activity.LocalIDFromManager,activity.LocalOwner,self.resource_name)
         activity.ID = "urn:glue2:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
         if activity.Queue is not None:
             activity.ComputingShare = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
@@ -103,9 +109,12 @@ class ComputingActivity(Data):
 
     STATE_PENDING = "ipf:pending"
     STATE_HELD = "ipf:held"
+    STATE_STARTING = "ipf:starting"
     STATE_RUNNING = "ipf:running"
     STATE_SUSPENDED = "ipf:suspended"
+    STATE_TERMINATING = "ipf:terminating"
     STATE_TERMINATED = "ipf:terminated"
+    STATE_FINISHING = "ipf:finishing"
     STATE_FINISHED = "ipf:finished"
     STATE_FAILED = "ipf:failed"
     STATE_UNKNOWN = "ipf:unknown"
