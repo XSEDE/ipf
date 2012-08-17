@@ -15,7 +15,7 @@
       "params": {
         "endpoint": {
           "Name": "gram5-fork",
-          "URL": "gram://"
+          "URL": "gram://svc.uc.futuregrid.org:2119/jobmanager-fork"
         }
       }
     },
@@ -23,7 +23,7 @@
       "params": {
         "endpoint": {
           "Name": "gram5-pbs",
-          "URL": "gram://"
+          "URL": "gram://svc.uc.futuregrid.org:2119/jobmanager-pbs"
         }
       }
     },

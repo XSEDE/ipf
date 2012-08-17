@@ -1,7 +1,7 @@
 {
   "name": "glue2_nimbus",
   "params": {
-    "nimbus_dir": "/N/unimbus/2.9"
+    "nimbus_dir": "/soft/nimbus/default"
   },
   "steps": [
     { "name": "ipf.name.ResourceNameStep",
