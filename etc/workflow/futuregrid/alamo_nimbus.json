@@ -14,7 +14,7 @@
         "site_name": "tacc.futuregrid.org"
       }
     },
-    { "name": "glue2.nimbus.EndpointStep",
+    { "name": "glue2.nimbus.ComputingEndpointStep",
       "params": {
         "host_name": "daemon.alamo.futuregrid.org"
       }

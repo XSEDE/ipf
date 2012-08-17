@@ -1,7 +1,7 @@
 {
   "name": "glue2_nimbus",
   "params": {
-    "nimbus_dir": "/opt/nimbus-2.9"
+    "nimbus_dir": "/N/unimbus/2.9"
   },
   "steps": [
     { "name": "ipf.name.ResourceNameStep",
@@ -14,7 +14,7 @@
         "site_name": "uc.futuregrid.org"
       }
     },
-    { "name": "glue2.nimbus.EndpointStep",
+    { "name": "glue2.nimbus.ComputingEndpointStep",
       "params": {
         "host_name": "svc.uc.futuregrid.org"
       }

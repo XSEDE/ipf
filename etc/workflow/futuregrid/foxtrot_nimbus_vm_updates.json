@@ -6,13 +6,13 @@
         "resource_name": "nimbus.foxtrot.futuregrid.org"
       }
     },
-    { "name": "glue2.nimbus.ComputingActivityUpdate" },
+    { "name": "glue2.nimbus.ComputingActivityUpdateStep",
       "params": {
-        "nimbus_dir": "/opt/nimbus-2.9"
+        "nimbus_dir": "/N/u/nimbus/current"
       }
     },
     {
-      "name": "ipf.publish/AmqpStep",
+      "name": "ipf.publish.AmqpStep",
       "params": {
         "publish": ["glue2.computing_activity.ComputingActivityIpfJson"],
         "services": [ "inca.futuregrid.org" ],

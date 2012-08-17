@@ -8,7 +8,7 @@
     },
     { "name": "glue2.nimbus.ComputingActivityUpdateStep",
       "params": {
-        "nimbus_dir": "/opt/nimbus-2.9"
+        "nimbus_dir": "/N/u/nimbus/2.9"
       }
     },
     {

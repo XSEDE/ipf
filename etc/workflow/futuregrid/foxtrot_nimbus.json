@@ -16,7 +16,9 @@
     },
     { "name": "glue2.nimbus.ComputingEndpointStep",
       "params": {
-        "host_name": "s83r.idp.sdsc.futuregrid.org"
+        "host_name": "s83r.idp.sdsc.futuregrid.org",
+        "wsrf_port": 9443,
+        "rest_port": 9444,
       }
     },
     { "name": "glue2.nimbus.ComputingActivitiesStep" },
@@ -25,7 +27,7 @@
     { "name": "glue2.nimbus.ExecutionEnvironmentsStep" },
     { "name": "glue2.nimbus.ComputingManagerStep" },
     {
-      "name": "ipf.publish/AmqpStep",
+      "name": "ipf.publish.AmqpStep",
       "params": {
         "publish": ["glue2.compute.PublicIpfJson"],
         "services": [ "inca.futuregrid.org" ],
@@ -39,7 +41,7 @@
       }
     },
     {
-      "name": "ipf.publish/AmqpStep",
+      "name": "ipf.publish.AmqpStep",
       "params": {
         "publish": ["glue2.compute.PrivateIpfJson"],
         "services": [ "inca.futuregrid.org" ],
