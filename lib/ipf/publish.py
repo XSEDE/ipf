@@ -149,7 +149,7 @@ class AmqpStep(PublishStep):
 
         try:
             self.connection.close()
-        except MtkError:
+        except:
             pass
 
     def _publish(self, representation):

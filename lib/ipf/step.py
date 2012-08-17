@@ -35,8 +35,10 @@ class Step(multiprocessing.Process):
     def __init__(self):
         multiprocessing.Process.__init__(self)
 
+        self.id = None
         self.description = None
         self.time_out = None
+        self.params = {}
         self.requires = []    # Data or Representation that this step requires
         self.produces = []    # Data that this step produces
 
@@ -115,15 +117,15 @@ class Step(multiprocessing.Process):
                 sstr += indent+"    %s: %s\n" % (param,self.params[param])
         sstr += indent+"  requires:\n"
         for cls in self.requires:
-            sstr += indent+"    %s\n" % cls
+            sstr += indent+"    %s.%s\n" % (cls.__module__,cls.__name__)
         sstr += indent+"  produces:\n"
         for cls in self.produces:
-            sstr += indent+"    %s\n" % cls
+            sstr += indent+"    %s.%s\n" % (cls.__module__,cls.__name__)
         if len(self.outputs) > 0:
             sstr += indent+"  outputs:\n"
             for cls in self.outputs:
                 for step in self.outputs[cls]:
-                    sstr += indent+"    %s -> %s\n" % (cls,step.id)
+                    sstr += indent+"    %s.%s -> %s\n" % (cls.__module__,cls.__name__,step.id)
 
         return sstr
 
