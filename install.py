@@ -48,14 +48,14 @@ def copyReplaceTree(in_dir, out_dir, ignore=ignoreNone):
         else:
             raise Exception("copyReplaceTree can't handle file %s",in_path)
 
-generic_workflow = """#!/bin/sh
+generic_workflow = """#!/bin/sh -l
 
 export PYTHONPATH=@install_dir@/lib
 
 @python@ @install_dir@/libexec/run_workflow.py @install_dir@/@workflow_dir@/@workflow@.json >> @install_dir@/var/@workflow@.log 2>&1
 """
 
-generic_daemon = """#!/bin/sh
+generic_daemon = """#!/bin/sh -l
 
 export PYTHONPATH=@install_dir@/lib
 
