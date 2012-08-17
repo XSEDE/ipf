@@ -249,13 +249,21 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         glue2.computing_activity.ComputingActivityUpdateStep.__init__(self)
 
         self._acceptParameter("server_logs_dir","the path to the PBS spool/server_logs directory (optional)",False)
+        # qstat is needed by ComputingActivitiesStep
+        self._acceptParameter("qstat","the path to the PBS qstat program (default 'qstat')",False)
 
-        # caching job information may not be the best idea for systems with very large queues...
+        # caching job information isn't great with very large queues,
+        # but the job owner is only provided in the queued log entry
         self.activities = {}
 
         self.nodes = {}    # save a list of nodes allocated to a job
 
     def _run(self):
+        step = ComputingActivitiesStep()    # use ComputingActivitiesStep to initialize cache of activities
+        step.setParameters({},self.params)
+        for activity in step._run():
+            self.activities[activity.LocalIDFromManager] = activity
+
         try:
             dir_name = self.params["server_logs_dir"]
         except KeyError:
