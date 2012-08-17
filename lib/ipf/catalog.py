@@ -50,7 +50,8 @@ class Catalog(object):
             try:
                 __import__(module)
             except:
-                traceback.print_exc()
+                #traceback.print_exc()
+                pass  # silently ignore modules that can't be loaded
 
         self._addSubclasses(Step,self.steps)
         self._addSubclasses(Data,self.data)
