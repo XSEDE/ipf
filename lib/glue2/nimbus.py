@@ -221,8 +221,8 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
                 else:
                     self.error("unknown state: %s",state)
             elif line.startswith("start time"):
-                # this seems to really be the time that Nimbus allocates part of a node to the VM
-                activity.StartTime = _getAdminDateTime(line[14:])
+                # this is really the time that Nimbus begins to start a job - it can take a while
+                activity.SubmissionTime = _getAdminDateTime(line[14:])
             elif line.startswith("end time"):
                 end_time = _getAdminDateTime(line[14:])
             elif line.startswith("memory"):
@@ -406,7 +406,7 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             activity.LocalIDFromManager = id
             self.activities[activity.LocalIDFromManager] = activity
         activity.State = glue2.computing_activity.ComputingActivity.STATE_FINISHING
-        activity.StartTime = _getServicesLogDateTime(line[:23])
+        activity.Extension["FinishingTime"] = _getServicesLogDateTime(line[:23])
         self.output(activity)
     
     def _activityFromDestroy(self, line):
