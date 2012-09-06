@@ -192,7 +192,6 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
         self.cur_job = None
         self.jobs = []
         self.cur_time = time.time()
-        self.state = None
         
         self.text = ""
 
@@ -204,12 +203,10 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
             self.jobs.append(self.cur_job)
 
     def startElement(self, name, attrs):
-        if name == "job_list":
-            self.state = attrs["state"]
+        pass
 
     def endElement(self, name):
         self._handleElement(name)
-        self.state = None
         # get ready for next element
         self.text = ""
 
@@ -222,14 +219,6 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
                 self.jobs.append(self.cur_job)
             self.cur_job = glue2.computing_activity.ComputingActivity()
             self.cur_job.LocalIDFromManager = self.text
-            if self.state == "running":
-                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
-            elif self.state == "pending":
-                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
-            elif self.state == "zombie":
-                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
-            else:
-                self.step.warning("unknown job state %s" % self.state)
         elif name == "JAT_prio":
             self.priority = float(self.text)
         elif name == "JB_name":
@@ -237,17 +226,18 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
         elif name == "JB_owner":
             self.cur_job.LocalOwner = self.text
         elif name == "state":
-            pass # switching to above
             if self.text == "r":
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
             elif self.text == "R": # restarted
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
             elif self.text.find("d") >= 0: # deleted
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
-            elif self.text.find("w") >= 0: # waiting - qw, Eqw, hqw
-                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
-            elif self.text.find("h") >= 0: # held - hr
+            elif self.text.find("h") >= 0: # held - hqw, hr
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
+            elif self.text.find("E") >= 0: # waiting - Eqw
+                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_FAILED
+            elif self.text.find("w") >= 0: # waiting - qw
+                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
             elif self.text == "t": # transfering
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
             else:
@@ -384,6 +374,8 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             msg = "could not open SGE reporting file %s" % reporting_filename
             self.error(msg)
             raise StepError(msg)
+
+        # if a site is generating a schedd_runlog, can use it to find jobs that are held because of dependencies
 
         file.seek(0,2)
         while True:
