@@ -5,7 +5,7 @@ import os
 import shutil
 import tempfile
 
-version = "1.0b3"
+version = "1.0b4"
 
 os.umask(0)
 
@@ -28,11 +28,11 @@ shutil.copytree(os.path.join("etc","workflow","futuregrid"),
 shutil.copy(os.path.join("etc","logging.conf"),os.path.join(path,"etc"))
 shutil.copy(os.path.join("etc","ca_certs.pem"),os.path.join(path,"etc"))
 
-shutil.copytree(os.path.join("..","mtk","lib","mtk","amqp_0_9_1"),
-                os.path.join(path,"lib","mtk","amqp_0_9_1"),
-                ignore=ig)
-shutil.copy(os.path.join("..","mtk","lib","mtk","__init__.py"),
-            os.path.join(path,"lib","mtk","__init__.py"))
+# not the mtk/lib/mtk/generate directory
+mtk_ig=shutil.ignore_patterns("*~","*.pyc","*.pem","generate")
+shutil.copytree(os.path.join("..","mtk","lib","mtk"),
+                os.path.join(path,"lib","mtk"),
+                ignore=mtk_ig)
 
 dir = os.getcwd()
 os.chdir(temp_path)
