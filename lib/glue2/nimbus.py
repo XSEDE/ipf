@@ -176,9 +176,10 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
 
         try:
             return self._fromNimbusAdmin()
-        except StepError:
+        except StepError, e:
             # probably an older Nimbus version without the nimbus-admin command
             # don't bother to pull node assignments out of services.log
+            self.info("getting activities from current-reservations.txt instead of nimbus-admin: %s",str(e))
             return self._fromCurrentReservations()
 
     def _fromNimbusAdmin(self):
@@ -204,12 +205,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             elif line.startswith("node"):
                 activity.ExecutionNode = [line[14:]]
             elif line.startswith("creator"):
-                activity.Owner = line[14:]
-                try:
-                    m = re.search("CN=(\S+)",activity.Owner)
-                    activity.LocalOwner = m.group(1)
-                except AttributeError:
-                    pass
+                activity.LocalOwner = line[14:]  # a Distinguished Name
             elif line.startswith("state"):
                 state = line[14:]
                 if state == "Unpropagated":
@@ -222,6 +218,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
                     self.error("unknown state: %s",state)
             elif line.startswith("start time"):
                 # this is really the time that Nimbus begins to start a job - it can take a while
+                # use SubmissionTime to be compatible with ComputingActivityUpdateStep
                 activity.SubmissionTime = _getAdminDateTime(line[14:])
             elif line.startswith("end time"):
                 end_time = _getAdminDateTime(line[14:])
@@ -235,7 +232,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
                 pass
         activity.RequestedTotalWallTime = int(activity.RequestedSlots * \
                                               (time.mktime(end_time.timetuple()) - \
-                                               time.mktime(activity.StartTime.timetuple())))
+                                               time.mktime(activity.SubmissionTime.timetuple())))
         return activity
 
     def _fromCurrentReservations(self):
@@ -243,11 +240,10 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
 
         file = open(os.path.join(self.nimbus_dir,"services","var","nimbus","current-reservations.txt"),"r")
         for line in file:
-            activities.append(self,_activityFromCurrentReservation(line))
+            activities.append(self._activityFromCurrentReservation(line))
         file.close()
 
         return activities
-
 
     def _activityFromCurrentReservation(self, line):
         activity = glue2.computing_activity.ComputingActivity()
@@ -259,7 +255,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
         try:
             m = re.search("dn=\"([^\"]+)\"",line)
             activity.Owner = m.group(1)
-            m = re.search("dn=\".*CN=([^\"]+)\"",line)
+            m = re.search("/O=Auto/OU=FutureGridNimbus/CN=(\S+)",activity.Owner)
             activity.LocalOwner = m.group(1)
         except AttributeError:
             m = re.search("uuid=\"([^\"]+)\"",line)
@@ -348,8 +344,6 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
 
         try:
             m = re.search("ownerDN = '([^']+)'",line)
-            activity.Owner = m.group(1)
-            m = re.search("ownerDN = '.*CN=([^']+)'",line)
             activity.LocalOwner = m.group(1)
         except AttributeError:
             m = re.search("uuid = '([^\"]+)'",line)

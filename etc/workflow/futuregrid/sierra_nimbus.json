@@ -16,10 +16,10 @@
     },
     { "name": "glue2.nimbus.ComputingEndpointStep",
       "params": {
-        "host_name": "f1r.idp.ufl.futuregrid.org"
+        "host_name": "s83r.idp.sdsc.futuregrid.org"
       }
     },
-    { "name": "glue2.nimbus.ComputingActivitiesStep" },
+    { "name": "glue2.futuregrid.nimbus.ComputingActivitiesStep" },
     { "name": "glue2.nimbus.ComputingSharesStep" },
     { "name": "glue2.nimbus.ComputingServiceStep" },
     { "name": "glue2.nimbus.ExecutionEnvironmentsStep" },

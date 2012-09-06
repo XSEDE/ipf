@@ -6,7 +6,7 @@
         "resource_name": "torquemoab.hotel.futuregrid.org"
       }
     },
-    { "name": "glue2.pbs.ComputingActivityUpdateStep" },
+    { "name": "glue2.futuregrid.pbs.ComputingActivityUpdateStep" },
     {
       "name": "ipf.publish.AmqpStep",
       "params": {

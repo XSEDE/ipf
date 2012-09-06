@@ -19,7 +19,7 @@
         "host_name": "svc.uc.futuregrid.org"
       }
     },
-    { "name": "glue2.nimbus.ComputingActivitiesStep" },
+    { "name": "glue2.futuregrid.nimbus.ComputingActivitiesStep" },
     { "name": "glue2.nimbus.ComputingSharesStep" },
     { "name": "glue2.nimbus.ComputingServiceStep" },
     { "name": "glue2.nimbus.ExecutionEnvironmentsStep" },
