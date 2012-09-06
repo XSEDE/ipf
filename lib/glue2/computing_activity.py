@@ -180,7 +180,7 @@ class ComputingActivity(Data):
         self.ExecutionEnvironment = None           # uri
 
     def __str__(self):
-        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+        return json.dumps(ComputingActivityIpfJson.toJson(self),sort_keys=True,indent=4)
 
     ###################################################################################################################
 
@@ -196,6 +196,14 @@ class ComputingActivity(Data):
         self.Name = doc.get("Name")
         self.OtherInfo = doc.get("OtherInfo",[])
         self.Extension = doc.get("Extension",{})
+        for name in doc.get("Extension",{}):
+            if "Time" in name:
+                try:
+                    self.Extension[name] = textToDateTime(doc["Extension"][name])
+                except:
+                    self.Extension[name] = doc["Extension"][name]
+            else:
+                self.Extension[name] = doc["Extension"][name]
 
         # Activity
         self.UserDomain = doc.get("UserDomain")
@@ -503,7 +511,12 @@ class ComputingActivityIpfJson(Representation):
         if len(activity.OtherInfo) > 0 and "OtherInfo" not in hide:
             doc["OtherInfo"] = activity.OtherInfo
         if len(activity.Extension) > 0 and "Extension" not in hide:
-            doc["Extension"] = activity.Extension
+            doc["Extension"] = {}
+            for name in activity.Extension:
+                if isinstance(activity.Extension[name],datetime.datetime):
+                    doc["Extension"][name] = dateTimeToText(activity.Extension[name])
+                else:
+                    doc["Extension"][name] = activity.Extension[name]
 
         # Activity
         if activity.UserDomain is not None and "UserDomain" not in hide:
