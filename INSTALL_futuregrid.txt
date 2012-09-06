@@ -116,7 +116,7 @@ Once you finish testing, you can ctrl-C the bin/subscribe.sh script to stop it.
 To activate this software with Torque, create cron jobs for the user you selected on the server you
 selected. Example cron jobs are:
 
-*/5 * * * * /path/to/installation/directory/bin/RESOURCE_pbs.sh
+*/2 * * * * /path/to/installation/directory/bin/RESOURCE_pbs.sh
 */15 * * * * /path/to/installation/directory/bin/RESOURCE_pbs_job_updates.sh
 
 The first cron job takes a snapshot of your system every 5 minutes so that the FutureGrid portal and other
