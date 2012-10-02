@@ -411,7 +411,7 @@ class ComputingActivityTeraGridXml(Representation):
         if "ExecutionNode" not in hide:
             for node in activity.ExecutionNode:
                 e = doc.createElement("ExecutionNode")
-                e.appendChild(doc.createTextNode(activity.ExecutionNode))
+                e.appendChild(doc.createTextNode(node))
                 root.appendChild(e)
         if activity.Queue is not None and "Queue" not in hide:
             e = doc.createElement("Queue")

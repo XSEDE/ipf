@@ -218,7 +218,7 @@ class Private(Data):
 
 #######################################################################################################################
 
-class PrivateCTeraGridXml(Representation):
+class PrivateTeraGridXml(Representation):
     data_cls = Private
 
     def __init__(self, data):
