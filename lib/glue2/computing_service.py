@@ -28,6 +28,7 @@ from ipf.name import ResourceName
 from glue2.computing_activity import ComputingActivity, ComputingActivities
 from glue2.computing_share import ComputingShares
 from glue2.computing_endpoint import ComputingEndpoint
+from glue2.location import Location
 from glue2.step import GlueStep
 
 #######################################################################################################################
@@ -39,16 +40,18 @@ class ComputingServiceStep(GlueStep):
 
         self.description = "This step provides a GLUE 2 ComputingService document. It is an aggregation mechanism"
         self.time_out = 10
-        self.requires = [ResourceName,ComputingActivities,ComputingShares,ComputingEndpoint]
+        self.requires = [ResourceName,Location,ComputingActivities,ComputingShares,ComputingEndpoint]
         self.produces = [ComputingService]
 
         self.resource_name = None
+        self.location = None
         self.activities = None
         self.shares = None
         self.endpoints = None
 
     def run(self):
         self.resource_name = self._getInput(ResourceName).resource_name
+        self.location = self._getInput(Location).ID
         self.activities = self._getInput(ComputingActivities).activities
         self.shares = self._getInput(ComputingShares).shares
         self.endpoints = []
@@ -62,7 +65,9 @@ class ComputingServiceStep(GlueStep):
 
         service.id = self.resource_name
         service.ID = "urn:glue2:ComputingService:%s" % (self.resource_name)
+        service.Location = self.location
         service.ComputingManager = "urn:glue2:ComputingManager:%s" % (self.resource_name)
+
 
         service._addActivities(self.activities)
         service._addShares(self.shares)

@@ -6,9 +6,15 @@
         "resource_name": "torquemoab.hotel.futuregrid.org"
       }
     },
-    { "name": "ipf.name.SiteNameStep",
+    { "name": "glue2.location.LocationStep",
       "params": {
-        "site_name": "uc.futuregrid.org"
+        "location": {
+          "Name": "University of Chicago",
+          "Place": "Argonne",
+          "Country": "US",
+          "Latitude": 41.714122,
+          "Longitude": -87.982807
+        }
       }
     },
     { "name": "glue2.gram.Version5EndpointStep",

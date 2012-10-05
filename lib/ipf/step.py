@@ -35,7 +35,7 @@ class Step(multiprocessing.Process):
     def __init__(self):
         multiprocessing.Process.__init__(self)
 
-        self.id = None
+        self.id = None        # a unique id for the step in a workflow
         self.description = None
         self.time_out = None
         self.params = {}

@@ -6,9 +6,15 @@
         "resource_name": "torquemoab.alamo.futuregrid.org"
       }
     },
-    { "name": "ipf.name.SiteNameStep",
+    { "name": "glue2.location.LocationStep",
       "params": {
-        "site_name": "tacc.futuregrid.org"
+        "location": {
+          "Name": "Texas Advanced Computing Center",
+          "Place": "Austin",
+          "Country": "US",
+          "Latitude": 30.390132,
+          "Longitude": -97.725309
+        }
       }
     },
     { "name": "glue2.gram.Version5EndpointStep",

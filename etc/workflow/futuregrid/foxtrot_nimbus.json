@@ -9,9 +9,15 @@
         "resource_name": "nimbus.foxtrot.futuregrid.org"
       }
     },
-    { "name": "ipf.name.SiteNameStep",
+    { "name": "glue2.location.LocationStep",
       "params": {
-        "site_name": "uf.futuregrid.org"
+        "location": {
+          "Name": "University of Florida",
+          "Place": "Gainesville",
+          "Country": "US",
+          "Latitude": 29.642265,
+          "Longitude": -82.347078
+        }
       }
     },
     { "name": "glue2.nimbus.ComputingEndpointStep",

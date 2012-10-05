@@ -6,9 +6,15 @@
         "resource_name": "torquemoab.india.futuregrid.org"
       }
     },
-    { "name": "ipf.name.SiteNameStep",
+    { "name": "glue2.location.LocationStep",
       "params": {
-        "site_name": "iu.futuregrid.org"
+        "location": {
+          "Name": "Indiana University",
+          "Place": "Bloomington",
+          "Country": "US",
+          "Latitude": 39.172069,
+          "Longitude": -86.499862
+        }
       }
     },
     { "name": "glue2.genesisII.EndpointStep",

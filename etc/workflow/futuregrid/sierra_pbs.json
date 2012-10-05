@@ -6,9 +6,15 @@
         "resource_name": "torquemoab.sierra.futuregrid.org"
       }
     },
-    { "name": "ipf.name.SiteNameStep",
+    { "name": "glue2.location.LocationStep",
       "params": {
-        "site_name": "sdsc.futuregrid.org"
+        "location": {
+          "Name": "San Diego Supercomputing Center",
+          "Place": "La Jolla",
+          "Country": "US",
+          "Latitude": 32.884399,
+          "Longitude": -117.238648
+        }
       }
     },
     { "name": "glue2.unicore.EndpointStep",

@@ -9,9 +9,18 @@
         "resource_name": "nimbus.sierra.futuregrid.org"
       }
     },
-    { "name": "ipf.name.SiteNameStep",
+    { "name": "glue2.location.LocationStep",
       "params": {
-        "site_name": "sdsc.futuregrid.org"
+        "location": {
+          "Name": "San Diego Supercomputing Center",
+          "Place": "La Jolla",
+          "Country": "US",
+          "Latitude": 32.884399,
+          "Longitude": -117.238648
+          "Extension": {
+            "DomainName": "sdsc.futuregrid.org"
+          }
+        }
       }
     },
     { "name": "glue2.nimbus.ComputingEndpointStep",
