@@ -42,46 +42,88 @@ signal.signal(signal.SIGINT, sigHandler)
 
 #######################################################################################################################
 
-def incoming(consumer_tag, routing_key, exchange, content):
-    print("|-----------------------------  message  ------------------------------")
-    print("|      key: %s" % routing_key)
-    print("| exchange: %s" % exchange)
-    print("|  content:")
-    print("%s" % content)
+class VirtualHost:
+    def __init__(self, vhost, server, port):
+        print("connecting to vhost %s on %s:%d" % (vhost,server,port))
+        self.vhost = vhost
+        self.connection = Connection(host=server,
+                                     port=port,
+                                     virtual_host=self.vhost,
+                                     mechanism=X509Mechanism(),
+                                     ssl_options={"keyfile":os.path.join(IPF_HOME,"etc","key.pem"),
+                                                  "certfile":os.path.join(IPF_HOME,"etc","cert.pem"),
+                                                  "cert_reqs":ssl.CERT_REQUIRED,
+                                                  "ca_certs":os.path.join(IPF_HOME,"etc","ca_certs.pem")},
+                                     heartbeat=60)
+        self.channel = self.connection.channel()
+        self.queue = self.channel.queueDeclare()
+
+    def subscribe(self, exchange, filter):
+        print("subscribing to exchange %s in vhost %s for %s" % (exchange,self.vhost,filter))
+        queue = self.channel.queueDeclare()
+        self.channel.queueBind(queue,exchange,filter)
+        consumer_tag = self.channel.basicConsume(self.incoming,queue)
+        print("  subscribed to exchange %s in vhost %s for %s" % (exchange,self.vhost,filter))
+
+    def close(self):
+        self.connection.close()
+
+    def incoming(self, consumer_tag, routing_key, exchange, content):
+        print("|-----------------------------  message  ------------------------------")
+        print("|      key: %s" % routing_key)
+        print("|    vhost: %s" % self.vhost)
+        print("| exchange: %s" % exchange)
+        print("|  content:")
+        print("%s" % content)
 
 #######################################################################################################################
 
 if __name__ == "__main__":
-    try:
-        filter = sys.argv[1]
-        print("receiving glue2 messages about %s" % filter)
-    except IndexError:
-        filter = "#"
-        print("receiving all glue2 messages")
+    usage = "Usage: %prog [options] [<vhost>/<exchange>/<message filter>]+"
+    parser = optparse.OptionParser(usage=usage)
+    parser.add_option("-s","--server",default="localhost",dest="server",
+                      help="the server running the messaging service")
+    parser.add_option("-p","--port",type="int",default=5671,dest="port",
+                      help="the port the messaging service is listening to")
+    parser.add_option("-v","--vhost",dest="vhost",
+                      help="the virtual host in the messaging service to connect to")
+    parser.add_option("-e","--exchange",action="append",dest="exchanges",
+                      help="an exchange in the virtual host to listen to")
+    parser.add_option("-f","--filter",default="#",dest="filter",
+                      help="the message filter describing what routing keys are of interest")
+    (options, args) = parser.parse_args()
 
-    conn = Connection(host="inca.futuregrid.org",
-                      port=5671,
-                      virtual_host="monitoring",
-                      mechanism=X509Mechanism(),
-                      ssl_options={"keyfile":os.path.join(IPF_HOME,"etc","key.pem"),
-                                   "certfile":os.path.join(IPF_HOME,"etc","cert.pem"),
-                                   "cert_reqs":ssl.CERT_REQUIRED,
-                                   "ca_certs":os.path.join(IPF_HOME,"etc","ca_certs.pem")},
-                      heartbeat=60)
-    channel = Channel(conn)
+    vhosts = {}
+    if options.vhost is not None:
+        print("creating vhost from switches...")
+        vhosts[options.vhost] = VirtualHost(options.vhost,options.server,options.port)
+        if options.exchanges is None or len(options.exchanges) == 0:
+            print("vhost specified, but no exchanges specified")
+            sys.exit(1)
+        else:
+            for exchange in options.exchanges:
+                vhosts[options.vhost].subscribe(exchange,options.filter)
+    else:
+        if options.exchanges is not None and len(options.exchanges) > 0:
+            print("exchange(s) specified, but no vhost specified")
+            sys.exit(1)
 
-    queue = channel.queueDeclare()
+    for subscription in args:
+        (vhost,exchange,filter) = subscription.split("/")
+        if vhost not in vhosts:
+            vhosts[vhost] = VirtualHost(vhost,options.server,options.port)
+        vhosts[vhost].subscribe(exchange,filter)
 
-    channel.queueBind(queue,"glue2.systems",filter)
-    channel.queueBind(queue,"glue2.activities",filter)
-    channel.queueBind(queue,"glue2.activity_updates",filter)
-    consumer_tag = channel.basicConsume(incoming,queue)
+    if len(vhosts) == 0:
+        print("no subscriptions specified")
+        sys.exit(1)
 
     print("press ctrl-C to exit")
     while keep_running:
         time.sleep(1)
     print("shutting down")
 
-    conn.close()
+    for vhost in vhosts:
+        vhost.close()
 
 #######################################################################################################################
