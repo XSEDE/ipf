@@ -28,7 +28,6 @@ import glue2.computing_service
 import glue2.computing_share
 from glue2.log import LogDirectoryWatcher
 from glue2.execution_environment import *
-from glue2.teragrid.platform import PlatformMixIn
 
 #######################################################################################################################
 
@@ -46,7 +45,7 @@ class ComputingServiceStep(glue2.computing_service.ComputingServiceStep):
                               "executionmanagement.executionandplanning",
                               "executionmanagement.reservation",
                               ]
-        service.Type = "org.teragrid.PBS"
+        service.Type = "ipf.PBS"
         service.QualityLevel = "production"
 
         return service
@@ -600,17 +599,5 @@ class ExecutionEnvironmentsStep(glue2.execution_environment.ExecutionEnvironment
             else:
                 self.warn("can't parse part of nodes expression: "+tok)
         return goodSoFar
-
-#######################################################################################################################
-
-class TeraGridExecutionEnvironmentsStep(ExecutionEnvironmentsStep, PlatformMixIn):
-    def __init__(self):
-        ExecutionEnvironmentsStep.__init__(self)
-        PlatformMixIn.__init__(self)
-
-    def _run(self):
-        hosts = ExecutionEnvironmentsStep._run(self)
-        self.addTeraGridPlatform(hosts)
-        return hosts
 
 #######################################################################################################################

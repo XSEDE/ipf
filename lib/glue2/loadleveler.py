@@ -26,7 +26,6 @@ import glue2.computing_manager
 import glue2.computing_service
 import glue2.computing_share
 import glue2.execution_environment
-from glue2.teragrid.platform import PlatformMixIn
 
 #######################################################################################################################
 
