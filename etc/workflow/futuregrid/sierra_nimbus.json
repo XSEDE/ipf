@@ -1,7 +1,7 @@
 {
   "name": "sierra_nimbus",
   "params": {
-    "nimbus_dir": "/N/u/nimbus/2.9"
+    "nimbus_dir": "/N/u/nimbus/default"
   },
   "steps": [
     { "name": "ipf.name.ResourceNameStep",
