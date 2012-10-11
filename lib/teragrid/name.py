@@ -23,7 +23,7 @@ import ipf.name
 
 #######################################################################################################################
 
-class TeraGridResourceNameStep(ipf.name.ResourceNameStep):
+class ResourceNameStep(ipf.name.ResourceNameStep):
     def __init__(self):
         ipf.name.ResourceNameStep.__init__(self)
         self.description = "produces a resource name document using tgwhereami"
@@ -43,6 +43,32 @@ class TeraGridResourceNameStep(ipf.name.ResourceNameStep):
                 sys.exit(1)
             resource_name = output
 
-        self._output(ResourceName(resource_name))
+        self._output(ipf.name.ResourceName(resource_name))
     
+#######################################################################################################################
+
+class SiteNameStep(ipf.name.SiteNameStep):
+
+    def __init__(self):
+        ipf.name.SiteNameStep.__init__(self)
+
+        self.description = "produces a site name document using tgwhereami"
+        self._acceptParameter("tgwheremi","path to the tgwhereami program (default 'tgwhereami')",False)
+
+    def run(self):
+        try:
+            site_name = self.params["site_name"]
+        except KeyError:
+            try:
+                tg_whereami = self.params["tgwhereami"]
+            except KeyError:
+                tg_whereami = "tgwhereami"
+            (status, output) = commands.getstatusoutput(tg_whereami+" -s")
+            if status != 0:
+                self.error("failed to execute %s" % tg_whereami)
+                sys.exit(1)
+            site_name = output
+
+        self._output(ipf.name.SiteName(site_name))
+
 #######################################################################################################################

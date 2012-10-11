@@ -19,9 +19,11 @@ import commands
 import datetime
 import os
 import re
+import time
 import xml.sax
 import xml.sax.handler
 
+from ipf.dt import *
 from ipf.error import StepError
 
 import glue2.computing_activity
@@ -29,7 +31,7 @@ import glue2.computing_manager
 import glue2.computing_service
 import glue2.computing_share
 import glue2.execution_environment
-from glue2.teragrid.platform import PlatformMixIn
+from glue2.log import LogFileWatcher
 
 #######################################################################################################################
 
@@ -358,6 +360,8 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
     def _run(self):
         self.info("running")
 
+        # if a site is generating a schedd_runlog, can use it to find jobs that are held because of dependencies
+
         try:
             reporting_filename = self.params["reporting_file"]
         except KeyError:
@@ -367,27 +371,11 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
                 msg = "no reporting_file specified and the SGE_ROOT environment variable is not set"
                 self.error(msg)
                 raise StepError(msg)
+        watcher = LogFileWatcher(self._logEntry,reporting_filename)
+        watcher.run()
 
-        try:
-            file = open(reporting_filename,"r")
-        except IOError:
-            msg = "could not open SGE reporting file %s" % reporting_filename
-            self.error(msg)
-            raise StepError(msg)
-
-        # if a site is generating a schedd_runlog, can use it to find jobs that are held because of dependencies
-
-        file.seek(0,2)
-        while True:
-            where = file.tell()
-            line = file.readline()
-            if not line:
-                time.sleep(1)
-                file.seek(where)
-            else:
-                self.handleEntry(line)
-
-    def handleEntry(self, line):
+    def _logEntry(self, log_file_name, line):
+        print("new log entry")
         if line.startswith("#"):
             return
 
@@ -472,7 +460,7 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             # these are redundant to what master logs, so ignore
             return
 
-        activity = sge.computing_activity.ComputingActivity()
+        activity = glue2.computing_activity.ComputingActivity()
 
         event_dt = datetime.datetime.fromtimestamp(float(toks[2]),tzoffset(0))
         activity.LocalIDFromManager = toks[4]
@@ -508,6 +496,7 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         else:
             self.warning("unknown job log of type %s" % toks[3])
 
+        print(activity)
         if self._includeQueue(activity.Queue):
             self.output(activity)
 
@@ -541,7 +530,7 @@ class ComputingSharesStep(glue2.computing_share.ComputingSharesStep):
         return queues
 
     def _getQueue(self, queueString):
-        queue = ComputingShare()
+        queue = glue2.computing_share.ComputingShare()
 
         lines = queueString.split("\n")
         queueName = None
@@ -565,7 +554,16 @@ class ComputingSharesStep(glue2.computing_share.ComputingSharesStep):
             if line.startswith("h_data "):
                 value = line[6:].lstrip()
                 if value != "INFINITY":
-                    queue.MaxMemory = self._getDuration(value)
+                    try:
+                        queue.MaxMainMemory = int(value)
+                    except ValueError:
+                        # may have a unit on the end
+                        unit = value[len(value-1):]
+                        queue.MaxMainMemory = int(value[:len(value-1)])
+                        if unit == "K":
+                            queue.MaxMainMemory /= 1024
+                        if unit == "G":
+                            queue.MaxMainMemory *= 1024
         return queue
     
     def _getDuration(self, dStr):
@@ -606,19 +604,6 @@ class ExecutionEnvironmentsStep(glue2.execution_environment.ExecutionEnvironment
 
 #######################################################################################################################
 
-class TeraGridExecutionEnvironmentsStep(ExecutionEnvironmentsStep, PlatformMixIn):
-
-    def __init__(self):
-        ExecutionEnvironmentsStep.__init__(self)
-        PlatformMixIn.__init__(self)
-
-    def _run(self):
-        hosts = ExecutionEnvironmentsStep._run(self)
-        self.addTeraGridPlatform(hosts)
-        return hosts
-
-#######################################################################################################################
-
 class HostsHandler(xml.sax.handler.ContentHandler):
 
     def __init__(self, step):
@@ -638,7 +623,7 @@ class HostsHandler(xml.sax.handler.ContentHandler):
 
     def startElement(self, name, attrs):
         if name == "host":
-            self.cur_host = ExecutionEnvironment()
+            self.cur_host = glue2.execution_environment.ExecutionEnvironment()
             self.cur_host.Name = attrs.getValue("name")
             self.cur_host.TotalInstances = 1
             self.cur_host.ComputingManager = "http://"+self.step.resource_name+"/glue2/ComputingManager"

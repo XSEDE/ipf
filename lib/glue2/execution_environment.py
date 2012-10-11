@@ -27,6 +27,7 @@ from ipf.data import Data, Representation
 from ipf.dt import *
 from ipf.error import StepError
 from ipf.name import ResourceName
+from ipf.platform import Platform
 
 from glue2.step import GlueStep
 
@@ -39,7 +40,7 @@ class ExecutionEnvironmentsStep(GlueStep):
 
         self.description = "Produces a document containing one or more GLUE 2 ExecutionEnvironment. For a batch scheduled system, an ExecutionEnivonment is typically a compute node."
         self.time_out = 30
-        self.requires = [ResourceName]
+        self.requires = [ResourceName,Platform]
         self.produces = [ExecutionEnvironments]
         self._acceptParameter("queues",
                               "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. The expression is processed in order and the value for a queue at the end determines if it is shown.",
