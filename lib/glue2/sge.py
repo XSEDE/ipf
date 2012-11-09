@@ -139,7 +139,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             if m != None:
                 cur_job.UserDomain = m.group(1)
                 continue
-            m = re.search("<JB_project>(\S+)</JB_project>",line)
+            m = re.search("<QR_Name>(\S+)</QR_Name>",line)
             if m != None:
                 cur_job.Queue = m.group(1)
                 # below needs to match how ID is calculated in the ComputingShareAgent
@@ -299,7 +299,7 @@ class JobsJHandler(xml.sax.handler.ContentHandler):
             return
         if name == "JB_account":
             self.cur_job.UserDomain = self.text
-        if name == "JB_project":
+        if name == "QR_name":
             self.cur_job.Queue = self.text
         if name == "CE_name":
             if self.text == "h_rt":
