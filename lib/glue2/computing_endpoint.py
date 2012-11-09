@@ -81,6 +81,17 @@ class ParamComputingEndpointStep(ComputingEndpointStep):
 
 #######################################################################################################################
 
+class NoComputingEndpointsStep(ComputingEndpointStep):
+    def __init__(self):
+        ComputingEndpointStep.__init__(self)
+
+        self.description = "create no ComputingEndpoints"
+
+    def _run(self):
+        return []
+
+#######################################################################################################################
+
 class ComputingEndpoint(Data):
 
     DEFAULT_VALIDITY = 3600 # seconds
