@@ -39,7 +39,12 @@ class LogFileWatcher(object):
         file = LogFile(self.path,self.callback)
         file.open()
         while self.keep_running:
-            file.handle()
+            try:
+                file.handle()
+            except IOError:
+                # try to reopen in case of stale NFS file handle or similar
+                file.reopen()
+                file.handle()
             time.sleep(1)
         file.close()
 
@@ -68,7 +73,12 @@ class LogDirectoryWatcher(object):
         while True:
             self._updateFiles()
             for file in self.files.values():
-                file.handle()
+                try:
+                    file.handle()
+                except IOError:
+                    # try to reopen in case of stale NFS file handle or similar
+                    file.reopen()
+                    file.handle()
             time.sleep(1)
                         
     def _updateFiles(self):
@@ -167,6 +177,10 @@ class LogFile(object):
         else:
             self.where = where
 
+    def reopen(self):
+        logger.info("reopening file %s (%s)",self.id,self.path)
+        self.file = open(self.path,"r")
+
     def closeIfNeeded(self):
         if self._shouldClose():
             self.close()
@@ -195,6 +209,7 @@ class LogFile(object):
         while line:
             line = self.file.readline()
             if line:
+                print("callback with: "+line)
                 self.callback(self.path,line)
         self.where = self.file.tell()
 
