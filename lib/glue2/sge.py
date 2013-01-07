@@ -139,7 +139,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             if m != None:
                 cur_job.UserDomain = m.group(1)
                 continue
-            m = re.search("<QR_Name>(\S+)</QR_Name>",line)
+            m = re.search("<QR_name>(\S+)</QR_name>",line)
             if m != None:
                 cur_job.Queue = m.group(1)
                 # below needs to match how ID is calculated in the ComputingShareAgent
