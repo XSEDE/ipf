@@ -23,7 +23,7 @@ from xml.dom.minidom import getDOMImplementation
 from ipf.data import Data, Representation
 from ipf.dt import *
 from ipf.error import StepError
-from ipf.name import ResourceName
+from ipf.sysinfo import ResourceName
 
 from glue2.computing_activity import ComputingActivity, ComputingActivities
 from glue2.step import GlueStep
