@@ -15,14 +15,11 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
 import copy
-import json
 import logging
 import multiprocessing
-import os
-import threading
-import urlparse
+import time
+from Queue import Empty
 
 from ipf.data import Data,Representation
 from ipf.home import IPF_HOME
@@ -208,4 +205,115 @@ class PublishStep(Step):
             if not rep_class.data_cls in self.requires:
                 self.requires.append(rep_class.data_cls)
 
+    def run(self):
+        while True:
+            data = self.input_queue.get(True)
+            if data == None:
+                break
+            for rep_class in self.publish:
+                if rep_class.data_cls != data.__class__:
+                    continue
+                rep = rep_class(data)
+                self._publish(rep)
+                break
+
 #######################################################################################################################
+
+class TriggerStep(Step):
+    def __init__(self):
+        Step.__init__(self)
+
+        self.accepts_params = {}
+        self._acceptParameter("trigger","a list of representations to trigger on",True)
+        self._acceptParameter("minimum_interval","the minimum interval in seconds between triggers",False)
+        self._acceptParameter("maximum_interval","the maximum interval in seconds between triggers",False)
+
+        self.trigger = []
+        self.minimum_interval = None
+        self.maximum_interval = None
+
+        self.last_trigger = None
+        self.next_trigger = None
+
+    def setParameters(self, workflow_params, step_params):
+        Step.setParameters(self,workflow_params,step_params)
+        try:
+            trigger_names = self.params["trigger"]
+        except KeyError:
+            raise StepError("required parameter 'trigger' not specified")
+
+        from ipf.catalog import catalog    # can't import this at the top - circular import
+        for name in trigger_names:
+            try:
+                rep_class = catalog.representations[name]
+                self.trigger.append(rep_class)
+            except KeyError:
+                raise StepError("unknown representation %s" % name)
+            if not rep_class.data_cls in self.requires:
+                self.requires.append(rep_class.data_cls)
+
+    def run(self):
+        try:
+            self.minimum_interval = self.params["minimum_interval"]
+            self.last_trigger = time.time()
+        except KeyError:
+            pass
+        try:
+            self.maximum_interval = self.params["maximum_interval"]
+            self.next_trigger = time.time() + self.maximum_interval
+        except KeyError:
+            pass
+        
+        while True:
+            try:
+                data = self.input_queue.get(True,1)
+            except Empty:
+                if self.next_trigger is not None and time.time() >= self.next_trigger:
+                    # if it has been too long since the last trigger, send one
+                    self._doTrigger(None)
+            else:
+                if data == None:
+                    # no more data will be sent, the step can end
+                    break
+                for rep_class in self.trigger:
+                    if rep_class.data_cls != data.__class__:
+                        continue
+                    rep = rep_class(data)
+                    if self.last_trigger is None or time.time() - self.last_trigger > self.minimum_interval:
+                        # trigger if it isn't too soon since the last one
+                        self._doTrigger(rep)
+                    else:
+                        # pull forward the next trigger if it is too soon
+                        self.next_trigger = self.last_trigger + self.minimum_interval
+                    break
+
+    def _doTrigger(self, representation):
+        if self.minimum_interval is not None:
+            self.last_trigger = time.time()
+        if self.maximum_interval is not None:
+            self.next_trigger = time.time() + self.maximum_interval
+        else:
+            self.next_trigger = None
+        self._trigger(representation)
+
+#######################################################################################################################
+
+class WorkflowStep(TriggerStep):
+    def __init__(self):
+        TriggerStep.__init__(self)
+        self.description = "runs a workflow on triggers under constraints"
+        self._acceptParameter("workflow","the workflow description file to execute",True)
+
+    def _trigger(self, representation):
+        try:
+            workflow_file = self.params["workflow"]
+        except KeyError:
+            raise StepError("required parameter 'workflow' not specified")
+
+        self.info("running workflow %s",workflow_file)
+        # error if import is above
+        from ipf.engine import WorkflowEngine
+        engine = WorkflowEngine()
+        engine.run(workflow_file)
+
+##############################################################################################################
