@@ -22,7 +22,7 @@ from xml.dom.minidom import getDOMImplementation
 
 from ipf.data import Data, Representation
 from ipf.dt import *
-from ipf.name import SiteName
+from ipf.sysinfo import SiteName
 from ipf.step import Step
 
 #######################################################################################################################

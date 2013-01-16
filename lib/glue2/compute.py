@@ -22,7 +22,7 @@ from xml.dom.minidom import getDOMImplementation
 from ipf.data import Data, Representation
 #from ipf.dt import *
 from ipf.error import NoMoreInputsError, StepError
-from ipf.name import ResourceName
+from ipf.sysinfo import ResourceName
 from ipf.step import Step
 
 from glue2.computing_activity import ComputingActivities, ComputingActivityTeraGridXml, ComputingActivityIpfJson
@@ -50,14 +50,14 @@ class PublicStep(Step):
     def run(self):
         public = Public()
         public.resource_name = self._getInput(ResourceName).resource_name
-        public.location = self._getInput(Location)
-        public.service = self._getInput(ComputingService)
-        public.shares = self._getInput(ComputingShares).shares
-        public.manager = self._getInput(ComputingManager)
-        public.environments = self._getInput(ExecutionEnvironments).exec_envs
+        public.location = [self._getInput(Location)]
+        public.service = [self._getInput(ComputingService)]
+        public.share = self._getInput(ComputingShares).shares
+        public.manager = [self._getInput(ComputingManager)]
+        public.environment = self._getInput(ExecutionEnvironments).exec_envs
         try:
             while True:
-                public.endpoints.append(self._getInput(ComputingEndpoint))
+                public.endpoint.append(self._getInput(ComputingEndpoint))
         except NoMoreInputsError:
             pass
         public.id = public.resource_name
@@ -70,28 +70,32 @@ class Public(Data):
     def __init__(self):
         Data.__init__(self)
 
-        self.resource_name = None
-        self.location = None
-        self.service = None
-        self.endpoints = []
-        self.shares = []
-        self.manager = None
-        self.environments = []
+        self.location = []
+        self.service = []
+        self.endpoint = []
+        self.share = []
+        self.manager = []
+        self.environment = []
 
     def fromJson(self, doc):
-        self.resource_name = doc.get("ResourceID")
-        self.location = Location().fromJson(doc.get("Location"))
-        self.service = ComputingService().fromJson(doc.get("ComputingService"))
-        self.endpoints = []
-        for edoc in doc.get("ComputingEndpoints",[]):
-            self.endpoints.append(ComputingEndpoint().fromJson(edoc))
-        self.shares = []
-        for sdoc in doc.get("ComputingShares",[]):
-            self.shares.append(ComputingShare().fromJson(sdoc))
-        self.manager = ComputingManager().fromJson(doc.get("ComputingManager"))
-        self.environments = []
-        for edoc in doc.get("ExecutionEnvironments",[]):
-            self.environments.append(ExecutionEnvironment().fromJson(edoc))
+        self.location = []
+        for ldoc in doc.get("Location",[]):
+            self.location.append(Location().fromJson(ldoc))
+        self.service = []
+        for sdoc in doc.get("ComputingService"):
+            self.service.append(ComputingService().fromJson(sdoc))
+        self.endpoint = []
+        for edoc in doc.get("ComputingEndpoint",[]):
+            self.endpoint.append(ComputingEndpoint().fromJson(edoc))
+        self.share = []
+        for sdoc in doc.get("ComputingShare",[]):
+            self.share.append(ComputingShare().fromJson(sdoc))
+        self.manager = []
+        for mdoc in doc.get("ComputingManager"):
+            self.manager.append(ComputingManager().fromJson(mdoc))
+        self.environment = []
+        for edoc in doc.get("ExecutionEnvironment",[]):
+            self.environment.append(ExecutionEnvironment().fromJson(edoc))
 
 #######################################################################################################################
 
@@ -111,17 +115,17 @@ class PublicTeraGridXml(Representation):
         root = doc.createElement("Entities")
         doc.documentElement.appendChild(root)
 
-        if public.location is not None:
-            root.appendChild(LocationTeraGridXML.toDom(public.location).document.firstChild)
-        if public.service is not None:
-            root.appendChild(ComputingServiceTeraGridXml.toDom(public.service).documentElement.firstChild)
-        for endpoint in public.endpoints:
+        for location in public.location:
+            root.appendChild(LocationTeraGridXML.toDom(location).document.firstChild)
+        for service in public.service:
+            root.appendChild(ComputingServiceTeraGridXml.toDom(service).documentElement.firstChild)
+        for endpoint in public.endpoint:
             root.appendChild(ComputingEndpointTeraGridXml.toDom(endpoint).documentElement.firstChild)
-        for share in public.shares:
+        for share in public.share:
             root.appendChild(ComputingShareTeraGridXml.toDom(share).documentElement.firstChild)
-        if public.manager is not None:
-            root.appendChild(ComputingManagerTeraGridXml.toDom(public.manager).documentElement.firstChild)
-        for environment in public.environments:
+        for manager in public.manager:
+            root.appendChild(ComputingManagerTeraGridXml.toDom(manager).documentElement.firstChild)
+        for environment in public.environment:
             root.appendChild(ExecutionEnvironmentTeraGridXml.toDom(environment).documentElement.firstChild)
 
         return doc
@@ -141,27 +145,18 @@ class PublicIpfJson(Representation):
     def toJson(public):
         doc = {}
 
-        if public.location is not None:
-            doc["Location"] = LocationIpfJson.toJson(public.location)
+        if len(public.location) > 0:
+            doc["Location"] = map(LocationIpfJson.toJson,public.location)
         if public.service is not None:
-            doc["ComputingService"] = ComputingServiceIpfJson.toJson(public.service)
-        if len(public.endpoints) > 0:
-            endpoints = []
-            for endpoint in public.endpoints:
-                endpoints.append(ComputingEndpointIpfJson.toJson(endpoint))
-            doc["ComputingEndpoints"] = endpoints
-        if len(public.shares) > 0:
-            shares = []
-            for share in public.shares:
-                shares.append(ComputingShareIpfJson.toJson(share))
-            doc["ComputingShares"] = shares
-        if public.manager is not None:
-            doc["ComputingManager"] = ComputingManagerIpfJson.toJson(public.manager)
-        if len(public.environments) > 0:
-            envs = []
-            for env in public.environments:
-                envs.append(ExecutionEnvironmentIpfJson.toJson(env))
-            doc["ExecutionEnvironments"] = envs
+            doc["ComputingService"] = map(ComputingServiceIpfJson.toJson,public.service)
+        if len(public.endpoint) > 0:
+            doc["ComputingEndpoint"] = map(ComputingEndpointIpfJson.toJson,public.endpoint)
+        if len(public.share) > 0:
+            doc["ComputingShare"] = map(ComputingShareIpfJson.toJson,public.share)
+        if len(public.manager) > 0:
+            doc["ComputingManager"] = map(ComputingManagerIpfJson.toJson,public.manager)
+        if len(public.environment) > 0:
+            doc["ExecutionEnvironment"] = map(ExecutionEnvironmentIpfJson.toJson,public.environment)
         
         return doc
 
@@ -173,14 +168,13 @@ class PrivateStep(Step):
 
         self.description = "creates a single data containing all sensitive compute-related information"
         self.time_out = 5
-        self.requires = [ResourceName,Location,ComputingActivities]
+        self.requires = [ResourceName,ComputingActivities]
         self.produces = [Private]
 
     def run(self):
         private = Private()
         private.resource_name = self._getInput(ResourceName).resource_name
-        private.location = self._getInput(Location)
-        private.activities = self._getInput(ComputingActivities).activities
+        private.activity = self._getInput(ComputingActivities).activities
         private.id = private.resource_name
         
         self._output(private)
@@ -191,14 +185,16 @@ class Private(Data):
     def __init__(self):
         Data.__init__(self)
 
-        self.resource_name = None
-        self.location = None
-        self.activities = []
+        self.location = []
+        self.activity = []
 
     def fromJson(self, doc):
-        self.resource_name = doc.get("ResourceID")
-        self.location = doc.get("Location")
-        self.activities = doc.get("ComputingActivities",[])
+        self.location = []
+        for ldoc in doc.get("Location",[]):
+            self.location.append(Location().fromJson(ldoc))
+        self.activity = []
+        for adoc in doc.get("ComputingActivity",[]):
+            self.location.append(ComputingActivity().fromJson(adoc))
 
 #######################################################################################################################
 
@@ -238,13 +234,8 @@ class PrivateIpfJson(Representation):
     @staticmethod
     def toJson(private):
         doc = {}
-
-        if len(private.activities) > 0:
-            docs = []
-            for activity in private.activities:
-                docs.append(ComputingActivityIpfJson.toJson(activity))
-            doc["ComputingActivities"] = docs
-        
+        if len(private.activity) > 0:
+            doc["ComputingActivity"] = map(ComputingActivityIpfJson.toJson,private.activity)
         return doc
 
 #######################################################################################################################

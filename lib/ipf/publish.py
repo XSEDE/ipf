@@ -24,7 +24,8 @@ import time
 
 from ipf.error import NoMoreInputsError, StepError
 from ipf.home import IPF_HOME
-from ipf.step import PublishStep
+from ipf.step import PublishStep  # won't need in a bit
+from ipf.step import TriggerStep
 
 from mtk.amqp_0_9_1 import *
 
@@ -40,21 +41,11 @@ class FileStep(PublishStep):
                               "Path to the file to write. If the path is relative, it is relative to $IPF_HOME/var/.",
                               True)
 
-
-    def run(self):
+    def _publish(self, representation):
         file = open(self._getPath(),"w")
-        while True:
-            data = self.input_queue.get(True)
-            if data == None:
-                break
-            for rep_class in self.publish:
-                if rep_class.data_cls != data.__class__:
-                    continue
-                rep = rep_class(data)
-                self.info("writing data %s with id '%s' using representation %s",data.__class__,data.id,rep_class)
-                file.write(rep.get())
-                file.flush()
-                break
+        self.info("writing %s",representation)
+        file.write(representation.get())
+        file.flush()
         file.close()
 
     def _getPath(self):
@@ -136,16 +127,7 @@ class AmqpStep(PublishStep):
         except KeyError:
             self.exchange = ""
 
-        while True:
-            data = self.input_queue.get(True)
-            if data == None:
-                break
-            for rep_class in self.publish:
-                if rep_class.data_cls != data.__class__:
-                    continue
-                rep = rep_class(data)
-                self._publish(rep)
-                break
+        PublishStep.run(self)
 
         try:
             self.connection.close()
@@ -153,7 +135,7 @@ class AmqpStep(PublishStep):
             pass
 
     def _publish(self, representation):
-        self.info("publishing representation %s",representation.__class__)
+        self.info("publishing %s",representation)
         self.debug("  with routing key '%s' to exchange '%s'",representation.data.id.encode("utf-8"),self.exchange)
         self._connectIfNecessary()
         if self.channel is None:

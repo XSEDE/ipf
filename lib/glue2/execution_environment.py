@@ -26,8 +26,8 @@ from xml.dom.minidom import getDOMImplementation
 from ipf.data import Data, Representation
 from ipf.dt import *
 from ipf.error import StepError
-from ipf.name import ResourceName
-from ipf.platform import Platform
+from ipf.sysinfo import ResourceName
+from ipf.sysinfo import Platform
 
 from glue2.step import GlueStep
 
@@ -594,8 +594,8 @@ class ExecutionEnvironmentsIpfJson(Representation):
         return json.dumps(self.toJson(self.data.exec_envs),sort_keys=True,indent=4)
 
     @staticmethod
-    def toJson(shares):
+    def toJson(exec_envs):
         eedoc = []
-        for exec_env in self.exec_envs:
+        for exec_env in exec_envs:
             eedoc.append(ExecutionEnvironmentIpfJson.toJson(exec_env))
         return eedoc

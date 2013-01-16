@@ -22,7 +22,7 @@ import time
 
 from ipf.data import Data, Representation
 from ipf.error import StepError
-from ipf.name import ResourceName
+from ipf.sysinfo import ResourceName
 from ipf.step import Step
 
 #######################################################################################################################

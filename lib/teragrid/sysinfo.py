@@ -19,13 +19,14 @@ import commands
 import socket
 import sys
 
-import ipf.name
+import ipf.sysinfo
+from ipf.error import StepError
 
 #######################################################################################################################
 
-class ResourceNameStep(ipf.name.ResourceNameStep):
+class ResourceNameStep(ipf.sysinfo.ResourceNameStep):
     def __init__(self):
-        ipf.name.ResourceNameStep.__init__(self)
+        ipf.sysinfo.ResourceNameStep.__init__(self)
         self.description = "produces a resource name document using tgwhereami"
         self._acceptParameter("tgwheremi","path to the tgwhereami program (default 'tgwhereami')",False)
 
@@ -43,14 +44,14 @@ class ResourceNameStep(ipf.name.ResourceNameStep):
                 sys.exit(1)
             resource_name = output
 
-        self._output(ipf.name.ResourceName(resource_name))
+        self._output(ipf.sysinfo.ResourceName(resource_name))
     
 #######################################################################################################################
 
-class SiteNameStep(ipf.name.SiteNameStep):
+class SiteNameStep(ipf.sysinfo.SiteNameStep):
 
     def __init__(self):
-        ipf.name.SiteNameStep.__init__(self)
+        ipf.sysinfo.SiteNameStep.__init__(self)
 
         self.description = "produces a site name document using tgwhereami"
         self._acceptParameter("tgwheremi","path to the tgwhereami program (default 'tgwhereami')",False)
@@ -69,6 +70,24 @@ class SiteNameStep(ipf.name.SiteNameStep):
                 sys.exit(1)
             site_name = output
 
-        self._output(ipf.name.SiteName(site_name))
+        self._output(ipf.sysinfo.SiteName(site_name))
+
+#######################################################################################################################
+
+class PlatformStep(ipf.sysinfo.PlatformStep):
+
+    def __init__(self):
+        ipf.sysinfo.PlatformStep.__init__(self)
+        self._acceptParameter("tgwhatami","path to the tgwhatami program (default 'tgwhatami')",False)
+
+    def run(self):
+        try:
+            tg_whatami = self.params["tgwhatami"]
+        except KeyError:
+            tg_whatami = "tgwhatami"
+        (status, output) = commands.getstatusoutput(tg_whatami)
+        if status != 0:
+            raise StepError("failed to execute %s" % tg_whatami)
+        return output
 
 #######################################################################################################################

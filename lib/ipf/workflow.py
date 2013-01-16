@@ -26,8 +26,7 @@ import Queue
 
 from ipf.catalog import catalog
 from ipf.error import *
-from ipf.step import Step
-
+    
 #######################################################################################################################
 
 logger = logging.getLogger(__name__)
@@ -36,6 +35,7 @@ class Workflow(object):
     def __init__(self):
         self.name = None
         self.steps = []
+        self.timeout = None    # the number of seconds to wait for the workflow to complete
 
     def __str__(self):
         wstr = "Workflow %s\n" % self.name
@@ -50,6 +50,9 @@ class Workflow(object):
         except ValueError, e:
             raise WorkflowError("could not parse workflow file %s: %s" % (file_name,e))
         file.close()
+
+        if "timeout" in doc:
+            self.timeout = doc["timeout"]
 
         if not "steps" in doc:
             raise WorkflowError("no steps specified")

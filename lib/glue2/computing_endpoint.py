@@ -24,7 +24,7 @@ import ConfigParser
 from ipf.data import Data, Representation
 from ipf.dt import *
 from ipf.error import StepError
-from ipf.name import ResourceName
+from ipf.sysinfo import ResourceName
 
 from glue2.step import GlueStep
 
@@ -78,6 +78,17 @@ class ParamComputingEndpointStep(ComputingEndpointStep):
         endpoint = ComputingEndpoint()
         endpoint.fromJson(endpoint_doc)
         return [endpoint]
+
+#######################################################################################################################
+
+class NoComputingEndpointsStep(ComputingEndpointStep):
+    def __init__(self):
+        ComputingEndpointStep.__init__(self)
+
+        self.description = "create no ComputingEndpoints"
+
+    def _run(self):
+        return []
 
 #######################################################################################################################
 

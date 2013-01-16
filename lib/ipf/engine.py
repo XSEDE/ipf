@@ -41,6 +41,8 @@ class WorkflowEngine(object):
         
     def run(self, workflow_file_name):
         workflow = Workflow()
+        if not os.path.isabs(workflow_file_name):
+            workflow_file_name = os.path.join(IPF_HOME,"etc","workflow",workflow_file_name)
         workflow.read(workflow_file_name)
 
         self._setDependencies(workflow)
@@ -50,10 +52,21 @@ class WorkflowEngine(object):
         for step in workflow.steps:
             step.start()
 
+        start_time = time.time()
         steps_with_inputs = filter(self._sendNoMoreInputs,workflow.steps)
         while self._anyAlive(workflow.steps):
+            if workflow.timeout is not None and time.time() - start_time > workflow.timeout:
+                logger.warn("time out, terminating workflow")
+                for step in workflow.steps:
+                    if step.is_alive():
+                        step.terminate()
+                break
             time.sleep(0.1)
             steps_with_inputs = filter(self._sendNoMoreInputs,steps_with_inputs)
+
+        # wait again, in case we terminated
+        while self._anyAlive(workflow.steps):
+            time.sleep(0.1)
 
         if reduce(lambda b1,b2: b1 and b2, map(lambda step: step.exitcode == 0, workflow.steps)):
             logger.info("workflow succeeded")
@@ -63,7 +76,7 @@ class WorkflowEngine(object):
                 if step.exitcode == 0:
                     logger.info("  %10s succeeded (%s)",step.id,step.__class__.__name__)
                 else:
-                    logger.error("  %10s failed    (%s)",step.id,step.__class__.__name__)
+                    logger.error(" %10s failed    (%s)",step.id,step.__class__.__name__)
                     
     def _anyAlive(self, steps):
         return reduce(lambda b1,b2: b1 or b2, map(lambda step: step.is_alive(), steps), False)

@@ -15,6 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
+import platform
 import socket
 
 from ipf.data import Data, Representation
@@ -136,5 +137,54 @@ class SiteNameXml(Representation):
 
     def get(self):
         return "<SiteName>%s</SiteName>\n" % self.data.site_name
+
+#######################################################################################################################
+
+class PlatformStep(Step):
+    def __init__(self):
+        Step.__init__(self)
+
+        self.description = "Produces a platform string."
+        self.time_out = 10
+        self.requires = [ResourceName]
+        self.produces = [Platform]
+        self._acceptParameter("platform","A hard-coded platform string",False)
+
+    def run(self):
+        resource_name = self._getInput(ResourceName).resource_name
+        try:
+            plat = self.params["platform"]
+        except KeyError:
+            self._output(Platform(resource_name,self._run()))
+        else:
+            self._output(Platform(resource_name,plat))
+
+    def _run(self):
+        os = platform.system().lower()
+        (name,version,id) = platform.linux_distribution()
+        distribution = name.lower() + version[0]
+        arch = platform.processor()
+        return "%s-%s-%s" % (os,distribution,arch)
+
+#######################################################################################################################
+
+class Platform(Data):
+    def __init__(self, id, plat):
+        Data.__init__(self,id)
+        self.platform = plat
+
+    def __str__(self):
+        return "%s" % self.platform
+
+#######################################################################################################################
+
+class PlatformTxt(Representation):
+    data_cls = Platform
+
+    def __init__(self, data):
+        Representation.__init__(self,Representation.MIME_TEXT_PLAIN,data)
+
+    def get(self):
+        return self.data.platform
 
 #######################################################################################################################
