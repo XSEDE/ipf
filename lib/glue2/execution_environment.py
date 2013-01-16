@@ -594,8 +594,8 @@ class ExecutionEnvironmentsIpfJson(Representation):
         return json.dumps(self.toJson(self.data.exec_envs),sort_keys=True,indent=4)
 
     @staticmethod
-    def toJson(shares):
+    def toJson(exec_envs):
         eedoc = []
-        for exec_env in self.exec_envs:
+        for exec_env in exec_envs:
             eedoc.append(ExecutionEnvironmentIpfJson.toJson(exec_env))
         return eedoc
