@@ -477,8 +477,11 @@ class ExecutionEnvironmentsStep(glue2.execution_environment.ExecutionEnvironment
             elif "DOWN" in state:
                 node.UsedInstances = 0
                 node.UnavailableInstances = 1
+            elif "MAINT" in state:
+                node.UsedInstances = 0
+                node.UnavailableInstances = 1
             else:
-                self.warn("unknown node state: %s",state)
+                self.warning("unknown node state: %s",state)
                 node.UsedInstances = 0
                 node.UnavailableInstances = 1
 
