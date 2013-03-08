@@ -48,52 +48,35 @@ def copyReplaceTree(in_dir, out_dir, ignore=ignoreNone):
         else:
             raise Exception("copyReplaceTree can't handle file %s",in_path)
 
-generic_workflow = """#!/bin/sh -l
+workflow = """#!/bin/sh -l
 
 export PYTHONPATH=@install_dir@/lib
+
+@env@
 
 @python@ @install_dir@/libexec/run_workflow.py @install_dir@/@workflow_dir@/@workflow@.json >> @install_dir@/var/@workflow@.log 2>&1
 """
 
-generic_daemon = """#!/bin/sh -l
+daemon = """#!/bin/sh -l
 
 export PYTHONPATH=@install_dir@/lib
 
-@python@ @install_dir@/libexec/run_workflow_daemon.py @install_dir@/@workflow_dir@/@workflow@.json >> @install_dir@/var/@workflow@.log 2>&1
-"""
-
-pbs_workflow = """#!/bin/sh -l
-
-module load torque
-
-export PYTHONPATH=@install_dir@/lib
-
-@python@ @install_dir@/libexec/run_workflow.py @install_dir@/@workflow_dir@/@workflow@.json >> @install_dir@/var/@workflow@.log 2>&1
-"""
-
-pbs_daemon = """#!/bin/sh -l
-
-module load torque
-
-export PYTHONPATH=@install_dir@/lib
+@env@
 
 @python@ @install_dir@/libexec/run_workflow_daemon.py @install_dir@/@workflow_dir@/@workflow@.json >> @install_dir@/var/@workflow@.log 2>&1
 """
 
 def generateScript(workflow_dir, file_name, install_dir):
-    if "pbs" in file_name:
-        if "updates" in file_name:
-            text = pbs_daemon
-        else:
-            text = pbs_workflow
-    elif "nimbus" in file_name:
-        if "updates" in file_name:
-            text = generic_daemon
-        else:
-            text = generic_workflow
+    if "updates" in file_name:
+        text = daemon
     else:
-        raise Exception("can't generate script for workflow file %s in %s" % (file_name,workflow_dir))
+        text = workflow
+    if "pbs" in file_name and "futuregrid" in workflow_dir:
+        env = "module load torque\n"
+    else:
+        env = ""
 
+    substitutions["env"] = env
     substitutions["workflow_dir"] = workflow_dir
     workflow = os.path.splitext(file_name)[0]
     substitutions["workflow"] = workflow
@@ -134,7 +117,10 @@ if __name__ == "__main__":
     shutil.copytree("etc",os.path.join(install_dir,"etc"),ignore=ig)
     copyReplaceTree("bin",os.path.join(install_dir,"bin"),ignore=ig)
 
-    generateScripts(os.path.join("etc","workflow","futuregrid"),install_dir)
+    for name in os.listdir(os.path.join("etc","workflow")):
+        path = os.path.join("etc","workflow",name)
+        if os.path.isdir(path)
+        generateScripts(path,install_dir)
 
     shutil.copy("LICENSE-2.0.txt",install_dir)
     shutil.copy("INSTALL.txt",install_dir)
