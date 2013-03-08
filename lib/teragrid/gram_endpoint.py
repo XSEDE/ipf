@@ -66,7 +66,7 @@ class GramEndpointStep(ComputingEndpointStep):
                 kit_conf_file = os.path.join(kit_dir,"reg","kit.conf")
                 break
         if service_dir == None:
-            raise StepError("CTSS remote compute kit not found in registered kits file "+kitsFile)
+            raise StepError("CTSS remote compute kit not found in registered kits file "+kits_file)
 
         support_level = None
         file = open(kit_conf_file,"r")

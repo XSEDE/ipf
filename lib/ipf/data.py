@@ -50,7 +50,7 @@ class Representation(object):
         self.data = data              # the data that is represented
 
     def __str__(self):
-        return "representation %s of %s" % (self.__name__,self.data_cls.__name__)
+        return "representation %s of %s %s" % (self.__class__.__name__,self.data_cls.__name__,self.data.id)
 
     def get(self):
         raise NotImplementedError()

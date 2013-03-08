@@ -209,7 +209,6 @@ class LogFile(object):
         while line:
             line = self.file.readline()
             if line:
-                print("callback with: "+line)
                 self.callback(self.path,line)
         self.where = self.file.tell()
 

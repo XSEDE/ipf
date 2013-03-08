@@ -139,7 +139,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             if m != None:
                 cur_job.UserDomain = m.group(1)
                 continue
-            m = re.search("<QR_Name>(\S+)</QR_Name>",line)
+            m = re.search("<QR_name>(\S+)</QR_name>",line)
             if m != None:
                 cur_job.Queue = m.group(1)
                 # below needs to match how ID is calculated in the ComputingShareAgent
@@ -375,7 +375,6 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         watcher.run()
 
     def _logEntry(self, log_file_name, line):
-        print("new log entry")
         if line.startswith("#"):
             return
 
@@ -496,7 +495,6 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         else:
             self.warning("unknown job log of type %s" % toks[3])
 
-        print(activity)
         if self._includeQueue(activity.Queue):
             self.output(activity)
 
