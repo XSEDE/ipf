@@ -270,3 +270,19 @@ class HttpStep(PublishStep):
                 self.error("failed to '"+method+"' to http://"+host+":"+port+path+" - "+
                            str(response.status)+" "+response.reason)
         connection.close()
+
+
+#######################################################################################################################
+
+# mostly for debugging
+class PrintStep(PublishStep):
+    def __init__(self):
+        PublishStep.__init__(self)
+
+        self.description = "publishes documents by writing them to stdout"
+        self.time_out = 5
+
+    def _publish(self, representation):
+        print(representation.get())
+
+#######################################################################################################################
