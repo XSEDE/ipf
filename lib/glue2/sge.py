@@ -160,10 +160,10 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
             elif self.text.find("d") >= 0: # deleted
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+            elif self.text.find("E") >= 0: # error - Eqw
+                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_FAILED
             elif self.text.find("h") >= 0: # held - hqw, hr
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
-            elif self.text.find("E") >= 0: # waiting - Eqw
-                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_FAILED
             elif self.text.find("w") >= 0: # waiting - qw
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
             elif self.text == "t": # transfering
@@ -210,9 +210,6 @@ def parseJLines(output, jobs, resource_name):
         m = re.search("<JB_account>(\S+)</JB_account>",job_string)
         if m is not None:
             cur_job.UserDomain = m.group(1)
-        m = re.search("<JB_priority>(\S+)</JB_priority>",job_string)
-        if m is not None:
-            cur_job.UserDomain = float(m.group(1))
         m = re.search("<QR_name>(\S+)</QR_name>",job_string)
         if m is not None:
             cur_job.Queue = m.group(1)
@@ -232,7 +229,7 @@ def parseJLines(output, jobs, resource_name):
                 m = re.search("<CE_doubleval>(\S+)</CE_doubleval>",job_string)
                 if m is not None:
                     cur_job.RequestedTotalWallTime = cur_job.RequestedSlots * int(float(m.group(1)))
-        # start time isn't always in the -j output, so get it from -u
+        # start time isn't often in the -j output, so get it from -u
         if cur_job.StartTime is not None:
             usedWallTime = int(cur_time - time.mktime(cur_job.StartTime.timetuple()))
             cur_job.UsedTotalWallTime = usedWallTime * cur_job.RequestedSlots
@@ -371,6 +368,9 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
             activity.StartTime = event_dt
         elif toks[3] == "finished":
+            if activity.ComputingManagerEndTime is not None:
+                # could be a finished message after an error - ignore it
+                return
             activity.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
             activity.ComputingManagerEndTime = event_dt
             if activity.LocalIDFromManager in self.activities:
@@ -379,11 +379,16 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             # scheduler deleting the job and a finished appears first, so ignore
             return
         elif toks[3] == "error":
-            self.info("ignoring error state for job %s" % activity.LocalIDFromManager)
-            return
+            activity.State = glue2.computing_activity.ComputingActivity.STATE_FAILED
+            activity.ComputingManagerEndTime = event_dt
+            if activity.LocalIDFromManager in self.activities:
+                del self.activities[activity.LocalIDFromManager]
         elif toks[3] == "restart":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
-            activity.StartTime = event_dt
+            # restart doesn't seem to mean that the job starts running again
+            # restarts occur after errors (an attempt to restart?) - just ignore them
+            return
+            #activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+            #activity.StartTime = event_dt
         else:
             self.warning("unknown job log of type %s" % toks[3])
 
