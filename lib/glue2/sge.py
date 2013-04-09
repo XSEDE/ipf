@@ -223,7 +223,7 @@ def parseJLines(output, jobs, resource_name):
             m = re.search("<RN_min>(\S+)</RN_min>",m.group(1))
             if m is not None:
                 cur_job.RequestedSlots = int(m.group(1))
-        lstrings = re.findall("<qstat_l_requests>[\s\S]+</qstat_l_requests>",job_string)
+        lstrings = re.findall("<qstat_l_requests>[\s\S]+?</qstat_l_requests>",job_string)
         for str in lstrings:
             if "h_rt" in str:
                 m = re.search("<CE_doubleval>(\S+)</CE_doubleval>",job_string)
@@ -235,13 +235,14 @@ def parseJLines(output, jobs, resource_name):
             cur_job.UsedTotalWallTime = usedWallTime * cur_job.RequestedSlots
 
         # looks like PET_end_time isn't ever valid
-        sstrings = re.findall("<scaled>[\s\S]+</scaled>",job_string)
+        sstrings = re.findall("<scaled>[\s\S]+?</scaled>",job_string)
         for str in sstrings:
             m = re.search("<UA_value>(\S+)</UA_value>",str)
             if m is None:
                 continue
             if "<UA_name>end_time</UA_name>" in str:
-                cur_job.ComputingManagerEndTime = epochToDateTime(float(m.group(1)),localtzoffset())
+                if int(float(m.group(1))) > 0:
+                    cur_job.ComputingManagerEndTime = epochToDateTime(float(m.group(1)),localtzoffset())
             if "<UA_name>exit_status</UA_name>" in str:
                 cur_job.ComputingManagerExitCode = int(float(m.group(1)))
 
