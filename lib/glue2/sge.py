@@ -108,7 +108,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             raise StepError("qstat failed: "+output+"\n")
         # dom parsing was slow
         # sax parsing failed sometimes
-        parseJLines(output,jobs,self.resource_name)
+        parseJLines(output,jobs,self)
 
         jobList = []
         for job in uhandler.jobs:
@@ -181,7 +181,7 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
         
 #######################################################################################################################
 
-def parseJLines(output, jobs, resource_name):
+def parseJLines(output, jobs, step):
     cur_time = time.time()
 
     job_strings = []
@@ -214,10 +214,12 @@ def parseJLines(output, jobs, resource_name):
         if m is not None:
             cur_job.Queue = m.group(1)
             # below needs to match how ID is calculated in the ComputingShareAgent
-            cur_job.ComputingShare = ["http://"+resource_name+"/glue2/ComputingShare/"+cur_job.Queue]
+            cur_job.ComputingShare = ["http://"+step.resource_name+"/glue2/ComputingShare/"+cur_job.Queue]
         m = re.search("<JB_submission_time>(\S+)</JB_submission_time>",job_string)
         if m is not None:
             cur_job.ComputingManagerSubmissionTime = epochToDateTime(int(m.group(1)),localtzoffset())
+        else:
+            step.warning("didn't find submission time in %s",job_string)
         m = re.search("<JB_pe_range>([\s\S]+)</JB_pe_range>",job_string)
         if m is not None:
             m = re.search("<RN_min>(\S+)</RN_min>",m.group(1))
@@ -410,7 +412,7 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
             raise StepError("qstat failed: "+output+"\n")
-        parseJLines(output,{job.LocalIDFromManager: job},self.resource_name)
+        parseJLines(output,{job.LocalIDFromManager: job},self)
 
 #######################################################################################################################
 
