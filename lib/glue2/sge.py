@@ -85,6 +85,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
         except KeyError:
             qstat = "qstat"
 
+        # the output of -u is in schedule order
         cmd = qstat + " -xml -pri -s prsz -u \\*"
         self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
@@ -105,14 +106,9 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
         if status != 0:
             self.error("qstat failed: "+output+"\n")
             raise StepError("qstat failed: "+output+"\n")
-
-        jhandler = JobsJHandler(self,jobs)
-        try:
-            xml.sax.parseString(output,jhandler)
-        except xml.sax.SAXParseException, e:
-            # sax parsing fails sometimes
-            self.warning("parsing of XML output from qstat -j failed, parsing line by line instead")
-            self.parseJLines(output,jobs)
+        # dom parsing was slow
+        # sax parsing failed sometimes
+        parseJLines(output,jobs,self)
 
         jobList = []
         for job in uhandler.jobs:
@@ -121,73 +117,9 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
 
         return jobList
 
-    def parseJLines(self, output, jobs):
-        H_RT = 1
-        MEM_TOTAL = 2
-        cur_resource = None
-
-        ua_name = None
-        cur_job = None
-        for line in output.splitlines():
-            m = re.search("<JB_job_number>(\S+)</JB_job_number>",line)
-            if m != None:
-                cur_job = jobs.get(m.group(1))
-                continue
-            if cur_job == None:
-                continue
-            m = re.search("<JB_account>(\S+)</JB_account>",line)
-            if m != None:
-                cur_job.UserDomain = m.group(1)
-                continue
-            m = re.search("<QR_name>(\S+)</QR_name>",line)
-            if m != None:
-                cur_job.Queue = m.group(1)
-                # below needs to match how ID is calculated in the ComputingShareAgent
-                cur_job.ComputingShare = ["http://"+self.resource_name+"/glue2/ComputingShare/"+cur_job.Queue]
-                continue
-            m = re.search("<CE_name>(\S+)</CE_name>",line)
-            if m != None:
-                if m.group(1) == "h_rt":
-                    cur_resource = H_RT
-                elif m.group(1) == "mem_total":
-                    cur_resource = MEM_TOTAL
-                continue
-            m = re.search("<CE_doubleval>(\S+)</CE_doubleval>",line)
-            if m != None:
-                if cur_resource == H_RT:
-                    cur_job.RequestedTotalWallTime = cur_job.RequestedSlots * int(float(m.group(1)))
-                elif cur_resource == MEM_TOTAL:
-                    pass
-                continue
-            m = re.search("<JB_submission_time>(\S+)</JB_submission_time>",line)
-            if m != None:
-                cur_job.ComputingManagerSubmissionTime = epochToDateTime(int(m.group(1)),localtzoffset())
-                continue
-            m = re.search("<UA_name>(\S+)</UA_name>",line)
-            if m != None:
-                ua_name = m.group(1)
-                continue
-            m = re.search("<UA_value>(\S+)</UA_value>",line)
-            if m != None:
-                if ua_name == "exit_status":
-                    cur_job.ComputingManagerExitCode = int(float(m.group(1)))
-                elif ua_name == "start_time":
-                    cur_job.StartTime = epochToDateTime(float(m.group(1)),localtzoffset())
-                elif ua_name == "end_time":
-                    cur_job.ComputingManagerEndTime = epochToDateTime(float(m.group(1)),localtzoffset())
-
-#######################################################################################################################
-
-        # this indicates that SGE should reserve resources for this job (and sorta backfill around it)
-        #if line.startswith("reserve:"):
-        #if line.split()[1] == "y":
-        #self.Extension["SgeReserve"] = "yes"
-
 #######################################################################################################################
 
 class JobsUHandler(xml.sax.handler.ContentHandler):
-
-    # get submission time from qstat -j
 
     def __init__(self, step):
         self.step = step
@@ -201,7 +133,7 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
         pass
 
     def endDocument(self):
-        if self.cur_job != None:
+        if self.cur_job is not None:
             self.jobs.append(self.cur_job)
 
     def startElement(self, name, attrs):
@@ -217,27 +149,21 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
         self.text = self.text.lstrip().rstrip()
 
         if name == "JB_job_number":
-            if self.cur_job != None:
+            if self.cur_job is not None:
                 self.jobs.append(self.cur_job)
             self.cur_job = glue2.computing_activity.ComputingActivity()
             self.cur_job.LocalIDFromManager = self.text
-        elif name == "JAT_prio":
-            self.priority = float(self.text)
-        elif name == "JB_name":
-            self.cur_job.Name = self.text
-        elif name == "JB_owner":
-            self.cur_job.LocalOwner = self.text
-        elif name == "state":
+        if name == "state":
             if self.text == "r":
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
             elif self.text == "R": # restarted
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
             elif self.text.find("d") >= 0: # deleted
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+            elif self.text.find("E") >= 0: # error - Eqw
+                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_FAILED
             elif self.text.find("h") >= 0: # held - hqw, hr
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
-            elif self.text.find("E") >= 0: # waiting - Eqw
-                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_FAILED
             elif self.text.find("w") >= 0: # waiting - qw
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
             elif self.text == "t": # transfering
@@ -245,15 +171,9 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
             else:
                 self.step.warning("found unknown SGE job state '" + self.text + "'")
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
-        elif name == "slots":
-            self.cur_job.RequestedSlots = int(self.text)
-            if self.cur_job.StartTime != None:
-                usedWallTime = int(self.cur_time - time.mktime(self.cur_job.StartTime.timetuple()))
-                self.cur_job.UsedTotalWallTime = usedWallTime * self.cur_job.RequestedSlots
-
-        # also in -j output
-        #elif name == "JAT_start_time":
-        #    self.cur_job.StartTime = _getDateTime(self.text)
+        if name == "JAT_start_time":
+            self.cur_job.StartTime = _getDateTime(self.text)         
+        # JAT_submission_time isn't provided for running jobs, so just get it from -j
 
     def characters(self, ch):
         # all of the text for an element may not come at once
@@ -261,72 +181,72 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
         
 #######################################################################################################################
 
-class JobsJHandler(xml.sax.handler.ContentHandler):
+def parseJLines(output, jobs, step):
+    cur_time = time.time()
 
-    RESOURCE_MEM_TOTAL = 1
-    RESOURCE_H_RT = 2
+    job_strings = []
+    index = output.find("<JB_job_number>")
+    while index >= 0:
+        next_index = output.find("<JB_job_number>",index+1)
+        if next_index == -1:
+            job_strings.append(output[index:])
+        else:
+            job_strings.append(output[index:next_index])
+        index = next_index
 
-    def __init__(self, step, jobs):
-        self.step = step
-        self.jobs = jobs
-        self.cur_resource = None
-        self.cur_job = None
-        self.text = ""
+    cur_job = None
+    for job_string in job_strings:
+        m = re.search("<JB_job_number>(\S+)</JB_job_number>",job_string)
+        if m is not None:
+            cur_job = jobs.get(m.group(1))
+        else:
+            continue
+        m = re.search("<JB_job_name>(\S+)</JB_job_name>",job_string)
+        if m is not None:
+            cur_job.Name = m.group(1)
+        m = re.search("<JB_owner>(\S+)</JB_owner>",job_string)
+        if m is not None:
+            cur_job.LocalOwner = m.group(1)
+        m = re.search("<JB_account>(\S+)</JB_account>",job_string)
+        if m is not None:
+            cur_job.UserDomain = m.group(1)
+        m = re.search("<QR_name>(\S+)</QR_name>",job_string)
+        if m is not None:
+            cur_job.Queue = m.group(1)
+            # below needs to match how ID is calculated in the ComputingShareAgent
+            cur_job.ComputingShare = ["http://"+step.resource_name+"/glue2/ComputingShare/"+cur_job.Queue]
+        m = re.search("<JB_submission_time>(\S+)</JB_submission_time>",job_string)
+        if m is not None:
+            cur_job.ComputingManagerSubmissionTime = epochToDateTime(int(m.group(1)),localtzoffset())
+        else:
+            step.warning("didn't find submission time in %s",job_string)
+        m = re.search("<JB_pe_range>([\s\S]+)</JB_pe_range>",job_string)
+        if m is not None:
+            m = re.search("<RN_min>(\S+)</RN_min>",m.group(1))
+            if m is not None:
+                cur_job.RequestedSlots = int(m.group(1))
+        lstrings = re.findall("<qstat_l_requests>[\s\S]+?</qstat_l_requests>",job_string)
+        for str in lstrings:
+            if "h_rt" in str:
+                m = re.search("<CE_doubleval>(\S+)</CE_doubleval>",job_string)
+                if m is not None:
+                    cur_job.RequestedTotalWallTime = cur_job.RequestedSlots * int(float(m.group(1)))
+        # start time isn't often in the -j output, so get it from -u
+        if cur_job.StartTime is not None:
+            usedWallTime = int(cur_time - time.mktime(cur_job.StartTime.timetuple()))
+            cur_job.UsedTotalWallTime = usedWallTime * cur_job.RequestedSlots
 
-        self.ua_name = None
-        
-    def startDocument(self):
-        pass
-
-    def endDocument(self):
-        pass
-
-    def startElement(self, name, attrs):
-        pass
-    
-    def endElement(self, name):
-        self._handleElement(name)
-        # get ready for next element
-        self.text = ""
-
-    def _handleElement(self, name):
-        # get rid of whitespace on either side
-        self.text = self.text.lstrip().rstrip()
-
-        if name == "JB_job_number":
-            self.cur_job = self.jobs.get(self.text)
-        if self.cur_job == None: # everything else needs a current job
-            return
-        if name == "JB_account":
-            self.cur_job.UserDomain = self.text
-        if name == "QR_name":
-            self.cur_job.Queue = self.text
-        if name == "CE_name":
-            if self.text == "h_rt":
-                self.cur_resource = JobsJHandler.RESOURCE_H_RT
-            elif self.text == "mem_total":
-                self.cur_resource = JobsJHandler.RESOURCE_MEM_TOTAL
-            else:
-                self.cur_resource = None
-        if name == "CE_doubleval":
-            if self.cur_resource == JobsJHandler.RESOURCE_H_RT:
-                self.cur_job.RequestedTotalWallTime = self.cur_job.RequestedSlots * int(float(self.text))
-            if self.cur_resource == JobsJHandler.RESOURCE_MEM_TOTAL:
-                pass
-        if name == "JB_submission_time":
-            self.cur_job.ComputingManagerSubmissionTime = epochToDateTime(int(self.text),localtzoffset())
-        if name == "UA_name":
-            self.ua_name = self.text
-        if name == "UA_value":
-            if self.ua_name == "exit_status":
-                self.cur_job.ComputingManagerExitCode = int(float(self.text))
-            if self.ua_name == "start_time":
-                self.cur_job.StartTime = epochToDateTime(float(self.text),localtzoffset())
-            if self.ua_name == "end_time":
-                self.cur_job.ComputingManagerEndTime = epochToDateTime(float(self.text),localtzoffset())
-
-    def characters(self, ch):
-        self.text = self.text + ch
+        # looks like PET_end_time isn't ever valid
+        sstrings = re.findall("<scaled>[\s\S]+?</scaled>",job_string)
+        for str in sstrings:
+            m = re.search("<UA_value>(\S+)</UA_value>",str)
+            if m is None:
+                continue
+            if "<UA_name>end_time</UA_name>" in str:
+                if int(float(m.group(1))) > 0:
+                    cur_job.ComputingManagerEndTime = epochToDateTime(float(m.group(1)),localtzoffset())
+            if "<UA_name>exit_status</UA_name>" in str:
+                cur_job.ComputingManagerExitCode = int(float(m.group(1)))
 
 #######################################################################################################################
 
@@ -356,6 +276,9 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         glue2.computing_activity.ComputingActivityUpdateStep.__init__(self)
 
         self._acceptParameter("reporting_file","the path to the SGE reporting file (optional)",False)
+        self._acceptParameter("qstat","the path to the SGE qstat program (default 'qstat')",False)
+
+        self.activities = {}
 
     def _run(self):
         self.info("running")
@@ -381,7 +304,6 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         toks = line.split(":")
 
         if toks[1] == "new_job":
-            #self.handleNewJob(toks)
             pass # there is a job_log for every new job, so ignore these
         elif toks[1] == "job_log":
             self.handleJobLog(toks)
@@ -392,42 +314,6 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             pass
         else:
             self.info("unknown type: %s" % toks[1])
-
-    def handleNewJob(self, toks):
-        # log time
-        # new_job
-        # submit time
-        # job id
-        # dunno (always -1)
-        # dunno (always NONE)
-        # job name?
-        # user name
-        # group name
-        # queue
-        # department (ignore)
-        # charge account
-        # dunno (always 1024)
-
-        activity = glue2.computing_activity.ComputingActivity()
-        activity.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
-        activity.ComputingManagerSubmissionTime = datetime.datetime.fromtimestamp(float(toks[2]),tzoffset(0))
-        activity.LocalIDFromManager = toks[3]
-        activity.Name = toks[6]
-        activity.LocalOwner = toks[7]
-        # ignore group
-        activity.Queue = toks[9]
-        activity.ComputingShare = ["http://"+self.resource_name+"/glue2/ComputingShare/"+activity.Queue]
-        activity.UserDomain = toks[11]
-
-        if self._includeQueue(activity.Queue):
-            self.output(activity)
-
-#1329699034:new_job:1329699034:2373873:-1:NONE:myjob:hx634:G-800513:development:defaultdepartment:TACC-PCSE:1024
-
-#1329699147:job_log:1329699147:sent:2373873:0:NONE:t:master:sge2.ranger.tacc.utexas.edu:0:1024:1329699034:myjob:hx634:G-800513:development:defaultdepartment:TACC-PCSE:sent to execd
-
-#1338574037:job_log:1338574037:finished:2599414:0:NONE:r:master:sge2.ranger.tacc.utexas.edu:0:1024:1338573943:schmIin_de:mthapa01:G-800583:development:defaultdepartment:LES_Liu_Lu_UTA:job waits for schedds deletion
-
 
     def handleJobLog(self, toks):
         # log time
@@ -459,7 +345,10 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             # these are redundant to what master logs, so ignore
             return
 
-        activity = glue2.computing_activity.ComputingActivity()
+        if toks[4] in self.activities:
+            activity = self.activities[toks[4]]
+        else:
+            activity = glue2.computing_activity.ComputingActivity()
 
         event_dt = datetime.datetime.fromtimestamp(float(toks[2]),tzoffset(0))
         activity.LocalIDFromManager = toks[4]
@@ -473,6 +362,7 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         if toks[3] == "pending":
             activity.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
             activity.ComputingManagerSubmissionTime = event_dt
+            self.activities[activity.LocalIDFromManager] = activity
         elif toks[3] == "sent":
             # sent to execd - just ignore
             return
@@ -481,22 +371,48 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
             activity.StartTime = event_dt
         elif toks[3] == "finished":
+            if activity.ComputingManagerEndTime is not None:
+                # could be a finished message after an error - ignore it
+                return
             activity.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
             activity.ComputingManagerEndTime = event_dt
+            if activity.LocalIDFromManager in self.activities:
+                del self.activities[activity.LocalIDFromManager]
         elif toks[3] == "deleted":
             # scheduler deleting the job and a finished appears first, so ignore
             return
         elif toks[3] == "error":
-            self.info("ignoring error state for job %s" % activity.LocalIDFromManager)
-            return
+            activity.State = glue2.computing_activity.ComputingActivity.STATE_FAILED
+            activity.ComputingManagerEndTime = event_dt
+            if activity.LocalIDFromManager in self.activities:
+                del self.activities[activity.LocalIDFromManager]
         elif toks[3] == "restart":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
-            activity.StartTime = event_dt
+            # restart doesn't seem to mean that the job starts running again
+            # restarts occur after errors (an attempt to restart?) - just ignore them
+            return
+            #activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+            #activity.StartTime = event_dt
         else:
             self.warning("unknown job log of type %s" % toks[3])
 
+        # these records are missing a few things, like the # nodes
+        if activity.RequestedSlots is None:
+            self.addInfo(activity)
+        
         if self._includeQueue(activity.Queue):
             self.output(activity)
+
+    def addInfo(self, job):
+        try:
+            qstat = self.params["qstat"]
+        except KeyError:
+            qstat = "qstat"
+        cmd = qstat + " -xml -s prsz -j " + job.LocalIDFromManager
+        self.debug("running "+cmd)
+        status, output = commands.getstatusoutput(cmd)
+        if status != 0:
+            raise StepError("qstat failed: "+output+"\n")
+        parseJLines(output,{job.LocalIDFromManager: job},self)
 
 #######################################################################################################################
 
@@ -616,7 +532,7 @@ class HostsHandler(xml.sax.handler.ContentHandler):
         pass
 
     def endDocument(self):
-        if self.cur_host != None and self._goodHost(self.cur_host):
+        if self.cur_host is not None and self._goodHost(self.cur_host):
             self.hosts.append(self.cur_host)
 
     def startElement(self, name, attrs):
@@ -632,7 +548,7 @@ class HostsHandler(xml.sax.handler.ContentHandler):
         
     def endElement(self, name):
         if name == "host":
-            if self.cur_host.PhysicalCPUs != None:
+            if self.cur_host.PhysicalCPUs is not None:
                 self.hosts.append(self.cur_host)
             self.cur_host = None
 
