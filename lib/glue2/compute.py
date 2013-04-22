@@ -33,7 +33,7 @@ from glue2.computing_share import ComputingShares, ComputingShareTeraGridXml, Co
 from glue2.execution_environment import ExecutionEnvironments, ExecutionEnvironmentTeraGridXml
 from glue2.execution_environment import ExecutionEnvironmentTeraGridXml
 from glue2.execution_environment import ExecutionEnvironmentIpfJson
-from glue2.location import Location, LocationIpfJson
+from glue2.location import Location, LocationIpfJson, LocationTeraGridXml
 
 #######################################################################################################################
 
@@ -116,7 +116,7 @@ class PublicTeraGridXml(Representation):
         doc.documentElement.appendChild(root)
 
         for location in public.location:
-            root.appendChild(LocationTeraGridXML.toDom(location).document.firstChild)
+            root.appendChild(LocationTeraGridXml.toDom(location).documentElement.firstChild)
         for service in public.service:
             root.appendChild(ComputingServiceTeraGridXml.toDom(service).documentElement.firstChild)
         for endpoint in public.endpoint:
@@ -215,7 +215,7 @@ class PrivateTeraGridXml(Representation):
         root = doc.createElement("Entities")
         doc.documentElement.appendChild(root)
 
-        for activity in private.activities:
+        for activity in private.activity:
             root.appendChild(ComputingActivityTeraGridXml.toDom(activity).documentElement.firstChild)
         return doc
 
