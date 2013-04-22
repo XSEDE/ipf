@@ -91,9 +91,10 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             if self._includeQueue(job.Queue):
                 jobs.append(job)
 
-        # scontrol doesn't sort jobs, so sort them by priority and job id before returning
+        # scontrol doesn't sort jobs, so sort them by priority, job id, and state before returning
         jobs = sorted(jobs,key=lambda job: int(job.LocalIDFromManager))
         jobs = sorted(jobs,key=lambda job: -job.Extension["Priority"])
+        jobs = sorted(jobs,key=self._jobStateKey)
 
         # loop through and set WaitingPosition for waiting jobs
         waiting_pos = 1
@@ -105,7 +106,33 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
 
         return jobs
 
-def _getJob(self, job_str):
+    def _jobStateKey(self, job):
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_RUNNING:
+            return 1
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_STARTING:
+            return 2
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_SUSPENDED:
+            return 3
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_PENDING:
+            return 4
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_HELD:
+            return 5
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_FINISHING:
+            return 6
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_TERMINATING:
+            return 7
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_FINISHED:
+            return 8
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_TERMINATED:
+            return 9
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_FAILED:
+            return 10
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_UNKNOWN:
+            return 11
+        return 12  # above should be all of them, but...
+
+
+def _getJob(step, job_str):
     job = glue2.computing_activity.ComputingActivity()
 
     m = re.search("JobId=(\S+)",job_str)
@@ -155,7 +182,7 @@ def _getJob(self, job_str):
             job.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
         else:
             step.warning("found unknown job state '%s'",state)
-        job.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
+            job.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
 
     m = re.search("NumCPUs=(\d+)",job_str)
     if m is not None:
