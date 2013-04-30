@@ -48,7 +48,6 @@ class LModApplicationsStep(glue2.application.ApplicationsStep):
         except KeyError:
             raise StepError("didn't find environment variable LMOD_DEFAULT_MODULEPATH")
 
-        self.count = 0 # testing
         apps = glue2.application.Applications(self.resource_name)
         for path in module_paths:
             try:
@@ -67,7 +66,7 @@ class LModApplicationsStep(glue2.application.ApplicationsStep):
                     if file_name.endswith("~"):
                         continue
                     if file_name.endswith(".lua"):
-                        self._addModule(os.path.join(path,name,file_name),name,file_name[len(file_name)-4],apps)
+                        self._addModule(os.path.join(path,name,file_name),name,file_name[:len(file_name)-4],apps)
                     else:
                         self._addModule(os.path.join(path,name,file_name),name,file_name,apps)
         return apps
@@ -96,8 +95,6 @@ class LModApplicationsStep(glue2.application.ApplicationsStep):
         handle.Type = ApplicationHandle.MODULE
         handle.Value = name+"/"+version
 
-        self.count += 1
-        if self.count < 10:
-            apps.add(env,[handle])
+        apps.add(env,[handle])
 
 #######################################################################################################################
