@@ -208,11 +208,9 @@ class ComputingServiceTeraGridXml(Representation):
         doc.documentElement.appendChild(root)
 
         # Entity
-        e = doc.createElement("CreationTime")
-        e.appendChild(doc.createTextNode(dateTimeToText(service.CreationTime)))
+        root.setAttribute("CreationTime",dateTimeToText(service.CreationTime))
         if service.Validity is not None:
-            e.setAttribute("Validity",str(service.Validity))
-        root.appendChild(e)
+            root.setAttribute("Validity",str(service.Validity))
 
         e = doc.createElement("ID")
         e.appendChild(doc.createTextNode(service.ID))

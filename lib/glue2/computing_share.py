@@ -280,11 +280,9 @@ class ComputingShareTeraGridXml(Representation):
         doc.documentElement.appendChild(root)
 
         # Entity
-        e = doc.createElement("CreationTime")
-        e.appendChild(doc.createTextNode(dateTimeToText(share.CreationTime)))
+        root.setAttribute("CreationTime",dateTimeToText(share.CreationTime))
         if share.Validity is not None:
-            e.setAttribute("Validity",str(share.Validity))
-        root.appendChild(e)
+            root.setAttribute("Validity",str(share.Validity))
 
         e = doc.createElement("ID")
         e.appendChild(doc.createTextNode(share.ID))

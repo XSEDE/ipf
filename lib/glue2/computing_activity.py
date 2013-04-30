@@ -273,11 +273,9 @@ class ComputingActivityTeraGridXml(Representation):
         doc.documentElement.appendChild(root)
 
         # Entity
-        e = doc.createElement("CreationTime")
-        e.appendChild(doc.createTextNode(dateTimeToText(activity.CreationTime)))
+        root.setAttribute("CreationTime",dateTimeToText(activity.CreationTime))
         if activity.Validity is not None:
-            e.setAttribute("Validity",str(activity.Validity))
-        root.appendChild(e)
+            root.setAttribute("Validity",str(activity.Validity))
 
         e = doc.createElement("ID")
         e.appendChild(doc.createTextNode(activity.ID))

@@ -42,11 +42,12 @@ class FileStep(PublishStep):
                               True)
 
     def _publish(self, representation):
-        file = open(self._getPath(),"w")
         self.info("writing %s",representation)
-        file.write(representation.get())
-        file.flush()
-        file.close()
+        f = open(self._getPath()+".new","w")
+        f.write(representation.get())
+        f.close()
+        os.chmod(self._getPath()+".new",0644)  # may want other users to be able to read it
+        os.rename(self._getPath()+".new",self._getPath())
 
     def _getPath(self):
         try:

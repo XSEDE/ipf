@@ -197,11 +197,9 @@ class ComputingManagerTeraGridXml(Representation):
         doc.documentElement.appendChild(root)
 
         # Entity
-        e = doc.createElement("CreationTime")
-        e.appendChild(doc.createTextNode(dateTimeToText(manager.CreationTime)))
+        root.setAttribute("CreationTime",dateTimeToText(manager.CreationTime))
         if manager.Validity is not None:
-            e.setAttribute("Validity",str(manager.Validity))
-        root.appendChild(e)
+            root.setAttribute("Validity",str(manager.Validity))
 
         e = doc.createElement("ID")
         e.appendChild(doc.createTextNode(manager.ID))

@@ -215,10 +215,8 @@ class ComputingEndpointTeraGridXml(Representation):
         doc.documentElement.appendChild(root)
 
         # Entity
-        e = doc.createElement("CreationTime")
-        e.appendChild(doc.createTextNode(dateTimeToText(endpoint.CreationTime)))
-        e.setAttribute("Validity",str(endpoint.Validity))
-        root.appendChild(e)
+        root.setAttribute("CreationTime",dateTimeToText(endpoint.CreationTime))
+        root.setAttribute("Validity",str(endpoint.Validity))
 
         e = doc.createElement("ID")
         e.appendChild(doc.createTextNode(endpoint.ID))

@@ -111,11 +111,9 @@ class LocationTeraGridXml(Representation):
         doc.documentElement.appendChild(root)
 
         # Entity
-        e = doc.createElement("CreationTime")
-        e.appendChild(doc.createTextNode(dateTimeToText(location.CreationTime)))
+        root.setAttribute("CreationTime",dateTimeToText(location.CreationTime))
         if location.Validity is not None:
-            e.setAttribute("Validity",str(location.Validity))
-        root.appendChild(e)
+            root.setAttribute("Validity",str(location.Validity))
 
         e = doc.createElement("ID")
         e.appendChild(doc.createTextNode(location.ID))
