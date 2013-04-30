@@ -26,7 +26,7 @@ import glue2.computing_activity
 import glue2.computing_manager
 import glue2.computing_service
 import glue2.computing_share
-from glue2.log import LogDirectoryWatcher
+from glue2.log import LogFileWatcher
 from glue2.execution_environment import *
 
 #######################################################################################################################
@@ -87,13 +87,14 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
 
         jobs = []
         for job_str in output.split("\n\n"):
-            job = self._getJob(job_str)
+            job = _getJob(self,job_str)
             if self._includeQueue(job.Queue):
                 jobs.append(job)
 
-        # scontrol doesn't sort jobs, so sort them by priority and job id before returning
+        # scontrol doesn't sort jobs, so sort them by priority, job id, and state before returning
         jobs = sorted(jobs,key=lambda job: int(job.LocalIDFromManager))
         jobs = sorted(jobs,key=lambda job: -job.Extension["Priority"])
+        jobs = sorted(jobs,key=self._jobStateKey)
 
         # loop through and set WaitingPosition for waiting jobs
         waiting_pos = 1
@@ -105,95 +106,123 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
 
         return jobs
 
-    def _getJob(self, job_str):
-        job = glue2.computing_activity.ComputingActivity()
+    def _jobStateKey(self, job):
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_RUNNING:
+            return 1
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_STARTING:
+            return 2
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_SUSPENDED:
+            return 3
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_PENDING:
+            return 4
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_HELD:
+            return 5
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_FINISHING:
+            return 6
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_TERMINATING:
+            return 7
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_FINISHED:
+            return 8
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_TERMINATED:
+            return 9
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_FAILED:
+            return 10
+        if job.State == glue2.computing_activity.ComputingActivity.STATE_UNKNOWN:
+            return 11
+        return 12  # above should be all of them, but...
 
-        m = re.search("JobId=(\S+)",job_str)
-        if m is not None:
-            job.LocalIDFromManager = m.group(1)
-        m = re.search(" Name=(\S+)",job_str)
-        if m is not None:
-            job.Name = m.group(1)
-        m = re.search("UserId=(\S+)\(",job_str)
-        if m is not None:
-            job.LocalOwner = m.group(1)
-        m = re.search("GroupId=(\S+)\(",job_str)
-        if m is not None:
-            job.UserDomain = m.group(1)
-        m = re.search("Partition=(\S+)",job_str)
-        if m is not None:
-            job.Queue = m.group(1)
-        m = re.search("JobState=(\S+)",job_str)
-        if m is not None:
-            state = m.group(1)  # see squeue man page for state descriptions
-            if state == "CANCELLED":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
-            elif state == "COMPLETED":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
-            elif state == "CONFIGURING":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_STARTING
-            elif state == "COMPLETING":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_FINISHING
-            elif state == "FAILED":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_FAILED
-            elif state == "NODE_FAIL":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_FAILED
-            elif state == "PENDING":
-                m = re.search("Reason=Dependency",job_str)
-                if m is None:
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
-                else:
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
-                    # could add what the dependency is
-            elif state == "PREEMPTED":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
-            elif state == "RUNNING":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
-            elif state == "SUSPENDED":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_SUSPENDED
-            elif state == "TIMEOUT":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
+
+def _getJob(step, job_str):
+    job = glue2.computing_activity.ComputingActivity()
+
+    m = re.search("JobId=(\S+)",job_str)
+    if m is not None:
+        job.LocalIDFromManager = m.group(1)
+    m = re.search(" Name=(\S+)",job_str)
+    if m is not None:
+        job.Name = m.group(1)
+    m = re.search("UserId=(\S+)\(",job_str)
+    if m is not None:
+        job.LocalOwner = m.group(1)
+    m = re.search("GroupId=(\S+)\(",job_str)
+    if m is not None:
+        job.UserDomain = m.group(1)
+    m = re.search("Partition=(\S+)",job_str)
+    if m is not None:
+        job.Queue = m.group(1)
+    m = re.search("JobState=(\S+)",job_str)
+    if m is not None:
+        state = m.group(1)  # see squeue man page for state descriptions
+        if state == "CANCELLED":
+            job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+        elif state == "COMPLETED":
+            job.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
+        elif state == "CONFIGURING":
+            job.State = glue2.computing_activity.ComputingActivity.STATE_STARTING
+        elif state == "COMPLETING":
+            job.State = glue2.computing_activity.ComputingActivity.STATE_FINISHING
+        elif state == "FAILED":
+            job.State = glue2.computing_activity.ComputingActivity.STATE_FAILED
+        elif state == "NODE_FAIL":
+            job.State = glue2.computing_activity.ComputingActivity.STATE_FAILED
+        elif state == "PENDING":
+            m = re.search("Reason=Dependency",job_str)
+            if m is None:
+                job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
             else:
-                self.warning("found unknown job state '%s'",state)
-                job.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
+                job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
+                # could add what the dependency is
+        elif state == "PREEMPTED":
+            job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+        elif state == "RUNNING":
+            job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+        elif state == "SUSPENDED":
+            job.State = glue2.computing_activity.ComputingActivity.STATE_SUSPENDED
+        elif state == "TIMEOUT":
+            job.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
+        else:
+            step.warning("found unknown job state '%s'",state)
+            job.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
 
-        m = re.search("NumCPUs=(\d+)",job_str)
-        if m is not None:
-            job.RequestedSlots = int(m.group(1))
-        m = re.search("TimeLimit=(\S+)",job_str)
-        if m is not None:
-            wall_time = _getDuration(m.group(1))
-            if job.RequestedSlots is not None:
-                job.RequestedTotalWallTime = wall_time * job.RequestedSlots
-        m = re.search("RunTime=(\S+)",job_str)
-        if m is not None:
-            used_wall_time = _getDuration(m.group(1))
-            if used_wall_time > 0 and job.RequestedSlots is not None:
-                job.UsedTotalWallTime = used_wall_time * job.RequestedSlots
-        m = re.search("SubmitTime=(\S+)",job_str)
-        if m is not None:
-            job.ComputingManagerSubmissionTime = _getDateTime(m.group(1))
-        m = re.search("StartTime=(\S+)",job_str)
-        if m is not None and m.group(1) != "Unknown":
-            # ignore if job hasn't started (it is an estimated start time used for backfill scheduling)
-            if job.State != glue2.computing_activity.ComputingActivity.STATE_PENDING:
-                job.StartTime = _getDateTime(m.group(1))
-        m = re.search("EndTime=(\S+)",job_str)
-        if m is not None and m.group(1) != "Unknown":
-            job.ComputingManagerEndTime = _getDateTime(m.group(1))
+    m = re.search("NumCPUs=(\d+)",job_str)
+    if m is not None:
+        job.RequestedSlots = int(m.group(1))
+    m = re.search("TimeLimit=(\S+)",job_str)
+    if m is not None:
+        wall_time = _getDuration(m.group(1))
+        if job.RequestedSlots is not None:
+            job.RequestedTotalWallTime = wall_time * job.RequestedSlots
+    m = re.search("RunTime=(\S+)",job_str)
+    if m is not None:
+        used_wall_time = _getDuration(m.group(1))
+        if used_wall_time > 0 and job.RequestedSlots is not None:
+            job.UsedTotalWallTime = used_wall_time * job.RequestedSlots
+    m = re.search("SubmitTime=(\S+)",job_str)
+    if m is not None:
+        job.SubmissionTime = _getDateTime(m.group(1))
+        job.ComputingManagerSubmissionTime = job.SubmissionTime
+    m = re.search("StartTime=(\S+)",job_str)
+    if m is not None and m.group(1) != "Unknown":
+        # ignore if job hasn't started (it is an estimated start time used for backfill scheduling)
+        if job.State != glue2.computing_activity.ComputingActivity.STATE_PENDING:
+            job.StartTime = _getDateTime(m.group(1))
+    m = re.search("EndTime=(\S+)",job_str)
+    if m is not None and m.group(1) != "Unknown":
+        job.EndTime = _getDateTime(m.group(1))
+        job.ComputingManagerEndTime = job.EndTime
 
-        # not sure how to interpret NodeList yet
-        #m = re.search("exec_host = (\S+)",job_str)
-        #if m is not None:
-        #    # exec_host = c013.cm.cluster/7+c013.cm.cluster/6+...
-        #    nodes = set(map(lambda s: s.split("/")[0], m.group(1).split("+")))
-        #    job.ExecutionNode = list(nodes)
+    # not sure how to interpret NodeList yet
+    #m = re.search("exec_host = (\S+)",job_str)
+    #if m is not None:
+    #    # exec_host = c013.cm.cluster/7+c013.cm.cluster/6+...
+    #    nodes = set(map(lambda s: s.split("/")[0], m.group(1).split("+")))
+    #    job.ExecutionNode = list(nodes)
 
-        m = re.search("Priority=(\S+)",job_str)
-        if m is not None:
-            job.Extension["Priority"] = int(m.group(1))
+    m = re.search("Priority=(\S+)",job_str)
+    if m is not None:
+        job.Extension["Priority"] = int(m.group(1))
 
-        return job
+    return job
 
 def _getDuration(dstr):
     m = re.search("(\d+)-(\d+):(\d+):(\d+)",dstr)
@@ -229,142 +258,91 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
     def __init__(self):
         glue2.computing_activity.ComputingActivityUpdateStep.__init__(self)
 
-        self._acceptParameter("server_logs_dir","the path to the PBS spool/server_logs directory (optional)",False)
-        # qstat is needed by ComputingActivitiesStep
-        self._acceptParameter("qstat","the path to the PBS qstat program (default 'qstat')",False)
+        self._acceptParameter("slurmctl_log_file","the path to the SLURM control log file (default '/usr/local/slurm/var/slurmctl.log')",False)
+        self._acceptParameter("scontrol","the path to the SLURM squeue program (default 'scontrol')",False)
 
-        # caching job information isn't great with very large queues,
-        # but the job owner is only provided in the queued log entry
         self.activities = {}
 
-        self.nodes = {}    # save a list of nodes allocated to a job
-
     def _run(self):
-        step = ComputingActivitiesStep()    # use ComputingActivitiesStep to initialize cache of activities
-        step.setParameters({},self.params)
-        for activity in step._run():
-            self.activities[activity.LocalIDFromManager] = activity
+        log_file = self.params.get("slurmctl_log_file","/usr/local/slurm/var/slurmctl.log")
 
-        try:
-            dir_name = self.params["server_logs_dir"]
-        except KeyError:
-            try:
-                dir_name = os.path.join(os.environ["PBS_HOME"],"spool","server_logs")
-            except KeyError:
-                raise StepError("server_logs_dir not specified and the PBS_HOME environment variable is not set")
-
-        watcher = LogDirectoryWatcher(self._logEntry,dir_name)
+        watcher = LogFileWatcher(self._logEntry,log_file)
         watcher.run()
 
     def _logEntry(self, log_file_name, entry):
-        # log time
-        # entry type
-        # source (PBS_Server, ...)
-        # Svr/Req/Job
-        # ? job id (with Job)
-        # message
-        toks = entry.split(";")
-        if len(toks) < 6:
-            self.warning("too few tokens in line: %s",entry)
-            return
-        type = toks[1]
-        if type == "0002":
-            # batch system/server events
-            if toks[5] == "Log closed":
-                # move on to the next log
-                return False
-        elif type == "0008":
-            # job events
-            self._handleJobEntry(toks)
-        elif type == "0010":
-            # job resource usage
-            pass
-        elif type == "0040":
-            # server sending requests (including allocation)
-            self._handleRequest(toks)
-        else:
-            #self.debug("unknown type %s",type)
-            pass
-        return True
 
-    def _handleRequest(self, toks):
-        if toks[4] != "set_nodes":
-            return
-        m = re.search("job (\S+) ",toks[5])
-        if m is None:
-            return
-        id = m.group(1).split(".")[0]  # just the id part of id.host.name
-
-        m = re.search(" \(nodelist=([^\)]+)\)",toks[5])
-        if m is None:
-            return
-        self.nodes[id] = list(set(map(lambda s: s.split("/")[0], m.group(1).split("+"))))
-            
-    def _handleJobEntry(self, toks):
-        id = toks[4].split(".")[0]  # just the id part of id.host.name
-        try:
-            activity = self.activities[id]
-        except KeyError:
-            activity = glue2.computing_activity.ComputingActivity()
-            activity.LocalIDFromManager = id
-            self.activities[id] = activity
-        if "Job Queued" in toks[5]:
+        #[2013-04-21T16:14:47] _slurm_rpc_submit_batch_job JobId=618921 usec=12273
+        m = re.search("\[(\S+)\] _slurm_rpc_submit_batch_job JobId=(\S+) usec=\d+",entry)
+        if m is not None:
+            dt = _getDateTime(m.group(1))
+            job_id = m.group(2)
+            activity = self._getActivity(job_id)
             activity.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
-            activity.ComputingManagerSubmissionTime = self._getDateTime(toks[0])
-            try:
-                m = re.search(" owner = (\w+)@(\S*),",toks[5])  # just the user part of user@host
-                activity.LocalOwner = m.group(1)
-            except AttributeError:
-                self.warning("didn't find owner in log mesage: %s",toks)
-                return
-            try:
-                m = re.search(" job name = (\S+)",toks[5])
-                #activity.Name = m.group(1).split(".")[0]  # just the a part of a.b.?
-                activity.Name = m.group(1)
-            except AttributeError:
-                self.warning("didn't find job name in log mesage: %s",toks)
-                return
-            try:
-                m = re.search(" queue = (\S+)",toks[5])
-                activity.Queue = m.group(1).split(".")[0]
-            except AttributeError:
-                self.warning("didn't find queue in log mesage: %s",toks)
-                return
-        elif "Job Run" in toks[5]:
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
-            activity.StartTime = self._getDateTime(toks[0])
-            try:
-                activity.ExecutionNode = self.nodes[activity.LocalIDFromManager]
-                del self.nodes[activity.LocalIDFromManager]
-            except KeyError:
-                pass
-        elif "Job deleted" in toks[5]:
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
-            activity.ComputingManagerEndTime = self._getDateTime(toks[0])
-            del self.activities[id]
-        elif "JOB_SUBSTATE_EXITING" in toks[5]:
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
-            activity.ComputingManagerEndTime = self._getDateTime(toks[0])
-            del self.activities[id]
-        elif "Job sent signal SIGKILL on delete" in toks[5]:
-            # job ran too long and was killed
-            activity.State = Cglue2.computing_activity.omputingActivity.STATE_TERMINATED
-            activity.ComputingManagerEndTime = self._getDateTime(toks[0])
-            del self.activities[id]
-        elif "Job Modified" in toks[5]:
-            # when nodes aren't available, log has jobs that quickly go from Job Queued to Job Run to Job Modified
-            # and the jobs are pending after this
-            if activity.State == glue2.computing_activity.ComputingActivity.STATE_RUNNING:
-                activity.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
-                activity.StartTime = None
-            else:
-                self.warning("not sure how to handle log event: %s",toks)
-        else:
-            self.warning("unhandled log event: %s",toks)
+            activity.SubmissionTime = _getDateTime(m.group(1))
+            activity.ComputingManagerSubmissionTime = activity.SubmissionTime
+            # in case scontrol has more info than just at submit time
+            activity.StartTime = None
+            activity.EndTime = None
+            activity.ComputingManagerEndTime = None
+            if self._includeQueue(activity.Queue):
+                self.output(activity)
             return
 
-        if activity.Queue is None or self._includeQueue(activity.Queue):
-            self.output(activity)
+        #[2013-04-21T11:51:52] sched: _slurm_rpc_job_step_create: StepId=617701.0 c410-[603,701,803,904] usec=477
+        m = re.search("\[(\S+)\] sched: _slurm_rpc_job_step_create: StepId=(\S+).0",entry)
+        if m is not None:
+            dt = _getDateTime(m.group(1))
+            job_id = m.group(2)
+            activity = self._getActivity(job_id)
+            activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+            activity.StartTime = _getDateTime(m.group(1))
+            # in case scontrol has more info than just at submit time
+            activity.EndTime = None
+            activity.ComputingManagerEndTime = None
+            if self._includeQueue(activity.Queue):
+                self.output(activity)
+            return
+
+        #[2013-04-21T16:10:43] Job 618861 cancelled from interactive user
+        m = re.search("\[(\S+)\] job (\S+) cancelled from interactive user",entry)
+        if m is not None:
+            dt = _getDateTime(m.group(1))
+            job_id = m.group(2)
+            activity = self._getActivity(job_id)
+            activity.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+            activity.StartTime = _getDateTime(m.group(1))
+            if self._includeQueue(activity.Queue):
+                self.output(activity)
+            del self.activities[job_id]
+            return
+
+        #[2013-04-21T11:51:53] sched: _slurm_rpc_step_complete StepId=617701.0 usec=43
+        m = re.search("\[(\S+)\] sched: _slurm_rpc_step_complete StepId=(\S+).0",entry)
+        if m is not None:
+            dt = _getDateTime(m.group(1))
+            job_id = m.group(2)
+            activity = self._getActivity(job_id)
+            if activity.State == glue2.computing_activity.ComputingActivity.STATE_TERMINATED:
+                return
+            activity.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
+            activity.EndTime = _getDateTime(m.group(1))
+            activity.ComputingManagerEndTime = activity.EndTime
+            if self._includeQueue(activity.Queue):
+                self.output(activity)
+            del self.activities[job_id]
+            return
+
+    def _getActivity(self, job_id):
+        if job_id not in self.activities:
+            scontrol = self.params.get("scontrol","scontrol")
+            cmd = scontrol + " show job "+job_id
+            self.debug("running "+cmd)
+            status, output = commands.getstatusoutput(cmd)
+            if status != 0:
+                raise StepError("scontrol failed: "+output+"\n")
+            act = _getJob(self,output)
+            self.activities[act.LocalIDFromManager] = act
+        return self.activities[job_id]
 
 #######################################################################################################################
 

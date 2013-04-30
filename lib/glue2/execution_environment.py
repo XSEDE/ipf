@@ -293,11 +293,9 @@ class ExecutionEnvironmentTeraGridXml(Representation):
         doc.documentElement.appendChild(root)
 
         # Entity
-        e = doc.createElement("CreationTime")
-        e.appendChild(doc.createTextNode(dateTimeToText(exec_env.CreationTime)))
+        root.setAttribute("CreationTime",dateTimeToText(exec_env.CreationTime))
         if exec_env.Validity is not None:
-            e.setAttribute("Validity",str(exec_env.Validity))
-        root.appendChild(e)
+            root.setAttribute("Validity",str(exec_env.Validity))
 
         e = doc.createElement("ID")
         e.appendChild(doc.createTextNode(exec_env.ID))

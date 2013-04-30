@@ -94,6 +94,75 @@ class Location(Data):
 
 #######################################################################################################################
 
+class LocationTeraGridXml(Representation):
+    data_cls = Location
+
+    def __init__(self, data):
+        Representation.__init__(self,Representation.MIME_TEXT_XML,data)
+
+    def get(self):
+        return self.toDom(self.data).toxml()
+
+    @staticmethod
+    def toDom(location):
+        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
+                                                    "Entities",None)
+        root = doc.createElement("Location")
+        doc.documentElement.appendChild(root)
+
+        # Entity
+        root.setAttribute("CreationTime",dateTimeToText(location.CreationTime))
+        if location.Validity is not None:
+            root.setAttribute("Validity",str(location.Validity))
+
+        e = doc.createElement("ID")
+        e.appendChild(doc.createTextNode(location.ID))
+        root.appendChild(e)
+
+        if location.Name is not None:
+            e = doc.createElement("Name")
+            e.appendChild(doc.createTextNode(location.Name))
+            root.appendChild(e)
+        for info in location.OtherInfo:
+            e = doc.createElement("OtherInfo")
+            e.appendChild(doc.createTextNode(info))
+            root.appendChild(e)
+        for key in location.Extension.keys():
+            e = doc.createElement("Extension")
+            e.setAttribute("Key",key)
+            e.appendChild(doc.createTextNode(location.Extension[key]))
+            root.appendChild(e)
+
+        # Location
+        if location.Address is not None:
+            e = doc.createElement("Address")
+            e.appendChild(doc.createTextNode(location.Address))
+            root.appendChild(e)
+        if location.Place is not None:
+            e = doc.createElement("Place")
+            e.appendChild(doc.createTextNode(location.Place))
+            root.appendChild(e)
+        if location.Country is not None:
+            e = doc.createElement("Country")
+            e.appendChild(doc.createTextNode(location.Country))
+            root.appendChild(e)
+        if location.PostCode is not None:
+            e = doc.createElement("PostCode")
+            e.appendChild(doc.createTextNode(location.PostCode))
+            root.appendChild(e)
+        if location.Latitude is not None:
+            e = doc.createElement("Latitude")
+            e.appendChild(doc.createTextNode(str(location.Latitude)))
+            root.appendChild(e)
+        if location.Longitude is not None:
+            e = doc.createElement("Longitude")
+            e.appendChild(doc.createTextNode(str(location.Longitude)))
+            root.appendChild(e)
+
+        return doc
+
+#######################################################################################################################
+
 class LocationIpfJson(Representation):
     data_cls = Location
 
@@ -134,3 +203,5 @@ class LocationIpfJson(Representation):
             doc["Longitude"] = location.Longitude
 
         return doc
+
+#######################################################################################################################

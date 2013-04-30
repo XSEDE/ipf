@@ -20,9 +20,9 @@ import os
 from xml.dom.minidom import getDOMImplementation
 
 from ipf.data import Data, Representation
-#from ipf.dt import *
+from ipf.dt import *
 from ipf.error import NoMoreInputsError, StepError
-from ipf.sysinfo import ResourceName
+from ipf.sysinfo import ResourceName,SiteName
 from ipf.step import Step
 
 from glue2.computing_activity import ComputingActivities, ComputingActivityTeraGridXml, ComputingActivityIpfJson
@@ -33,7 +33,7 @@ from glue2.computing_share import ComputingShares, ComputingShareTeraGridXml, Co
 from glue2.execution_environment import ExecutionEnvironments, ExecutionEnvironmentTeraGridXml
 from glue2.execution_environment import ExecutionEnvironmentTeraGridXml
 from glue2.execution_environment import ExecutionEnvironmentIpfJson
-from glue2.location import Location, LocationIpfJson
+from glue2.location import Location, LocationIpfJson, LocationTeraGridXml
 
 #######################################################################################################################
 
@@ -43,13 +43,14 @@ class PublicStep(Step):
 
         self.description = "creates a single data containing all nonsensitive compute-related information"
         self.time_out = 5
-        self.requires = [ResourceName,Location,
+        self.requires = [ResourceName,SiteName,Location,
                          ComputingService,ComputingEndpoint,ComputingShares,ComputingManager,ExecutionEnvironments]
         self.produces = [Public]
 
     def run(self):
         public = Public()
         public.resource_name = self._getInput(ResourceName).resource_name
+        public.site_name = self._getInput(SiteName).site_name
         public.location = [self._getInput(Location)]
         public.service = [self._getInput(ComputingService)]
         public.share = self._getInput(ComputingShares).shares
@@ -110,23 +111,39 @@ class PublicTeraGridXml(Representation):
 
     @staticmethod
     def toDom(public):
-        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
-                                                    "glue2",None)
-        root = doc.createElement("Entities")
-        doc.documentElement.appendChild(root)
+        doc = getDOMImplementation().createDocument("http://info.teragrid.org/2009/03/ctss",
+                                                    "V4glue2RP",None)
+        # hack - minidom doesn't output name spaces
+        doc.documentElement.setAttribute("xmlns","http://info.teragrid.org/2009/03/ctss")
+
+        glue2 = doc.createElementNS("http://info.teragrid.org/glue/2009/02/spec_2.0_r02","glue2")
+        doc.documentElement.appendChild(glue2)
+        # hack - minidom doesn't output name spaces
+        glue2.setAttribute("xmlns","http://info.teragrid.org/glue/2009/02/spec_2.0_r02")
+        glue2.setAttribute("Timestamp",dateTimeToText(public.manager[0].CreationTime))
+        glue2.setAttribute("UniqueID","glue2."+public.resource_name)
+        resource = doc.createElement("ResourceID")
+        resource.appendChild(doc.createTextNode(public.resource_name))
+        glue2.appendChild(resource)
+        site = doc.createElement("SiteID")
+        site.appendChild(doc.createTextNode(public.site_name))
+        glue2.appendChild(site)
+
+        entities = doc.createElement("Entities")
+        glue2.appendChild(entities)
 
         for location in public.location:
-            root.appendChild(LocationTeraGridXML.toDom(location).document.firstChild)
+            entities.appendChild(LocationTeraGridXml.toDom(location).documentElement.firstChild)
         for service in public.service:
-            root.appendChild(ComputingServiceTeraGridXml.toDom(service).documentElement.firstChild)
+            entities.appendChild(ComputingServiceTeraGridXml.toDom(service).documentElement.firstChild)
         for endpoint in public.endpoint:
-            root.appendChild(ComputingEndpointTeraGridXml.toDom(endpoint).documentElement.firstChild)
+            entities.appendChild(ComputingEndpointTeraGridXml.toDom(endpoint).documentElement.firstChild)
         for share in public.share:
-            root.appendChild(ComputingShareTeraGridXml.toDom(share).documentElement.firstChild)
+            entities.appendChild(ComputingShareTeraGridXml.toDom(share).documentElement.firstChild)
         for manager in public.manager:
-            root.appendChild(ComputingManagerTeraGridXml.toDom(manager).documentElement.firstChild)
+            entities.appendChild(ComputingManagerTeraGridXml.toDom(manager).documentElement.firstChild)
         for environment in public.environment:
-            root.appendChild(ExecutionEnvironmentTeraGridXml.toDom(environment).documentElement.firstChild)
+            entities.appendChild(ExecutionEnvironmentTeraGridXml.toDom(environment).documentElement.firstChild)
 
         return doc
 
@@ -168,12 +185,13 @@ class PrivateStep(Step):
 
         self.description = "creates a single data containing all sensitive compute-related information"
         self.time_out = 5
-        self.requires = [ResourceName,ComputingActivities]
+        self.requires = [ResourceName,SiteName,ComputingActivities]
         self.produces = [Private]
 
     def run(self):
         private = Private()
         private.resource_name = self._getInput(ResourceName).resource_name
+        private.site_name = self._getInput(SiteName).site_name
         private.activity = self._getInput(ComputingActivities).activities
         private.id = private.resource_name
         
@@ -185,13 +203,9 @@ class Private(Data):
     def __init__(self):
         Data.__init__(self)
 
-        self.location = []
         self.activity = []
 
     def fromJson(self, doc):
-        self.location = []
-        for ldoc in doc.get("Location",[]):
-            self.location.append(Location().fromJson(ldoc))
         self.activity = []
         for adoc in doc.get("ComputingActivity",[]):
             self.location.append(ComputingActivity().fromJson(adoc))
@@ -209,14 +223,28 @@ class PrivateTeraGridXml(Representation):
 
     @staticmethod
     def toDom(private):
-        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
-                                                    "glue2",None)
+        doc = getDOMImplementation().createDocument("http://info.teragrid.org/2009/03/ctss",
+                                                    "V4glue2RP",None)
 
-        root = doc.createElement("Entities")
-        doc.documentElement.appendChild(root)
+        glue2 = doc.createElementNS("http://info.teragrid.org/glue/2009/02/spec_2.0_r02","glue2")
+        doc.documentElement.appendChild(glue2)
+        if len(private.activity) > 0:
+            glue2.setAttribute("Timestamp",dateTimeToText(private.activity[0].CreationTime))
+        else:
+            glue2.setAttribute("Timestamp",dateTimeToText(datetime.datetime.now(tzoffset(0))))
+        glue2.setAttribute("UniqueID","glue2."+private.resource_name)
+        resource = doc.createElement("ResourceID")
+        resource.appendChild(doc.createTextNode(private.resource_name))
+        glue2.appendChild(resource)
+        site = doc.createElement("SiteID")
+        site.appendChild(doc.createTextNode(private.site_name))
+        glue2.appendChild(site)
 
-        for activity in private.activities:
-            root.appendChild(ComputingActivityTeraGridXml.toDom(activity).documentElement.firstChild)
+        entities = doc.createElement("Entities")
+        glue2.appendChild(entities)
+
+        for activity in private.activity:
+            entities.appendChild(ComputingActivityTeraGridXml.toDom(activity).documentElement.firstChild)
         return doc
 
 
