@@ -118,8 +118,8 @@ class PublicTeraGridXml(Representation):
 
         glue2 = doc.createElementNS("http://info.teragrid.org/glue/2009/02/spec_2.0_r02","glue2")
         doc.documentElement.appendChild(glue2)
-        # hack - minidom doesn't output name spaces
-        glue2.setAttribute("xmlns","http://info.teragrid.org/glue/2009/02/spec_2.0_r02")
+        # WS-MDS doesn't want a namespace on glue2
+        #glue2.setAttribute("xmlns","http://info.teragrid.org/glue/2009/02/spec_2.0_r02")
         glue2.setAttribute("Timestamp",dateTimeToText(public.manager[0].CreationTime))
         glue2.setAttribute("UniqueID","glue2."+public.resource_name)
         resource = doc.createElement("ResourceID")
@@ -225,9 +225,13 @@ class PrivateTeraGridXml(Representation):
     def toDom(private):
         doc = getDOMImplementation().createDocument("http://info.teragrid.org/2009/03/ctss",
                                                     "V4glue2RP",None)
+        # hack - minidom doesn't output name spaces
+        doc.documentElement.setAttribute("xmlns","http://info.teragrid.org/2009/03/ctss")
 
         glue2 = doc.createElementNS("http://info.teragrid.org/glue/2009/02/spec_2.0_r02","glue2")
         doc.documentElement.appendChild(glue2)
+        # WS-MDS doesn't want a namespace on glue2
+        #glue2.setAttribute("xmlns","http://info.teragrid.org/glue/2009/02/spec_2.0_r02")
         if len(private.activity) > 0:
             glue2.setAttribute("Timestamp",dateTimeToText(private.activity[0].CreationTime))
         else:
