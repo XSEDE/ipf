@@ -34,13 +34,15 @@ class LocalSoftwareStep(Step):
         self.description = "produces a document describing what software is installed on this resource"
         self.time_out = 15
         self.requires = [ResourceName]
-        self.produces = [TeraGridLocalSoftware]
+        self.produces = [LocalSoftware]
         self._acceptParameter("mechanism","'software_catalog', 'script', or 'file'",True)
-        self._acceptParameter("script","the path to the script to use for the script mechanism",True)
-        self._acceptParameter("file","the path to the file to read for the file mechanism",True)
+        self._acceptParameter("script","the path to the script to use for the script mechanism",False)
+        self._acceptParameter("file","the path to the file to read for the file mechanism",False)
+
+        self.resource_name = None
 
     def run(self):
-        rn = self._getInput(ResourceName)
+        self.resource_name = self._getInput(ResourceName).resource_name
 
         try:
             mechanism = self.params["mechanism"]
@@ -69,9 +71,7 @@ class LocalSoftwareStep(Step):
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
             raise StepError(cmd+" failed: "+output+"\n")
-
-        data = TeraGridLocalSoftware(output)
-        self._output(self.resource_name,data)
+        self._output(LocalSoftware(self.resource_name,output))
 
     def _runFile(self):
         try:
@@ -79,24 +79,22 @@ class LocalSoftwareStep(Step):
         except KeyError:
             raise StepError("file not specified")
 
-        doc = LocalSoftware()
         file = open(file_name,"r")
-        doc.body = file.read()
+        data = file.read()
         file.close()
-        self._output(doc)
+        self._output(LocalSoftware(self.resource_name,data))
 
 #######################################################################################################################
 
-class TeraGridLocalSoftware(Data):
-    def __init__(self, resource_name, xml):
-        Data.__init__(self)
-
+class LocalSoftware(Data):
+    def __init__(self, id, xml):
+        Data.__init__(self,id)
         self.xml = xml
 
 #######################################################################################################################
 
-class TeraGridLocalSoftwareXml(Representation):
-    data_cls = TeraGridLocalSoftware
+class LocalSoftwareXml(Representation):
+    data_cls = LocalSoftware
 
     def __init__(self, data):
         Representation.__init__(self,Representation.MIME_TEXT_XML,data)
