@@ -339,8 +339,11 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             self.debug("running "+cmd)
             status, output = commands.getstatusoutput(cmd)
             if status != 0:
-                raise StepError("scontrol failed: "+output+"\n")
-            act = _getJob(self,output)
+                self.warning("scontrol failed: "+output+"\n")
+                act = glue2.computing_activity.ComputingActivity()
+                act.LocalIDFromManager = job_id
+            else:
+                act = _getJob(self,output)
             self.activities[act.LocalIDFromManager] = act
         return self.activities[job_id]
 
