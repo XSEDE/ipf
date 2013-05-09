@@ -1,0 +1,28 @@
+{
+  "name": "lmod",
+  "steps": [
+    { "name": "teragrid.sysinfo.ResourceNameStep" },
+    { "name": "glue2.modules.LModApplicationsStep" },
+    {
+      "name": "ipf.publish.AmqpStep",
+      "params": {
+        "publish": ["glue2.application.ApplicationsIpfJson"],
+        "services": [ "info1.dyn.teragrid.org", "info2.dyn.teragrid.org" ],
+        "ssl_options": {
+          "keyfile": "key.pem",
+          "certfile": "cert.pem",
+          "ca_certs": "ca_certs.pem"
+        },
+	"vhost": "xsede_public",
+        "exchange": "glue2.applications"
+      }
+    },
+    {
+      "name": "ipf.publish.FileStep",
+      "params": {
+        "publish": ["glue2.application.ApplicationsIpfJson"],
+        "path": "apps.json"
+      }
+    }
+  ]
+}

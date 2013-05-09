@@ -154,9 +154,9 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
             self.cur_job = glue2.computing_activity.ComputingActivity()
             self.cur_job.LocalIDFromManager = self.text
         if name == "state":
-            if self.text == "r":
+            if self.text.find("r") >= 0:
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
-            elif self.text == "R": # restarted
+            elif self.text.find("R") >= 0: # restarted
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
             elif self.text.find("d") >= 0: # deleted
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
@@ -166,7 +166,7 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
             elif self.text.find("w") >= 0: # waiting - qw
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
-            elif self.text == "t": # transfering
+            elif self.text.find("t") >= 0: # transfering
                 self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
             else:
                 self.step.warning("found unknown SGE job state '" + self.text + "'")

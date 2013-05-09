@@ -41,9 +41,15 @@ class WorkflowEngine(object):
         
     def run(self, workflow_file_name):
         workflow = Workflow()
-        if not os.path.isabs(workflow_file_name):
-            workflow_file_name = os.path.join(IPF_HOME,"etc","workflow",workflow_file_name)
-        workflow.read(workflow_file_name)
+        if os.path.isfile(workflow_file_name):
+            workflow.read(workflow_file_name)
+        else:
+            file_name = os.path.join(IPF_HOME,"etc","workflow",workflow_file_name)
+            if os.path.isfile(file_name):
+                workflow.read(file_name)
+            else:
+                raise WorkflowError("cannot open workflow file %s as a path or relative to %s/etc/workflow" % \
+                                    (workflow_file_name,IPF_HOME))
 
         self._setDependencies(workflow)
         logger.debug(workflow)

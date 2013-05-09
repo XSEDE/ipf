@@ -43,6 +43,7 @@ class PublicStep(Step):
 
         self.description = "creates a single data containing all nonsensitive compute-related information"
         self.time_out = 5
+        # TeraGridXML requires SiteName
         self.requires = [ResourceName,SiteName,Location,
                          ComputingService,ComputingEndpoint,ComputingShares,ComputingManager,ExecutionEnvironments]
         self.produces = [Public]
@@ -185,6 +186,7 @@ class PrivateStep(Step):
 
         self.description = "creates a single data containing all sensitive compute-related information"
         self.time_out = 5
+        # TeraGridXML requires SiteName
         self.requires = [ResourceName,SiteName,ComputingActivities]
         self.produces = [Private]
 
