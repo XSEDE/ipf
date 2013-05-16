@@ -404,10 +404,8 @@ class ComputingSharesStep(glue2.computing_share.ComputingSharesStep):
         if m is not None:
             if m.group(1) == "UP":
                 share.ServingState = "production"
-                share.Extension["RunningJobs"] = True
             else:
                 share.ServingState = "closed"
-                share.Extension["RunningJobs"] = False
 
         return share
 

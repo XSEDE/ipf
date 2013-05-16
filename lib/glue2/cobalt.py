@@ -274,17 +274,13 @@ class ComputingSharesStep(glue2.computing_share.ComputingSharesStep):
             if line.startswith("    State"):
                 state = line.split()[2]
                 if state == "running":
-                    queue.Extension["AcceptingJobs"] = True
-                    queue.Extension["RunningJobs"] = True
+                    queue.ServingState = "production"
                 elif state == "stopped":
-                    queue.Extension["AcceptingJobs"] = True
-                    queue.Extension["RunningJobs"] = False
+                    queue.ServingState = "queuing"
                 elif state == "draining":
-                    queue.Extension["AcceptingJobs"] = False
-                    queue.Extension["RunningJobs"] = True
+                    queue.ServingState = "draining"
                 elif state == "dead":
-                    queue.Extension["AcceptingJobs"] = False
-                    queue.Extension["RunningJobs"] = False
+                    queue.ServingState = "closed"
             if line.startswith("    Users"):
                 # ignore user list for now
                 pass
