@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2012 The University of Texas at Austin                          #
+#   Copyright 2012-2013 The University of Texas at Austin                     #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -24,6 +24,8 @@ from ipf.data import Data, Representation
 from ipf.dt import *
 from ipf.sysinfo import SiteName
 from ipf.step import Step
+
+from glue2.entity import *
 
 #######################################################################################################################
 
@@ -49,22 +51,13 @@ class LocationStep(Step):
 
 #######################################################################################################################
 
-class Location(Data):
+class Location(Entity):
 
     DEFAULT_VALIDITY = 60*60*24 # seconds
 
     def __init__(self):
-        Data.__init__(self)
+        Entity.__init__(self)
 
-        # Entity
-        self.CreationTime = datetime.datetime.now(tzoffset(0))
-        self.Validity = Location.DEFAULT_VALIDITY
-        self.ID = None      # string (uri)
-        self.Name = None    # string
-        self.OtherInfo = [] # list of string
-        self.Extension = {} # (key,value) strings
-
-        # Location
         self.Address = None    # street address (string)
         self.Place = None      # town/city (string)
         self.Country = None    # (string)
@@ -94,113 +87,78 @@ class Location(Data):
 
 #######################################################################################################################
 
-class LocationTeraGridXml(Representation):
+class LocationTeraGridXml(EntityTeraGridXml):
     data_cls = Location
 
     def __init__(self, data):
-        Representation.__init__(self,Representation.MIME_TEXT_XML,data)
+        EntityTeraGridXml.__init__(self,data)
 
     def get(self):
-        return self.toDom(self.data).toxml()
+        return self.toDom().toxml()
 
-    @staticmethod
-    def toDom(location):
+    def toDom(self):
         doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
                                                     "Entities",None)
         root = doc.createElement("Location")
         doc.documentElement.appendChild(root)
-
-        # Entity
-        root.setAttribute("CreationTime",dateTimeToText(location.CreationTime))
-        if location.Validity is not None:
-            root.setAttribute("Validity",str(location.Validity))
-
-        e = doc.createElement("ID")
-        e.appendChild(doc.createTextNode(location.ID))
-        root.appendChild(e)
-
-        if location.Name is not None:
-            e = doc.createElement("Name")
-            e.appendChild(doc.createTextNode(location.Name))
-            root.appendChild(e)
-        for info in location.OtherInfo:
-            e = doc.createElement("OtherInfo")
-            e.appendChild(doc.createTextNode(info))
-            root.appendChild(e)
-        for key in location.Extension.keys():
-            e = doc.createElement("Extension")
-            e.setAttribute("Key",key)
-            e.appendChild(doc.createTextNode(location.Extension[key]))
-            root.appendChild(e)
-
-        # Location
-        if location.Address is not None:
-            e = doc.createElement("Address")
-            e.appendChild(doc.createTextNode(location.Address))
-            root.appendChild(e)
-        if location.Place is not None:
-            e = doc.createElement("Place")
-            e.appendChild(doc.createTextNode(location.Place))
-            root.appendChild(e)
-        if location.Country is not None:
-            e = doc.createElement("Country")
-            e.appendChild(doc.createTextNode(location.Country))
-            root.appendChild(e)
-        if location.PostCode is not None:
-            e = doc.createElement("PostCode")
-            e.appendChild(doc.createTextNode(location.PostCode))
-            root.appendChild(e)
-        if location.Latitude is not None:
-            e = doc.createElement("Latitude")
-            e.appendChild(doc.createTextNode(str(location.Latitude)))
-            root.appendChild(e)
-        if location.Longitude is not None:
-            e = doc.createElement("Longitude")
-            e.appendChild(doc.createTextNode(str(location.Longitude)))
-            root.appendChild(e)
+        self.addToDomElement(doc,root)
 
         return doc
 
+    def addToDomElement(self, doc, element):
+        EntityTeraGridXml.addToDomElement(self,doc,element)
+
+        if self.data.Address is not None:
+            e = doc.createElement("Address")
+            e.appendChild(doc.createTextNode(self.data.Address))
+            element.appendChild(e)
+        if self.data.Place is not None:
+            e = doc.createElement("Place")
+            e.appendChild(doc.createTextNode(self.data.Place))
+            element.appendChild(e)
+        if self.data.Country is not None:
+            e = doc.createElement("Country")
+            e.appendChild(doc.createTextNode(self.data.Country))
+            element.appendChild(e)
+        if self.data.PostCode is not None:
+            e = doc.createElement("PostCode")
+            e.appendChild(doc.createTextNode(self.data.PostCode))
+            element.appendChild(e)
+        if self.data.Latitude is not None:
+            e = doc.createElement("Latitude")
+            e.appendChild(doc.createTextNode(str(self.data.Latitude)))
+            element.appendChild(e)
+        if self.data.Longitude is not None:
+            e = doc.createElement("Longitude")
+            e.appendChild(doc.createTextNode(str(self.data.Longitude)))
+            element.appendChild(e)
+
 #######################################################################################################################
 
-class LocationIpfJson(Representation):
+class LocationOgfJson(EntityOgfJson):
     data_cls = Location
 
     def __init__(self, data):
-        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+        EntityOgfJson.__init__(self,data)
 
     def get(self):
-        return json.dumps(self.toJson(self.data),sort_keys=True,indent=4)
+        return json.dumps(self.toJson(),sort_keys=True,indent=4)
 
-    @staticmethod
-    def toJson(location):
-        doc = {}
+    def toJson(self):
+        doc = EntityOgfJson.toJson(self)
 
-        # Entity
-        doc["CreationTime"] = dateTimeToText(location.CreationTime)
-        if location.Validity is not None:
-            doc["Validity"] = location.Validity
-        doc["ID"] = location.ID
-        if location.Name is not None:
-            doc["Name"] = location.Name
-        if len(location.OtherInfo) > 0:
-            doc["OtherInfo"] = location.OtherInfo
-        if len(location.Extension) > 0:
-            doc["Extension"] = location.Extension
-
-        # Location
-        if location.Address is not None:
-            doc["Address"] = location.Address
-        if location.Place is not None:
-            doc["Place"] = location.Place
-        if location.Country is not None:
-            doc["Country"] = location.Country
-        if location.PostCode is not None:
-            doc["PostCode"] = location.PostCode
-        if location.Latitude is not None:
-            doc["Latitude"] = location.Latitude
-        if location.Longitude is not None:
-            doc["Longitude"] = location.Longitude
+        if self.data.Address is not None:
+            doc["Address"] = self.data.Address
+        if self.data.Place is not None:
+            doc["Place"] = self.data.Place
+        if self.data.Country is not None:
+            doc["Country"] = self.data.Country
+        if self.data.PostCode is not None:
+            doc["PostCode"] = self.data.PostCode
+        if self.data.Latitude is not None:
+            doc["Latitude"] = self.data.Latitude
+        if self.data.Longitude is not None:
+            doc["Longitude"] = self.data.Longitude
 
         return doc
 

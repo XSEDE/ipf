@@ -213,8 +213,6 @@ def parseJLines(output, jobs, step):
         m = re.search("<QR_name>(\S+)</QR_name>",job_string)
         if m is not None:
             cur_job.Queue = m.group(1)
-            # below needs to match how ID is calculated in the ComputingShareAgent
-            cur_job.ComputingShare = ["http://"+step.resource_name+"/glue2/ComputingShare/"+cur_job.Queue]
         m = re.search("<JB_submission_time>(\S+)</JB_submission_time>",job_string)
         if m is not None:
             cur_job.ComputingManagerSubmissionTime = epochToDateTime(int(m.group(1)),localtzoffset())
@@ -356,7 +354,6 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         activity.LocalOwner = toks[14]
         # ignore group
         activity.Queue = toks[16]
-        activity.ComputingShare = ["http://"+self.resource_name+"/glue2/ComputingShare/"+activity.Queue]
         activity.UserDomain = toks[18]
 
         if toks[3] == "pending":
@@ -540,9 +537,9 @@ class HostsHandler(xml.sax.handler.ContentHandler):
             self.cur_host = glue2.execution_environment.ExecutionEnvironment()
             self.cur_host.Name = attrs.getValue("name")
             self.cur_host.TotalInstances = 1
-            self.cur_host.ComputingManager = "http://"+self.step.resource_name+"/glue2/ComputingManager"
         elif name == "queue":
-            self.cur_host.ComputingShare.append(attrs.getValue("name")) # LocalID
+            queue = attrs.getValue("name")
+            self.cur_host.Share.append("urn:glue2:ComputingShare:%s.%s" % (queue,self.step.resource_name))
         elif name == "hostvalue":
             self.hostvalue_name = attrs.getValue("name")
         

@@ -25,15 +25,15 @@ from ipf.error import NoMoreInputsError, StepError
 from ipf.sysinfo import ResourceName,SiteName
 from ipf.step import Step
 
-from glue2.computing_activity import ComputingActivities, ComputingActivityTeraGridXml, ComputingActivityIpfJson
-from glue2.computing_endpoint import ComputingEndpoint, ComputingEndpointTeraGridXml, ComputingEndpointIpfJson
-from glue2.computing_manager import ComputingManager, ComputingManagerTeraGridXml, ComputingManagerIpfJson
-from glue2.computing_service import ComputingService, ComputingServiceTeraGridXml, ComputingServiceIpfJson
-from glue2.computing_share import ComputingShares, ComputingShareTeraGridXml, ComputingShareIpfJson
+from glue2.computing_activity import ComputingActivities, ComputingActivityTeraGridXml, ComputingActivityOgfJson
+from glue2.computing_endpoint import ComputingEndpoint, ComputingEndpointTeraGridXml, ComputingEndpointOgfJson
+from glue2.computing_manager import ComputingManager, ComputingManagerTeraGridXml, ComputingManagerOgfJson
+from glue2.computing_service import ComputingService, ComputingServiceTeraGridXml, ComputingServiceOgfJson
+from glue2.computing_share import ComputingShares, ComputingShareTeraGridXml, ComputingShareOgfJson
 from glue2.execution_environment import ExecutionEnvironments, ExecutionEnvironmentTeraGridXml
 from glue2.execution_environment import ExecutionEnvironmentTeraGridXml
-from glue2.execution_environment import ExecutionEnvironmentIpfJson
-from glue2.location import Location, LocationIpfJson, LocationTeraGridXml
+from glue2.execution_environment import ExecutionEnvironmentOgfJson
+from glue2.location import Location, LocationOgfJson, LocationTeraGridXml
 
 #######################################################################################################################
 
@@ -108,10 +108,9 @@ class PublicTeraGridXml(Representation):
         Representation.__init__(self,Representation.MIME_TEXT_XML,data)
 
     def get(self):
-        return self.toDom(self.data).toxml()
+        return self.toDom().toxml()
 
-    @staticmethod
-    def toDom(public):
+    def toDom(self):
         doc = getDOMImplementation().createDocument("http://info.teragrid.org/2009/03/ctss",
                                                     "V4glue2RP",None)
         # hack - minidom doesn't output name spaces
@@ -121,60 +120,61 @@ class PublicTeraGridXml(Representation):
         doc.documentElement.appendChild(glue2)
         # WS-MDS doesn't want a namespace on glue2
         #glue2.setAttribute("xmlns","http://info.teragrid.org/glue/2009/02/spec_2.0_r02")
-        glue2.setAttribute("Timestamp",dateTimeToText(public.manager[0].CreationTime))
-        glue2.setAttribute("UniqueID","glue2."+public.resource_name)
+        glue2.setAttribute("Timestamp",dateTimeToText(self.data.manager[0].CreationTime))
+        glue2.setAttribute("UniqueID","glue2."+self.data.resource_name)
         resource = doc.createElement("ResourceID")
-        resource.appendChild(doc.createTextNode(public.resource_name))
+        resource.appendChild(doc.createTextNode(self.data.resource_name))
         glue2.appendChild(resource)
         site = doc.createElement("SiteID")
-        site.appendChild(doc.createTextNode(public.site_name))
+        site.appendChild(doc.createTextNode(self.data.site_name))
         glue2.appendChild(site)
 
         entities = doc.createElement("Entities")
         glue2.appendChild(entities)
 
-        for location in public.location:
-            entities.appendChild(LocationTeraGridXml.toDom(location).documentElement.firstChild)
-        for service in public.service:
-            entities.appendChild(ComputingServiceTeraGridXml.toDom(service).documentElement.firstChild)
-        for endpoint in public.endpoint:
-            entities.appendChild(ComputingEndpointTeraGridXml.toDom(endpoint).documentElement.firstChild)
-        for share in public.share:
-            entities.appendChild(ComputingShareTeraGridXml.toDom(share).documentElement.firstChild)
-        for manager in public.manager:
-            entities.appendChild(ComputingManagerTeraGridXml.toDom(manager).documentElement.firstChild)
-        for environment in public.environment:
-            entities.appendChild(ExecutionEnvironmentTeraGridXml.toDom(environment).documentElement.firstChild)
+        for location in self.data.location:
+            entities.appendChild(LocationTeraGridXml(location).toDom().documentElement.firstChild)
+        for service in self.data.service:
+            entities.appendChild(ComputingServiceTeraGridXml(service).toDom().documentElement.firstChild)
+        for endpoint in self.data.endpoint:
+            entities.appendChild(ComputingEndpointTeraGridXml(endpoint).toDom().documentElement.firstChild)
+        for share in self.data.share:
+            entities.appendChild(ComputingShareTeraGridXml(share).toDom().documentElement.firstChild)
+        for manager in self.data.manager:
+            entities.appendChild(ComputingManagerTeraGridXml(manager).toDom().documentElement.firstChild)
+        for environment in self.data.environment:
+            entities.appendChild(ExecutionEnvironmentTeraGridXml(environment).toDom().documentElement.firstChild)
 
         return doc
 
 #######################################################################################################################
 
-class PublicIpfJson(Representation):
+class PublicOgfJson(Representation):
     data_cls = Public
 
     def __init__(self, data):
         Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
 
     def get(self):
-        return json.dumps(self.toJson(self.data),indent=4)
+        return json.dumps(self.toJson(),indent=4)
 
-    @staticmethod
-    def toJson(public):
+    def toJson(self):
         doc = {}
 
-        if len(public.location) > 0:
-            doc["Location"] = map(LocationIpfJson.toJson,public.location)
-        if public.service is not None:
-            doc["ComputingService"] = map(ComputingServiceIpfJson.toJson,public.service)
-        if len(public.endpoint) > 0:
-            doc["ComputingEndpoint"] = map(ComputingEndpointIpfJson.toJson,public.endpoint)
-        if len(public.share) > 0:
-            doc["ComputingShare"] = map(ComputingShareIpfJson.toJson,public.share)
-        if len(public.manager) > 0:
-            doc["ComputingManager"] = map(ComputingManagerIpfJson.toJson,public.manager)
-        if len(public.environment) > 0:
-            doc["ExecutionEnvironment"] = map(ExecutionEnvironmentIpfJson.toJson,public.environment)
+        if len(self.data.location) > 0:
+            doc["Location"] = map(lambda location: LocationOgfJson(location).toJson(),self.data.location)
+        if self.data.service is not None:
+            doc["ComputingService"] = map(lambda service: ComputingServiceOgfJson(service).toJson(),self.data.service)
+        if len(self.data.endpoint) > 0:
+            doc["ComputingEndpoint"] = map(lambda endpoint: ComputingEndpointOgfJson(endpoint).toJson(),
+                                           self.data.endpoint)
+        if len(self.data.share) > 0:
+            doc["ComputingShare"] = map(lambda share: ComputingShareOgfJson(share).toJson(),self.data.share)
+        if len(self.data.manager) > 0:
+            doc["ComputingManager"] = map(lambda manager: ComputingManagerOgfJson(manager).toJson(),self.data.manager)
+        if len(self.data.environment) > 0:
+            doc["ExecutionEnvironment"] = map(lambda exec_env: ExecutionEnvironmentOgfJson(exec_env).toJson(),
+                                              self.data.environment)
         
         return doc
 
@@ -221,10 +221,9 @@ class PrivateTeraGridXml(Representation):
         Representation.__init__(self,Representation.MIME_TEXT_XML,data)
 
     def get(self):
-        return self.toDom(self.data).toxml()
+        return self.toDom().toxml()
 
-    @staticmethod
-    def toDom(private):
+    def toDom(self):
         doc = getDOMImplementation().createDocument("http://info.teragrid.org/2009/03/ctss",
                                                     "V4glue2RP",None)
         # hack - minidom doesn't output name spaces
@@ -234,42 +233,42 @@ class PrivateTeraGridXml(Representation):
         doc.documentElement.appendChild(glue2)
         # WS-MDS doesn't want a namespace on glue2
         #glue2.setAttribute("xmlns","http://info.teragrid.org/glue/2009/02/spec_2.0_r02")
-        if len(private.activity) > 0:
-            glue2.setAttribute("Timestamp",dateTimeToText(private.activity[0].CreationTime))
+        if len(self.data.activity) > 0:
+            glue2.setAttribute("Timestamp",dateTimeToText(self.data.activity[0].CreationTime))
         else:
             glue2.setAttribute("Timestamp",dateTimeToText(datetime.datetime.now(tzoffset(0))))
-        glue2.setAttribute("UniqueID","glue2."+private.resource_name)
+        glue2.setAttribute("UniqueID","glue2."+self.data.resource_name)
         resource = doc.createElement("ResourceID")
-        resource.appendChild(doc.createTextNode(private.resource_name))
+        resource.appendChild(doc.createTextNode(self.data.resource_name))
         glue2.appendChild(resource)
         site = doc.createElement("SiteID")
-        site.appendChild(doc.createTextNode(private.site_name))
+        site.appendChild(doc.createTextNode(self.data.site_name))
         glue2.appendChild(site)
 
         entities = doc.createElement("Entities")
         glue2.appendChild(entities)
 
-        for activity in private.activity:
-            entities.appendChild(ComputingActivityTeraGridXml.toDom(activity).documentElement.firstChild)
+        for activity in self.data.activity:
+            entities.appendChild(ComputingActivityTeraGridXml(activity).toDom().documentElement.firstChild)
         return doc
 
 
 #######################################################################################################################
 
-class PrivateIpfJson(Representation):
+class PrivateOgfJson(Representation):
     data_cls = Private
 
     def __init__(self, data):
         Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
 
     def get(self):
-        return json.dumps(self.toJson(self.data),indent=4)
+        return json.dumps(self.toJson(),indent=4)
 
-    @staticmethod
-    def toJson(private):
+    def toJson(self):
         doc = {}
-        if len(private.activity) > 0:
-            doc["ComputingActivity"] = map(ComputingActivityIpfJson.toJson,private.activity)
+        if len(self.data.activity) > 0:
+            doc["ComputingActivity"] = map(lambda activity: ComputingActivityOgfJson(activity).toJson(),
+                                           self.data.activity)
         return doc
 
 #######################################################################################################################

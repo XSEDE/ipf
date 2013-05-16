@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2011-2012 The University of Texas at Austin                     #
+#   Copyright 2011-2013 The University of Texas at Austin                     #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -23,22 +23,15 @@ from ipf.error import StepError
 from ipf.step import Step
 from ipf.sysinfo import ResourceName
 
+from glue2.entity import *
+
 #######################################################################################################################
 
-class ApplicationEnvironment(Data):
+class ApplicationEnvironment(Entity):
 
     def __init__(self):
-        Data.__init__(self)
+        Entity.__init__(self)
 
-        # Entity
-        self.CreationTime = datetime.datetime.now(tzoffset(0))
-        self.Validity = None
-        self.ID = None      # string (uri)
-        self.Name = None    # string
-        self.OtherInfo = [] # list of string
-        self.Extension = {} # (key,value) strings
-
-        # ApplicationEnvironment
         self.AppName = "unknown"       # string
         self.AppVersion = None         # string
         self.Repository = None         # string (url)
@@ -59,41 +52,22 @@ class ApplicationEnvironment(Data):
         self.ApplicationHandle = []    # string (ID)
         
     def __str__(self):
-        return json.dumps(ApplicationEnvironmentIpfJson.toJson(self),sort_keys=True,indent=4)
+        return json.dumps(ApplicationEnvironmentOgfJson.toJson(self),sort_keys=True,indent=4)
 
 #######################################################################################################################
 
-class ApplicationEnvironmentIpfJson(Representation):
+class ApplicationEnvironmentOgfJson(EntityOgfJson):
     data_cls = ApplicationEnvironment
 
     def __init__(self, data):
-        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+        EntityOgfJson.__init__(self,data)
 
     def get(self):
-        return json.dumps(self.toJson(self.data),sort_keys=True,indent=4)
+        return json.dumps(self.toJson(),sort_keys=True,indent=4)
 
-    @staticmethod
-    def toJson(env):
-        doc = {}
-        
-        # Entity
-        doc["CreationTime"] = dateTimeToText(env.CreationTime)
-        if env.Validity is not None:
-            doc["Validity"] = env.Validity
-        doc["ID"] = env.ID
-        if env.Name is not None:
-            doc["Name"] = env.Name
-        if len(env.OtherInfo) > 0:
-            doc["OtherInfo"] = env.OtherInfo
-        if len(env.Extension) > 0:
-            doc["Extension"] = {}
-            for name in env.Extension:
-                if isinstance(env.Extension[name],datetime.datetime):
-                    doc["Extension"][name] = dateTimeToText(env.Extension[name])
-                else:
-                    doc["Extension"][name] = env.Extension[name]
+    def toJson(self):
+        doc = EntityOgfJson.toJson(self)
 
-        # Application Environment
         doc["AppName"] = env.AppName
         if env.AppVersion is not None:
             doc["AppVersion"] = env.AppVersion
@@ -128,56 +102,28 @@ class ApplicationEnvironmentIpfJson(Representation):
 
 #######################################################################################################################
 
-class ApplicationHandle(Data):
+class ApplicationHandle(Entity):
     def __init__(self):
-        Data.__init__(self)
+        Entity.__init__(self)
 
-        # Entity
-        self.CreationTime = datetime.datetime.now(tzoffset(0))
-        self.Validity = None
-        self.ID = None      # string (uri)
-        self.Name = None    # string
-        self.OtherInfo = [] # list of string
-        self.Extension = {} # (key,value) strings
-
-        # ApplicationEnvironment
         self.Type = "unknown"               # string (ApplicationHandle_t)
         self.Value = "unknown"              # string
         self.ApplicationEnvironment = None  # string (ID)
 
 #######################################################################################################################
 
-class ApplicationHandleIpfJson(Representation):
+class ApplicationHandleOgfJson(EntityOgfJson):
     data_cls = ApplicationEnvironment
 
     def __init__(self, data):
-        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+        EntityOgfJson.__init__(self,data)
 
     def get(self):
-        return json.dumps(self.toJson(self.data),sort_keys=True,indent=4)
+        return json.dumps(self.toJson(),sort_keys=True,indent=4)
 
-    @staticmethod
-    def toJson(handle):
-        doc = {}
+    def toJson(self):
+        doc = EntityOgfJson.toJson(self)
         
-        # Entity
-        doc["CreationTime"] = dateTimeToText(handle.CreationTime)
-        if handle.Validity is not None:
-            doc["Validity"] = handle.Validity
-        doc["ID"] = handle.ID
-        if handle.Name is not None:
-            doc["Name"] = handle.Name
-        if len(handle.OtherInfo) > 0:
-            doc["OtherInfo"] = handle.OtherInfo
-        if len(handle.Extension) > 0:
-            doc["Extension"] = {}
-            for name in handle.Extension:
-                if isinstance(handle.Extension[name],datetime.datetime):
-                    doc["Extension"][name] = dateTimeToText(handle.Extension[name])
-                else:
-                    doc["Extension"][name] = handle.Extension[name]
-
-        # Application Handle
         doc["Type"] = handle.Type
         doc["Value"] = handle.Value
         doc["ApplicationEnvironment"] = handle.ApplicationEnvironment
@@ -217,24 +163,23 @@ class Applications(Data):
     
 #######################################################################################################################
 
-class ApplicationsIpfJson(Representation):
+class ApplicationsOgfJson(Representation):
     data_cls = Applications
 
     def __init__(self, data):
         Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
 
     def get(self):
-        return json.dumps(self.toJson(self.data),sort_keys=True,indent=4)
+        return json.dumps(self.toJson(),sort_keys=True,indent=4)
 
-    @staticmethod
-    def toJson(apps):
+    def toJson(self):
         doc = {}
         doc["ApplicationEnvironment"] = []
-        for env in apps.environments:
-            doc["ApplicationEnvironment"].append(ApplicationEnvironmentIpfJson.toJson(env))
+        for env in self.data.environments:
+            doc["ApplicationEnvironment"].append(ApplicationEnvironmentOgfJson.toJson(env))
         doc["ApplicationHandle"] = []
-        for handle in apps.handles:
-            doc["ApplicationHandle"].append(ApplicationHandleIpfJson.toJson(handle))
+        for handle in self.data.handles:
+            doc["ApplicationHandle"].append(ApplicationHandleOgfJson.toJson(handle))
         return doc
 
 #######################################################################################################################
