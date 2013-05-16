@@ -24,6 +24,7 @@ import sys
 import time
 import traceback
 
+from ipf.error import WorkflowError
 from ipf.home import IPF_HOME
 from ipf.step import Step
 from ipf.workflow import Workflow

@@ -224,7 +224,7 @@ class TriggerStep(Step):
         Step.__init__(self)
 
         self.accepts_params = {}
-        self._acceptParameter("trigger","a list of representations to trigger on",True)
+        self._acceptParameter("trigger","a list of representations to trigger on",False)
         self._acceptParameter("minimum_interval","the minimum interval in seconds between triggers",False)
         self._acceptParameter("maximum_interval","the maximum interval in seconds between triggers",False)
 
@@ -237,10 +237,7 @@ class TriggerStep(Step):
 
     def setParameters(self, workflow_params, step_params):
         Step.setParameters(self,workflow_params,step_params)
-        try:
-            trigger_names = self.params["trigger"]
-        except KeyError:
-            raise StepError("required parameter 'trigger' not specified")
+        trigger_names = self.params.get("trigger",[])
 
         from ipf.catalog import catalog    # can't import this at the top - circular import
         for name in trigger_names:
@@ -263,7 +260,21 @@ class TriggerStep(Step):
             self.next_trigger = time.time() + self.maximum_interval
         except KeyError:
             pass
-        
+
+        if len(self.trigger) and self.maximum_interval is None:
+            raise StepError("You must specify at least one trigger or a maximum_interval")
+
+        if len(self.trigger) == 0:
+            self._runPeriodic()
+        else:
+            self._runTrigger()
+
+    def _runPeriodic(self):
+        while True:
+            self._doTrigger(None)
+            time.sleep(self.maximum_interval)
+
+    def _runTrigger(self):
         while True:
             try:
                 data = self.input_queue.get(True,1)
