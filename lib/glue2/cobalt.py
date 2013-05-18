@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2012 The University of Texas at Austin                          #
+#   Copyright 2012-2013 The University of Texas at Austin                     #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -117,7 +117,6 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
 	for line in lines:
             if line.startswith("JobID: "):
                 job.LocalIDFromManager = line[7:]
-                job.ID = "http://"+self._getSystemName()+"/glue2/ComputingActivity/"+job.LocalIDFromManager
             if line.startswith("    JobName"):
                 name = line.split()[2]
                 if name != "-":
@@ -128,7 +127,6 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             #    job.UserDomain = line.split()[2]
             if line.startswith("    Queue "):
                 job.Queue = line.split()[2]
-                job.ComputingShare = ["http://"+self._getSystemName()+"/glue2/ComputingShare/"+job.Queue]
             if line.startswith("    State "):
                 state = line.split()[2]
                 if state == "queued":
@@ -276,17 +274,13 @@ class ComputingSharesStep(glue2.computing_share.ComputingSharesStep):
             if line.startswith("    State"):
                 state = line.split()[2]
                 if state == "running":
-                    queue.Extension["AcceptingJobs"] = True
-                    queue.Extension["RunningJobs"] = True
+                    queue.ServingState = "production"
                 elif state == "stopped":
-                    queue.Extension["AcceptingJobs"] = True
-                    queue.Extension["RunningJobs"] = False
+                    queue.ServingState = "queuing"
                 elif state == "draining":
-                    queue.Extension["AcceptingJobs"] = False
-                    queue.Extension["RunningJobs"] = True
+                    queue.ServingState = "draining"
                 elif state == "dead":
-                    queue.Extension["AcceptingJobs"] = False
-                    queue.Extension["RunningJobs"] = False
+                    queue.ServingState = "closed"
             if line.startswith("    Users"):
                 # ignore user list for now
                 pass
