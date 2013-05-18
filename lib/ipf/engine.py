@@ -71,9 +71,8 @@ class WorkflowEngine(object):
             time.sleep(0.1)
             steps_with_inputs = filter(self._sendNoMoreInputs,steps_with_inputs)
 
-        # wait again, in case we terminated
-        while self._anyAlive(workflow.steps):
-            time.sleep(0.1)
+        for step in workflow.steps:
+            step.join()
 
         if reduce(lambda b1,b2: b1 and b2, map(lambda step: step.exitcode == 0, workflow.steps)):
             logger.info("workflow succeeded")
@@ -92,7 +91,8 @@ class WorkflowEngine(object):
         if self._anyAlive(step.depends_on):
             return True
         logger.debug("no more inputs to step %s",step.id)
-        step.input_queue.put(None)
+        step.input_queue.put(None) # send None to indicate no more inputs
+        step.input_queue.close()   # close the queue to stop the background thread
         return False
     
     def _setDependencies(self, workflow):
