@@ -20,9 +20,7 @@ import json
 import logging
 import os
 import sys
-import threading
 import time
-import Queue
 
 from ipf.catalog import catalog
 from ipf.error import *
