@@ -155,20 +155,20 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
         # Just ncpus for some PBS installs. Both at other installs, with different values.
         m = re.search("Resource_List.ncpus = (\d+)",jobString)
         if m is not None:
-            cpus = int(m.group(1))
-        else:
-            cpus = None
-        m = re.search("Resource_List.nodect = (\d+)",jobString)
-        if m is not None:
             job.RequestedSlots = int(m.group(1))
-        m = re.search("Resource_List.nodes = (\d+)",jobString)
-        if m is not None:
-            requested_slots = int(m.group(1))
-            if job.RequestedSlots is None or requested_slots > job.RequestedSlots:
-                job.RequestedSlots = int(m.group(1))
         m = re.search("Resource_List.nodes = (\d+):ppn=(\d+)",jobString)
         if m is not None:
-            job.RequestedSlots = int(m.group(1)) * int(m.group(2))
+            slots = int(m.group(1)) * int(m.group(2))
+            if job.RequestedSlots is None or slots > job.RequestedSlots:
+                job.RequestedSlots = slots
+        m = re.search("Resource_List.nodes = (\d+)",jobString)
+        if m is not None:
+            if job.RequestedSlots is None or int(m.group(1)) > job.RequestedSlots:
+                job.RequestedSlots = int(m.group(1))
+        m = re.search("Resource_List.nodect = (\d+)",jobString)
+        if m is not None:
+            if job.RequestedSlots is None or int(m.group(1)) > job.RequestedSlots:
+                job.RequestedSlots = int(m.group(1))
         m = re.search("Resource_List.walltime = (\S+)",jobString)
         if m is not None:
             wall_time = self._getDuration(m.group(1))
@@ -266,10 +266,13 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         try:
             dir_name = self.params["server_logs_dir"]
         except KeyError:
-            try:
-                dir_name = os.path.join(os.environ["PBS_HOME"],"spool","server_logs")
-            except KeyError:
+            if "PBS_HOME" not in os.environ:
                 raise StepError("server_logs_dir not specified and the PBS_HOME environment variable is not set")
+            dir_name = os.path.join(os.environ["PBS_HOME"],"spool","server_logs")
+            if not os.path.exists(dir_name):
+                dir_name = os.path.join(os.environ["PBS_HOME"],"server_logs")
+                if not os.path.exists(dir_name):
+                    raise StepError("could not find server_logs dir starting from the directory PBS_HOME")
 
         watcher = LogDirectoryWatcher(self._logEntry,dir_name)
         watcher.run()
