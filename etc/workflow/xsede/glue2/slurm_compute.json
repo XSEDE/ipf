@@ -30,7 +30,7 @@
       "name": "ipf.publish.AmqpStep",
       "description": "Publish compute resource description to subscibers",
       "params": {
-        "publish": ["glue2.compute.PublicIpfJson"],
+        "publish": ["glue2.compute.PublicOgfJson"],
         "services": [ "info1.dyn.teragrid.org", "info2.dyn.teragrid.org" ],
         "ssl_options": {
           "keyfile": "key.pem",
@@ -45,7 +45,7 @@
       "name": "ipf.publish.AmqpStep",
       "description": "Publish a description of current jobs to subscribers",
       "params": {
-        "publish": ["glue2.compute.PrivateIpfJson"],
+        "publish": ["glue2.compute.PrivateOgfJson"],
         "services": [ "info1.dyn.teragrid.org", "info2.dyn.teragrid.org" ],
         "ssl_options": {
           "keyfile": "key.pem",
@@ -60,7 +60,7 @@
       "name": "ipf.publish.FileStep",
       "description": "Publish JSON version of compute resource description to a file for debugging",
       "params": {
-        "publish": ["glue2.compute.PublicIpfJson"],
+        "publish": ["glue2.compute.PublicOgfJson"],
         "path": "public.json"
       }
     },
@@ -68,7 +68,7 @@
       "name": "ipf.publish.FileStep",
       "description": "Publish a description of current jobs in JSON to a file for debugging",
       "params": {
-        "publish": ["glue2.compute.PrivateIpfJson"],
+        "publish": ["glue2.compute.PrivateOgfJson"],
         "path": "private.json"
       }
     },
