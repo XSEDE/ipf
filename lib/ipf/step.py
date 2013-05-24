@@ -150,6 +150,7 @@ class Step(multiprocessing.Process):
 
     def _output(self, data):
         if data.__class__ not in self.outputs:
+            self.warning("%s is not a specified output - not passing it on" % data.__class__.__name__)
             return
         self.debug("output %s",data)
         for step in self.outputs[data.__class__]:
