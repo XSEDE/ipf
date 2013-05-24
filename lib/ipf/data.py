@@ -43,7 +43,8 @@ class Representation(object):
 
     def __init__(self, mime_type, data):
         if not isinstance(data,self.data_cls):
-            raise RepresentationError("data is a %s, but must be a %s" % (data.__class__.__name__,data_cls.__name__))
+            raise RepresentationError("data is a %s, but must be a %s" %
+                                      (data.__class__.__name__,self.data_cls.__name__))
         
         #self.name = self.__module__+"."+self.__class__.__name__
         self.mime_type = mime_type    # the MIME type provided by this representation
