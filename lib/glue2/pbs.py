@@ -99,13 +99,14 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
 
         jobs = []
         for jobString in jobStrings:
-            job = self._getJob(jobString)
+            job = self._getJob(jobString,self)
             if self._includeQueue(job.Queue):
                 jobs.append(job)
 
         return jobs
 
-    def _getJob(self, jobString):
+    @classmethod
+    def _getJob(cls, jobString, step):
         job = glue2.computing_activity.ComputingActivity()
 
         # put multi-lines on one line
@@ -150,7 +151,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             elif state == "H":
                 job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
             else:
-                self.warning("found unknown PBS job state '%s'",state)
+                step.warning("found unknown PBS job state '%s'",state)
                 job.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
         # Just ncpus for some PBS installs. Both at other installs, with different values.
         m = re.search("Resource_List.ncpus = (\d+)",jobString)
@@ -171,28 +172,28 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
                 job.RequestedSlots = int(m.group(1))
         m = re.search("Resource_List.walltime = (\S+)",jobString)
         if m is not None:
-            wall_time = self._getDuration(m.group(1))
+            wall_time = cls._getDuration(m.group(1))
             if job.RequestedSlots is not None:
                 job.RequestedTotalWallTime = wall_time * job.RequestedSlots
         m = re.search("resource_used.walltime = (\S+)",jobString)
         if m is not None:
-            used_wall_time = self._getDuration(m.group(1))
+            used_wall_time = cls._getDuration(m.group(1))
             if job.RequestedSlots is not None:
                 job.UsedTotalWallTime = used_wall_time * job.RequestedSlots
         m = re.search("resource_used.cput = (\S+)",jobString)
         if m is not None:
-            job.UsedTotalCPUTime = self._getDuration(m.group(1))
+            job.UsedTotalCPUTime = cls._getDuration(m.group(1))
         m = re.search("qtime.cput = (\S+)",jobString)
         if m is not None:
-            job.ComputingManagerSubmissionTime = self._getDateTime(m.group(1))
+            job.ComputingManagerSubmissionTime = cls._getDateTime(m.group(1))
         m = re.search("mtime = (\w+ \w+ \d+ \d+:\d+:\d+ \d+)",jobString)
         if m is not None:
             if job.State == glue2.computing_activity.ComputingActivity.STATE_RUNNING:
-                job.StartTime = self._getDateTime(m.group(1))
+                job.StartTime = cls._getDateTime(m.group(1))
             if (job.State == glue2.computing_activity.ComputingActivity.STATE_FINISHED) or \
                    (job.State == glue2.computing_activity.ComputingActivity.STATE_TERMINATED):
                 # this is right for terminated since terminated is set on the E state
-                job.ComputingManagerEndTime = self._getDateTime(m.group(1))
+                job.ComputingManagerEndTime = cls._getDateTime(m.group(1))
 
         m = re.search("exec_host = (\S+)",jobString)
         if m is not None:
@@ -204,12 +205,13 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
         #if m is not None:
         #    if line.find("ctime =") >= 0 and \
         #           (job.State == ComputingActivity.STATE_FINISHED or job.State == ComputingActivity.STATE_TERMINATED):
-        #        job.ComputingManagerEndTime = self._getDateTime(m.group(1))
+        #        job.ComputingManagerEndTime = cls._getDateTime(m.group(1))
         #        job.EndTime = job.ComputingManagerEndTime
 
         return job
 
-    def _getDuration(self, dStr):
+    @classmethod
+    def _getDuration(cls, dStr):
         (hour,minute,second)=dStr.split(":")
         return int(hour)*60*60 + int(minute)*60 + int(second)
 
@@ -217,7 +219,8 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
     monthDict = {"Jan":1, "Feb":2, "Mar":3, "Apr":4, "May":5, "Jun":6,
                  "Jul":7, "Aug":8, "Sep":9, "Oct":10, "Nov":11, "Dec":12}
 
-    def _getDateTime(self, dt_str):
+    @classmethod
+    def _getDateTime(cls, dt_str):
         # Example: Fri May 30 06:54:25 2008
         # Not quite sure how it handles a different year... guessing
 
@@ -225,7 +228,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
         if m is None:
             raise StepError("can't parse '%s' as a date/time" % dt_str)
         dayOfWeek = m.group(1)
-        month =     self.monthDict[m.group(2)]
+        month =     cls.monthDict[m.group(2)]
         day =       int(m.group(3))
         hour =      int(m.group(4))
         minute =    int(m.group(5))
@@ -252,17 +255,12 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         self._acceptParameter("qstat","the path to the PBS qstat program (default 'qstat')",False)
 
         # caching job information isn't great with very large queues,
-        # but the job owner is only provided in the queued log entry
+        # but want to provide full information in each job update
         self.activities = {}
 
         self.nodes = {}    # save a list of nodes allocated to a job
 
     def _run(self):
-        step = ComputingActivitiesStep()    # use ComputingActivitiesStep to initialize cache of activities
-        step.setParameters({},self.params)
-        for activity in step._run():
-            self.activities[activity.LocalIDFromManager] = activity
-
         try:
             dir_name = self.params["server_logs_dir"]
         except KeyError:
@@ -326,31 +324,18 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         try:
             activity = self.activities[id]
         except KeyError:
-            activity = glue2.computing_activity.ComputingActivity()
-            activity.LocalIDFromManager = id
+            activity = self._getJob(id)
             self.activities[id] = activity
+            activity.published = False
         if "Job Queued" in toks[5]:
+            if activity.published:
+                # this is duplicate information - don't publish it again
+                self.info("not publishing duplicate pending for %s",activity.LocalIDFromManager)
+                return
+            # set state in case qstat gives a different one (e.g. the job is already running)
             activity.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
-            activity.ComputingManagerSubmissionTime = self._getDateTime(toks[0])
-            try:
-                m = re.search(" owner = (\w+)@(\S*),",toks[5])  # just the user part of user@host
-                activity.LocalOwner = m.group(1)
-            except AttributeError:
-                self.warning("didn't find owner in log mesage: %s",toks)
-                return
-            try:
-                m = re.search(" job name = (\S+)",toks[5])
-                #activity.Name = m.group(1).split(".")[0]  # just the a part of a.b.?
-                activity.Name = m.group(1)
-            except AttributeError:
-                self.warning("didn't find job name in log mesage: %s",toks)
-                return
-            try:
-                m = re.search(" queue = (\S+)",toks[5])
-                activity.Queue = m.group(1).split(".")[0]
-            except AttributeError:
-                self.warning("didn't find queue in log mesage: %s",toks)
-                return
+            # qstat should have set the rest of the job attributes specified in this log entry
+            activity.published = True
         elif "Job Run" in toks[5]:
             activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
             activity.StartTime = self._getDateTime(toks[0])
@@ -369,7 +354,7 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             del self.activities[id]
         elif "Job sent signal SIGKILL on delete" in toks[5]:
             # job ran too long and was killed
-            activity.State = Cglue2.computing_activity.omputingActivity.STATE_TERMINATED
+            activity.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
             activity.ComputingManagerEndTime = self._getDateTime(toks[0])
             del self.activities[id]
         elif "Job Modified" in toks[5]:
@@ -379,7 +364,13 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
                 activity.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
                 activity.StartTime = None
             else:
-                self.warning("not sure how to handle log event: %s",toks)
+                # seems like we can safely ignore others
+                return
+        elif "Job moved" in toks[5]:
+            m = re.search("Job moved to (\S+) at request",toks[5])
+            if m is None or m.group(1) == activity.Queue:
+                return
+            activity.Queue = m.group(1)
         else:
             self.warning("unhandled log event: %s",toks)
             return
@@ -387,6 +378,20 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         if activity.Queue is None or self._includeQueue(activity.Queue):
             self.output(activity)
             
+    def _getJob(self, id):
+        try:
+            qstat = self.params["qstat"]
+        except KeyError:
+            qstat = "qstat"
+        cmd = qstat + " -f " + id
+        self.debug("running "+cmd)
+        status, output = commands.getstatusoutput(cmd)
+        if status != 0:
+            self.warning("qstat failed: "+output+"\n")
+            activity = glue2.computing_activity.ComputingActivity()
+            activity.LocalIDFromManager = id
+            return activity
+        return ComputingActivitiesStep._getJob(output,self)
 
     def _getDateTime(self, dt_str):
         # Example: 06/10/2012 16:17:41
