@@ -304,14 +304,6 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             pass
         return True
 
-    def _getActivity(self, id):
-        try:
-            activity = self.activities[id]
-        except KeyError:
-            activity = self._getJob(id)
-            self.activities[id] = activity
-            activity.published = False
-
     def _handleRequest(self, toks):
         if toks[4] != "set_nodes":
             return
@@ -338,9 +330,12 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             # qstat should have set the rest of the job attributes specified in this log entry
             activity.published = True
         elif "Job Run" in toks[5]:
+            if len(activity.ExecutionNode) == 0:
+                # if _handleRequest isn't being invoked to set ExecutionNode, query the scheduler
+                activity = self._queryActivity(id)
             activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
             activity.StartTime = self._getDateTime(toks[0])
-            # ExecutionNode is set in _handleRequest
+                
         elif "Job deleted" in toks[5]:
             activity.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
             activity.ComputingManagerEndTime = self._getDateTime(toks[0])
@@ -374,12 +369,18 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
 
         if activity.Queue is None or self._includeQueue(activity.Queue):
             self.output(activity)
-            
-    def _getJob(self, id):
+
+    def _getActivity(self, id):
         try:
-            qstat = self.params["qstat"]
+            activity = self.activities[id]
+            # activity will be modified - update creation time
+            activity.CreationTime = datetime.datetime.now(tzoffset(0))
         except KeyError:
-            qstat = "qstat"
+            activity = self._queryActivity(id)
+        return activity
+
+    def _queryActivity(self, id):
+        qstat = self.params.get("qstat","qstat")
         cmd = qstat + " -f " + id
         self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
@@ -387,8 +388,11 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             self.warning("qstat failed: "+output+"\n")
             activity = glue2.computing_activity.ComputingActivity()
             activity.LocalIDFromManager = id
-            return activity
-        return ComputingActivitiesStep._getJob(output,self)
+        else:
+            activity = ComputingActivitiesStep._getJob(output,self)
+        self.activities[id] = activity
+        activity.published = False
+        return activity
 
     def _getDateTime(self, dt_str):
         # Example: 06/10/2012 16:17:41
