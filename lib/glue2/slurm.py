@@ -333,19 +333,23 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             return
 
     def _getActivity(self, job_id):
-        if job_id not in self.activities:
+        try:
+            activity = self.activities[id]
+            # activity will be modified - update creation time
+            activity.CreationTime = datetime.datetime.now(tzoffset(0))
+        except KeyError:
             scontrol = self.params.get("scontrol","scontrol")
             cmd = scontrol + " show job "+job_id
             self.debug("running "+cmd)
             status, output = commands.getstatusoutput(cmd)
             if status != 0:
                 self.warning("scontrol failed: "+output+"\n")
-                act = glue2.computing_activity.ComputingActivity()
-                act.LocalIDFromManager = job_id
+                activity = glue2.computing_activity.ComputingActivity()
+                activity.LocalIDFromManager = job_id
             else:
-                act = _getJob(self,output)
-            self.activities[act.LocalIDFromManager] = act
-        return self.activities[job_id]
+                activity = _getJob(self,output)
+            self.activities[act.LocalIDFromManager] = activity
+        return activity
 
 #######################################################################################################################
 
