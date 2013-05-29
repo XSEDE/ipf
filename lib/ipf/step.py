@@ -53,25 +53,29 @@ class Step(multiprocessing.Process):
 
         self.logger = logging.getLogger(self._logName())
 
-    def setParameters(self, workflow_params, step_params):
+    def configure(self, step_doc, workflow_params):
+        self.id = step_doc.get("id",None)
+
+        self.output_ids = {}  # Data class -> [step id]
+        if "outputs" in step_doc:
+            if len(self.produces) != 1:
+                raise StepError("parameter 'outputs' can only be specified for steps that produce one data type")
+            self.output_ids[self.produces[0]] = step_doc["outputs"]
+        if "output_map" in step_doc:
+            data_classes = {}
+            for cls in self.produces:
+                data_classes["%s.%s" % (cls.__module__,cls.__name__)] = cls
+            for cls_name in step_doc["output_map"]:
+                if cls_name not in data_classes:
+                    raise StepError("step does not produce data %s",cls_name)
+                self.output_ids[data_classes[cls_name]] = step_doc["output_map"][cls_name]
+
+        self._setParameters(step_doc.get("params",{}),workflow_params)
+
+    def _setParameters(self, step_params, workflow_params):
         self._checkUnexpectedParameters(step_params)
         self.params = dict(workflow_params.items()+step_params.items())
         self._checkExpectedParameters(self.params)
-
-        self.id = self.params.get("id",None)
-
-        from ipf.catalog import catalog    # can't import this at the top - circular import
-        for name in self.params.get("requires",[]):
-            try:
-                cls = catalog.data[name]
-            except KeyError:
-                raise StepError("%s is not a known data" % name)
-            self.requires.append(cls)
-
-        try:
-            self.output_ids = self.params["outputs"]
-        except KeyError:
-            self.output_ids = []
 
     def _acceptParameter(self, name, description, required):
         self.accepts_params[name] = (description,required)
@@ -189,8 +193,8 @@ class PublishStep(Step):
 
         self.publish = []
 
-    def setParameters(self, workflow_params, step_params):
-        Step.setParameters(self,workflow_params,step_params)
+    def _setParameters(self, workflow_params, step_params):
+        Step._setParameters(self,workflow_params,step_params)
         try:
             publish_names = self.params["publish"]
         except KeyError:
@@ -236,8 +240,8 @@ class TriggerStep(Step):
         self.last_trigger = None
         self.next_trigger = None
 
-    def setParameters(self, workflow_params, step_params):
-        Step.setParameters(self,workflow_params,step_params)
+    def _setParameters(self, workflow_params, step_params):
+        Step._setParameters(self,workflow_params,step_params)
         trigger_names = self.params.get("trigger",[])
 
         from ipf.catalog import catalog    # can't import this at the top - circular import
