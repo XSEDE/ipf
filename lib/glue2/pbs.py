@@ -258,8 +258,6 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         # but want to provide full information in each job update
         self.activities = {}
 
-        self.nodes = {}    # save a list of nodes allocated to a job
-
     def _run(self):
         try:
             dir_name = self.params["server_logs_dir"]
@@ -306,6 +304,14 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             pass
         return True
 
+    def _getActivity(self, id):
+        try:
+            activity = self.activities[id]
+        except KeyError:
+            activity = self._getJob(id)
+            self.activities[id] = activity
+            activity.published = False
+
     def _handleRequest(self, toks):
         if toks[4] != "set_nodes":
             return
@@ -313,20 +319,15 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         if m is None:
             return
         id = m.group(1).split(".")[0]  # just the id part of id.host.name
-
+        activity = self._getActivity(id)
         m = re.search(" \(nodelist=([^\)]+)\)",toks[5])
         if m is None:
             return
-        self.nodes[id] = list(set(map(lambda s: s.split("/")[0], m.group(1).split("+"))))
+        activity.ExecutionNode = list(set(map(lambda s: s.split("/")[0], m.group(1).split("+"))))
             
     def _handleJobEntry(self, toks):
         id = toks[4].split(".")[0]  # just the id part of id.host.name
-        try:
-            activity = self.activities[id]
-        except KeyError:
-            activity = self._getJob(id)
-            self.activities[id] = activity
-            activity.published = False
+        activity = self._getActivity(id)
         if "Job Queued" in toks[5]:
             if activity.published:
                 # this is duplicate information - don't publish it again
@@ -339,11 +340,7 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         elif "Job Run" in toks[5]:
             activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
             activity.StartTime = self._getDateTime(toks[0])
-            try:
-                activity.ExecutionNode = self.nodes[activity.LocalIDFromManager]
-                del self.nodes[activity.LocalIDFromManager]
-            except KeyError:
-                pass
+            # ExecutionNode is set in _handleRequest
         elif "Job deleted" in toks[5]:
             activity.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
             activity.ComputingManagerEndTime = self._getDateTime(toks[0])
