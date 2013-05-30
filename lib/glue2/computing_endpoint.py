@@ -77,8 +77,38 @@ class ParamComputingEndpointStep(ComputingEndpointStep):
         except KeyError:
             raise StepError("endpoint not specified")
         endpoint = ComputingEndpoint()
-        endpoint.fromJson(endpoint_doc)
+        self.fromJson(endpoint, endpoint_doc)
         return [endpoint]
+
+    def fromJson(self, endpoint, doc):
+        # Entity
+        self.Name = doc.get("Name")
+        self.OtherInfo = doc.get("OtherInfo",[])
+        self.Extension = doc.get("Extension",{})
+                        
+        # Endpoint
+        self.URL = doc.get("URL")
+        self.Capability = doc.get("Capability",[])
+        self.Technology = doc.get("Technology")
+        self.InterfaceName = doc.get("InterfaceName")
+        self.InterfaceVersion = doc.get("InterfaceVersion")
+        self.InterfaceExtension = doc.get("InterfaceExtension",[])
+        self.WSDL = doc.get("WSDL",[])
+        self.SupportedProfile = doc.get("SupportedProfile",[])
+        self.Semantics = doc.get("Semantics",[])
+        self.Implementor = doc.get("Implementor")
+        self.ImplementationName = doc.get("ImplementationName")
+        self.ImplementationVersion = doc.get("ImplementationVersion")
+        self.QualityLevel = doc.get("QualityLevel")
+        self.HealthState = doc.get("HealthState")
+        self.HealthStateInfo = doc.get("HealthStateInfo")
+        self.StartTime = textToDateTime(doc.get("StartTime"))
+        self.IssuerCA = doc.get("IssuerCA")
+        self.TrustedCA = doc.get("TrustedCA",[])
+        self.DowntimeAnnounce = textToDateTime(doc.get("DowntimeAnnounce"))
+        self.DowntimeStart = textToDateTime(doc.get("DowntimeStart"))
+        self.DowntimeEnd = textToDateTime(doc.get("DowntimeEnd"))
+        self.DowntimeInfo = doc.get("DowntimeInfo")
 
 #######################################################################################################################
 
