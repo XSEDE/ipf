@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2011-2012 The University of Texas at Austin                     #
+#   Copyright 2011-2013 The University of Texas at Austin                     #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -23,22 +23,15 @@ from ipf.error import StepError
 from ipf.step import Step
 from ipf.sysinfo import ResourceName
 
+from glue2.entity import *
+
 #######################################################################################################################
 
-class ApplicationEnvironment(Data):
+class ApplicationEnvironment(Entity):
 
     def __init__(self):
-        Data.__init__(self)
+        Entity.__init__(self)
 
-        # Entity
-        self.CreationTime = datetime.datetime.now(tzoffset(0))
-        self.Validity = None
-        self.ID = None      # string (uri)
-        self.Name = None    # string
-        self.OtherInfo = [] # list of string
-        self.Extension = {} # (key,value) strings
-
-        # ApplicationEnvironment
         self.AppName = "unknown"       # string
         self.AppVersion = None         # string
         self.Repository = None         # string (url)
@@ -59,128 +52,81 @@ class ApplicationEnvironment(Data):
         self.ApplicationHandle = []    # string (ID)
         
     def __str__(self):
-        return json.dumps(ApplicationEnvironmentIpfJson.toJson(self),sort_keys=True,indent=4)
+        return json.dumps(ApplicationEnvironmentOgfJson.toJson(self),sort_keys=True,indent=4)
 
 #######################################################################################################################
 
-class ApplicationEnvironmentIpfJson(Representation):
+class ApplicationEnvironmentOgfJson(EntityOgfJson):
     data_cls = ApplicationEnvironment
 
     def __init__(self, data):
-        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+        EntityOgfJson.__init__(self,data)
 
     def get(self):
-        return json.dumps(self.toJson(self.data),sort_keys=True,indent=4)
+        return json.dumps(self.toJson(),sort_keys=True,indent=4)
 
-    @staticmethod
-    def toJson(env):
-        doc = {}
-        
-        # Entity
-        doc["CreationTime"] = dateTimeToText(env.CreationTime)
-        if env.Validity is not None:
-            doc["Validity"] = env.Validity
-        doc["ID"] = env.ID
-        if env.Name is not None:
-            doc["Name"] = env.Name
-        if len(env.OtherInfo) > 0:
-            doc["OtherInfo"] = env.OtherInfo
-        if len(env.Extension) > 0:
-            doc["Extension"] = {}
-            for name in env.Extension:
-                if isinstance(env.Extension[name],datetime.datetime):
-                    doc["Extension"][name] = dateTimeToText(env.Extension[name])
-                else:
-                    doc["Extension"][name] = env.Extension[name]
+    def toJson(self):
+        doc = EntityOgfJson.toJson(self)
 
-        # Application Environment
-        doc["AppName"] = env.AppName
-        if env.AppVersion is not None:
-            doc["AppVersion"] = env.AppVersion
-        if env.Repository is not None:
-            doc["Repository"] = env.Repository
-        if env.State is not None:
-            doc["State"] = env.State
-        if env.RemovalDate is not None:
-            doc["RemovalDate"] = dateTimeToText(env.RemovalDate)
-        if env.License is not None:
-            doc["License"] = env.License
-        if env.Description is not None:
-            doc["Description"] = env.Description
-        if len(env.BestBenchmark) > 0:
-            doc["BestBenchmark"] = env.BestBenchmark
-        if env.ParallelSupport is not None:
-            doc["ParallelSupport"] = env.ParallelSupport
-        if env.MaxSlots is not None:
-            doc["MaxSlots"] = env.MaxSlots
-        if env.MaxJobs is not None:
-            doc["MaxJobs"] = env.MaxJobs
-        if env.MaxUserSeats is not None:
-            doc["MaxUserSeats"] = env.MaxUserSeats
-        if env.FreeSlots is not None:
-            doc["FreeSlots"] = env.FreeSlots
-        if env.FreeJobs is not None:
-            doc["FreeJobs"] = env.FreeJobs
-        if env.FreeUserSeats is not None:
-            doc["FreeUserSeats"] = env.FreeUserSeats
+        doc["AppName"] = self.data.AppName
+        if self.data.AppVersion is not None:
+            doc["AppVersion"] = self.data.AppVersion
+        if self.data.Repository is not None:
+            doc["Repository"] = self.data.Repository
+        if self.data.State is not None:
+            doc["State"] = self.data.State
+        if self.data.RemovalDate is not None:
+            doc["RemovalDate"] = dateTimeToText(self.data.RemovalDate)
+        if self.data.License is not None:
+            doc["License"] = self.data.License
+        if self.data.Description is not None:
+            doc["Description"] = self.data.Description
+        if len(self.data.BestBenchmark) > 0:
+            doc["BestBenchmark"] = self.data.BestBenchmark
+        if self.data.ParallelSupport is not None:
+            doc["ParallelSupport"] = self.data.ParallelSupport
+        if self.data.MaxSlots is not None:
+            doc["MaxSlots"] = self.data.MaxSlots
+        if self.data.MaxJobs is not None:
+            doc["MaxJobs"] = self.data.MaxJobs
+        if self.data.MaxUserSeats is not None:
+            doc["MaxUserSeats"] = self.data.MaxUserSeats
+        if self.data.FreeSlots is not None:
+            doc["FreeSlots"] = self.data.FreeSlots
+        if self.data.FreeJobs is not None:
+            doc["FreeJobs"] = self.data.FreeJobs
+        if self.data.FreeUserSeats is not None:
+            doc["FreeUserSeats"] = self.data.FreeUserSeats
 
         return doc
 
 #######################################################################################################################
 
-class ApplicationHandle(Data):
+class ApplicationHandle(Entity):
     def __init__(self):
-        Data.__init__(self)
+        Entity.__init__(self)
 
-        # Entity
-        self.CreationTime = datetime.datetime.now(tzoffset(0))
-        self.Validity = None
-        self.ID = None      # string (uri)
-        self.Name = None    # string
-        self.OtherInfo = [] # list of string
-        self.Extension = {} # (key,value) strings
-
-        # ApplicationEnvironment
         self.Type = "unknown"               # string (ApplicationHandle_t)
         self.Value = "unknown"              # string
         self.ApplicationEnvironment = None  # string (ID)
 
 #######################################################################################################################
 
-class ApplicationHandleIpfJson(Representation):
-    data_cls = ApplicationEnvironment
+class ApplicationHandleOgfJson(EntityOgfJson):
+    data_cls = ApplicationHandle
 
     def __init__(self, data):
-        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+        EntityOgfJson.__init__(self,data)
 
     def get(self):
-        return json.dumps(self.toJson(self.data),sort_keys=True,indent=4)
+        return json.dumps(self.toJson(),sort_keys=True,indent=4)
 
-    @staticmethod
-    def toJson(handle):
-        doc = {}
+    def toJson(self):
+        doc = EntityOgfJson.toJson(self)
         
-        # Entity
-        doc["CreationTime"] = dateTimeToText(handle.CreationTime)
-        if handle.Validity is not None:
-            doc["Validity"] = handle.Validity
-        doc["ID"] = handle.ID
-        if handle.Name is not None:
-            doc["Name"] = handle.Name
-        if len(handle.OtherInfo) > 0:
-            doc["OtherInfo"] = handle.OtherInfo
-        if len(handle.Extension) > 0:
-            doc["Extension"] = {}
-            for name in handle.Extension:
-                if isinstance(handle.Extension[name],datetime.datetime):
-                    doc["Extension"][name] = dateTimeToText(handle.Extension[name])
-                else:
-                    doc["Extension"][name] = handle.Extension[name]
-
-        # Application Handle
-        doc["Type"] = handle.Type
-        doc["Value"] = handle.Value
-        doc["ApplicationEnvironment"] = handle.ApplicationEnvironment
+        doc["Type"] = self.data.Type
+        doc["Value"] = self.data.Value
+        doc["ApplicationEnvironment"] = self.data.ApplicationEnvironment
 
         return doc
     
@@ -217,24 +163,23 @@ class Applications(Data):
     
 #######################################################################################################################
 
-class ApplicationsIpfJson(Representation):
+class ApplicationsOgfJson(Representation):
     data_cls = Applications
 
     def __init__(self, data):
         Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
 
     def get(self):
-        return json.dumps(self.toJson(self.data),sort_keys=True,indent=4)
+        return json.dumps(self.toJson(),sort_keys=True,indent=4)
 
-    @staticmethod
-    def toJson(apps):
+    def toJson(self):
         doc = {}
         doc["ApplicationEnvironment"] = []
-        for env in apps.environments:
-            doc["ApplicationEnvironment"].append(ApplicationEnvironmentIpfJson.toJson(env))
+        for env in self.data.environments:
+            doc["ApplicationEnvironment"].append(ApplicationEnvironmentOgfJson(env).toJson())
         doc["ApplicationHandle"] = []
-        for handle in apps.handles:
-            doc["ApplicationHandle"].append(ApplicationHandleIpfJson.toJson(handle))
+        for handle in self.data.handles:
+            doc["ApplicationHandle"].append(ApplicationHandleOgfJson(handle).toJson())
         return doc
 
 #######################################################################################################################

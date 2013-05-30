@@ -42,13 +42,11 @@ class LModApplicationsStep(glue2.application.ApplicationsStep):
 
         module_paths = []
         try:
-            #paths = os.environ["LMOD_DEFAULT_MODULEPATH"]
             paths = os.environ["MODULEPATH"]
             module_paths.extend(paths.split(":"))
         except KeyError:
-            raise StepError("didn't find environment variable LMOD_DEFAULT_MODULEPATH")
+            raise StepError("didn't find environment variable MODULEPATH")
 
-        self.count = 0 # testing
         apps = glue2.application.Applications(self.resource_name)
         for path in module_paths:
             try:
@@ -67,7 +65,7 @@ class LModApplicationsStep(glue2.application.ApplicationsStep):
                     if file_name.endswith("~"):
                         continue
                     if file_name.endswith(".lua"):
-                        self._addModule(os.path.join(path,name,file_name),name,file_name[len(file_name)-4],apps)
+                        self._addModule(os.path.join(path,name,file_name),name,file_name[:len(file_name)-4],apps)
                     else:
                         self._addModule(os.path.join(path,name,file_name),name,file_name,apps)
         return apps
@@ -96,8 +94,100 @@ class LModApplicationsStep(glue2.application.ApplicationsStep):
         handle.Type = ApplicationHandle.MODULE
         handle.Value = name+"/"+version
 
-        self.count += 1
-        if self.count < 10:
-            apps.add(env,[handle])
+        apps.add(env,[handle])
+
+#######################################################################################################################
+
+class ModulesApplicationsStep(glue2.application.ApplicationsStep):
+    def __init__(self):
+        glue2.application.ApplicationsStep.__init__(self)
+
+        self._acceptParameter("exclude","a comma-separated list of modules to ignore (default is to ignore none)",
+                              False)
+
+    def _run(self):
+        try:
+            self.exclude = self.params["exclude"].split(",")
+        except KeyError:
+            self.exclude = []
+
+        apps = glue2.application.Applications(self.resource_name)
+
+        module_paths = []
+        try:
+            paths = os.environ["MODULEPATH"]
+            module_paths.extend(paths.split(":"))
+        except KeyError:
+            raise StepError("didn't find environment variable MODULEPATH")
+
+        for path in module_paths:
+            self._addPath(path,path,module_paths,apps)
+
+        return apps
+
+    def _addPath(self, path, module_path, module_paths, apps):
+        try:
+            file_names = os.listdir(path)
+        except OSError:
+            return
+        for name in file_names:
+            if os.path.join(path,name) in module_paths:
+                # don't visit other module paths
+                continue
+            if os.path.isdir(os.path.join(path,name)):
+                self._addPath(os.path.join(path,name),module_path,module_paths,apps)
+            else:
+                self._addModule(os.path.join(path,name),module_path,apps)
+    
+    def _addModule(self, path, module_path, apps):
+        if os.path.split(path)[1].startswith("."):
+            return
+        if path.endswith("~"):
+            return
+
+        #print(path)
+
+        file = open(path)
+        lines = file.readlines()
+        file.close()
+
+        if not lines[0].startswith("#%Module"):
+            return
+
+        env = glue2.application.ApplicationEnvironment()
+
+        str = path[len(module_path)+1:]
+        slash_pos = str.find("/")  # assumes Unix-style paths
+        if slash_pos == -1:
+            env.AppName = str
+            env.AppVersion = None
+        else:
+            env.AppName = str[:slash_pos]
+            env.AppVersion = str[slash_pos+1:]
+
+        handle = glue2.application.ApplicationHandle()
+        handle.Type = ApplicationHandle.MODULE
+        if env.AppVersion is None:
+            handle.Value = env.AppName
+        else:
+            handle.Value = env.AppName+"/"+env.AppVersion
+
+        description = ""
+        for line in lines:
+            m = re.search("puts stderr \"([^\"]+)\"",line)
+            if m is not None:
+                if description != "":
+                    description += " "
+                description += m.group(1)
+        if description != "":
+            description = description.replace("$_module_name",handle.Value)
+            if env.AppVersion is not None:
+                description = description.replace("$version",env.AppVersion)
+            description = description.replace("\\t"," ")
+            description = description.replace("\\n","")
+            description = re.sub(" +"," ",description)
+            env.Description = description
+
+        apps.add(env,[handle])
 
 #######################################################################################################################

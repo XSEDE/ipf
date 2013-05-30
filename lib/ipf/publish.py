@@ -42,11 +42,12 @@ class FileStep(PublishStep):
                               True)
 
     def _publish(self, representation):
-        file = open(self._getPath(),"w")
         self.info("writing %s",representation)
-        file.write(representation.get())
-        file.flush()
-        file.close()
+        f = open(self._getPath()+".new","w")
+        f.write(representation.get())
+        f.close()
+        os.chmod(self._getPath()+".new",0644)  # may want other users to be able to read it
+        os.rename(self._getPath()+".new",self._getPath())
 
     def _getPath(self):
         try:
@@ -270,3 +271,19 @@ class HttpStep(PublishStep):
                 self.error("failed to '"+method+"' to http://"+host+":"+port+path+" - "+
                            str(response.status)+" "+response.reason)
         connection.close()
+
+
+#######################################################################################################################
+
+# mostly for debugging
+class PrintStep(PublishStep):
+    def __init__(self):
+        PublishStep.__init__(self)
+
+        self.description = "publishes documents by writing them to stdout"
+        self.time_out = 5
+
+    def _publish(self, representation):
+        print(representation.get())
+
+#######################################################################################################################

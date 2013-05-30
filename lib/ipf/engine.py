@@ -24,6 +24,7 @@ import sys
 import time
 import traceback
 
+from ipf.error import WorkflowError
 from ipf.home import IPF_HOME
 from ipf.step import Step
 from ipf.workflow import Workflow
@@ -41,9 +42,15 @@ class WorkflowEngine(object):
         
     def run(self, workflow_file_name):
         workflow = Workflow()
-        if not os.path.isabs(workflow_file_name):
-            workflow_file_name = os.path.join(IPF_HOME,"etc","workflow",workflow_file_name)
-        workflow.read(workflow_file_name)
+        if os.path.isfile(workflow_file_name):
+            workflow.read(workflow_file_name)
+        else:
+            file_name = os.path.join(IPF_HOME,"etc","workflow",workflow_file_name)
+            if os.path.isfile(file_name):
+                workflow.read(file_name)
+            else:
+                raise WorkflowError("cannot open workflow file %s as a path or relative to %s/etc/workflow" % \
+                                    (workflow_file_name,IPF_HOME))
 
         self._setDependencies(workflow)
         logger.debug(workflow)
@@ -64,9 +71,8 @@ class WorkflowEngine(object):
             time.sleep(0.1)
             steps_with_inputs = filter(self._sendNoMoreInputs,steps_with_inputs)
 
-        # wait again, in case we terminated
-        while self._anyAlive(workflow.steps):
-            time.sleep(0.1)
+        for step in workflow.steps:
+            step.join()
 
         if reduce(lambda b1,b2: b1 and b2, map(lambda step: step.exitcode == 0, workflow.steps)):
             logger.info("workflow succeeded")
@@ -85,7 +91,8 @@ class WorkflowEngine(object):
         if self._anyAlive(step.depends_on):
             return True
         logger.debug("no more inputs to step %s",step.id)
-        step.input_queue.put(None)
+        step.input_queue.put(None) # send None to indicate no more inputs
+        step.input_queue.close()   # close the queue to stop the background thread
         return False
     
     def _setDependencies(self, workflow):

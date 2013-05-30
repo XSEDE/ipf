@@ -50,7 +50,7 @@ class KitsStep(Step):
         if status != 0:
             raise StepError("'%s' failed: %s" % (cmd,output))
 
-        self._output(Kits(resource_name,kits))
+        self._output(Kits(resource_name,output))
 
 #######################################################################################################################
 

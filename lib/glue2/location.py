@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2012 The University of Texas at Austin                          #
+#   Copyright 2012-2013 The University of Texas at Austin                     #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -24,6 +24,8 @@ from ipf.data import Data, Representation
 from ipf.dt import *
 from ipf.sysinfo import SiteName
 from ipf.step import Step
+
+from glue2.entity import *
 
 #######################################################################################################################
 
@@ -49,22 +51,13 @@ class LocationStep(Step):
 
 #######################################################################################################################
 
-class Location(Data):
+class Location(Entity):
 
     DEFAULT_VALIDITY = 60*60*24 # seconds
 
     def __init__(self):
-        Data.__init__(self)
+        Entity.__init__(self)
 
-        # Entity
-        self.CreationTime = datetime.datetime.now(tzoffset(0))
-        self.Validity = Location.DEFAULT_VALIDITY
-        self.ID = None      # string (uri)
-        self.Name = None    # string
-        self.OtherInfo = [] # list of string
-        self.Extension = {} # (key,value) strings
-
-        # Location
         self.Address = None    # street address (string)
         self.Place = None      # town/city (string)
         self.Country = None    # (string)
@@ -94,43 +87,79 @@ class Location(Data):
 
 #######################################################################################################################
 
-class LocationIpfJson(Representation):
+class LocationTeraGridXml(EntityTeraGridXml):
     data_cls = Location
 
     def __init__(self, data):
-        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+        EntityTeraGridXml.__init__(self,data)
 
     def get(self):
-        return json.dumps(self.toJson(self.data),sort_keys=True,indent=4)
+        return self.toDom().toxml()
 
-    @staticmethod
-    def toJson(location):
-        doc = {}
-
-        # Entity
-        doc["CreationTime"] = dateTimeToText(location.CreationTime)
-        if location.Validity is not None:
-            doc["Validity"] = location.Validity
-        doc["ID"] = location.ID
-        if location.Name is not None:
-            doc["Name"] = location.Name
-        if len(location.OtherInfo) > 0:
-            doc["OtherInfo"] = location.OtherInfo
-        if len(location.Extension) > 0:
-            doc["Extension"] = location.Extension
-
-        # Location
-        if location.Address is not None:
-            doc["Address"] = location.Address
-        if location.Place is not None:
-            doc["Place"] = location.Place
-        if location.Country is not None:
-            doc["Country"] = location.Country
-        if location.PostCode is not None:
-            doc["PostCode"] = location.PostCode
-        if location.Latitude is not None:
-            doc["Latitude"] = location.Latitude
-        if location.Longitude is not None:
-            doc["Longitude"] = location.Longitude
+    def toDom(self):
+        doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
+                                                    "Entities",None)
+        root = doc.createElement("Location")
+        doc.documentElement.appendChild(root)
+        self.addToDomElement(doc,root)
 
         return doc
+
+    def addToDomElement(self, doc, element):
+        EntityTeraGridXml.addToDomElement(self,doc,element)
+
+        if self.data.Address is not None:
+            e = doc.createElement("Address")
+            e.appendChild(doc.createTextNode(self.data.Address))
+            element.appendChild(e)
+        if self.data.Place is not None:
+            e = doc.createElement("Place")
+            e.appendChild(doc.createTextNode(self.data.Place))
+            element.appendChild(e)
+        if self.data.Country is not None:
+            e = doc.createElement("Country")
+            e.appendChild(doc.createTextNode(self.data.Country))
+            element.appendChild(e)
+        if self.data.PostCode is not None:
+            e = doc.createElement("PostCode")
+            e.appendChild(doc.createTextNode(self.data.PostCode))
+            element.appendChild(e)
+        if self.data.Latitude is not None:
+            e = doc.createElement("Latitude")
+            e.appendChild(doc.createTextNode(str(self.data.Latitude)))
+            element.appendChild(e)
+        if self.data.Longitude is not None:
+            e = doc.createElement("Longitude")
+            e.appendChild(doc.createTextNode(str(self.data.Longitude)))
+            element.appendChild(e)
+
+#######################################################################################################################
+
+class LocationOgfJson(EntityOgfJson):
+    data_cls = Location
+
+    def __init__(self, data):
+        EntityOgfJson.__init__(self,data)
+
+    def get(self):
+        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+
+    def toJson(self):
+        doc = EntityOgfJson.toJson(self)
+
+        if self.data.Address is not None:
+            doc["Address"] = self.data.Address
+        if self.data.Place is not None:
+            doc["Place"] = self.data.Place
+        if self.data.Country is not None:
+            doc["Country"] = self.data.Country
+        if self.data.PostCode is not None:
+            doc["PostCode"] = self.data.PostCode
+        if self.data.Latitude is not None:
+            doc["Latitude"] = self.data.Latitude
+        if self.data.Longitude is not None:
+            doc["Longitude"] = self.data.Longitude
+
+        return doc
+
+#######################################################################################################################

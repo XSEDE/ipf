@@ -1,5 +1,8 @@
-#!/bin/sh
+#!/bin/sh -l
 
-export PYTHONPATH=@install_dir@/lib
+# get the path to the IPF directory using the location of this cript
+IPF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )"/.. && pwd )"
 
-@python@ -u @install_dir@/libexec/run_workflow_daemon.py $@
+. $IPF_DIR/libexec/env.sh
+
+$PYTHON $IPF_DIR/libexec/run_workflow_daemon.py $@

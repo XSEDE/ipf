@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2011,2012 The University of Texas at Austin                     #
+#   Copyright 2011-2013 The University of Texas at Austin                     #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -19,6 +19,7 @@ import commands
 import datetime
 import json
 import os
+import re
 import socket
 import time
 from xml.dom.minidom import getDOMImplementation
@@ -29,6 +30,7 @@ from ipf.error import StepError
 from ipf.sysinfo import ResourceName
 from ipf.sysinfo import Platform
 
+from glue2.resource import *
 from glue2.step import GlueStep
 
 #######################################################################################################################
@@ -57,7 +59,7 @@ class ExecutionEnvironmentsStep(GlueStep):
         for host_group in host_groups:
             host_group.id = "%s.%s" % (host_group.Name,self.resource_name)
             host_group.ID = "urn:glue2:ExecutionEnvironment:%s.%s" % (host_group.Name,self.resource_name)
-            host_group.ComputingManager = "urn:glue2:ComputingManager:%s" % (self.resource_name)
+            host_group.Manager = "urn:glue2:ComputingManager:%s" % (self.resource_name)
 
         self._output(ExecutionEnvironments(self.resource_name,host_groups))
 
@@ -125,33 +127,20 @@ class ExecutionEnvironmentsStep(GlueStep):
             return False
 
         # if the host is associated with a queue, check that it is a good one
-        if len(host.ComputingShare) == 0:
+        if len(host.Share) == 0:
             return True
-        for queue in host.ComputingShare:
-            if self._includeQueue(queue):
+        for share in host.Share:
+            m = re.search("urn:glue2:ComputingShare:(\S+).%s" % self.resource_name,share)
+            if self._includeQueue(m.group(1)):
                 return True
         return False
 
 #######################################################################################################################
 
-class ExecutionEnvironment(Data):
+class ExecutionEnvironment(Resource):
     def __init__(self):
-        Data.__init__(self)
-        
-        # Entity
-        self.CreationTime = datetime.datetime.now(tzoffset(0))
-        self.Validity = None
-        self.ID = None
-        self.Name = None
-        self.OtherInfo = [] # strings
-        self.Extension = {} # (key,value) strings
+        Resource.__init__(self)
 
-        # Resource
-        self.Manager = None # string (uri)
-        self.Share = []     # list of string (uri)
-        self.Activity = []  # list of string (uri)
-
-        # ExecutionEnvironment
         self.Platform = None                # string (Platform_t)
         self.VirtualMachine = None          # boolean (ExtendedBoolean)
         self.TotalInstances = None          # integer
@@ -174,9 +163,7 @@ class ExecutionEnvironment(Data):
         self.ConnectivityIn = "undefined"   # boolean (ExtendedBoolean)
         self.ConnectivityOut = "undefined"  # boolean (ExtendedBoolean)
         self.NetworkInfo = None             # string (NetworkInfo)
-        self.ComputingManager = None        # string (uri)
-        self.ComputingShare = []            # list of string (LocalID)
-        self.ComputingActivity = []         # list of string (uri)
+        # use Manager, Share, Activity from Resource, not ComputingManager, ComputingShare, ComputingActivity
         self.ApplicationEnvironment = []    # list of string (LocalID)
         self.Benchmark = []                 # list of string (LocalID)
 
@@ -188,7 +175,7 @@ class ExecutionEnvironment(Data):
         self.OSVersion = release
 
     def __str__(self):
-        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+        return json.dumps(ExecutionEnvironmentOgfJson(self).toJson(),sort_keys=True,indent=4)
 
     def sameHostGroup(self, exec_env, useName):
         if useName and self.Name != exec_env.Name:
@@ -218,339 +205,226 @@ class ExecutionEnvironment(Data):
         if self.OSVersion != exec_env.OSVersion:
             return False
 
-        if len(self.ComputingShare) != len(exec_env.ComputingShare):
+        if len(self.Share) != len(exec_env.Share):
             return False
-        for share in self.ComputingShare:
-            if not share in exec_env.ComputingShare:
+        for share in self.Share:
+            if not share in exec_env.Share:
                 return False
 
         return True
-    
-    ###################################################################################################################
-
-    def fromJson(self, doc):
-        # Entity
-        if "CreationTime" in doc:
-            self.CreationTime = textToDateTime(doc["CreationTime"])
-        else:
-            self.CreationTime = None
-        self.Validity = doc.get("Validity")
-        self.ID = doc.get("ID")
-        self.Name = doc.get("Name")
-        self.OtherInfo = doc.get("OtherInfo",[])
-        self.Extension = doc.get("Extension",{})
-
-        # Resource
-        self.Manager = doc.get("Manager")
-        self.Share = doc.get("Share",[])
-        self.Activity = doc.get("Activity",[])
-
-        # ExecutionEnvironment
-        self.Platform = doc.get("Platform")
-        self.VirtualMachine = doc.get("VirtualMachine")
-        self.TotalInstances = doc.get("TotalInstances")
-        self.UsedInstances = doc.get("UsedInstances")
-        self.UnavailableInstances = doc.get("UnavailableInstances")
-        self.PhysicalCPUs = doc.get("PhysicalCPUs")
-        self.LogicalCPUs = doc.get("LogicalCPUs")
-        self.CPUMultiplicity = doc.get("CPUMultiplicity")
-        self.CPUVencor = doc.get("CPUVendor")
-        self.CPUModel = doc.get("CPUModel")
-        self.CPUVersion = doc.get("CPUVersion")
-        self.CPUClockSpeed = doc.get("CPUClockSpeed")
-        self.CPUTimeScalingFactor = doc.get("CPUTimeScalingFactor")
-        self.WallTimeScalingFactor = doc.get("WallTimeScalingFactor")
-        self.MainMemorySize = doc.get("MainMemorySize")
-        self.VirtualMemorySize = doc.get("VirtualMemorySize")
-        self.OSFamily = doc.get("OSFamily")
-        self.OSName = doc.get("OSName")
-        self.OSVersion = doc.get("OSVersion")
-        self.ConnectivityIn = doc.get("ConnectivityIn")
-        self.ConnectivityOut = doc.get("ConnectivityOut")
-        self.NetworkInfo = doc.get("NetworkInfo")
-        self.ComputingManager = doc.get("ComputingManager")
-        self.ComputingShare = doc.get("ComputingShare",[])
-        self.ComputingActivity = doc.get("ComputingActivity",[])
-        self.ApplicationEnvironment = doc.get("ApplicationEnvironment",[])
-        self.Benchmark = doc.get("Benchmark",[])
 
 #######################################################################################################################
 
-class ExecutionEnvironmentTeraGridXml(Representation):
+class ExecutionEnvironmentTeraGridXml(ResourceTeraGridXml):
     data_cls = ExecutionEnvironment
 
     def __init__(self, data):
-        Representation.__init__(self,Representation.MIME_TEXT_XML,data)
+        ResourceTeraGridXml.__init__(self,data)
 
     def get(self):
-        return self.toDom(self.data).toxml()
+        return self.toDom().toxml()
 
-    @staticmethod
-    def toDom(exec_env):
+    def toDom(self):
         doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
                                                     "Entities",None)
         root = doc.createElement("ExecutionEnvironment")
         doc.documentElement.appendChild(root)
+        self.addToDomElement(doc,root)
 
-        # Entity
-        e = doc.createElement("CreationTime")
-        e.appendChild(doc.createTextNode(dateTimeToText(exec_env.CreationTime)))
-        if exec_env.Validity is not None:
-            e.setAttribute("Validity",str(exec_env.Validity))
-        root.appendChild(e)
+        return doc
 
-        e = doc.createElement("ID")
-        e.appendChild(doc.createTextNode(exec_env.ID))
-        root.appendChild(e)
+    def addToDomElement(self, doc, element):
+        ResourceTeraGridXml.addToDomElement(self,doc,element)
 
-        if exec_env.Name is not None:
-            e = doc.createElement("Name")
-            e.appendChild(doc.createTextNode(exec_env.Name))
-            root.appendChild(e)
-        for info in exec_env.OtherInfo:
-            e = doc.createElement("OtherInfo")
-            e.appendChild(doc.createTextNode(info))
-            root.appendChild(e)
-        for key in exec_env.Extension.keys():
-            e = doc.createElement("Extension")
-            e.setAttribute("Key",key)
-            e.appendChild(doc.createTextNode(str(exec_env.Extension[key])))
-            root.appendChild(e)
-
-        # Resource
-        if exec_env.Manager is not None:
-            e = doc.createElement("Manager")
-            e.appendChild(doc.createTextNode(exec_env.Manager))
-            root.appendChild(e)
-        for share in exec_env.Share:
-            e = doc.createElement("Share")
-            e.appendChild(doc.createTextNode(share))
-            root.appendChild(e)
-        for activity in exec_env.Activity:
-            e = doc.createElement("Activity")
-            e.appendChild(doc.createTextNode(exec_env.Activity))
-            root.appendChild(e)
-
-        # ExecutionEnvironment
-        if exec_env.Platform is not None:
+        if self.data.Platform is not None:
             e = doc.createElement("Platform")
-            e.appendChild(doc.createTextNode(exec_env.Platform))
-            root.appendChild(e)
-        if exec_env.VirtualMachine is not None:
+            e.appendChild(doc.createTextNode(self.data.Platform))
+            element.appendChild(e)
+        if self.data.VirtualMachine is not None:
             e = doc.createElement("VirtualMachine")
-            if exec_env.VirtualMachine:
+            if self.data.VirtualMachine:
                 e.appendChild(doc.createTextNode("true"))
             else:
                 e.appendChild(doc.createTextNode("false"))
-            root.appendChild(e)
-        if exec_env.TotalInstances is not None:
+            element.appendChild(e)
+        if self.data.TotalInstances is not None:
             e = doc.createElement("TotalInstances")
-            e.appendChild(doc.createTextNode(str(exec_env.TotalInstances)))
-            root.appendChild(e)
-        if exec_env.UsedInstances is not None:
+            e.appendChild(doc.createTextNode(str(self.data.TotalInstances)))
+            element.appendChild(e)
+        if self.data.UsedInstances is not None:
             e = doc.createElement("UsedInstances")
-            e.appendChild(doc.createTextNode(str(exec_env.UsedInstances)))
-            root.appendChild(e)
-        if exec_env.UnavailableInstances is not None:
+            e.appendChild(doc.createTextNode(str(self.data.UsedInstances)))
+            element.appendChild(e)
+        if self.data.UnavailableInstances is not None:
             e = doc.createElement("UnavailableInstances")
-            e.appendChild(doc.createTextNode(str(exec_env.UnavailableInstances)))
-            root.appendChild(e)
-        if exec_env.PhysicalCPUs is not None:
+            e.appendChild(doc.createTextNode(str(self.data.UnavailableInstances)))
+            element.appendChild(e)
+        if self.data.PhysicalCPUs is not None:
             e = doc.createElement("PhysicalCPUs")
-            e.appendChild(doc.createTextNode(str(exec_env.PhysicalCPUs)))
-            root.appendChild(e)
-        if exec_env.LogicalCPUs is not None:
+            e.appendChild(doc.createTextNode(str(self.data.PhysicalCPUs)))
+            element.appendChild(e)
+        if self.data.LogicalCPUs is not None:
             e = doc.createElement("LogicalCPUs")
-            e.appendChild(doc.createTextNode(str(exec_env.LogicalCPUs)))
-            root.appendChild(e)
-        if exec_env.CPUMultiplicity is not None:
+            e.appendChild(doc.createTextNode(str(self.data.LogicalCPUs)))
+            element.appendChild(e)
+        if self.data.CPUMultiplicity is not None:
             e = doc.createElement("CPUMultiplicity")
-            e.appendChild(doc.createTextNode(exec_env.CPUMultiplicity))
-            root.appendChild(e)
-        if exec_env.CPUVendor is not None:
+            e.appendChild(doc.createTextNode(self.data.CPUMultiplicity))
+            element.appendChild(e)
+        if self.data.CPUVendor is not None:
             e = doc.createElement("CPUVendor")
-            e.appendChild(doc.createTextNode(exec_env.CPUVendor))
-            root.appendChild(e)
-        if exec_env.CPUModel is not None:
+            e.appendChild(doc.createTextNode(self.data.CPUVendor))
+            element.appendChild(e)
+        if self.data.CPUModel is not None:
             e = doc.createElement("CPUModel")
-            e.appendChild(doc.createTextNode(exec_env.CPUModel))
-            root.appendChild(e)
-        if exec_env.CPUVersion is not None:
+            e.appendChild(doc.createTextNode(self.data.CPUModel))
+            element.appendChild(e)
+        if self.data.CPUVersion is not None:
             e = doc.createElement("CPUVersion")
-            e.appendChild(doc.createTextNode(exec_env.CPUVersion))
-            root.appendChild(e)
-        if exec_env.CPUClockSpeed is not None:
+            e.appendChild(doc.createTextNode(self.data.CPUVersion))
+            element.appendChild(e)
+        if self.data.CPUClockSpeed is not None:
             e = doc.createElement("CPUClockSpeed")
-            e.appendChild(doc.createTextNode(str(exec_env.CPUClockSpeed)))
-            root.appendChild(e)
-        if exec_env.CPUTimeScalingFactor is not None:
+            e.appendChild(doc.createTextNode(str(self.data.CPUClockSpeed)))
+            element.appendChild(e)
+        if self.data.CPUTimeScalingFactor is not None:
             e = doc.createElement("CPUTimeScalingFactor")
-            e.appendChild(doc.createTextNode(str(exec_env.CPUTimeScalingFactor)))
-            root.appendChild(e)
-        if exec_env.WallTimeScalingFactor is not None:
+            e.appendChild(doc.createTextNode(str(self.data.CPUTimeScalingFactor)))
+            element.appendChild(e)
+        if self.data.WallTimeScalingFactor is not None:
             e = doc.createElement("WallTimeScalingFactor")
-            e.appendChild(doc.createTextNode(str(exec_env.WallTimeScalingFactor)))
-            root.appendChild(e)
-        if exec_env.MainMemorySize is not None:
+            e.appendChild(doc.createTextNode(str(self.data.WallTimeScalingFactor)))
+            element.appendChild(e)
+        if self.data.MainMemorySize is not None:
             e = doc.createElement("MainMemorySize")
-            e.appendChild(doc.createTextNode(str(exec_env.MainMemorySize)))
-            root.appendChild(e)
-        if exec_env.VirtualMemorySize is not None:
+            e.appendChild(doc.createTextNode(str(self.data.MainMemorySize)))
+            element.appendChild(e)
+        if self.data.VirtualMemorySize is not None:
             e = doc.createElement("VirtualMemorySize")
-            e.appendChild(doc.createTextNode(str(exec_env.VirtualMemorySize)))
-            root.appendChild(e)
-        if exec_env.OSFamily is not None:
+            e.appendChild(doc.createTextNode(str(self.data.VirtualMemorySize)))
+            element.appendChild(e)
+        if self.data.OSFamily is not None:
             e = doc.createElement("OSFamily")
-            e.appendChild(doc.createTextNode(exec_env.OSFamily))
-            root.appendChild(e)
-        if exec_env.OSName is not None:
+            e.appendChild(doc.createTextNode(self.data.OSFamily))
+            element.appendChild(e)
+        if self.data.OSName is not None:
             e = doc.createElement("OSName")
-            e.appendChild(doc.createTextNode(exec_env.OSName))
-            root.appendChild(e)
-        if exec_env.OSVersion is not None:
+            e.appendChild(doc.createTextNode(self.data.OSName))
+            element.appendChild(e)
+        if self.data.OSVersion is not None:
             e = doc.createElement("OSVersion")
-            e.appendChild(doc.createTextNode(exec_env.OSVersion))
-            root.appendChild(e)
-        if exec_env.ConnectivityIn == None:
+            e.appendChild(doc.createTextNode(self.data.OSVersion))
+            element.appendChild(e)
+        if self.data.ConnectivityIn == None:
             e = doc.createElement("ConnectivityIn")
             e.appendChild(doc.createTextNode("undefined"))
-            root.appendChild(e)
-        elif exec_env.ConnectivityIn:
+            element.appendChild(e)
+        elif self.data.ConnectivityIn:
             e = doc.createElement("ConnectivityIn")
             e.appendChild(doc.createTextNode("true"))
-            root.appendChild(e)
+            element.appendChild(e)
         else:
             e = doc.createElement("ConnectivityIn")
             e.appendChild(doc.createTextNode("false"))
-            root.appendChild(e)
-        if exec_env.ConnectivityOut == None:
+            element.appendChild(e)
+        if self.data.ConnectivityOut == None:
             e = doc.createElement("ConnectivityOut")
             e.appendChild(doc.createTextNode("undefined"))
-            root.appendChild(e)
-        elif exec_env.ConnectivityOut:
+            element.appendChild(e)
+        elif self.data.ConnectivityOut:
             e = doc.createElement("ConnectivityOut")
             e.appendChild(doc.createTextNode("true"))
-            root.appendChild(e)
+            element.appendChild(e)
         else:
             e = doc.createElement("ConnectivityOut")
             e.appendChild(doc.createTextNode("false"))
-            root.appendChild(e)
-        if exec_env.NetworkInfo is not None:
+            element.appendChild(e)
+        if self.data.NetworkInfo is not None:
             e = doc.createElement("NetworkInfo")
-            e.appendChild(doc.createTextNode(exec_env.NetworkInfo))
-            root.appendChild(e)
-        if exec_env.ComputingManager is not None:
+            e.appendChild(doc.createTextNode(self.data.NetworkInfo))
+            element.appendChild(e)
+        if self.data.Manager is not None:
             e = doc.createElement("ComputingManager")
-            e.appendChild(doc.createTextNode(exec_env.ComputingManager))
-            root.appendChild(e)
-        for share in exec_env.ComputingShare:
+            e.appendChild(doc.createTextNode(self.data.Manager))
+            element.appendChild(e)
+        for share in self.data.Share:
             e = doc.createElement("ComputingShare")
             e.appendChild(doc.createTextNode(share))
-            root.appendChild(e)
-        for activity in exec_env.ComputingActivity:
+            element.appendChild(e)
+        for activity in self.data.Activity:
             e = doc.createElement("ComputingActivity")
             e.appendChild(doc.createTextNode(activity))
-            root.appendChild(e)
-        for appEnv in exec_env.ApplicationEnvironment:
+            element.appendChild(e)
+        for appEnv in self.data.ApplicationEnvironment:
             e = doc.createElement("ApplicationEnvironment")
             e.appendChild(doc.createTextNode(appEnv))
-            root.appendChild(e)
-        for benchmark in exec_env.Benchmark:
+            element.appendChild(e)
+        for benchmark in self.data.Benchmark:
             e = doc.createElement("Benchmark")
             e.appendChild(doc.createTextNode(benchmark))
-            root.appendChild(e)
-            
-        return doc
+            element.appendChild(e)
 
 #######################################################################################################################
 
-class ExecutionEnvironmentIpfJson(Representation):
+class ExecutionEnvironmentOgfJson(ResourceOgfJson):
     data_cls = ExecutionEnvironment
 
     def __init__(self, data):
-        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+        ResourceOgfJson.__init__(self,data)
 
     def get(self):
-        return json.dumps(self.toJson(self.data),sort_keys=True,indent=4)
+        return json.dumps(self.toJson(),sort_keys=True,indent=4)
 
-    @staticmethod
-    def toJson(exec_env):
-        doc = {}
+    def toJson(self):
+        doc = ResourceOgfJson.toJson(self)
 
-        # Entity
-        doc["CreationTime"] = dateTimeToText(exec_env.CreationTime)
-        if exec_env.Validity is not None:
-            doc["Validity"] = exec_env.Validity
-        doc["ID"] = exec_env.ID
-        if exec_env.Name is not None:
-            doc["Name"] = exec_env.Name
-        if len(exec_env.OtherInfo) > 0:
-            doc["OtherInfo"] = exec_env.OtherInfo
-        if len(exec_env.Extension) > 0:
-            doc["Extension"] = exec_env.Extension
-
-        # Resource
-        if exec_env.Manager is not None:
-            doc["Manager"] = exec_env.Manager
-        if len(exec_env.Share) > 0:
-            doc["Share"] = exec_env.Share
-        if len(exec_env.Activity) > 0:
-            doc["Activity"] = exec_env.Activity
-
-        # ExecutionEnvironment
-        if exec_env.Platform is not None:
-            doc["Platform"] = exec_env.Platform
-        if exec_env.VirtualMachine is not None:
-            doc["VirtualMachine"] = exec_env.VirtualMachine
-        if exec_env.TotalInstances is not None:
-            doc["TotalInstances"] = exec_env.TotalInstances
-        if exec_env.UsedInstances is not None:
-            doc["UsedInstances"] = exec_env.UsedInstances
-        if exec_env.UnavailableInstances is not None:
-            doc["UnavailableInstances"] = exec_env.UnavailableInstances
-        if exec_env.PhysicalCPUs is not None:
-            doc["PhysicalCPUs"] = exec_env.PhysicalCPUs
-        if exec_env.LogicalCPUs is not None:
-            doc["LogicalCPUs"] = exec_env.LogicalCPUs
-        if exec_env.CPUMultiplicity is not None:
-            doc["CPUMultiplicity"] = exec_env.CPUMultiplicity
-        if exec_env.CPUVendor is not None:
-            doc["CPUVendor"] = exec_env.CPUVendor
-        if exec_env.CPUModel is not None:
-            doc["CPUModel"] = exec_env.CPUModel
-        if exec_env.CPUVersion is not None:
-            doc["CPUVersion"] = exec_env.CPUersion
-        if exec_env.CPUClockSpeed is not None:
-            doc["CPUClockSpeed"] = exec_env.CPUClockSpeed
-        if exec_env.CPUTimeScalingFactor is not None:
-            doc["CPUTimeScalingFactor"] = exec_env.CPUTimeScalingFactor
-        if exec_env.WallTimeScalingFactor is not None:
-            doc["WallTimeScalingFactor"] = exec_env.WallTimeScalingFactor
-        if exec_env.MainMemorySize is not None:
-            doc["MainMemorySize"] = exec_env.MainMemorySize
-        if exec_env.VirtualMemorySize is not None:
-            doc["VirtualMemorySize"] = exec_env.VirtualMemorySize
-        if exec_env.OSFamily is not None:
-            doc["OSFamily"] = exec_env.OSFamily
-        if exec_env.OSName is not None:
-            doc["OSName"] = exec_env.OSName
-        if exec_env.OSVersion is not None:
-            doc["OSVersion"] = exec_env.OSVersion
-        if exec_env.ConnectivityIn is not None:
-            doc["ConnectivityIn"] = exec_env.ConnectivityIn
-        if exec_env.ConnectivityOut is not None:
-            doc["ConnectivityOut"] = exec_env.ConnectivityOut
-        if exec_env.NetworkInfo is not None:
-            doc["NetworkInfo"] = exec_env.NetworkInfo
-        if exec_env.ComputingManager is not None:
-            doc["ComputingManager"] = exec_env.ComputingManager
-        if len(exec_env.ComputingShare) > 0:
-            doc["ComputingShare"] = exec_env.ComputingShare
-        if len(exec_env.ComputingActivity) > 0:
-            doc["ComputingActivity"] = exec_env.ComputingActivity
-        if len(exec_env.ApplicationEnvironment) > 0:
-            doc["ApplicationEnvironment"] = exec_env.ApplicationEnvironment
-        if len(exec_env.Benchmark) > 0:
+        if self.data.Platform is not None:
+            doc["Platform"] = self.data.Platform
+        if self.data.VirtualMachine is not None:
+            doc["VirtualMachine"] = self.data.VirtualMachine
+        if self.data.TotalInstances is not None:
+            doc["TotalInstances"] = self.data.TotalInstances
+        if self.data.UsedInstances is not None:
+            doc["UsedInstances"] = self.data.UsedInstances
+        if self.data.UnavailableInstances is not None:
+            doc["UnavailableInstances"] = self.data.UnavailableInstances
+        if self.data.PhysicalCPUs is not None:
+            doc["PhysicalCPUs"] = self.data.PhysicalCPUs
+        if self.data.LogicalCPUs is not None:
+            doc["LogicalCPUs"] = self.data.LogicalCPUs
+        if self.data.CPUMultiplicity is not None:
+            doc["CPUMultiplicity"] = self.data.CPUMultiplicity
+        if self.data.CPUVendor is not None:
+            doc["CPUVendor"] = self.data.CPUVendor
+        if self.data.CPUModel is not None:
+            doc["CPUModel"] = self.data.CPUModel
+        if self.data.CPUVersion is not None:
+            doc["CPUVersion"] = self.data.CPUersion
+        if self.data.CPUClockSpeed is not None:
+            doc["CPUClockSpeed"] = self.data.CPUClockSpeed
+        if self.data.CPUTimeScalingFactor is not None:
+            doc["CPUTimeScalingFactor"] = self.data.CPUTimeScalingFactor
+        if self.data.WallTimeScalingFactor is not None:
+            doc["WallTimeScalingFactor"] = self.data.WallTimeScalingFactor
+        if self.data.MainMemorySize is not None:
+            doc["MainMemorySize"] = self.data.MainMemorySize
+        if self.data.VirtualMemorySize is not None:
+            doc["VirtualMemorySize"] = self.data.VirtualMemorySize
+        if self.data.OSFamily is not None:
+            doc["OSFamily"] = self.data.OSFamily
+        if self.data.OSName is not None:
+            doc["OSName"] = self.data.OSName
+        if self.data.OSVersion is not None:
+            doc["OSVersion"] = self.data.OSVersion
+        if self.data.ConnectivityIn is not None:
+            doc["ConnectivityIn"] = self.data.ConnectivityIn
+        if self.data.ConnectivityOut is not None:
+            doc["ConnectivityOut"] = self.data.ConnectivityOut
+        if self.data.NetworkInfo is not None:
+            doc["NetworkInfo"] = self.data.NetworkInfo
+        if len(self.data.ApplicationEnvironment) > 0:
+            doc["ApplicationEnvironment"] = self.data.ApplicationEnvironment
+        if len(self.data.Benchmark) > 0:
             doc["Benchmark"] = self.Benchmark
             
         return doc
@@ -571,31 +445,31 @@ class ExecutionEnvironmentsTeraGridXml(Representation):
         Representation.__init__(self,Representation.MIME_TEXT_XML,data)
 
     def get(self):
-        return self.toDom(self.data.exec_envs).toprettyxml()
+        return self.toDom().toprettyxml()
 
-    @staticmethod
-    def toDom(exec_envs):
+    def toDom(self):
         doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
                                                     "Entities",None)
-        for exec_env in self.exec_envs:
+        for exec_env in self.data.exec_envs:
             eedoc = ExecutionEnvironmentTeraGridXml.toDom(exec_env)
             doc.documentElement.appendChild(eedoc.documentElement.firstChild)
         return doc
 
 #######################################################################################################################
 
-class ExecutionEnvironmentsIpfJson(Representation):
+class ExecutionEnvironmentsOgfJson(Representation):
     data_cls = ExecutionEnvironments
 
     def __init__(self, data):
         Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
 
     def get(self):
-        return json.dumps(self.toJson(self.data.exec_envs),sort_keys=True,indent=4)
+        return json.dumps(self.toJson(),sort_keys=True,indent=4)
 
-    @staticmethod
-    def toJson(exec_envs):
+    def toJson(self):
         eedoc = []
-        for exec_env in exec_envs:
-            eedoc.append(ExecutionEnvironmentIpfJson.toJson(exec_env))
+        for exec_env in self.data.exec_envs:
+            eedoc.append(ExecutionEnvironmentOgfJson.toJson(exec_env))
         return eedoc
+
+#######################################################################################################################
