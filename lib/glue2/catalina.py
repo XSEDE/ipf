@@ -79,28 +79,3 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             return -job.Extension["Priority"]
         except KeyError:
             return 0
-
-    def _jobStateKey(self, job):
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_RUNNING:
-            return 1
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_STARTING:
-            return 2
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_SUSPENDED:
-            return 3
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_PENDING:
-            return 4
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_HELD:
-            return 5
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_FINISHING:
-            return 6
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_TERMINATING:
-            return 7
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_FINISHED:
-            return 8
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_TERMINATED:
-            return 9
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_FAILED:
-            return 10
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_UNKNOWN:
-            return 11
-        return 12  # above should be all of them, but...
