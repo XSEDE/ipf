@@ -74,16 +74,16 @@ class Workflow(object):
         self._connectSteps()
 
     def _addMissingSteps(self):
-        required = set()
+        requires = set()
         for step in self.steps:
-            for cls in step.requires:
-                required.add(cls)
-            
+            self._addRequires(step,requires)
+        produces = set()
         for step in self.steps:
-            self._removeProduced(step,required)
+            self._addProduces(step,produces)
 
-        while len(required) > 0:
-            cls = required.pop()
+        missing = requires - produces
+        while len(missing) > 0:
+            cls = missing.pop()
             producers = catalog.producers.get(cls,[])
             if len(producers) == 0:
                 raise WorkflowError("no known step that produces %s" % cls)
@@ -92,23 +92,21 @@ class Workflow(object):
             step = producers[0]()
             step.configure({"params":{}},{})
             self.steps.append(step)
-            self._removeProduced(step,required)
+            self._addRequires(step,requires)
+            self._addProduces(step,produces)
+            # added steps could in turn require more steps to be added
+            missing = requires - produces
 
-    def _removeProduced(self, step, required):
+    def _addRequires(self, step, requires):
+        for cls in step.requires:
+            requires.add(cls)
+            
+    def _addProduces(self, step, produces):
         for data in step.produces:
-            try:
-                required.remove(data)
-            except KeyError:
-                pass
-            try:
-                reps = catalog.reps_for_data.get(data,[])
-                for rep in reps:
-                    try:
-                        required.remove(rep)
-                    except KeyError:
-                        pass
-            except KeyError:
-                pass
+            produces.add(data)
+            reps = catalog.reps_for_data.get(data,[])
+            for rep in reps:
+                produces.add(rep)
 
     def _connectSteps(self):
         steps = {}
