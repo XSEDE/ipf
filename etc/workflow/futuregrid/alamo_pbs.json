@@ -1,9 +1,14 @@
 {
   "name": "alamo_pbs",
   "steps": [
-    { "name": "ipf.name.ResourceNameStep",
+    { "name": "ipf.sysinfo.ResourceNameStep",
       "params": {
         "resource_name": "torquemoab.alamo.futuregrid.org"
+      }
+    },
+    { "name": "ipf.sysinfo.SiteNameStep",
+      "params": {
+        "resource_name": "alamo.futuregrid.org"
       }
     },
     { "name": "glue2.location.LocationStep",
@@ -17,6 +22,7 @@
         }
       }
     },
+    { "name": "ipf.sysinfo.PlatformStep" },
     { "name": "glue2.gram.Version5EndpointStep",
       "params": {
         "endpoint": {
@@ -40,7 +46,12 @@
         }
       }
     },
-    { "name": "glue2.futuregrid.pbs.ComputingActivitiesStep" },
+    { "name": "glue2.futuregrid.pbs.ComputingActivitiesStep",
+      "outputs": ["step-moab-activities"]
+    },
+    { "name": "glue2.moab.ComputingActivitiesStep",
+      "id": "step-moab-activities"
+    },
     { "name": "glue2.pbs.ComputingSharesStep" },
     { "name": "glue2.pbs.ComputingServiceStep" },
     { "name": "glue2.pbs.ExecutionEnvironmentsStep" },
@@ -48,7 +59,7 @@
     {
       "name": "ipf.publish.AmqpStep",
       "params": {
-        "publish": ["glue2.compute.PublicIpfJson"],
+        "publish": ["glue2.compute.PublicOgfJson"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",
@@ -62,7 +73,7 @@
     {
       "name": "ipf.publish.AmqpStep",
       "params": {
-        "publish": ["glue2.compute.PrivateIpfJson"],
+        "publish": ["glue2.compute.PrivateOgfJson"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",
@@ -76,14 +87,14 @@
     {
       "name": "ipf.publish.FileStep",
       "params": {
-        "publish": ["glue2.compute.PublicIpfJson"],
+        "publish": ["glue2.compute.PublicOgfJson"],
         "path": "glue2_pbs_public.json"
       }
     },
     {
       "name": "ipf.publish.FileStep",
       "params": {
-        "publish": ["glue2.compute.PrivateIpfJson"],
+        "publish": ["glue2.compute.PrivateOgfJson"],
         "path": "glue2_pbs_private.json"
       }
     }
