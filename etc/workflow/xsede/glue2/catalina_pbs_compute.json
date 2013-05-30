@@ -8,11 +8,11 @@
     { "name": "glue2.location.LocationStep",
       "params": {
         "location": {
-          "Name": "Name of Center",
-          "Place": "City",
+          "Name": "San Diego Supercomputing Center",
+          "Place": "San Diego",
           "Country": "US",
-          "Latitude": 38.000,
-          "Longitude": -90.000
+          "Latitude": 32.8844,
+          "Longitude": -117.23990
         }
       }
     },
