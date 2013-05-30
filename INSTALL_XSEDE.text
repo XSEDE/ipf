@@ -52,9 +52,9 @@ are not installing the software into a shared directory, you will need to instal
 
 As the user that will be used to run the monitoring workflows, execute:
 
-$ cd $DIR
-$ git clone git@bitbucket.org:wwsmith/mtk.git
-$ git clone git@bitbucket.org:wwsmith/ipf.git
+    $ cd $DIR
+    $ git clone git@bitbucket.org:wwsmith/mtk.git
+    $ git clone git@bitbucket.org:wwsmith/ipf.git
 
 The first git command downloads a Python messaging client and the second git command download an information
 gathering and publishing framework.
@@ -96,18 +96,18 @@ Testing the Modules Workflow
 
 To test your modules workflow, execute:
 
-$ $DIR/bin/run_workflow.sh xsede/glue2/modules.json
+    $ $DIR/bin/run_workflow.sh xsede/glue2/modules.json
 
 or:
 
-$ $DIR/bin/run_workflow.sh xsede/glue2/lmod.json
+    $ $DIR/bin/run_workflow.sh xsede/glue2/lmod.json
 
 The output should resemble:
 
-2013-05-30 15:27:05,309 - ipf.engine - INFO - starting workflow lmod
-2013-05-30 15:27:05,475 - ipf.publish.AmqpStep - INFO - step-3 - publishing representation ApplicationsOgfJson of Applications lonestar4.tacc.teragrid.org
-2013-05-30 15:27:05,566 - ipf.publish.FileStep - INFO - step-4 - writing representation ApplicationsOgfJson of Applications lonestar4.tacc.teragrid.org
-2013-05-30 15:27:06,336 - ipf.engine - INFO - workflow succeeded
+    2013-05-30 15:27:05,309 - ipf.engine - INFO - starting workflow lmod
+    2013-05-30 15:27:05,475 - ipf.publish.AmqpStep - INFO - step-3 - publishing representation ApplicationsOgfJson of Applications lonestar4.tacc.teragrid.org
+    2013-05-30 15:27:05,566 - ipf.publish.FileStep - INFO - step-4 - writing representation ApplicationsOgfJson of Applications lonestar4.tacc.teragrid.org
+    2013-05-30 15:27:06,336 - ipf.engine - INFO - workflow succeeded
 
 If any of the steps fail, that will be reported and an error message and stack trace should appear. Typical
 failures are caused by the execution environment not having specific commands available. See the Environment
@@ -148,18 +148,18 @@ Testing the Compute Workflow
 
 To test your compute workflow, execute the workflow file you edited above:
 
-$ $DIR/bin/run_workflow.sh xsede/glue2/???_compute.json
+    $ $DIR/bin/run_workflow.sh xsede/glue2/???_compute.json
 
 The output should resemble:
 
-2013-05-30 15:50:43,590 - ipf.engine - INFO - starting workflow sge_compute
-2013-05-30 15:50:45,403 - ipf.publish.AmqpStep - INFO - step-12 - publishing representation PrivateOgfJson of Private lonestar4.tacc.teragrid.org
-2013-05-30 15:50:45,626 - ipf.publish.FileStep - INFO - step-14 - writing representation PrivateOgfJson of Private lonestar4.tacc.teragrid.org
-2013-05-30 15:50:45,864 - ipf.publish.FileStep - INFO - step-16 - writing representation PrivateTeraGridXml of Private lonestar4.tacc.teragrid.org
-2013-05-30 15:50:45,878 - ipf.publish.AmqpStep - INFO - step-11 - publishing representation PublicOgfJson of Public lonestar4.tacc.teragrid.org
-2013-05-30 15:50:46,110 - ipf.publish.FileStep - INFO - step-13 - writing representation PublicOgfJson of Public lonestar4.tacc.teragrid.org
-2013-05-30 15:50:46,370 - ipf.publish.FileStep - INFO - step-15 - writing representation PublicTeraGridXml of Public lonestar4.tacc.teragrid.org
-2013-05-30 15:50:46,516 - ipf.engine - INFO - workflow succeeded
+    2013-05-30 15:50:43,590 - ipf.engine - INFO - starting workflow sge_compute
+    2013-05-30 15:50:45,403 - ipf.publish.AmqpStep - INFO - step-12 - publishing representation PrivateOgfJson of Private lonestar4.tacc.teragrid.org
+    2013-05-30 15:50:45,626 - ipf.publish.FileStep - INFO - step-14 - writing representation PrivateOgfJson of Private lonestar4.tacc.teragrid.org
+    2013-05-30 15:50:45,864 - ipf.publish.FileStep - INFO - step-16 - writing representation PrivateTeraGridXml of Private lonestar4.tacc.teragrid.org
+    2013-05-30 15:50:45,878 - ipf.publish.AmqpStep - INFO - step-11 - publishing representation PublicOgfJson of Public lonestar4.tacc.teragrid.org
+    2013-05-30 15:50:46,110 - ipf.publish.FileStep - INFO - step-13 - writing representation PublicOgfJson of Public lonestar4.tacc.teragrid.org
+    2013-05-30 15:50:46,370 - ipf.publish.FileStep - INFO - step-15 - writing representation PublicTeraGridXml of Public lonestar4.tacc.teragrid.org
+    2013-05-30 15:50:46,516 - ipf.engine - INFO - workflow succeeded
 
 Again, typical failures are caused by the execution environment not having specific commands available. See
 the Environment Configuration section above.
@@ -182,36 +182,36 @@ Testing the Activity Workflow
 
 To test your activity workflow, execute the workflow file you edited above:
 
-$ $DIR/bin/run_workflow.sh xsede/glue2/???_activity.json
+    $ $DIR/bin/run_workflow.sh xsede/glue2/???_activity.json
 
 This is a long-running workflow and won't stop until you ctrl-C it. Let it run for a little while to make sure
 that it is detecting job state changes.
 
 The output should resemble:
 
-2013-05-30 16:04:26,030 - ipf.engine - INFO - starting workflow sge_activity
-2013-05-30 16:04:26,038 - glue2.sge.ComputingActivityUpdateStep - INFO - step-3 - running
-2013-05-30 16:04:26,038 - glue2.log - INFO - opening file 27-6930448 (/opt/sge6.2/default/common/reporting)
-2013-05-30 16:05:50,067 - glue2.log - INFO - reopening file 27-6930448 (/opt/sge6.2/default/common/reporting)
-2013-05-30 16:05:50,089 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226387.mhagy.lonestar4.tacc.teragrid.org
-2013-05-30 16:05:50,493 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226814.hhe.lonestar4.tacc.teragrid.org
-2013-05-30 16:06:12,109 - glue2.log - INFO - reopening file 27-6930448 (/opt/sge6.2/default/common/reporting)
-2013-05-30 16:06:12,361 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226867.maxfei.lonestar4.tacc.teragrid.org
-2013-05-30 16:06:12,380 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226868.maxfei.lonestar4.tacc.teragrid.org
-2013-05-30 16:06:12,407 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226788.rlc2489.lonestar4.tacc.teragrid.org
-2013-05-30 16:06:12,428 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226865.byaa705.lonestar4.tacc.teragrid.org
-2013-05-30 16:06:12,448 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226862.ylu.lonestar4.tacc.teragrid.org
-...
-KeyboardInterrupt
+    2013-05-30 16:04:26,030 - ipf.engine - INFO - starting workflow sge_activity
+    2013-05-30 16:04:26,038 - glue2.sge.ComputingActivityUpdateStep - INFO - step-3 - running
+    2013-05-30 16:04:26,038 - glue2.log - INFO - opening file 27-6930448 (/opt/sge6.2/default/common/reporting)
+    2013-05-30 16:05:50,067 - glue2.log - INFO - reopening file 27-6930448 (/opt/sge6.2/default/common/reporting)
+    2013-05-30 16:05:50,089 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226387.mhagy.lonestar4.tacc.teragrid.org
+    2013-05-30 16:05:50,493 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226814.hhe.lonestar4.tacc.teragrid.org
+    2013-05-30 16:06:12,109 - glue2.log - INFO - reopening file 27-6930448 (/opt/sge6.2/default/common/reporting)
+    2013-05-30 16:06:12,361 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226867.maxfei.lonestar4.tacc.teragrid.org
+    2013-05-30 16:06:12,380 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226868.maxfei.lonestar4.tacc.teragrid.org
+    2013-05-30 16:06:12,407 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226788.rlc2489.lonestar4.tacc.teragrid.org
+    2013-05-30 16:06:12,428 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226865.byaa705.lonestar4.tacc.teragrid.org
+    2013-05-30 16:06:12,448 - ipf.publish.AmqpStep - INFO - step-4 - publishing representation ComputingActivityOgfJson of ComputingActivity 1226862.ylu.lonestar4.tacc.teragrid.org
+    ...
+    KeyboardInterrupt
 
 Cron Configuration
 ------------------
 
 Once you've tested your workflows, the recommended way to run them permanently is to create cron jobs in the user account where you have installed and tested the software. For example:
 
-*/2 * * * * $DIR/ipf/bin/run_workflow_cron.sh xsede/glue2/???_compute.json
-*/15 * * * * $DIR/ipf/bin/run_workflow_daemon.sh xsede/glue2/???_activity.json
-04 * * * * $DIR/ipf/bin/run_workflow_cron.sh xsede/glue2/modules.json
+    */2 * * * * $DIR/ipf/bin/run_workflow_cron.sh xsede/glue2/???_compute.json
+    */15 * * * * $DIR/ipf/bin/run_workflow_daemon.sh xsede/glue2/???_activity.json
+    04 * * * * $DIR/ipf/bin/run_workflow_cron.sh xsede/glue2/modules.json
 
 The first cron job will run the compute workflow to gather and publish the current state of your resource
 every 2 minutes.
@@ -236,27 +236,27 @@ to grab bug fixes or new features.
 
 To update your install, change to the ipf directory:
 
-$ cd $DIR/ipf
+    $ cd $DIR/ipf
 
 save the changes you've made (e.g. to env.sh and to the workflow description files):
 
-$ git stash
+    $ git stash
 
 pull the updates from bitbucket:
 
-$ git pull
+    $ git pull
 
 apply your saved changes to this updated version:
 
-$ git stash apply
+    $ git stash apply
 
 and finally, kill the workflow daemon processes
 
-$ ps -eaf | grep run_workflow_daemon
-$ kill ...
+    $ ps -eaf | grep run_workflow_daemon
+    $ kill ...
 
 and either restart it yourself:
 
-$ $DIR/ipf/bin/run_workflow_daemon.sh xsede/glue2/???_activity.json
+    $ $DIR/ipf/bin/run_workflow_daemon.sh xsede/glue2/???_activity.json
 
 or let cron restart it for you.
