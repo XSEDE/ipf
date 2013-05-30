@@ -34,14 +34,10 @@ class ResourceNameStep(ipf.sysinfo.ResourceNameStep):
         try:
             resource_name = self.params["resource_name"]
         except KeyError:
-            try:
-                tg_whereami = self.params["tgwhereami"]
-            except KeyError:
-                tg_whereami = "tgwhereami"
+            tg_whereami = self.params.get("tgwhereami","tgwhereami")
             (status, output) = commands.getstatusoutput(tg_whereami)
             if status != 0:
-                self.error("failed to execute %s" % tg_whereami)
-                sys.exit(1)
+                raise StepError("failed to execute %s: %s" % (tg_whereami,output))
             resource_name = output
 
         self._output(ipf.sysinfo.ResourceName(resource_name))
@@ -60,14 +56,10 @@ class SiteNameStep(ipf.sysinfo.SiteNameStep):
         try:
             site_name = self.params["site_name"]
         except KeyError:
-            try:
-                tg_whereami = self.params["tgwhereami"]
-            except KeyError:
-                tg_whereami = "tgwhereami"
+            tg_whereami = self.params.get("tgwhereami","tgwhereami")
             (status, output) = commands.getstatusoutput(tg_whereami+" -s")
             if status != 0:
-                self.error("failed to execute %s" % tg_whereami)
-                sys.exit(1)
+                raise StepError("failed to execute %s: %s" % (tg_whereami,output))
             site_name = output
 
         self._output(ipf.sysinfo.SiteName(site_name))
