@@ -47,8 +47,7 @@ class LocalSoftwareStep(Step):
         try:
             mechanism = self.params["mechanism"]
         except KeyError:
-            self.error("mechanism not specified")
-            sys.exit(1)
+            raise StepError("mechanism not specified")
 
         if mechanism == "software_catalog":
             self._runCatalog()

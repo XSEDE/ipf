@@ -1,6 +1,6 @@
 {
-  "name": "slurm_compute",
-  "description": "This workflow gathers GLUE2 compute information by interacting with SLURM",
+  "name": "moab_pbs_compute",
+  "description": "This workflow gathers GLUE2 compute information by interacting with Moab and PBS",
   "steps": [
     { "name": "teragrid.sysinfo.ResourceNameStep" },
     { "name": "teragrid.sysinfo.SiteNameStep" },
@@ -8,24 +8,29 @@
     { "name": "glue2.location.LocationStep",
       "params": {
         "location": {
-          "Name": "Texas Advanced Computing Center",
-          "Place": "Austin",
+          "Name": "Name of Center",
+          "Place": "City",
           "Country": "US",
-          "Latitude": 30.387055,
-          "Longitude": -97.726865
+          "Latitude": 38.000,
+          "Longitude": -90.000
         }
       }
     },
     { "name": "teragrid.gram_endpoint.GramEndpointStep",
       "params": {
-        "core_kit_directory": "/opt/apps/xsede/kits/ctss-core-registration-5.0.0-r1"
+        "core_kit_directory": "/opt/teragrid/kits/ctss-core-registration-5.0.0-r1"
       }
     },
-    { "name": "glue2.slurm.ComputingActivitiesStep" },
-    { "name": "glue2.slurm.ComputingSharesStep" },
-    { "name": "glue2.slurm.ComputingServiceStep" },
-    { "name": "glue2.slurm.ExecutionEnvironmentsStep" },
-    { "name": "glue2.slurm.ComputingManagerStep" },
+    { "name": "glue2.pbs.ComputingActivitiesStep",
+      "outputs": ["step-moab-activities"]
+    },
+    { "name": "glue2.moab.ComputingActivitiesStep",
+      "id": "step-moab-activities"
+    },
+    { "name": "glue2.pbs.ComputingSharesStep" },
+    { "name": "glue2.pbs.ComputingServiceStep" },
+    { "name": "glue2.pbs.ExecutionEnvironmentsStep" },
+    { "name": "glue2.pbs.ComputingManagerStep" },
     {
       "name": "ipf.publish.AmqpStep",
       "description": "Publish compute resource description to subscibers",

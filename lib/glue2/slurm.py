@@ -106,32 +106,6 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
 
         return jobs
 
-    def _jobStateKey(self, job):
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_RUNNING:
-            return 1
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_STARTING:
-            return 2
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_SUSPENDED:
-            return 3
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_PENDING:
-            return 4
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_HELD:
-            return 5
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_FINISHING:
-            return 6
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_TERMINATING:
-            return 7
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_FINISHED:
-            return 8
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_TERMINATED:
-            return 9
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_FAILED:
-            return 10
-        if job.State == glue2.computing_activity.ComputingActivity.STATE_UNKNOWN:
-            return 11
-        return 12  # above should be all of them, but...
-
-
 def _getJob(step, job_str):
     job = glue2.computing_activity.ComputingActivity()
 
@@ -333,19 +307,23 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             return
 
     def _getActivity(self, job_id):
-        if job_id not in self.activities:
+        try:
+            activity = self.activities[id]
+            # activity will be modified - update creation time
+            activity.CreationTime = datetime.datetime.now(tzoffset(0))
+        except KeyError:
             scontrol = self.params.get("scontrol","scontrol")
             cmd = scontrol + " show job "+job_id
             self.debug("running "+cmd)
             status, output = commands.getstatusoutput(cmd)
             if status != 0:
                 self.warning("scontrol failed: "+output+"\n")
-                act = glue2.computing_activity.ComputingActivity()
-                act.LocalIDFromManager = job_id
+                activity = glue2.computing_activity.ComputingActivity()
+                activity.LocalIDFromManager = job_id
             else:
-                act = _getJob(self,output)
-            self.activities[act.LocalIDFromManager] = act
-        return self.activities[job_id]
+                activity = _getJob(self,output)
+            self.activities[act.LocalIDFromManager] = activity
+        return activity
 
 #######################################################################################################################
 

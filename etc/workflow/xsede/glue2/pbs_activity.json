@@ -1,10 +1,10 @@
 {
-  "name": "sge_activity",
-  "description": "This workflow watches the SGE reporting file and publishes updates about individual jobs",
+  "name": "pbs_activity",
+  "description": "This workflow watches PBS server logs and publishes updates about individual jobs",
   "steps": [
     { "name": "teragrid.sysinfo.ResourceNameStep" },
     { "name": "teragrid.sysinfo.SiteNameStep" },
-    { "name": "glue2.sge.ComputingActivityUpdateStep" },
+    { "name": "glue2.pbs.ComputingActivityUpdateStep" },
     {
       "name": "ipf.publish.AmqpStep",
       "params": {

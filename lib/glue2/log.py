@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2012 The University of Texas at Austin                          #
+#   Copyright 2012-2013 The University of Texas at Austin                     #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -99,9 +99,11 @@ class LogDirectoryWatcher(object):
         cur_files = []
         for file_name in os.listdir(self.dir):
             path = os.path.join(self.dir,file_name)
-            st = os.stat(path)
-            if not stat.S_ISREG(st.st_mode):
+            if not os.path.isfile(path):  # only regular files
                 continue
+            if os.path.islink(path):      # but not soft links
+                continue
+            st = os.stat(path)
             cur_files.append(LogFile(path,self.callback,st))
         return cur_files
 

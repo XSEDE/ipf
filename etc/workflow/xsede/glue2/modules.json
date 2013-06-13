@@ -1,8 +1,8 @@
 {
-  "name": "lmod",
+  "name": "modules",
   "steps": [
     { "name": "teragrid.sysinfo.ResourceNameStep" },
-    { "name": "glue2.modules.LModApplicationsStep" },
+    { "name": "glue2.modules.ModulesApplicationsStep" },
     {
       "name": "ipf.publish.AmqpStep",
       "params": {

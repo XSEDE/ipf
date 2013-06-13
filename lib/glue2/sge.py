@@ -345,6 +345,8 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
 
         if toks[4] in self.activities:
             activity = self.activities[toks[4]]
+            # activity will be modified - update creation time
+            activity.CreationTime = datetime.datetime.now(tzoffset(0))
         else:
             activity = glue2.computing_activity.ComputingActivity()
 

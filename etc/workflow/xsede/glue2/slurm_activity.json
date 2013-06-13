@@ -8,7 +8,7 @@
     {
       "name": "ipf.publish.AmqpStep",
       "params": {
-        "publish": ["glue2.computing_activity.ComputingActivityIpfJson"],
+        "publish": ["glue2.computing_activity.ComputingActivityOgfJson"],
         "services": [ "info1.dyn.teragrid.org", "info2.dyn.teragrid.org" ],
         "ssl_options": {
           "keyfile": "key.pem",
