@@ -138,39 +138,34 @@ class AmqpStep(PublishStep):
     def _publish(self, representation):
         self.info("publishing %s",representation)
         self.debug("  with routing key '%s' to exchange '%s'",representation.data.id.encode("utf-8"),self.exchange)
-        self._connectIfNecessary()
-        if self.channel is None:
-            raise StepError("not connected to any service, will not publish %s" % doc.__class__)
+        try:
+            self._connectIfNecessary()
+        except StepError:
+            self.error("not connected to any service, will not publish %s" % representation.__class__)
+            return
         try:
             self.channel.basicPublish(representation.get(),
                                       self.exchange,
                                       representation.data.id.encode("utf-8"))
         except MtkError:
-            self.warning("first publish failed, trying again")
-            try:
-                self._connect()
-                self.channel.basicPublish(representation.get(),
-                                          self.exchange,
-                                          representation.data.id.encode("utf-8"))
-            except MtkError:
-                raise StepError("not connected to any service, will not publish %s" % doc.__class__)
+            self.error("failed to publish %s" % representation.__class__)
 
     def _connectIfNecessary(self):
         if self.channel is not None:
             return
         for i in range(0,len(self.services)):
+            service = self._selectService()
             try:
-                self._connect()
+                self._connect(service)
                 return
-            except MtkError, e:
-                self.warning("failed to connect to service: %s",e)
+            except Exception, e:
+                self.warning("failed to connect to service %s: %s",service,e)
         raise StepError("could not connect to any of the specified messaging services")
 
-    def _connect(self):
+    def _connect(self, service):
         if self.connection is not None:
             self._close()
 
-        service = self._selectService()
         toks = service.split(":")
         host = toks[0]
         try:

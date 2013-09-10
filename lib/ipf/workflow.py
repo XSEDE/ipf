@@ -61,9 +61,9 @@ class Workflow(object):
                 raise WorkflowError("workflow step does not specify the 'name' of the step to run")
             try:
                 step = catalog.steps[step_doc["name"]]()
-                step.setParameters(doc.get("params",{}),step_doc.get("params",{}))
             except KeyError:
                 raise WorkflowError("no step is known with name '%s'" % step_doc["name"])
+            step.configure(step_doc,doc.get("params",{}))
 
             self.steps.append(step)
 
@@ -74,64 +74,90 @@ class Workflow(object):
         self._connectSteps()
 
     def _addMissingSteps(self):
-        required = set()
+        requires = set()
         for step in self.steps:
-            for cls in step.requires:
-                required.add(cls)
-            
+            self._addRequires(step,requires)
+        produces = set()
         for step in self.steps:
-            self._removeProduced(step,required)
+            self._addProduces(step,produces)
 
-        while len(required) > 0:
-            cls = required.pop()
+        missing = requires - produces
+        while len(missing) > 0:
+            cls = missing.pop()
             producers = catalog.producers.get(cls,[])
             if len(producers) == 0:
                 raise WorkflowError("no known step that produces %s" % cls)
             if len(producers) > 1:
                 raise WorkflowError("more than one step produces %s - can't infer which to use" % cls)
             step = producers[0]()
-            step.setParameters({},{})
+            step.configure({"params":{}},{})
             self.steps.append(step)
-            self._removeProduced(step,required)
+            self._addRequires(step,requires)
+            self._addProduces(step,produces)
+            # added steps could in turn require more steps to be added
+            missing = requires - produces
 
-    def _removeProduced(self, step, required):
+    def _addRequires(self, step, requires):
+        for cls in step.requires:
+            requires.add(cls)
+            
+    def _addProduces(self, step, produces):
         for data in step.produces:
-            try:
-                required.remove(data)
-            except KeyError:
-                pass
-            try:
-                reps = catalog.reps_for_data.get(data,[])
-                for rep in reps:
-                    try:
-                        required.remove(rep)
-                    except KeyError:
-                        pass
-            except KeyError:
-                pass
+            produces.add(data)
+            reps = catalog.reps_for_data.get(data,[])
+            for rep in reps:
+                produces.add(rep)
 
     def _connectSteps(self):
+        steps = {}
         for i in range(0,len(self.steps)):
             if self.steps[i].id is None:
                 self.steps[i].id = "step-%d" % (i+1)
+            steps[self.steps[i].id] = self.steps[i]
         ids = set()
         for step in self.steps:
             if step.id in ids:
                 raise WorkflowError("at least two steps have an id of '%s'" % step.id)
             ids.add(step.id)
 
-        outputs = {}
         for step in self.steps:
-            for data in step.requires:
-                if not data in outputs:
-                    outputs[data] = []
-                outputs[data].append(step)
+            step.remaining_requires = set(step.requires)
 
         for step in self.steps:
-            step.outputs = {}
+            if len(step.output_ids) > 0:
+                for cls in step.output_ids:
+                    step.outputs[cls] = []
+                    for id in step.output_ids[cls]:
+                        try:
+                            step.outputs[cls].append(steps[id])
+                        except KeyError:
+                            raise WorkflowError("step %s specifies unknown step '%s' as output" % (step.id,id))
+                        steps[id].remaining_requires.remove(cls)
+
+        # just for checking validity of workflow
+        produces = set()
+        for step in self.steps:
             for data in step.produces:
-                if data in outputs:
-                    step.outputs[data] = outputs[data]
+                if data in step.outputs:
+                    continue
+                if data in produces:
+                    raise WorkflowError("multiple steps produce %s.%s without specifying output steps" % \
+                                        (data.__module__,data.__name__))
+                produces.add(step)
+
+        requires = {}
+        for step in self.steps:
+            for data in step.remaining_requires:
+                if not data in requires:
+                    requires[data] = []
+                requires[data].append(step)
+
+        for step in self.steps:
+            for data in step.produces:
+                if data in step.outputs:
+                    continue
+                if data in requires:
+                    step.outputs[data] = requires[data]
 
     def _checkConnections(self):
         pass

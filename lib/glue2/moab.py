@@ -22,6 +22,7 @@ import re
 import sys
 import xml.dom.minidom
 
+from ipf.dt import *
 from ipf.error import StepError
 from glue2.log import LogDirectoryWatcher
 
@@ -29,26 +30,54 @@ import glue2.computing_activity
 
 ##############################################################################################################
 
-class MoabComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
+class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
 
     def __init__(self):
         glue2.computing_activity.ComputingActivitiesStep.__init__(self)
+
+        self.requires.append(glue2.computing_activity.ComputingActivities)
 
         self._acceptParameter("showq","the path to the Moab showq program (default 'showq')",False)
 
         self.sched_name = "Moab"
 
     def _run(self):
-        for doc in docs_in:
-            logger.warn("ignoring document of type "+doc.type)
+        rm_jobs = {}
+        for job in  self._getInput(glue2.computing_activity.ComputingActivities).activities:
+            rm_jobs[job.LocalIDFromManager] = job
 
-        jobs = []
+        moab_jobs = []
         try:
-            self._addJobs("-c",jobs) # get recently competed jobs - no big deal if it fails
-        except AgentError:
+            self._addJobs("-c",moab_jobs) # get recently competed jobs - no big deal if it fails
+        except StepError:
             pass
-        self._addJobs("",jobs)       # get the rest of the jobs
+        self._addJobs("",moab_jobs)       # get the rest of the jobs
+
+        # use jobs from Moab to order and correct jobs received from the resource manager
+        for pos in range(0,len(moab_jobs)):
+            moab_job = moab_jobs[pos]
+            try:
+                job = rm_jobs[moab_job.LocalIDFromManager]
+                job.position = pos
+                # resource managers may not be able to differentiate pending from held
+                if job.State == glue2.computing_activity.ComputingActivity.STATE_PENDING and \
+                   moab_job.State == glue2.computing_activity.ComputingActivity.STATE_HELD:
+                    job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
+            except KeyError:
+                pass
+
+        jobs = rm_jobs.values()
+        jobs = sorted(jobs,key=self._jobPosition)
+        jobs = sorted(jobs,key=self._jobStateKey)
+
         return jobs
+
+    def _jobPosition(self, job):
+        try:
+            return job.position
+        except KeyError:
+            return sys.maxint
+
 
     def _addJobs(self, flag, jobs):
         try:
@@ -74,7 +103,7 @@ class MoabComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesSt
                 status = node.getAttribute("option")
                 for jobElement in node.childNodes:
                     job = self._getJob(jobElement,procsPerNode,status)
-                    if includeQueue(self.config,job.Queue):
+                    if self._includeQueue(job.Queue):
                         if job.EndTime == None:
                             jobs.append(job)
                         else:
@@ -82,8 +111,6 @@ class MoabComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesSt
                             if time.mktime(now.timetuple()) - time.mktime(job.EndTime.timetuple()) < 15 * 60:
                                 jobs.append(job)
         doc.unlink()
-
-        return jobs
 
     def _getJob(self, jobElement, procsPerNode, status):
         job = glue2.computing_activity.ComputingActivity()

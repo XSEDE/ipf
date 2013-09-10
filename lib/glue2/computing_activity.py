@@ -65,6 +65,31 @@ class ComputingActivitiesStep(GlueStep):
     def _run(self):
         raise StepError("ComputingActivitiesStep._run not overriden")
 
+    def _jobStateKey(self, job):
+        if job.State == ComputingActivity.STATE_RUNNING:
+            return 1
+        if job.State == ComputingActivity.STATE_STARTING:
+            return 2
+        if job.State == ComputingActivity.STATE_SUSPENDED:
+            return 3
+        if job.State == ComputingActivity.STATE_PENDING:
+            return 4
+        if job.State == ComputingActivity.STATE_HELD:
+            return 5
+        if job.State == ComputingActivity.STATE_FINISHING:
+            return 6
+        if job.State == ComputingActivity.STATE_TERMINATING:
+            return 7
+        if job.State == ComputingActivity.STATE_FINISHED:
+            return 8
+        if job.State == ComputingActivity.STATE_TERMINATED:
+            return 9
+        if job.State == ComputingActivity.STATE_FAILED:
+            return 10
+        if job.State == ComputingActivity.STATE_UNKNOWN:
+            return 11
+        return 12  # above should be all of them, but...
+
 #######################################################################################################################
 
 class ComputingActivityUpdateStep(GlueStep):

@@ -226,7 +226,7 @@ def parseJLines(output, jobs, step):
         lstrings = re.findall("<qstat_l_requests>[\s\S]+?</qstat_l_requests>",job_string)
         for str in lstrings:
             if "h_rt" in str:
-                m = re.search("<CE_doubleval>(\S+)</CE_doubleval>",job_string)
+                m = re.search("<CE_doubleval>(\S+)</CE_doubleval>",str)
                 if m is not None:
                     cur_job.RequestedTotalWallTime = cur_job.RequestedSlots * int(float(m.group(1)))
         # start time isn't often in the -j output, so get it from -u
@@ -345,6 +345,8 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
 
         if toks[4] in self.activities:
             activity = self.activities[toks[4]]
+            # activity will be modified - update creation time
+            activity.CreationTime = datetime.datetime.now(tzoffset(0))
         else:
             activity = glue2.computing_activity.ComputingActivity()
 

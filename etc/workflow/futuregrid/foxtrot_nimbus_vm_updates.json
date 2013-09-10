@@ -14,7 +14,7 @@
     {
       "name": "ipf.publish.AmqpStep",
       "params": {
-        "publish": ["glue2.computing_activity.ComputingActivityIpfJson"],
+        "publish": ["glue2.computing_activity.ComputingActivityOgfJson"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",

@@ -33,7 +33,7 @@
     {
       "name": "ipf.publish.AmqpStep",
       "params": {
-        "publish": ["glue2.compute.PublicIpfJson"],
+        "publish": ["glue2.compute.PublicOgfJson"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",
@@ -47,7 +47,7 @@
     {
       "name": "ipf.publish.AmqpStep",
       "params": {
-        "publish": ["glue2.compute.PrivateIpfJson"],
+        "publish": ["glue2.compute.PrivateOgfJson"],
         "services": [ "inca.futuregrid.org" ],
         "ssl_options": {
           "keyfile":"key.pem",
@@ -61,14 +61,14 @@
     {
       "name": "ipf.publish.FileStep",
       "params": {
-        "publish": ["glue2.compute.PublicIpfJson"],
+        "publish": ["glue2.compute.PublicOgfJson"],
         "path": "glue2_nimbus_public.json"
       }
     },
     {
       "name": "ipf.publish.FileStep",
       "params": {
-        "publish": ["glue2.compute.PrivateIpfJson"],
+        "publish": ["glue2.compute.PrivateOgfJson"],
         "path": "glue2_nimbus_private.json"
       }
     }
