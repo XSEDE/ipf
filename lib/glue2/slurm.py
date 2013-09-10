@@ -144,7 +144,7 @@ def _getJob(step, job_str):
     m = re.search("UserId=(\S+)\(",job_str)
     if m is not None:
         job.LocalOwner = m.group(1)
-    m = re.search("GroupId=(\S+)\(",job_str)
+    m = re.search("Account=(\S+)\(",job_str)
     if m is not None:
         job.UserDomain = m.group(1)
     m = re.search("Partition=(\S+)",job_str)
