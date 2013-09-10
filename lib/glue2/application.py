@@ -52,7 +52,7 @@ class ApplicationEnvironment(Entity):
         self.ApplicationHandle = []    # string (ID)
         
     def __str__(self):
-        return json.dumps(ApplicationEnvironmentOgfJson.toJson(self),sort_keys=True,indent=4)
+        return json.dumps(ApplicationEnvironmentOgfJson(self).toJson(),sort_keys=True,indent=4)
 
 #######################################################################################################################
 
@@ -68,35 +68,35 @@ class ApplicationEnvironmentOgfJson(EntityOgfJson):
     def toJson(self):
         doc = EntityOgfJson.toJson(self)
 
-        doc["AppName"] = env.AppName
-        if env.AppVersion is not None:
-            doc["AppVersion"] = env.AppVersion
-        if env.Repository is not None:
-            doc["Repository"] = env.Repository
-        if env.State is not None:
-            doc["State"] = env.State
-        if env.RemovalDate is not None:
-            doc["RemovalDate"] = dateTimeToText(env.RemovalDate)
-        if env.License is not None:
-            doc["License"] = env.License
-        if env.Description is not None:
-            doc["Description"] = env.Description
-        if len(env.BestBenchmark) > 0:
-            doc["BestBenchmark"] = env.BestBenchmark
-        if env.ParallelSupport is not None:
-            doc["ParallelSupport"] = env.ParallelSupport
-        if env.MaxSlots is not None:
-            doc["MaxSlots"] = env.MaxSlots
-        if env.MaxJobs is not None:
-            doc["MaxJobs"] = env.MaxJobs
-        if env.MaxUserSeats is not None:
-            doc["MaxUserSeats"] = env.MaxUserSeats
-        if env.FreeSlots is not None:
-            doc["FreeSlots"] = env.FreeSlots
-        if env.FreeJobs is not None:
-            doc["FreeJobs"] = env.FreeJobs
-        if env.FreeUserSeats is not None:
-            doc["FreeUserSeats"] = env.FreeUserSeats
+        doc["AppName"] = self.data.AppName
+        if self.data.AppVersion is not None:
+            doc["AppVersion"] = self.data.AppVersion
+        if self.data.Repository is not None:
+            doc["Repository"] = self.data.Repository
+        if self.data.State is not None:
+            doc["State"] = self.data.State
+        if self.data.RemovalDate is not None:
+            doc["RemovalDate"] = dateTimeToText(self.data.RemovalDate)
+        if self.data.License is not None:
+            doc["License"] = self.data.License
+        if self.data.Description is not None:
+            doc["Description"] = self.data.Description
+        if len(self.data.BestBenchmark) > 0:
+            doc["BestBenchmark"] = self.data.BestBenchmark
+        if self.data.ParallelSupport is not None:
+            doc["ParallelSupport"] = self.data.ParallelSupport
+        if self.data.MaxSlots is not None:
+            doc["MaxSlots"] = self.data.MaxSlots
+        if self.data.MaxJobs is not None:
+            doc["MaxJobs"] = self.data.MaxJobs
+        if self.data.MaxUserSeats is not None:
+            doc["MaxUserSeats"] = self.data.MaxUserSeats
+        if self.data.FreeSlots is not None:
+            doc["FreeSlots"] = self.data.FreeSlots
+        if self.data.FreeJobs is not None:
+            doc["FreeJobs"] = self.data.FreeJobs
+        if self.data.FreeUserSeats is not None:
+            doc["FreeUserSeats"] = self.data.FreeUserSeats
 
         return doc
 
@@ -113,7 +113,7 @@ class ApplicationHandle(Entity):
 #######################################################################################################################
 
 class ApplicationHandleOgfJson(EntityOgfJson):
-    data_cls = ApplicationEnvironment
+    data_cls = ApplicationHandle
 
     def __init__(self, data):
         EntityOgfJson.__init__(self,data)
@@ -124,9 +124,9 @@ class ApplicationHandleOgfJson(EntityOgfJson):
     def toJson(self):
         doc = EntityOgfJson.toJson(self)
         
-        doc["Type"] = handle.Type
-        doc["Value"] = handle.Value
-        doc["ApplicationEnvironment"] = handle.ApplicationEnvironment
+        doc["Type"] = self.data.Type
+        doc["Value"] = self.data.Value
+        doc["ApplicationEnvironment"] = self.data.ApplicationEnvironment
 
         return doc
     
@@ -176,10 +176,10 @@ class ApplicationsOgfJson(Representation):
         doc = {}
         doc["ApplicationEnvironment"] = []
         for env in self.data.environments:
-            doc["ApplicationEnvironment"].append(ApplicationEnvironmentOgfJson.toJson(env))
+            doc["ApplicationEnvironment"].append(ApplicationEnvironmentOgfJson(env).toJson())
         doc["ApplicationHandle"] = []
         for handle in self.data.handles:
-            doc["ApplicationHandle"].append(ApplicationHandleOgfJson.toJson(handle))
+            doc["ApplicationHandle"].append(ApplicationHandleOgfJson(handle).toJson())
         return doc
 
 #######################################################################################################################

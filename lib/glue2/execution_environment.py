@@ -469,7 +469,7 @@ class ExecutionEnvironmentsOgfJson(Representation):
     def toJson(self):
         eedoc = []
         for exec_env in self.data.exec_envs:
-            eedoc.append(ExecutionEnvironmentOgfJson.toJson(exec_env))
+            eedoc.append(ExecutionEnvironmentOgfJson(exec_env).toJson())
         return eedoc
 
 #######################################################################################################################

@@ -163,7 +163,7 @@ class ComputingActivity(Activity):
         # use Endpoint, Share, Resource instead of ComputingEndpoint, ComputingShare, ExecutionEnvironment
 
     def __str__(self):
-        return json.dumps(ComputingActivityOgfJson.toJson(self),sort_keys=True,indent=4)
+        return json.dumps(ComputingActivityOgfJson(self).toJson(),sort_keys=True,indent=4)
 
 #######################################################################################################################
 
@@ -477,7 +477,7 @@ class ComputingActivitiesOgfJson(Representation):
     def get(self):
         adoc = []
         for activity in self.data.activities:
-            adoc.append(ComputingActivityOgfJson.toJson(activity))
+            adoc.append(ComputingActivityOgfJson(activity).toJson())
         return json.dumps(adoc,sort_keys=True,indent=4)
     
 #######################################################################################################################
