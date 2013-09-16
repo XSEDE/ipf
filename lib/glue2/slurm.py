@@ -322,7 +322,7 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
                 activity.LocalIDFromManager = job_id
             else:
                 activity = _getJob(self,output)
-            self.activities[act.LocalIDFromManager] = activity
+            self.activities[activity.LocalIDFromManager] = activity
         return activity
 
 #######################################################################################################################
