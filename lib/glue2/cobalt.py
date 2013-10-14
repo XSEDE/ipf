@@ -162,7 +162,8 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
                         job.UsedTotalWallTime = usedWallTime * job.RequestedSlots
             #job.UsedTotalCPUTime = 
             if line.startswith("    SubmitTime "):
-                job.ComputingManagerSubmissionTime = self._getSubmitDateTime(line[line.find(":")+2:])
+                job.SubmissionTime = self._getSubmitDateTime(line[line.find(":")+2:])
+                job.ComputingManagerSubmissionTime = job.SubmissionTime
             if line.startswith("    StartTime "):
                 startTime = line[line.find(":")+2:]
                 if startTime != "N/A":

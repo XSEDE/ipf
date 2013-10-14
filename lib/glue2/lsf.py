@@ -195,7 +195,8 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
         # check the lines for events and any pending reason
         for index in range(0,len(lines)):
             if lines[index].find("Submitted from") != -1:
-                job.ComputingManagerSubmissionTime = job._getDateTime(lines[index])
+                job.SubmissionTime = job._getDateTime(lines[index])
+                job.ComputingManagerSubmissionTime = job.SubmissionTime
             elif lines[index].find("Started on") != -1:
                 job.StartTime = job._getDateTime(lines[index])
                 usedWallTime = time.time() - time.mktime(job.StartTime.timetuple())

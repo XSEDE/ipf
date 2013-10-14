@@ -215,7 +215,8 @@ def parseJLines(output, jobs, step):
             cur_job.Queue = m.group(1)
         m = re.search("<JB_submission_time>(\S+)</JB_submission_time>",job_string)
         if m is not None:
-            cur_job.ComputingManagerSubmissionTime = epochToDateTime(int(m.group(1)),localtzoffset())
+            cur_job.SubmissionTime = epochToDateTime(int(m.group(1)),localtzoffset())
+            cur_job.ComputingManagerSubmissionTime = cur_job.SubmissionTime
         else:
             step.warning("didn't find submission time in %s",job_string)
         m = re.search("<JB_pe_range>([\s\S]+)</JB_pe_range>",job_string)
@@ -360,6 +361,7 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
 
         if toks[3] == "pending":
             activity.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
+            activity.SubmissionTime = event_dt
             activity.ComputingManagerSubmissionTime = event_dt
             self.activities[activity.LocalIDFromManager] = activity
         elif toks[3] == "sent":

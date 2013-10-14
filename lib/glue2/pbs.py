@@ -185,7 +185,8 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             job.UsedTotalCPUTime = cls._getDuration(m.group(1))
         m = re.search("qtime.cput = (\S+)",jobString)
         if m is not None:
-            job.ComputingManagerSubmissionTime = cls._getDateTime(m.group(1))
+            job.SubmissionTime = cls._getDateTime(m.group(1))
+            job.ComputingManagerSubmissionTime = job.SubmissionTime
         m = re.search("mtime = (\w+ \w+ \d+ \d+:\d+:\d+ \d+)",jobString)
         if m is not None:
             if job.State == glue2.computing_activity.ComputingActivity.STATE_RUNNING:

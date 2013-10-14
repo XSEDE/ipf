@@ -155,7 +155,8 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
                         job.UsedTotalCpuTime = usedCpuTime * job.RequestedSlots
 
             if line.startswith("QDate = "):
-                job.ComputingManagerSubmissionTime = self._getDateTime(line.split()[2])
+                job.SubmissionTime = self._getDateTime(line.split()[2])
+                job.ComputingManagerSubmissionTime = job.SubmissionTime
             if line.startswith("JobStartDate = "):
                 job.StartTime = self._getDateTime(line.split()[2])
             if line.startswith("CompletionDate = "):

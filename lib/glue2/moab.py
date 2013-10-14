@@ -133,7 +133,8 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             job.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
 
         epoch = float(jobElement.getAttribute("SubmissionTime"))
-        job.ComputingManagerSubmissionTime = datetime.datetime.fromtimestamp(epoch,localtzoffset())
+        job.SubmissionTime = datetime.datetime.fromtimestamp(epoch,localtzoffset())
+        job.ComputingManagerSubmissionTime = job.SubmissionTime
 
         epoch = jobElement.getAttribute("StartTime")
         if (epoch != "") and (epoch != "0"):

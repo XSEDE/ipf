@@ -219,6 +219,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
                 # this is really the time that Nimbus begins to start a job - it can take a while
                 # use SubmissionTime to be compatible with ComputingActivityUpdateStep
                 activity.SubmissionTime = _getAdminDateTime(line[14:])
+                activity.ComputingManagerSubmissionTime = activity.SubmissionTime
             elif line.startswith("end time"):
                 end_time = _getAdminDateTime(line[14:])
             elif line.startswith("memory"):
