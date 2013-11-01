@@ -1,0 +1,79 @@
+{
+  "name": "glue2_openstack",
+  "params": {
+    "openstack_version": "2012.2",
+    "nimbus_dir": "/opt/nimbus-2.9"
+  },
+  "steps": [
+    { "name": "ipf.sysinfo.ResourceNameStep",
+      "params": {
+        "resource_name": "openstack.alamo.futuregrid.org"
+      }
+    },
+    { "name": "ipf.sysinfo.SiteNameStep",
+      "params": {
+        "site_name": "tacc.utexas.edu"
+      }
+    },
+    { "name": "ipf.sysinfo.PlatformStep" },
+    { "name": "glue2.location.LocationStep",
+      "params": {
+        "location": {
+          "Name": "Texas Advanced Computing Center",
+          "Place": "Austin",
+          "Country": "US",
+          "Latitude": 30.390132,
+          "Longitude": -97.725309
+        }
+      }
+    },
+    { "name": "glue2.openstack.ComputingEndpointStep" },
+    { "name": "glue2.openstack.ComputingActivitiesStep" },
+    { "name": "glue2.openstack.ComputingSharesStep" },
+    { "name": "glue2.openstack.ComputingServiceStep" },
+    { "name": "glue2.openstack.ExecutionEnvironmentsStep" },
+    { "name": "glue2.openstack.ComputingManagerStep" },
+    {
+      "name": "ipf.publish.AmqpStep",
+      "params": {
+        "publish": ["glue2.compute.PublicOgfJson"],
+        "services": [ "inca.futuregrid.org" ],
+        "ssl_options": {
+          "keyfile":"key.pem",
+          "certfile":"cert.pem",
+          "ca_certs":"ca_certs.pem"
+        },
+	"vhost": "monitoring",
+        "exchange": "glue2.systems"
+      }
+    },
+    {
+      "name": "ipf.publish.AmqpStep",
+      "params": {
+        "publish": ["glue2.compute.PrivateOgfJson"],
+        "services": [ "inca.futuregrid.org" ],
+        "ssl_options": {
+          "keyfile":"key.pem",
+          "certfile":"cert.pem",
+          "ca_certs":"ca_certs.pem"
+        },
+	"vhost": "monitoring",
+        "exchange": "glue2.activities"
+      }
+    },
+    {
+      "name": "ipf.publish.FileStep",
+      "params": {
+        "publish": ["glue2.compute.PublicOgfJson"],
+        "path": "glue2_openstack_public.json"
+      }
+    },
+    {
+      "name": "ipf.publish.FileStep",
+      "params": {
+        "publish": ["glue2.compute.PrivateOgfJson"],
+        "path": "glue2_openstack_private.json"
+      }
+    }
+  ]
+}
