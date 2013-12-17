@@ -183,14 +183,22 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
         m = re.search("resource_used.cput = (\S+)",jobString)
         if m is not None:
             job.UsedTotalCPUTime = cls._getDuration(m.group(1))
-        m = re.search("qtime.cput = (\S+)",jobString)
+
+        # ctime - time job was created
+        # etime - time job was queued
+        m = re.search("etime = (\w+ \w+ \d+ \d+:\d+:\d+ \d+)",jobString)
         if m is not None:
             job.SubmissionTime = cls._getDateTime(m.group(1))
             job.ComputingManagerSubmissionTime = job.SubmissionTime
+
+        # qtime - time job became eligible to run
+
+        # start_time - time job started to run
+        m = re.search("start_time = (\w+ \w+ \d+ \d+:\d+:\d+ \d+)",jobString)
+        if m is not None:
+            job.StartTime = cls._getDateTime(m.group(1))
         m = re.search("mtime = (\w+ \w+ \d+ \d+:\d+:\d+ \d+)",jobString)
         if m is not None:
-            if job.State == glue2.computing_activity.ComputingActivity.STATE_RUNNING:
-                job.StartTime = cls._getDateTime(m.group(1))
             if (job.State == glue2.computing_activity.ComputingActivity.STATE_FINISHED) or \
                    (job.State == glue2.computing_activity.ComputingActivity.STATE_TERMINATED):
                 # this is right for terminated since terminated is set on the E state
@@ -201,13 +209,6 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             # exec_host = c013.cm.cluster/7+c013.cm.cluster/6+...
             nodes = set(map(lambda s: s.split("/")[0], m.group(1).split("+")))
             job.ExecutionNode = list(nodes)
-
-        #m = re.search("ctime = (\S+)",jobString)
-        #if m is not None:
-        #    if line.find("ctime =") >= 0 and \
-        #           (job.State == ComputingActivity.STATE_FINISHED or job.State == ComputingActivity.STATE_TERMINATED):
-        #        job.ComputingManagerEndTime = cls._getDateTime(m.group(1))
-        #        job.EndTime = job.ComputingManagerEndTime
 
         return job
 
