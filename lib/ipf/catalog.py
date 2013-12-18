@@ -23,6 +23,13 @@ from ipf.data import Data,Representation
 from ipf.home import IPF_HOME
 from ipf.step import Step
 
+#######################################################################################################################
+
+logging.config.fileConfig(os.path.join(IPF_HOME,"etc","logging.conf"))
+logger = logging.getLogger(__name__)
+
+#######################################################################################################################
+
 class Catalog(object):
     def __init__(self):
         # step class name -> Step for when reading workflows
@@ -37,8 +44,6 @@ class Catalog(object):
         # Data -> [Representations]
         self.reps_for_data = {}
 
-        self.logger = logging.getLogger(self.__module__)
-
         # use sys.path somehow?
         path = os.path.join(IPF_HOME,"lib")
         mod_path = ""
@@ -46,12 +51,12 @@ class Catalog(object):
         #modules = self._readPackages(path, mod_path)
 
         for module in modules:
-            self.logger.debug("loading %s",module)
+            logger.debug("loading %s",module)
             try:
                 __import__(module)
             except:
-                traceback.print_exc()
-                pass  # silently ignore modules that can't be loaded
+                logger.debug(traceback.format_exc())
+                pass  # ignore modules that can't be loaded
 
         self._addSubclasses(Step,self.steps)
         self._addSubclasses(Data,self.data)
@@ -128,7 +133,7 @@ class Catalog(object):
             cls = stack.pop(0)
             cls_name = cls.__module__+"."+cls.__name__
             if cls_name in dict:
-                self.logger.warn("multiple classes with name %s - ignoring all but first",cls_name)
+                logger.warn("multiple classes with name %s - ignoring all but first",cls_name)
             else:
                 dict[cls_name] = cls
             stack.extend(cls.__subclasses__())
