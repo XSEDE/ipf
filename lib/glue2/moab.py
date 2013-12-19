@@ -59,10 +59,8 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             try:
                 job = rm_jobs[moab_job.LocalIDFromManager]
                 job.position = pos
-                # resource managers may not be able to differentiate pending from held
-                if job.State == glue2.computing_activity.ComputingActivity.STATE_PENDING and \
-                   moab_job.State == glue2.computing_activity.ComputingActivity.STATE_HELD:
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
+                if job.State != moab_job.State:
+                    job.State = moab_job.State
             except KeyError:
                 pass
 
@@ -75,7 +73,8 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
     def _jobPosition(self, job):
         try:
             return job.position
-        except KeyError:
+        except AttributeError:
+            self.warning("didn't find queue position for job %s in state %s" % (job.LocalIDFromManager,job.State))
             return sys.maxint
 
 
@@ -103,7 +102,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
                 status = node.getAttribute("option")
                 for jobElement in node.childNodes:
                     job = self._getJob(jobElement,procsPerNode,status)
-                    if self._includeQueue(job.Queue):
+                    if self._includeQueue(job.Queue,True):
                         if job.EndTime == None:
                             jobs.append(job)
                         else:
@@ -120,6 +119,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
         job.LocalOwner = jobElement.getAttribute("User")
         job.UserDomain = jobElement.getAttribute("Account")
         job.Queue = jobElement.getAttribute("Class")
+        # using status is more accurate than using job State since Idle jobs can be blocked
         if status == "active":
             job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
         elif status == "completed":
