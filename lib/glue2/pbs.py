@@ -157,6 +157,11 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
         m = re.search("Resource_List.ncpus = (\d+)",jobString)
         if m is not None:
             job.RequestedSlots = int(m.group(1))
+        m = re.search("Resource_List.size = (\d+)",jobString)
+        if m is not None:
+            slots = int(m.group(1))
+            if job.RequestedSlots is None or slots > job.RequestedSlots:
+                job.RequestedSlots = slots
         m = re.search("Resource_List.nodes = (\d+):ppn=(\d+)",jobString)
         if m is not None:
             slots = int(m.group(1)) * int(m.group(2))
