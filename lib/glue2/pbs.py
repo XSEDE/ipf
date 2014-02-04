@@ -228,27 +228,9 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
 
     @classmethod
     def _getDateTime(cls, dt_str):
-        # Example: Fri May 30 06:54:25 2008
-        #   2 spaces after the month, when the date < 10
-
-        m = re.search("(\w+)\s+(\w+)\s+(\d+)\s+(\d+):(\d+):(\d+)\s+(\d+)",dt_str)
-        if m is None:
-            raise StepError("can't parse '%s' as a date/time" % dt_str)
-        dayOfWeek = m.group(1)
-        month =     cls.monthDict[m.group(2)]
-        day =       int(m.group(3))
-        hour =      int(m.group(4))
-        minute =    int(m.group(5))
-        second =    int(m.group(6))
-        year =      int(m.group(7))
-        
-        return datetime.datetime(year=year,
-                                 month=month,
-                                 day=day,
-                                 hour=hour,
-                                 minute=minute,
-                                 second=second,
-                                 tzinfo=localtzoffset())
+        # Example: Fri May 30 06:54:25 2008  (day of the month isn't padded)
+        dt = datetime.datetime.strptime(dt_str,"%a %b %d %H:%M:%S %Y")
+        return dt.replace(tzinfo=localtzoffset())
 
 #######################################################################################################################
 
