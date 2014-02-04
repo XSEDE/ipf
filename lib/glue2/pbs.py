@@ -186,7 +186,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
 
         # ctime - time job was created
         # etime - time job was queued
-        m = re.search("etime = (\w+ \w+ \d+ \d+:\d+:\d+ \d+)",jobString)
+        m = re.search("etime = (.+)",jobString)
         if m is not None:
             job.SubmissionTime = cls._getDateTime(m.group(1))
             job.ComputingManagerSubmissionTime = job.SubmissionTime
@@ -194,10 +194,10 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
         # qtime - time job became eligible to run
 
         # start_time - time job started to run
-        m = re.search("start_time = (\w+ \w+ \d+ \d+:\d+:\d+ \d+)",jobString)
+        m = re.search("start_time = (.+)",jobString)
         if m is not None:
             job.StartTime = cls._getDateTime(m.group(1))
-        m = re.search("mtime = (\w+ \w+ \d+ \d+:\d+:\d+ \d+)",jobString)
+        m = re.search("mtime = (.+)",jobString)
         if m is not None:
             if (job.State == glue2.computing_activity.ComputingActivity.STATE_FINISHED) or \
                    (job.State == glue2.computing_activity.ComputingActivity.STATE_TERMINATED):
@@ -224,9 +224,9 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
     @classmethod
     def _getDateTime(cls, dt_str):
         # Example: Fri May 30 06:54:25 2008
-        # Not quite sure how it handles a different year... guessing
+        #   2 spaces after the month, when the date < 10
 
-        m = re.search("(\w+) (\w+) (\d+) (\d+):(\d+):(\d+) (\d+)",dt_str)
+        m = re.search("(\w+)\s+(\w+)\s+(\d+)\s+(\d+):(\d+):(\d+)\s+(\d+)",dt_str)
         if m is None:
             raise StepError("can't parse '%s' as a date/time" % dt_str)
         dayOfWeek = m.group(1)
