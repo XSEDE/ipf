@@ -167,7 +167,7 @@ def _getJob(step, job_str):
         if job.RequestedSlots is not None:
             job.RequestedTotalWallTime = wall_time * job.RequestedSlots
     m = re.search("RunTime=(\S+)",job_str)
-    if m is not None:
+    if m is not None and m.group(1) != "INVALID":
         used_wall_time = _getDuration(m.group(1))
         if used_wall_time > 0 and job.RequestedSlots is not None:
             job.UsedTotalWallTime = used_wall_time * job.RequestedSlots
@@ -205,7 +205,7 @@ def _getDuration(dstr):
     m = re.search("(\d+):(\d+):(\d+)",dstr)
     if m is not None:
         return int(m.group(3)) + 60 * (int(m.group(2)) + 60 * int(m.group(1)))
-    raise StepError("failed to parse duration: %s" % dStr)
+    raise StepError("failed to parse duration: %s" % dstr)
 
 def _getDateTime(dtStr):
     # Example: 2010-08-04T14:01:54
