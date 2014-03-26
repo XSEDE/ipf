@@ -208,16 +208,17 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             elif line.startswith("state"):
                 state = line[14:]
                 if state == "Unpropagated":
-                    activity.State = glue2.computing_activity.ComputingActivity.STATE_STARTING
+                    activity.State = [glue2.computing_activity.ComputingActivity.STATE_STARTING]
                 elif state == "Propagated":
-                    activity.State = glue2.computing_activity.ComputingActivity.STATE_STARTING
+                    activity.State = [glue2.computing_activity.ComputingActivity.STATE_STARTING]
                 elif state == "Running":
-                    activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+                    activity.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
                 elif state == "Corrupted":
-                    activity.State = glue2.computing_activity.ComputingActivity.STATE_FAILED
+                    activity.State = [glue2.computing_activity.ComputingActivity.STATE_FAILED]
                 else:
                     self.error("unknown state: %s",state)
-                    activity.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
+                    activity.State = [glue2.computing_activity.ComputingActivity.STATE_UNKNOWN]
+                activity.State.append("nimbus:"+state)
             elif line.startswith("start time"):
                 # this is really the time that Nimbus begins to start a job - it can take a while
                 # use SubmissionTime to be compatible with ComputingActivityUpdateStep

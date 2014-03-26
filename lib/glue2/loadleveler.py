@@ -165,30 +165,31 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             if line.find("Status:") >= 0:
                 state = line[8:]
                 if state == "Completed":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_FINISHED]
                 elif state == "Canceled":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
                 elif state == "Removed":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
                 elif state == "Terminated":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
                 elif state == "Remove Pending":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
                 elif state == "Pending":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_PENDING]
                 elif state == "Idle":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_PENDING]
                 elif state == "Starting":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
                 elif state == "Running":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
                 elif state == "User Hold":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_HELD]
                 elif state == "Not Queued":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_PENDING]
                 else:
                     self.warn("found unknown LoadLeveler job state '" + state + "'")
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_UNKNOWN]
+                job.State.append("loadleveler:"+state.replace(" "+,""))
             if line.find("Wall Clk Hard Limit:") >= 0:
                 wallTime = job._getDuration(line[21:])
             if line.find("Cpu Hard Limit:") >= 0:

@@ -66,27 +66,28 @@ class ComputingActivitiesStep(GlueStep):
         raise StepError("ComputingActivitiesStep._run not overriden")
 
     def _jobStateKey(self, job):
-        if job.State == ComputingActivity.STATE_RUNNING:
+        # assumes the IPF state is the first one
+        if job.State[0] == ComputingActivity.STATE_RUNNING:
             return 1
-        if job.State == ComputingActivity.STATE_STARTING:
+        if job.State[0] == ComputingActivity.STATE_STARTING:
             return 2
-        if job.State == ComputingActivity.STATE_SUSPENDED:
+        if job.State[0] == ComputingActivity.STATE_SUSPENDED:
             return 3
-        if job.State == ComputingActivity.STATE_PENDING:
+        if job.State[0] == ComputingActivity.STATE_PENDING:
             return 4
-        if job.State == ComputingActivity.STATE_HELD:
+        if job.State[0] == ComputingActivity.STATE_HELD:
             return 5
-        if job.State == ComputingActivity.STATE_FINISHING:
+        if job.State[0] == ComputingActivity.STATE_FINISHING:
             return 6
-        if job.State == ComputingActivity.STATE_TERMINATING:
+        if job.State[0] == ComputingActivity.STATE_TERMINATING:
             return 7
-        if job.State == ComputingActivity.STATE_FINISHED:
+        if job.State[0] == ComputingActivity.STATE_FINISHED:
             return 8
-        if job.State == ComputingActivity.STATE_TERMINATED:
+        if job.State[0] == ComputingActivity.STATE_TERMINATED:
             return 9
-        if job.State == ComputingActivity.STATE_FAILED:
+        if job.State[0] == ComputingActivity.STATE_FAILED:
             return 10
-        if job.State == ComputingActivity.STATE_UNKNOWN:
+        if job.State[0] == ComputingActivity.STATE_UNKNOWN:
             return 11
         return 12  # above should be all of them, but...
 
@@ -154,7 +155,7 @@ class ComputingActivity(Activity):
         self.IDFromEndpoint = None                 # uri
         self.LocalIDFromManager = None             # string
         self.JobDescription = None                 # string (restricted)
-        self.State = None                          # list of strings (restricted) - but just use 1 state
+        self.State = []                            # list of strings (restricted) - first should be IPF state
         self.RestartState = []                     # list of strings (restricted)
         self.ExitCode = None                       # integer
         self.ComputingManagerExitCode = None       # string

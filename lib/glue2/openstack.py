@@ -207,34 +207,34 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep, 
         activity.LocalIDFromManager = server.id
         activity.Name = server.name
         activity.LocalOwner = self._getUser(keystone,server.user_id).name
-        activity.Extension["UserId"] = server.user_id
+        #activity.Extension["UserId"] = server.user_id
 
         if server.status == "BUILD":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_STARTING
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_STARTING]
         elif server.status == "ACTIVE":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
         elif server.status == "PAUSED":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_SUSPENDED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_SUSPENDED]
         elif server.status == "SUSPENDED":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_SUSPENDED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_SUSPENDED]
         elif server.status == "STOPPED":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_SUSPENDED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_SUSPENDED]
         elif server.status == "SHUTOFF":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_SUSPENDED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_SUSPENDED]
         elif server.status == "RESCUED":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
         elif server.status == "RESIZED":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
         elif server.status == "SOFT_DELETED":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
         elif server.status == "DELETED":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
         elif server.status == "ERROR":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_FAILED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_FAILED]
         else:
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_UNKNOWN]
             self.warning("couldn't handle server status '%s'" % server.status)
-        activity.Extension["LocalState"] = server.status
+        activity.State.append("openstack:"+server.status)
 
         activity.SubmissionTime = _getDateTime(server.created)
         activity.ComputingManagerSubmissionTime = activity.SubmissionTime
@@ -250,7 +250,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep, 
         activity.Extension["IpAddresses"] = addresses
 
         image = nova.images.get(server.image["id"])
-        activity.Extension["ImageName"] = image.name
+        activity.RequestedApplicationEnvironment = [image.name]
 
         activity.ExecutionNode = [getattr(server,"OS-EXT-SRV-ATTR:host")]
 
