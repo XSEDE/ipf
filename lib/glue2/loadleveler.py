@@ -189,7 +189,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
                 else:
                     self.warn("found unknown LoadLeveler job state '" + state + "'")
                     job.State = [glue2.computing_activity.ComputingActivity.STATE_UNKNOWN]
-                job.State.append("loadleveler:"+state.replace(" "+,""))
+                job.State.append("loadleveler:"+state.replace(" ",""))
             if line.find("Wall Clk Hard Limit:") >= 0:
                 wallTime = job._getDuration(line[21:])
             if line.find("Cpu Hard Limit:") >= 0:
