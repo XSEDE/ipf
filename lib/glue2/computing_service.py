@@ -106,11 +106,11 @@ class ComputingService(Service):
         self.SuspendedJobs = 0
         self.PreLRMSWaitingJobs = 0
         for activity in activities:
-            if activity.State == ComputingActivity.STATE_RUNNING:
+            if activity.State[0] == ComputingActivity.STATE_RUNNING:
                 self.RunningJobs = self.RunningJobs + 1
-            elif activity.State == ComputingActivity.STATE_PENDING:
+            elif activity.State[0] == ComputingActivity.STATE_PENDING:
                 self.WaitingJobs = self.WaitingJobs + 1
-            elif activity.State == ComputingActivity.STATE_HELD:
+            elif activity.State[0] == ComputingActivity.STATE_HELD:
                 self.WaitingJobs = self.WaitingJobs + 1
             else:
                 # output a warning

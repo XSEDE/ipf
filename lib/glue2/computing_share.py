@@ -91,24 +91,24 @@ class ComputingSharesStep(GlueStep):
                 continue
 
             share.activity.append(activity)
-            if activity.State == ComputingActivity.STATE_RUNNING:
+            if activity.State[0] == ComputingActivity.STATE_RUNNING:
                 share.RunningJobs = share.RunningJobs + 1
                 share.LocalRunningJobs = share.LocalRunningJobs + 1
                 share.TotalJobs = share.TotalJobs + 1
                 share.UsedSlots = share.UsedSlots + activity.RequestedSlots
-            elif activity.State == ComputingActivity.STATE_PENDING:
+            elif activity.State[0] == ComputingActivity.STATE_PENDING:
                 share.WaitingJobs = share.WaitingJobs + 1
                 share.LocalWaitingJobs = share.LocalWaitingJobs + 1
                 share.TotalJobs = share.TotalJobs + 1
                 share.RequestedSlots = share.RequestedSlots + activity.RequestedSlots
-            elif activity.State == ComputingActivity.STATE_SUSPENDED:
+            elif activity.State[0] == ComputingActivity.STATE_SUSPENDED:
                 share.SuspendedJobs = share.SuspendedJobs + 1
                 share.LocalSuspendedJobs = share.LocalSuspendedJobs + 1
                 share.TotalJobs = share.TotalJobs + 1
                 share.RequestedSlots = share.RequestedSlots + activity.RequestedSlots
-            elif activity.State == ComputingActivity.STATE_FINISHED:
+            elif activity.State[0] == ComputingActivity.STATE_FINISHED:
                 pass
-            elif activity.State == ComputingActivity.STATE_TERMINATED:
+            elif activity.State[0] == ComputingActivity.STATE_TERMINATED:
                 pass
             else:
                 # output a warning

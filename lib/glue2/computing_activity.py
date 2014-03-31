@@ -232,9 +232,9 @@ class ComputingActivityTeraGridXml(ActivityTeraGridXml):
             e = doc.createElement("JobDescription")
             e.appendChild(doc.createTextNode(self.data.JobDescription))
             element.appendChild(e)
-        if self.data.State is not None:
+        if len(self.data.State) > 0:
             e = doc.createElement("State")
-            e.appendChild(doc.createTextNode(self.data.State))
+            e.appendChild(doc.createTextNode(self.data.State[0]))  # just the ipf:... state
             element.appendChild(e)
         if len(self.data.RestartState) > 0 and "RestartState" not in hide:
             e = doc.createElement("RestartState")
@@ -402,7 +402,7 @@ class ComputingActivityOgfJson(ActivityOgfJson):
             doc["LocalIDFromManager"] = self.data.LocalIDFromManager
         if self.data.JobDescription is not None and "JobDescription" not in hide:
             doc["JobDescription"] = self.data.JobDescription
-        doc["State"] = [self.data.State]  # GLUE 2 expects a list
+        doc["State"] = self.data.State
         if len(self.data.RestartState) > 0 and "RestartState" not in hide:
             doc["RestartState"] = self.data.RestartState
         if self.data.ExitCode is not None and "ExitCode" not in hide:
