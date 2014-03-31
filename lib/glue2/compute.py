@@ -26,7 +26,6 @@ from ipf.sysinfo import ResourceName,SiteName
 from ipf.step import Step
 
 from glue2.computing_activity import ComputingActivities, ComputingActivityTeraGridXml, ComputingActivityOgfJson
-from glue2.computing_endpoint import ComputingEndpoint, ComputingEndpointTeraGridXml, ComputingEndpointOgfJson
 from glue2.computing_manager import ComputingManager, ComputingManagerTeraGridXml, ComputingManagerOgfJson
 from glue2.computing_service import ComputingService, ComputingServiceTeraGridXml, ComputingServiceOgfJson
 from glue2.computing_share import ComputingShares, ComputingShareTeraGridXml, ComputingShareOgfJson
@@ -45,7 +44,7 @@ class PublicStep(Step):
         self.time_out = 5
         # TeraGridXML requires SiteName
         self.requires = [ResourceName,SiteName,Location,
-                         ComputingService,ComputingEndpoint,ComputingShares,ComputingManager,ExecutionEnvironments]
+                         ComputingService,ComputingShares,ComputingManager,ExecutionEnvironments]
         self.produces = [Public]
 
     def run(self):
@@ -57,11 +56,6 @@ class PublicStep(Step):
         public.share = self._getInput(ComputingShares).shares
         public.manager = [self._getInput(ComputingManager)]
         public.environment = self._getInput(ExecutionEnvironments).exec_envs
-        try:
-            while True:
-                public.endpoint.append(self._getInput(ComputingEndpoint))
-        except NoMoreInputsError:
-            pass
         public.id = public.resource_name
 
         self._output(public)
@@ -74,7 +68,6 @@ class Public(Data):
 
         self.location = []
         self.service = []
-        self.endpoint = []
         self.share = []
         self.manager = []
         self.environment = []
@@ -86,9 +79,6 @@ class Public(Data):
         self.service = []
         for sdoc in doc.get("ComputingService"):
             self.service.append(ComputingService().fromJson(sdoc))
-        self.endpoint = []
-        for edoc in doc.get("ComputingEndpoint",[]):
-            self.endpoint.append(ComputingEndpoint().fromJson(edoc))
         self.share = []
         for sdoc in doc.get("ComputingShare",[]):
             self.share.append(ComputingShare().fromJson(sdoc))
@@ -136,8 +126,6 @@ class PublicTeraGridXml(Representation):
             entities.appendChild(LocationTeraGridXml(location).toDom().documentElement.firstChild)
         for service in self.data.service:
             entities.appendChild(ComputingServiceTeraGridXml(service).toDom().documentElement.firstChild)
-        for endpoint in self.data.endpoint:
-            entities.appendChild(ComputingEndpointTeraGridXml(endpoint).toDom().documentElement.firstChild)
         for share in self.data.share:
             entities.appendChild(ComputingShareTeraGridXml(share).toDom().documentElement.firstChild)
         for manager in self.data.manager:
@@ -165,9 +153,6 @@ class PublicOgfJson(Representation):
             doc["Location"] = map(lambda location: LocationOgfJson(location).toJson(),self.data.location)
         if self.data.service is not None:
             doc["ComputingService"] = map(lambda service: ComputingServiceOgfJson(service).toJson(),self.data.service)
-        if len(self.data.endpoint) > 0:
-            doc["ComputingEndpoint"] = map(lambda endpoint: ComputingEndpointOgfJson(endpoint).toJson(),
-                                           self.data.endpoint)
         if len(self.data.share) > 0:
             doc["ComputingShare"] = map(lambda share: ComputingShareOgfJson(share).toJson(),self.data.share)
         if len(self.data.manager) > 0:

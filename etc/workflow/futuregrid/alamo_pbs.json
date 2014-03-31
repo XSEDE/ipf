@@ -23,29 +23,6 @@
       }
     },
     { "name": "ipf.sysinfo.PlatformStep" },
-    { "name": "glue2.gram.Version5EndpointStep",
-      "params": {
-        "endpoint": {
-          "Name": "gram5-fork",
-          "URL": "gram://daemon.alamo.futuregrid.org:2119/jobmanager-fork"
-        }
-      }
-    },
-    { "name": "glue2.gram.Version5EndpointStep",
-      "params": {
-        "endpoint": {
-          "Name": "gram5-pbs",
-          "URL": "gram://daemon.alamo.futuregrid.org:2119/jobmanager-pbs"
-        }
-      }
-    },
-    { "name": "glue2.genesisII.EndpointStep",
-      "params": {
-        "endpoint": {
-          "URL": "https://daemon.alamo.futuregrid.org:18443/axis/services/GeniiBESPortType?genii-container-id=98B3AC57-D09F-63F1-6EE6-2664E1EF9699"
-        }
-      }
-    },
     { "name": "glue2.futuregrid.pbs.ComputingActivitiesStep",
       "outputs": ["step-moab-activities"]
     },

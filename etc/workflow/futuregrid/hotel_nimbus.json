@@ -20,11 +20,6 @@
         }
       }
     },
-    { "name": "glue2.nimbus.ComputingEndpointStep",
-      "params": {
-        "host_name": "svc.uc.futuregrid.org"
-      }
-    },
     { "name": "glue2.futuregrid.nimbus.ComputingActivitiesStep" },
     { "name": "glue2.nimbus.ComputingSharesStep" },
     { "name": "glue2.nimbus.ComputingServiceStep" },

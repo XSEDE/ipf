@@ -27,7 +27,6 @@ from ipf.sysinfo import ResourceName
 
 from glue2.computing_activity import ComputingActivity, ComputingActivities
 from glue2.computing_share import ComputingShares
-from glue2.computing_endpoint import ComputingEndpoint
 from glue2.location import Location
 from glue2.service import *
 from glue2.step import GlueStep
@@ -41,26 +40,19 @@ class ComputingServiceStep(GlueStep):
 
         self.description = "This step provides a GLUE 2 ComputingService document. It is an aggregation mechanism"
         self.time_out = 10
-        self.requires = [ResourceName,Location,ComputingActivities,ComputingShares,ComputingEndpoint]
+        self.requires = [ResourceName,Location,ComputingActivities,ComputingShares]
         self.produces = [ComputingService]
 
         self.resource_name = None
         self.location = None
         self.activities = None
         self.shares = None
-        self.endpoints = None
 
     def run(self):
         self.resource_name = self._getInput(ResourceName).resource_name
         self.location = self._getInput(Location).ID
         self.activities = self._getInput(ComputingActivities).activities
         self.shares = self._getInput(ComputingShares).shares
-        self.endpoints = []
-        try:
-            while True:
-                self.endpoints.append(self._getInput(ComputingEndpoint))
-        except NoMoreInputsError:
-            pass
 
         service = self._run()
 
@@ -72,12 +64,9 @@ class ComputingServiceStep(GlueStep):
 
         service._addActivities(self.activities)
         service._addShares(self.shares)
-        service._addEndpoints(self.endpoints)
 
         for share in self.shares:
             share.Service = service.ID
-        for endpoint in self.endpoints:
-            endpoint.Service = service.ID
 
         self._output(service)
 
@@ -124,11 +113,6 @@ class ComputingService(Service):
             return
         for share in shares:
             self.Share.append(share.ID)
-
-    def _addEndpoints(self, endpoints):
-        self.Endpoint = []
-        for endpoint in endpoints:
-            self.Endpoint.append(endpoint.ID)
 
 #######################################################################################################################
 
@@ -177,10 +161,6 @@ class ComputingServiceTeraGridXml(ServiceTeraGridXml):
         if self.data.PreLRMSWaitingJobs is not None:
             e = doc.createElement("PreLRMSWaitingJobs")
             e.appendChild(doc.createTextNode(str(self.data.PreLRMSWaitingJobs)))
-            element.appendChild(e)
-        for id in self.data.Endpoint:
-            e = doc.createElement("ComputingEndpoint")
-            e.appendChild(doc.createTextNode(id))
             element.appendChild(e)
         for id in self.data.Share:
             e = doc.createElement("ComputingShare")

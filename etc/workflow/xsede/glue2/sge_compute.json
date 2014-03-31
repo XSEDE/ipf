@@ -16,11 +16,6 @@
         }
       }
     },
-    { "name": "teragrid.gram_endpoint.GramEndpointStep",
-      "params": {
-        "core_kit_directory": "/share/apps/teragrid/kits/ctss-core-registration-5.0.0-r1"
-      }
-    },
     { "name": "glue2.sge.ComputingActivitiesStep" },
     { "name": "glue2.sge.ComputingSharesStep" },
     { "name": "glue2.sge.ComputingServiceStep" },
