@@ -57,7 +57,7 @@ class ComputingActivitiesStep(GlueStep):
                 activity.id = "%s.%s.%s" % (activity.LocalIDFromManager,activity.LocalOwner,self.resource_name)
             activity.ID = "urn:glue2:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
             if activity.Queue is not None:
-                activity.Share = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
+                activity.ShareID = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
             activity.hide = self.params.get("hide_job_attribs",[])
 
         self._output(ComputingActivities(self.resource_name,activities))
@@ -66,27 +66,28 @@ class ComputingActivitiesStep(GlueStep):
         raise StepError("ComputingActivitiesStep._run not overriden")
 
     def _jobStateKey(self, job):
-        if job.State == ComputingActivity.STATE_RUNNING:
+        # assumes the IPF state is the first one
+        if job.State[0] == ComputingActivity.STATE_RUNNING:
             return 1
-        if job.State == ComputingActivity.STATE_STARTING:
+        if job.State[0] == ComputingActivity.STATE_STARTING:
             return 2
-        if job.State == ComputingActivity.STATE_SUSPENDED:
+        if job.State[0] == ComputingActivity.STATE_SUSPENDED:
             return 3
-        if job.State == ComputingActivity.STATE_PENDING:
+        if job.State[0] == ComputingActivity.STATE_PENDING:
             return 4
-        if job.State == ComputingActivity.STATE_HELD:
+        if job.State[0] == ComputingActivity.STATE_HELD:
             return 5
-        if job.State == ComputingActivity.STATE_FINISHING:
+        if job.State[0] == ComputingActivity.STATE_FINISHING:
             return 6
-        if job.State == ComputingActivity.STATE_TERMINATING:
+        if job.State[0] == ComputingActivity.STATE_TERMINATING:
             return 7
-        if job.State == ComputingActivity.STATE_FINISHED:
+        if job.State[0] == ComputingActivity.STATE_FINISHED:
             return 8
-        if job.State == ComputingActivity.STATE_TERMINATED:
+        if job.State[0] == ComputingActivity.STATE_TERMINATED:
             return 9
-        if job.State == ComputingActivity.STATE_FAILED:
+        if job.State[0] == ComputingActivity.STATE_FAILED:
             return 10
-        if job.State == ComputingActivity.STATE_UNKNOWN:
+        if job.State[0] == ComputingActivity.STATE_UNKNOWN:
             return 11
         return 12  # above should be all of them, but...
 
@@ -121,7 +122,7 @@ class ComputingActivityUpdateStep(GlueStep):
             activity.id = "%s.%s.%s" % (activity.LocalIDFromManager,activity.LocalOwner,self.resource_name)
         activity.ID = "urn:glue2:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
         if activity.Queue is not None:
-            activity.Share = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
+            activity.ShareID = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
         activity.hide = self.params.get("hide_job_attribs",[])
         
         self._output(activity)
@@ -154,7 +155,7 @@ class ComputingActivity(Activity):
         self.IDFromEndpoint = None                 # uri
         self.LocalIDFromManager = None             # string
         self.JobDescription = None                 # string (restricted)
-        self.State = None                          # list of strings (restricted) - but just use 1 state
+        self.State = []                            # list of strings (restricted) - first should be IPF state
         self.RestartState = []                     # list of strings (restricted)
         self.ExitCode = None                       # integer
         self.ComputingManagerExitCode = None       # string
@@ -231,9 +232,9 @@ class ComputingActivityTeraGridXml(ActivityTeraGridXml):
             e = doc.createElement("JobDescription")
             e.appendChild(doc.createTextNode(self.data.JobDescription))
             element.appendChild(e)
-        if self.data.State is not None:
+        if len(self.data.State) > 0:
             e = doc.createElement("State")
-            e.appendChild(doc.createTextNode(self.data.State))
+            e.appendChild(doc.createTextNode(self.data.State[0]))  # just the ipf:... state
             element.appendChild(e)
         if len(self.data.RestartState) > 0 and "RestartState" not in hide:
             e = doc.createElement("RestartState")
@@ -362,17 +363,17 @@ class ComputingActivityTeraGridXml(ActivityTeraGridXml):
             e = doc.createElement("OtherMessages")
             e.appendChild(doc.createTextNode(message))
             element.appendChild(e)
-        if self.data.Endpoint is not None:
+        if self.data.EndpointID is not None:
             e = doc.createElement("ComputingEndpoint")
-            e.appendChild(doc.createTextNode(self.data.Endpoint))
+            e.appendChild(doc.createTextNode(self.data.EndpointID))
             element.appendChild(e)
-        if self.data.Share is not None:
+        if self.data.ShareID is not None:
             e = doc.createElement("ComputingShare")
-            e.appendChild(doc.createTextNode(self.data.Share))
+            e.appendChild(doc.createTextNode(self.data.ShareID))
             element.appendChild(e)
-        if self.data.Resource is not None:
+        if self.data.ResourceID is not None:
             e = doc.createElement("ExecutionEnvironment")
-            e.appendChild(doc.createTextNode(self.data.Resource))
+            e.appendChild(doc.createTextNode(self.data.ResourceID))
             element.appendChild(e)
 
         return doc
@@ -401,7 +402,7 @@ class ComputingActivityOgfJson(ActivityOgfJson):
             doc["LocalIDFromManager"] = self.data.LocalIDFromManager
         if self.data.JobDescription is not None and "JobDescription" not in hide:
             doc["JobDescription"] = self.data.JobDescription
-        doc["State"] = [self.data.State]  # GLUE 2 expects a list
+        doc["State"] = self.data.State
         if len(self.data.RestartState) > 0 and "RestartState" not in hide:
             doc["RestartState"] = self.data.RestartState
         if self.data.ExitCode is not None and "ExitCode" not in hide:

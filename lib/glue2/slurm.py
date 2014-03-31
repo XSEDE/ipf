@@ -99,8 +99,8 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
         # loop through and set WaitingPosition for waiting jobs
         waiting_pos = 1
         for job in jobs:
-            if job.State == glue2.computing_activity.ComputingActivity.STATE_PENDING or \
-                    job.State == glue2.computing_activity.ComputingActivity.STATE_HELD:
+            if job.State[0] == glue2.computing_activity.ComputingActivity.STATE_PENDING or \
+                    job.State[0] == glue2.computing_activity.ComputingActivity.STATE_HELD:
                 job.WaitingPosition = waiting_pos
                 waiting_pos += 1
 
@@ -128,35 +128,36 @@ def _getJob(step, job_str):
     if m is not None:
         state = m.group(1)  # see squeue man page for state descriptions
         if state == "CANCELLED":
-            job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+            job.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
         elif state == "COMPLETED":
-            job.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
+            job.State = [glue2.computing_activity.ComputingActivity.STATE_FINISHED]
         elif state == "CONFIGURING":
-            job.State = glue2.computing_activity.ComputingActivity.STATE_STARTING
+            job.State = [glue2.computing_activity.ComputingActivity.STATE_STARTING]
         elif state == "COMPLETING":
-            job.State = glue2.computing_activity.ComputingActivity.STATE_FINISHING
+            job.State = [glue2.computing_activity.ComputingActivity.STATE_FINISHING]
         elif state == "FAILED":
-            job.State = glue2.computing_activity.ComputingActivity.STATE_FAILED
+            job.State = [glue2.computing_activity.ComputingActivity.STATE_FAILED]
         elif state == "NODE_FAIL":
-            job.State = glue2.computing_activity.ComputingActivity.STATE_FAILED
+            job.State = [glue2.computing_activity.ComputingActivity.STATE_FAILED]
         elif state == "PENDING":
             m = re.search("Reason=Dependency",job_str)
             if m is None:
-                job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_PENDING]
             else:
-                job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_HELD]
                 # could add what the dependency is
         elif state == "PREEMPTED":
-            job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+            job.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
         elif state == "RUNNING":
-            job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+            job.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
         elif state == "SUSPENDED":
-            job.State = glue2.computing_activity.ComputingActivity.STATE_SUSPENDED
+            job.State = [glue2.computing_activity.ComputingActivity.STATE_SUSPENDED]
         elif state == "TIMEOUT":
-            job.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
+            job.State = [glue2.computing_activity.ComputingActivity.STATE_FINISHED]
         else:
             step.warning("found unknown job state '%s'",state)
-            job.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
+            job.State = [glue2.computing_activity.ComputingActivity.STATE_UNKNOWN]
+        job.State.append("slurm:"+state)
 
     m = re.search("NumCPUs=(\d+)",job_str)
     if m is not None:
@@ -178,7 +179,7 @@ def _getJob(step, job_str):
     m = re.search("StartTime=(\S+)",job_str)
     if m is not None and m.group(1) != "Unknown":
         # ignore if job hasn't started (it is an estimated start time used for backfill scheduling)
-        if job.State != glue2.computing_activity.ComputingActivity.STATE_PENDING:
+        if job.State[0] != glue2.computing_activity.ComputingActivity.STATE_PENDING:
             job.StartTime = _getDateTime(m.group(1))
     m = re.search("EndTime=(\S+)",job_str)
     if m is not None and m.group(1) != "Unknown":
@@ -251,7 +252,7 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             dt = _getDateTime(m.group(1))
             job_id = m.group(2)
             activity = self._getActivity(job_id)
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_PENDING]
             activity.SubmissionTime = _getDateTime(m.group(1))
             activity.ComputingManagerSubmissionTime = activity.SubmissionTime
             # in case scontrol has more info than just at submit time
@@ -268,7 +269,7 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             dt = _getDateTime(m.group(1))
             job_id = m.group(2)
             activity = self._getActivity(job_id)
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
             activity.StartTime = _getDateTime(m.group(1))
             # in case scontrol has more info than just at submit time
             activity.EndTime = None
@@ -283,7 +284,7 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             dt = _getDateTime(m.group(1))
             job_id = m.group(2)
             activity = self._getActivity(job_id)
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
             activity.StartTime = _getDateTime(m.group(1))
             if self._includeQueue(activity.Queue):
                 self.output(activity)
@@ -296,9 +297,9 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             dt = _getDateTime(m.group(1))
             job_id = m.group(2)
             activity = self._getActivity(job_id)
-            if activity.State == glue2.computing_activity.ComputingActivity.STATE_TERMINATED:
+            if activity.State[0] == glue2.computing_activity.ComputingActivity.STATE_TERMINATED:
                 return
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_FINISHED]
             activity.EndTime = _getDateTime(m.group(1))
             activity.ComputingManagerEndTime = activity.EndTime
             if self._includeQueue(activity.Queue):

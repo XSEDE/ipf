@@ -20,13 +20,6 @@
         }
       }
     },
-    { "name": "glue2.nimbus.ComputingEndpointStep",
-      "params": {
-        "host_name": "s83r.idp.sdsc.futuregrid.org",
-        "wsrf_port": 9443,
-        "rest_port": 9444,
-      }
-    },
     { "name": "glue2.futuregrid.nimbus.ComputingActivitiesStep" },
     { "name": "glue2.nimbus.ComputingSharesStep" },
     { "name": "glue2.nimbus.ComputingServiceStep" },

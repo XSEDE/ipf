@@ -59,8 +59,9 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             try:
                 job = rm_jobs[moab_job.LocalIDFromManager]
                 job.position = pos
-                if job.State != moab_job.State:
-                    job.State = moab_job.State
+                if job.State[0] != moab_job.State[0]:
+                    job.State[0] = moab_job.State[0]
+                job.State.append(moab_job.State[1])
             except KeyError:
                 pass
 
@@ -121,16 +122,17 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
         job.Queue = jobElement.getAttribute("Class")
         # using status is more accurate than using job State since Idle jobs can be blocked
         if status == "active":
-            job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+            job.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
         elif status == "completed":
-            job.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
+            job.State = [glue2.computing_activity.ComputingActivity.STATE_FINISHED]
         elif status == "eligible":
-            job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
+            job.State = [glue2.computing_activity.ComputingActivity.STATE_PENDING]
         elif status == "blocked":
-            job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
+            job.State = [glue2.computing_activity.ComputingActivity.STATE_HELD]
         else:
             logger.warn("found unknown Moab option '%s'",status)
-            job.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
+            job.State = [glue2.computing_activity.ComputingActivity.STATE_UNKNOWN]
+        job.State.append("moab:"+status)
 
         epoch = float(jobElement.getAttribute("SubmissionTime"))
         job.SubmissionTime = datetime.datetime.fromtimestamp(epoch,localtzoffset())

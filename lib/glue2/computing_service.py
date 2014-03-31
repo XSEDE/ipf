@@ -27,7 +27,6 @@ from ipf.sysinfo import ResourceName
 
 from glue2.computing_activity import ComputingActivity, ComputingActivities
 from glue2.computing_share import ComputingShares
-from glue2.computing_endpoint import ComputingEndpoint
 from glue2.location import Location
 from glue2.service import *
 from glue2.step import GlueStep
@@ -41,43 +40,33 @@ class ComputingServiceStep(GlueStep):
 
         self.description = "This step provides a GLUE 2 ComputingService document. It is an aggregation mechanism"
         self.time_out = 10
-        self.requires = [ResourceName,Location,ComputingActivities,ComputingShares,ComputingEndpoint]
+        self.requires = [ResourceName,Location,ComputingActivities,ComputingShares]
         self.produces = [ComputingService]
 
         self.resource_name = None
         self.location = None
         self.activities = None
         self.shares = None
-        self.endpoints = None
 
     def run(self):
         self.resource_name = self._getInput(ResourceName).resource_name
         self.location = self._getInput(Location).ID
         self.activities = self._getInput(ComputingActivities).activities
         self.shares = self._getInput(ComputingShares).shares
-        self.endpoints = []
-        try:
-            while True:
-                self.endpoints.append(self._getInput(ComputingEndpoint))
-        except NoMoreInputsError:
-            pass
 
         service = self._run()
 
         service.id = self.resource_name
         service.ID = "urn:glue2:ComputingService:%s" % (self.resource_name)
-        service.Location = self.location
-        service.Manager = "urn:glue2:ComputingManager:%s" % (self.resource_name)
+        service.LocationID = self.location
+        service.ManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
 
 
         service._addActivities(self.activities)
         service._addShares(self.shares)
-        service._addEndpoints(self.endpoints)
 
         for share in self.shares:
-            share.Service = service.ID
-        for endpoint in self.endpoints:
-            endpoint.Service = service.ID
+            share.ServiceID = service.ID
 
         self._output(service)
 
@@ -106,11 +95,11 @@ class ComputingService(Service):
         self.SuspendedJobs = 0
         self.PreLRMSWaitingJobs = 0
         for activity in activities:
-            if activity.State == ComputingActivity.STATE_RUNNING:
+            if activity.State[0] == ComputingActivity.STATE_RUNNING:
                 self.RunningJobs = self.RunningJobs + 1
-            elif activity.State == ComputingActivity.STATE_PENDING:
+            elif activity.State[0] == ComputingActivity.STATE_PENDING:
                 self.WaitingJobs = self.WaitingJobs + 1
-            elif activity.State == ComputingActivity.STATE_HELD:
+            elif activity.State[0] == ComputingActivity.STATE_HELD:
                 self.WaitingJobs = self.WaitingJobs + 1
             else:
                 # output a warning
@@ -119,16 +108,11 @@ class ComputingService(Service):
                          self.PreLRMSWaitingJobs
 
     def _addShares(self, shares):
-        self.Share = []
+        self.ShareID = []
         if len(shares) == 0:
             return
         for share in shares:
-            self.Share.append(share.ID)
-
-    def _addEndpoints(self, endpoints):
-        self.Endpoint = []
-        for endpoint in endpoints:
-            self.Endpoint.append(endpoint.ID)
+            self.ShareID.append(share.ID)
 
 #######################################################################################################################
 
@@ -178,19 +162,15 @@ class ComputingServiceTeraGridXml(ServiceTeraGridXml):
             e = doc.createElement("PreLRMSWaitingJobs")
             e.appendChild(doc.createTextNode(str(self.data.PreLRMSWaitingJobs)))
             element.appendChild(e)
-        for id in self.data.Endpoint:
-            e = doc.createElement("ComputingEndpoint")
-            e.appendChild(doc.createTextNode(id))
-            element.appendChild(e)
-        for id in self.data.Share:
+        for id in self.data.ShareID:
             e = doc.createElement("ComputingShare")
             e.appendChild(doc.createTextNode(id))
             element.appendChild(e)
-        for id in self.data.Manager:
+        for id in self.data.ManagerID:
             e = doc.createElement("ComputingManager")
             e.appendChild(doc.createTextNode(id))
             element.appendChild(e)
-        for id in self.data.Service:
+        for id in self.data.ServiceID:
             e = doc.createElement("StorageService")
             e.appendChild(doc.createTextNode(id))
             element.appendChild(e)

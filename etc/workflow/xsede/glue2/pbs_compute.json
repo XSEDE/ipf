@@ -16,11 +16,6 @@
         }
       }
     },
-    { "name": "teragrid.gram_endpoint.GramEndpointStep",
-      "params": {
-        "core_kit_directory": "/opt/teragrid/kits/ctss-core-registration-5.0.0-r1"
-      }
-    },
     { "name": "glue2.pbs.ComputingActivitiesStep" },
     { "name": "glue2.pbs.ComputingSharesStep" },
     { "name": "glue2.pbs.ComputingServiceStep" },

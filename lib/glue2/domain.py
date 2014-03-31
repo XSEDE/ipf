@@ -59,8 +59,8 @@ class Domain(Entity):
 
         self.Description = None  # string
         self.WWW = None          # URL
-        self.Contact = []        # Contact
-        self.Location = None     # Location
+        self.ContactID = []        # Contact
+        self.LocationID = None     # Location
 
 #######################################################################################################################
 
@@ -80,10 +80,10 @@ class DomainOgfJson(EntityOgfJson):
             doc["Description"] = domain.Description
         if domain.WWW is not None:
             doc["WWW"] = domain.WWW
-        if len(domain.Contact) > 0:
-            doc["Contact"] = domain.Contact
-        if domain.Location is not None:
-            doc["Location"] = domain.Location
+        if len(domain.ContactID) > 0:
+            doc["ContactID"] = domain.ContactID
+        if domain.LocationID is not None:
+            doc["LocationID"] = domain.LocationID
 
         return doc
 
@@ -93,11 +93,13 @@ class AdminDomain(Domain):
     def __init__(self):
         Domain.__init__(self)
 
-        self.Distributed = None     # geographically-distributed resources (boolean)
-        self.Owner = None           # person/entity that owns the resources (string)
-        self.AdminDomain = []       # this domain aggregates others (id)
-        self.ComputingService = []  # (id)
-        self.StorageService = []    # (id)
+        self.Distributed = None       # geographically-distributed resources (boolean)
+        self.Owner = None             # person/entity that owns the resources (string)
+        self.ServiceID = []           # services managed by this domain (id)
+        self.ChildDomainID = []       # this domain aggregates others (id)
+        self.ParentDomainID = None    # this domain is part of another
+        self.ComputingServiceID = []  # (id)
+        self.StorageServiceID = []    # (id)
 
 #######################################################################################################################
 
@@ -118,12 +120,16 @@ class AdminDomainOgfJson(DomainOgfJson):
             doc["Distributed"] = domain.Distributed
         if domain.Owner is not None:
             doc["Owner"] = domain.Owner
-        if len(domain.AdminDomain) > 0:
-            doc["AdminDomain"] = domain.AdminDomain
-        if len(domain.ComputingService) > 0:
-            doc["ComputingService"] = domain.ComputingService
-        if len(domain.StorageService) > 0:
-            doc["StorageService"] = domain.StorageService
+        if len(domain.ServiceID) > 0:
+            doc["ServiceID"] = domain.ServiceID
+        if len(domain.ChildDomainID) > 0:
+            doc["ChildDomainID"] = domain.ChildDomainID
+        if domain.ParentDomainID is not None:
+            doc["ParentDomainID"] = domain.ParentDomainID
+        if len(domain.ComputingServiceID) > 0:
+            doc["ComputingServiceID"] = domain.ComputingServiceID
+        if len(domain.StorageServiceID) > 0:
+            doc["StorageServiceID"] = domain.StorageServiceID
 
         return doc
 

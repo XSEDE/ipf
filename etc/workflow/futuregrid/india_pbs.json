@@ -17,13 +17,6 @@
         }
       }
     },
-    { "name": "glue2.genesisII.EndpointStep",
-      "params": {
-        "endpoint": {
-          "URL": "https://149.165.146.134:18443/axis/services/GeniiBESPortType?genii-container-id=ECBCAEC8-5FFF-11E0-B887-28C73890A7D4"
-        }
-      }
-    },
     { "name": "glue2.futuregrid.pbs.ComputingActivitiesStep",
       "outputs": ["step-moab-activities"]
     },

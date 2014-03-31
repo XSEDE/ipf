@@ -139,28 +139,29 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             tempStr = m.group()
             status = job._betweenAngleBrackets(tempStr)
             if status == "RUN":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
             elif status == "PEND":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_PENDING]
             elif status == "PSUSP": # job suspended by user while pending
                 # ComputingShare has SuspendedJobs, so there should be a suspended state here
-                job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_HELD]
             elif status == "USUSP":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_SUSPENDED
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_SUSPENDED]
             elif status == "DONE":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_FINISHED]
             elif status == "ZOMBI":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
             elif status == "EXIT":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
             elif status == "UNKWN":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_UNKNOWN]
             else:
                 self.warn("found unknown status '%s'",status)
-                job.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_UNKNOWN]
+            job.State.append("lsf:"+status)
         else:
             self.warn("didn't find Status in %s",lines[0])
-            job.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
+            job.State = [glue2.computing_activity.ComputingActivity.STATE_UNKNOWN]
 
         #m = re.search(r"Command <\S*>",lines[0])
         #tempStr = m.group()
@@ -211,12 +212,12 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
                     pass
                 elif lines[index+1].find("New job is waiting for scheduling") != -1:
                     # held is probably better
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
+                    job.State[0] = glue2.computing_activity.ComputingActivity.STATE_HELD
                 else:
                     # held is better, even though LSF calls it PEND. some examples:
                     # Job dependency condition not satisfied;
                     self.info("setting state to held for pending reason: %s",lines[index+1])
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
+                    job.State[0] = glue2.computing_activity.ComputingActivity.STATE_HELD
 
         return job
 

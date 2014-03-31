@@ -134,25 +134,26 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             state = m.group(1)
             if state == "C":
                 # C is completing after having run
-                job.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_FINISHED]
             elif state == "E":
                 # E is exiting after having run
-                job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED #?
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED] #?
             elif state == "Q":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_PENDING]
             elif state == "R":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
             elif state == "T":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_PENDING]
             elif state == "Q":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_PENDING]
             elif state == "S":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_SUSPENDED
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_SUSPENDED]
             elif state == "H":
-                job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_HELD]
             else:
                 step.warning("found unknown PBS job state '%s'",state)
-                job.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
+                job.State = [glue2.computing_activity.ComputingActivity.STATE_UNKNOWN]
+            job.State.append("pbs:"+state)
         # Just ncpus for some PBS installs. Both at other installs, with different values.
         m = re.search("Resource_List.ncpus = (\d+)",jobString)
         if m is not None:
@@ -204,8 +205,8 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             job.StartTime = cls._getDateTime(m.group(1))
         m = re.search("mtime = (.+)",jobString)
         if m is not None:
-            if (job.State == glue2.computing_activity.ComputingActivity.STATE_FINISHED) or \
-                   (job.State == glue2.computing_activity.ComputingActivity.STATE_TERMINATED):
+            if (job.State[0] == glue2.computing_activity.ComputingActivity.STATE_FINISHED) or \
+                   (job.State[0] == glue2.computing_activity.ComputingActivity.STATE_TERMINATED):
                 # this is right for terminated since terminated is set on the E state
                 job.ComputingManagerEndTime = cls._getDateTime(m.group(1))
 
@@ -315,34 +316,34 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
                 self.info("not publishing duplicate pending for %s",activity.LocalIDFromManager)
                 return
             # set state in case qstat gives a different one (e.g. the job is already running)
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_PENDING]
             # qstat should have set the rest of the job attributes specified in this log entry
             activity.published = True
         elif "Job Run" in toks[5]:
             if len(activity.ExecutionNode) == 0:
                 # if _handleRequest isn't being invoked to set ExecutionNode, query the scheduler
                 activity = self._queryActivity(id)
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
             activity.StartTime = self._getDateTime(toks[0])
                 
         elif "Job deleted" in toks[5]:
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
             activity.ComputingManagerEndTime = self._getDateTime(toks[0])
             del self.activities[id]
         elif "JOB_SUBSTATE_EXITING" in toks[5]:
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_FINISHED]
             activity.ComputingManagerEndTime = self._getDateTime(toks[0])
             del self.activities[id]
         elif "Job sent signal SIGKILL on delete" in toks[5]:
             # job ran too long and was killed
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
             activity.ComputingManagerEndTime = self._getDateTime(toks[0])
             del self.activities[id]
         elif "Job Modified" in toks[5]:
             # when nodes aren't available, log has jobs that quickly go from Job Queued to Job Run to Job Modified
             # and the jobs are pending after this
-            if activity.State == glue2.computing_activity.ComputingActivity.STATE_RUNNING:
-                activity.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
+            if activity.State[0] == glue2.computing_activity.ComputingActivity.STATE_RUNNING:
+                activity.State[0] = glue2.computing_activity.ComputingActivity.STATE_PENDING
                 activity.StartTime = None
             else:
                 # seems like we can safely ignore others

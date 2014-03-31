@@ -55,7 +55,7 @@ class ComputingSharesStep(GlueStep):
         for share in shares:
             share.id = "%s.%s" % (share.MappingQueue,self.resource_name)
             share.ID = "urn:glue2:ComputingShare:%s.%s" % (share.MappingQueue,self.resource_name)
-            share.Service = "urn:glue2:ComputingService:%s" % (self.resource_name)
+            share.ServiceID = "urn:glue2:ComputingService:%s" % (self.resource_name)
 
         self._addActivities(shares)
 
@@ -91,24 +91,24 @@ class ComputingSharesStep(GlueStep):
                 continue
 
             share.activity.append(activity)
-            if activity.State == ComputingActivity.STATE_RUNNING:
+            if activity.State[0] == ComputingActivity.STATE_RUNNING:
                 share.RunningJobs = share.RunningJobs + 1
                 share.LocalRunningJobs = share.LocalRunningJobs + 1
                 share.TotalJobs = share.TotalJobs + 1
                 share.UsedSlots = share.UsedSlots + activity.RequestedSlots
-            elif activity.State == ComputingActivity.STATE_PENDING:
+            elif activity.State[0] == ComputingActivity.STATE_PENDING:
                 share.WaitingJobs = share.WaitingJobs + 1
                 share.LocalWaitingJobs = share.LocalWaitingJobs + 1
                 share.TotalJobs = share.TotalJobs + 1
                 share.RequestedSlots = share.RequestedSlots + activity.RequestedSlots
-            elif activity.State == ComputingActivity.STATE_SUSPENDED:
+            elif activity.State[0] == ComputingActivity.STATE_SUSPENDED:
                 share.SuspendedJobs = share.SuspendedJobs + 1
                 share.LocalSuspendedJobs = share.LocalSuspendedJobs + 1
                 share.TotalJobs = share.TotalJobs + 1
                 share.RequestedSlots = share.RequestedSlots + activity.RequestedSlots
-            elif activity.State == ComputingActivity.STATE_FINISHED:
+            elif activity.State[0] == ComputingActivity.STATE_FINISHED:
                 pass
-            elif activity.State == ComputingActivity.STATE_TERMINATED:
+            elif activity.State[0] == ComputingActivity.STATE_TERMINATED:
                 pass
             else:
                 # output a warning
@@ -364,23 +364,23 @@ class ComputingShareTeraGridXml(ShareTeraGridXml):
             element.appendChild(e)
         if self.data.ReservationPolicy is not None:
             e = doc.createElement("ReservationPolicy")
-            e.appendChild(doc.createTextNode(self.data.Service))
+            e.appendChild(doc.createTextNode(self.data.ReservationPolicy))
             element.appendChild(e)
         for tag in self.data.Tag:
             e = doc.createElement("Tag")
             e.appendChild(doc.createTextNode(tag))
             element.appendChild(e)
-        for endpoint in self.data.Endpoint:
+        for endpoint in self.data.EndpointID:
             e = doc.createElement("ComputingEndpoint")
             e.appendChild(doc.createTextNode(endpoint))
             element.appendChild(e)
-        for environment in self.data.Resource:
+        for environment in self.data.ResourceID:
             e = doc.createElement("ExecutionEnvironment")
             e.appendChild(doc.createTextNode(environment))
             element.appendChild(e)
-        if self.data.Service is not None:
+        if self.data.ServiceID is not None:
             e = doc.createElement("ComputingService")
-            e.appendChild(doc.createTextNode(self.data.Service))
+            e.appendChild(doc.createTextNode(self.data.ServiceID))
             element.appendChild(e)
 
 #######################################################################################################################

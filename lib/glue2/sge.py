@@ -155,22 +155,22 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
             self.cur_job.LocalIDFromManager = self.text
         if name == "state":
             if self.text.find("r") >= 0:
-                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+                self.cur_job.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
             elif self.text.find("R") >= 0: # restarted
-                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+                self.cur_job.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
             elif self.text.find("d") >= 0: # deleted
-                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+                self.cur_job.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
             elif self.text.find("E") >= 0: # error - Eqw
-                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_FAILED
+                self.cur_job.State = [glue2.computing_activity.ComputingActivity.STATE_FAILED]
             elif self.text.find("h") >= 0: # held - hqw, hr
-                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
+                self.cur_job.State = [glue2.computing_activity.ComputingActivity.STATE_HELD]
             elif self.text.find("w") >= 0: # waiting - qw
-                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
+                self.cur_job.State = [glue2.computing_activity.ComputingActivity.STATE_PENDING]
             elif self.text.find("t") >= 0: # transfering
-                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
+                self.cur_job.State = [glue2.computing_activity.ComputingActivity.STATE_PENDING]
             else:
                 self.step.warning("found unknown SGE job state '" + self.text + "'")
-                self.cur_job.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
+                self.cur_job.State = [glue2.computing_activity.ComputingActivity.STATE_UNKNOWN]
         if name == "JAT_start_time":
             self.cur_job.StartTime = _getDateTime(self.text)         
         # JAT_submission_time isn't provided for running jobs, so just get it from -j
@@ -360,7 +360,7 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         activity.UserDomain = toks[18]
 
         if toks[3] == "pending":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_PENDING]
             activity.SubmissionTime = event_dt
             activity.ComputingManagerSubmissionTime = event_dt
             self.activities[activity.LocalIDFromManager] = activity
@@ -369,13 +369,13 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             return
         elif toks[3] == "delivered":
             # job received by execd - job started
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
             activity.StartTime = event_dt
         elif toks[3] == "finished":
             if activity.ComputingManagerEndTime is not None:
                 # could be a finished message after an error - ignore it
                 return
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_FINISHED]
             activity.ComputingManagerEndTime = event_dt
             if activity.LocalIDFromManager in self.activities:
                 del self.activities[activity.LocalIDFromManager]
@@ -383,7 +383,7 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             # scheduler deleting the job and a finished appears first, so ignore
             return
         elif toks[3] == "error":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_FAILED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_FAILED]
             activity.ComputingManagerEndTime = event_dt
             if activity.LocalIDFromManager in self.activities:
                 del self.activities[activity.LocalIDFromManager]
@@ -391,10 +391,12 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             # restart doesn't seem to mean that the job starts running again
             # restarts occur after errors (an attempt to restart?) - just ignore them
             return
-            #activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+            #activity.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
             #activity.StartTime = event_dt
         else:
             self.warning("unknown job log of type %s" % toks[3])
+            return
+        activity.State.append("sge:"+toks[3])
 
         # these records are missing a few things, like the # nodes
         if activity.RequestedSlots is None:
@@ -543,7 +545,7 @@ class HostsHandler(xml.sax.handler.ContentHandler):
             self.cur_host.TotalInstances = 1
         elif name == "queue":
             queue = attrs.getValue("name")
-            self.cur_host.Share.append("urn:glue2:ComputingShare:%s.%s" % (queue,self.step.resource_name))
+            self.cur_host.ShareID.append("urn:glue2:ComputingShare:%s.%s" % (queue,self.step.resource_name))
         elif name == "hostvalue":
             self.hostvalue_name = attrs.getValue("name")
         

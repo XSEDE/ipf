@@ -51,10 +51,10 @@ class Endpoint(Entity):
         self.DowntimeStart = None         # datetime
         self.DowntimeEnd = None           # datetime
         self.DowntimeInfo = None          # string
-        self.Service = None               # string (ID)
-        self.Share = []                   # list of string (ID)
-        self.AccessPolicy = []            # list of string (ID)
-        self.Activity = []                # list of string (ID)
+        self.ServiceID = None             # string (ID)
+        self.ShareID = []                 # list of string (ID)
+        self.AccessPolicyID = []          # list of string (ID)
+        self.ActivityID = []              # list of string (ID)
 
 #######################################################################################################################
 
@@ -171,15 +171,15 @@ class EndpointTeraGridXml(EntityTeraGridXml):
             e = doc.createElement("DowntimeInfo")
             e.appendChild(doc.createTextNode(self.data.DowntimeInfo))
             element.appendChild(e)
-        if self.data.Service is not None:
+        if self.data.ServiceID is not None:
             e = doc.createElement("Service")
-            e.appendChild(doc.createTextNode(self.data.Service))
+            e.appendChild(doc.createTextNode(self.data.ServiceID))
             element.appendChild(e)
-        for share in self.data.Share:
+        for share in self.data.ShareID:
             e = doc.createElement("Share")
             e.appendChild(doc.createTextNode(share))
             element.appendChild(e)
-        for activity in self.data.Activity:
+        for activity in self.data.ActivityID:
             e = doc.createElement("Activity")
             e.appendChild(doc.createTextNode(activity))
             element.appendChild(e)
@@ -244,12 +244,14 @@ class EndpointOgfJson(EntityOgfJson):
             doc["DowntimeEnd"] = dateTimeToText(self.data.DowntimeEnd)
         if self.data.DowntimeInfo is not None:
             doc["DowntimeInfo"] = self.data.DowntimeInfo
-        if self.data.Service is not None:
-            doc["Service"] = self.data.Service
-        if len(self.data.Share) > 0:
-            doc["Share"] = self.data.Share
-        if len(self.data.Activity) > 0:
-            doc["Activity"] = self.data.Activity
+        if self.data.ServiceID is not None:
+            doc["ServiceID"] = self.data.ServiceID
+        if len(self.data.ShareID) > 0:
+            doc["ShareID"] = self.data.ShareID
+        if len(self.data.AccessPolicyID) > 0:
+            doc["AccessPolicyID"] = self.data.AccesPolicyID
+        if len(self.data.ActivityID) > 0:
+            doc["ActivityID"] = self.data.ActivityID
 
         return doc
 

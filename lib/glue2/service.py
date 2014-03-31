@@ -33,12 +33,12 @@ class Service(Entity):
         self.QualityLevel = None # string (QualityLevel)
         self.StatusInfo = []     # list of string (uri)
         self.Complexity = None   # string
-        self.Endpoint = []       # list of string (ID)
-        self.Share = []          # list of string (ID)
-        self.Manager = []        # list of string (ID)
-        self.Contact = []        # list of string (ID)
-        self.Location = None     # string (ID)
-        self.Service = []        # list of string (ID)
+        self.EndpointID = []     # list of string (ID)
+        self.ShareID = []        # list of string (ID)
+        self.ManagerID = []      # list of string (ID)
+        self.ContactID = []      # list of string (ID)
+        self.LocationID = None   # string (ID)
+        self.ServiceID = []      # list of string (ID)
 
 #######################################################################################################################
 
@@ -83,27 +83,27 @@ class ServiceTeraGridXml(EntityTeraGridXml):
             e = doc.createElement("Complexity")
             e.appendChild(doc.createTextNode(self.data.Complexity))
             element.appendChild(e)
-        for endpoint in self.data.Endpoint:
+        for endpoint in self.data.EndpointID:
             e = doc.createElement("Endpoint")
             e.appendChild(doc.createTextNode(endpoint))
             element.appendChild(e)
-        for id in self.data.Share:
+        for id in self.data.ShareID:
             e = doc.createElement("Share")
             e.appendChild(doc.createTextNode(id))
             element.appendChild(e)
-        for id in self.data.Manager:
+        for id in self.data.ManagerID:
             e = doc.createElement("Manager")
             e.appendChild(doc.createTextNode(id))
             element.appendChild(e)
-        for contact in self.data.Contact:
+        for contact in self.data.ContactID:
             e = doc.createElement("Contact")
             e.appendChild(doc.createTextNode(contact))
             element.appendChild(e)
-        if self.data.Location is not None:
+        if self.data.LocationID is not None:
             e = doc.createElement("Location")
-            e.appendChild(doc.createTextNode(self.data.Location))
+            e.appendChild(doc.createTextNode(self.data.LocationID))
             element.appendChild(e)
-        for id in self.data.Service:
+        for id in self.data.ServiceID:
             e = doc.createElement("Service")
             e.appendChild(doc.createTextNode(id))
             element.appendChild(e)
@@ -133,18 +133,18 @@ class ServiceOgfJson(EntityOgfJson):
             doc["StatusInfo"] = self.data.StatusInfo
         if self.data.Complexity is not None:
             doc["Complexity"] = self.data.Complexity
-        if len(self.data.Endpoint) > 0:
-            doc["Endpoint"] = self.data.Endpoint
-        if len(self.data.Share) > 0:
-            doc["Share"] = self.data.Share
-        if len(self.data.Manager) > 0:
-            doc["Manager"] = self.data.Manager
-        if len(self.data.Contact) > 0:
-            doc["Contact"] = self.data.Contact
-        if self.data.Location is not None:
-            doc["Location"] = self.data.Location
-        if len(self.data.Service) > 0:
-            doc["Service"] = self.data.Service
+        if len(self.data.EndpointID) > 0:
+            doc["EndpointID"] = self.data.EndpointID
+        if len(self.data.ShareID) > 0:
+            doc["ShareID"] = self.data.ShareID
+        if len(self.data.ManagerID) > 0:
+            doc["ManagerID"] = self.data.ManagerID
+        if len(self.data.ContactID) > 0:
+            doc["ContactID"] = self.data.ContactID
+        if self.data.LocationID is not None:
+            doc["LocationID"] = self.data.LocationID
+        if len(self.data.ServiceID) > 0:
+            doc["ServiceID"] = self.data.ServiceID
 
         return doc
 

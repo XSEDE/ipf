@@ -27,7 +27,6 @@
         }
       }
     },
-    { "name": "glue2.openstack.ComputingEndpointStep" },
     { "name": "glue2.openstack.ComputingActivitiesStep" },
     { "name": "glue2.openstack.ComputingSharesStep" },
     { "name": "glue2.openstack.ComputingServiceStep" },
