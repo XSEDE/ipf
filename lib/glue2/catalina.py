@@ -16,7 +16,7 @@
 ###############################################################################
 
 import commands
-
+import sys
 
 import glue2.computing_activity
 
@@ -60,7 +60,12 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
                 continue
             toks = line.split()
             id = toks[0].split(".")[0] # remove submit host, if one is included
-            priority = int(toks[1])
+            if toks[1].endswith("*"):
+                # a job had this priority: 100000000000000000000000000010*
+                # and was the highest priority job, so:
+                priority = sys.maxint
+            else:
+                priority = int(toks[1])
             try:
                 job_map[id].Extension["Priority"] = priority
                 if state == "held":
