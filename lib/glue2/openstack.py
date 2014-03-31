@@ -27,12 +27,14 @@ from ipf.dt import *
 from ipf.error import StepError
 
 from glue2.log import LogFileWatcher
+import glue2.application
 import glue2.computing_activity
 import glue2.computing_endpoint
 import glue2.computing_manager
 import glue2.computing_service
 import glue2.computing_share
 import glue2.execution_environment
+import glue2.types
 
 #######################################################################################################################
 
@@ -207,34 +209,34 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep, 
         activity.LocalIDFromManager = server.id
         activity.Name = server.name
         activity.LocalOwner = self._getUser(keystone,server.user_id).name
-        activity.Extension["UserId"] = server.user_id
+        #activity.Extension["UserId"] = server.user_id
 
         if server.status == "BUILD":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_STARTING
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_STARTING]
         elif server.status == "ACTIVE":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
         elif server.status == "PAUSED":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_SUSPENDED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_SUSPENDED]
         elif server.status == "SUSPENDED":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_SUSPENDED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_SUSPENDED]
         elif server.status == "STOPPED":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_SUSPENDED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_SUSPENDED]
         elif server.status == "SHUTOFF":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_SUSPENDED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_SUSPENDED]
         elif server.status == "RESCUED":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
         elif server.status == "RESIZED":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
         elif server.status == "SOFT_DELETED":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
         elif server.status == "DELETED":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
         elif server.status == "ERROR":
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_FAILED
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_FAILED]
         else:
-            activity.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
+            activity.State = [glue2.computing_activity.ComputingActivity.STATE_UNKNOWN]
             self.warning("couldn't handle server status '%s'" % server.status)
-        activity.Extension["LocalState"] = server.status
+        activity.State.append("openstack:"+server.status)
 
         activity.SubmissionTime = _getDateTime(server.created)
         activity.ComputingManagerSubmissionTime = activity.SubmissionTime
@@ -250,7 +252,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep, 
         activity.Extension["IpAddresses"] = addresses
 
         image = nova.images.get(server.image["id"])
-        activity.Extension["ImageName"] = image.name
+        activity.RequestedApplicationEnvironment = [image.name]
 
         activity.ExecutionNode = [getattr(server,"OS-EXT-SRV-ATTR:host")]
 
@@ -323,6 +325,56 @@ class ExecutionEnvironmentsStep(glue2.execution_environment.ExecutionEnvironment
                 else:
                     node.UsedInstances = 0
         return node
+
+#######################################################################################################################
+
+class ApplicationsStep(glue2.application.ApplicationsStep, Authentication):
+    def __init__(self):
+        glue2.application.ApplicationsStep.__init__(self)
+        Authentication.__init__(self)
+
+    def _run(self):
+        (username,password,tenant,auth_url) = self._getAuthentication()
+        nova = novaclient.v1_1.client.Client(username,password,tenant,auth_url,no_cache=True)
+
+        keystone = keystoneclient.v2_0.client.Client(username=username,
+                                                     password=password,
+                                                     tenant_name=tenant,
+                                                     auth_url=auth_url)
+
+        # restrict this to public images only?
+        apps = glue2.application.Applications(self.resource_name)
+        for image in nova.images.list():
+            #print("  metadata: %s" % image.metadata)
+            #print(dir(image))
+            self._addImage(image,apps)
+
+        return apps
+    
+    def _addImage(self, image, apps):
+        env = glue2.application.ApplicationEnvironment()
+        env.AppName = image.name
+        #env.Description = ???
+        #env.Repository = 
+        if image.status == "ACTIVE":
+            env.State = glue2.types.AppEnvState.INSTALLED_NOT_VERIFIED
+        elif image.status == "SAVING":
+            env.State = glue2.types.AppEnvState.INSTALLABLE
+        else:
+            self.warning("unknown image status: "+image.status)
+        env.Extension["Updated"] = image.updated
+        env.Extension["MinDisk"] = image.minDisk
+        env.Extension["MinRam"] = image.minRam
+        try:
+            env.Extension["ImageType"] = image.metadata["image_type"]
+        except KeyError:
+            pass
+
+        handle = glue2.application.ApplicationHandle()
+        handle.Type = "ImageIdentifier"
+        handle.Value = image.id
+
+        apps.add(env,[handle])
 
 #######################################################################################################################
 

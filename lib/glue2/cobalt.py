@@ -130,20 +130,21 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             if line.startswith("    State "):
                 state = line.split()[2]
                 if state == "queued":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_PENDING]
                 elif state == "starting":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
                 elif state == "running":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
                 elif state.find("hold") != -1:
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_HELD]
                 elif state == "exiting":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_FINISHED]
                 elif state == "killing":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
                 else:
                     self.warning("found unknown Cobalt job state '" + state + "'")
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_UNKNOWN]
+                job.State.append("cobalt:"+state)
             if line.startswith("    WallTime "):
                 wallTime = self._getDuration(line.split()[2])
                 if job.RequestedSlots != None:

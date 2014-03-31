@@ -160,11 +160,11 @@ class PlatformStep(Step):
             self._output(Platform(resource_name,plat))
 
     def _run(self):
-        os = platform.system().lower()
+        os_name = platform.system().lower()
         (name,version,id) = platform.linux_distribution()
         distribution = name.lower() + version[0]
         arch = platform.processor()
-        return "%s-%s-%s" % (os,distribution,arch)
+        return "%s-%s-%s" % (os_name,distribution,arch)
 
 #######################################################################################################################
 

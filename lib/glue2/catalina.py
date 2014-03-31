@@ -69,8 +69,8 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             try:
                 job_map[id].Extension["Priority"] = priority
                 if state == "held":
-                    if job_map[id].State == glue2.computing_activity.ComputingActivity.STATE_PENDING:
-                        job_map[id].State = glue2.computing_activity.ComputingActivity.STATE_HELD
+                    if job_map[id].State[0] == glue2.computing_activity.ComputingActivity.STATE_PENDING:
+                        job_map[id].State[0] = glue2.computing_activity.ComputingActivity.STATE_HELD
             except KeyError:
                 self.warning("didn't find job %s in resource manager jobs")
 

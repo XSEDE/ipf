@@ -119,19 +119,33 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             # job.Queue doesn't apply
             if line.startswith("JobStatus = "):
                 status = line.split()[2]
-                if status == "1":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_PENDING
+                if status == "0":
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_PENDING,
+                                 "htcondor:Unexpanded"]
+                elif status == "1":
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_PENDING,
+                                 "htcondor:Idle"]
                 elif status == "2":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_RUNNING
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING,
+                                 "htcondor:Running"]
                 elif status == "3":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_TERMINATED
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED,
+                                 "htcondor:Removed"]
                 elif status == "4":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_FINISHED
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_FINISHED,
+                                 "htcondor:Completed"]
                 elif status == "5":
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_HELD
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_HELD,
+                                 "htcondor:Held"]
+                elif status == "6":
+                    job.State = [glue2.computing_activity.ComputingActivity.FAILED,
+                                 "htcondor:Submission_err"]
+                elif status == "7":
+                    job.State = [glue2.computing_activity.ComputingActivity.SUSPENDED,
+                                 "htcondor:Suspended"]
                 else:
                     self.warning("found unknown Condor job status '" + status + "'")
-                    job.State = glue2.computing_activity.ComputingActivity.STATE_UNKNOWN
+                    job.State = [glue2.computing_activity.ComputingActivity.STATE_UNKNOWN]
 
             # not sure if this is right - don't see any mpi jobs for comparison
             if line.startswith("MinHosts = "):
