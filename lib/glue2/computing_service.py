@@ -58,15 +58,15 @@ class ComputingServiceStep(GlueStep):
 
         service.id = self.resource_name
         service.ID = "urn:glue2:ComputingService:%s" % (self.resource_name)
-        service.Location = self.location
-        service.Manager = "urn:glue2:ComputingManager:%s" % (self.resource_name)
+        service.LocationID = self.location
+        service.ManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
 
 
         service._addActivities(self.activities)
         service._addShares(self.shares)
 
         for share in self.shares:
-            share.Service = service.ID
+            share.ServiceID = service.ID
 
         self._output(service)
 
@@ -108,11 +108,11 @@ class ComputingService(Service):
                          self.PreLRMSWaitingJobs
 
     def _addShares(self, shares):
-        self.Share = []
+        self.ShareID = []
         if len(shares) == 0:
             return
         for share in shares:
-            self.Share.append(share.ID)
+            self.ShareID.append(share.ID)
 
 #######################################################################################################################
 
@@ -162,15 +162,15 @@ class ComputingServiceTeraGridXml(ServiceTeraGridXml):
             e = doc.createElement("PreLRMSWaitingJobs")
             e.appendChild(doc.createTextNode(str(self.data.PreLRMSWaitingJobs)))
             element.appendChild(e)
-        for id in self.data.Share:
+        for id in self.data.ShareID:
             e = doc.createElement("ComputingShare")
             e.appendChild(doc.createTextNode(id))
             element.appendChild(e)
-        for id in self.data.Manager:
+        for id in self.data.ManagerID:
             e = doc.createElement("ComputingManager")
             e.appendChild(doc.createTextNode(id))
             element.appendChild(e)
-        for id in self.data.Service:
+        for id in self.data.ServiceID:
             e = doc.createElement("StorageService")
             e.appendChild(doc.createTextNode(id))
             element.appendChild(e)

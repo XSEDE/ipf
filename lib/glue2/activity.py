@@ -28,11 +28,11 @@ class Activity(Entity):
     def __init__(self):
         Entity.__init__(self)
 
-        self.UserDomain = None # string uri
-        self.Endpoint = None   # string uri
-        self.Share = None      # string uri
-        self.Resource = None   # string uri
-        self.Activity = []     # list of string uri
+        self.UserDomainID = None # string uri
+        self.EndpointID = None   # string uri
+        self.ShareID = None      # string uri
+        self.ResourceID = None   # string uri
+        self.ActivityID = []     # list of string uri
 
 #######################################################################################################################
 
@@ -57,23 +57,23 @@ class ActivityTeraGridXml(EntityTeraGridXml):
     def addToDomElement(self, doc, element):
         EntityTeraGridXml.addToDomElement(self,doc,element)
 
-        if self.data.UserDomain is not None:
+        if self.data.UserDomainID is not None:
             e = doc.createElement("UserDomain")
-            e.appendChild(doc.createTextNode(self.data.UserDomain))
+            e.appendChild(doc.createTextNode(self.data.UserDomainID))
             element.appendChild(e)
-        if self.data.Endpoint is not None:
+        if self.data.EndpointID is not None:
             e = doc.createElement("Endpoint")
-            e.appendChild(doc.createTextNode(self.data.Endpoint))
+            e.appendChild(doc.createTextNode(self.data.EndpointID))
             element.appendChild(e)
-        if self.data.Share is not None:
+        if self.data.ShareID is not None:
             e = doc.createElement("Share")
-            e.appendChild(doc.createTextNode(self.data.Share))
+            e.appendChild(doc.createTextNode(self.data.ShareID))
             element.appendChild(e)
-        if self.data.Resource is not None:
+        if self.data.ResourceID is not None:
             e = doc.createElement("Resource")
-            e.appendChild(doc.createTextNode(self.data.Resource))
+            e.appendChild(doc.createTextNode(self.data.ResourceID))
             element.appendChild(e)
-        for act in self.data.Activity:
+        for act in self.data.ActivityID:
             e = doc.createElement("Activity")
             e.appendChild(doc.createTextNode(act))
             element.appendChild(e)
@@ -92,16 +92,16 @@ class ActivityOgfJson(EntityOgfJson):
     def toJson(self):
         doc = EntityOgfJson.toJson(self)
 
-        if self.data.UserDomain is not None:
-            doc["UserDomain"] = self.data.UserDomain
-        if self.data.Endpoint is not None:
-            doc["Endpoint"] = self.data.Endpoint
-        if self.data.Share is not None:
-            doc["Share"] = self.data.Share
-        if self.data.Resource is not None:
-            doc["Resource"] = self.data.Resource
-        if len(self.data.Activity) > 0:
-            doc["Activity"] = self.data.Activity
+        if self.data.UserDomainID is not None:
+            doc["UserDomainID"] = self.data.UserDomainID
+        if self.data.EndpointID is not None:
+            doc["EndpointID"] = self.data.EndpointID
+        if self.data.ShareID is not None:
+            doc["ShareID"] = self.data.ShareID
+        if self.data.ResourceID is not None:
+            doc["ResourceID"] = self.data.ResourceID
+        if len(self.data.ActivityID) > 0:
+            doc["ActivityID"] = self.data.ActivityID
 
         return doc
 

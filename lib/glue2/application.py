@@ -32,24 +32,24 @@ class ApplicationEnvironment(Entity):
     def __init__(self):
         Entity.__init__(self)
 
-        self.AppName = "unknown"       # string
-        self.AppVersion = None         # string
-        self.Repository = None         # string (url)
-        self.State = None              # string (AppEnvState_t)
-        self.RemovalDate = None        # datetime
-        self.License = None            # string (License_t)
-        self.Description = None        # string
-        self.BestBenchmark = []        # string (ID of Benchmark)
-        self.ParallelSupport = None    # string (ParallelSupport_t)
-        self.MaxSlots = None           # integer
-        self.MaxJobs = None            # integer
-        self.MaxUserSeats = None       # integer
-        self.FreeSlots = None          # integer
-        self.FreeJobs = None           # integer
-        self.FreeUserSeats = None      # integer
-        self.ExecutionEnvironment = [] # string (ID)
-        self.ComputingManager = None   # string (ID)
-        self.ApplicationHandle = []    # string (ID)
+        self.AppName = "unknown"         # string
+        self.AppVersion = None           # string
+        self.Repository = None           # string (url)
+        self.State = None                # string (AppEnvState_t)
+        self.RemovalDate = None          # datetime
+        self.License = None              # string (License_t)
+        self.Description = None          # string
+        self.BestBenchmark = []          # string (Benchmark_t)
+        self.ParallelSupport = None      # string (ParallelSupport_t)
+        self.MaxSlots = None             # integer
+        self.MaxJobs = None              # integer
+        self.MaxUserSeats = None         # integer
+        self.FreeSlots = None            # integer
+        self.FreeJobs = None             # integer
+        self.FreeUserSeats = None        # integer
+        self.ExecutionEnvironmentID = [] # string (ID)
+        self.ComputingManagerID = None   # string (ID)
+        self.ApplicationHandleID = []    # string (ID)
         
     def __str__(self):
         return json.dumps(ApplicationEnvironmentOgfJson(self).toJson(),sort_keys=True,indent=4)
@@ -106,9 +106,9 @@ class ApplicationHandle(Entity):
     def __init__(self):
         Entity.__init__(self)
 
-        self.Type = "unknown"               # string (ApplicationHandle_t)
-        self.Value = "unknown"              # string
-        self.ApplicationEnvironment = None  # string (ID)
+        self.Type = "unknown"                 # string (ApplicationHandle_t)
+        self.Value = "unknown"                # string
+        self.ApplicationEnvironmentID = None  # string (ID)
 
 #######################################################################################################################
 
@@ -126,7 +126,8 @@ class ApplicationHandleOgfJson(EntityOgfJson):
         
         doc["Type"] = self.data.Type
         doc["Value"] = self.data.Value
-        doc["ApplicationEnvironment"] = self.data.ApplicationEnvironment
+        if self.data.ApplicationEnvironmentID is not None:
+            doc["ApplicationEnvironmentID"] = self.data.ApplicationEnvironmentID
 
         return doc
     
@@ -149,14 +150,14 @@ class Applications(Data):
         env.id =  "%s.%s.%s" % (app_version,env.AppName,self.resource_name)
         env.ID = "urn:glue2:ApplicationEnvironment:%s.%s.%s" % (app_version,env.AppName,self.resource_name)
 
-        env.ApplicationHandle = []
+        env.ApplicationHandleID = []
         for handle in handles:
-            handle.ApplicationEnvironment = env.ID
+            handle.ApplicationEnvironmentID = env.ID
             handle.Name = "%s-%s" % (env.AppName,app_version)
             handle.id =  "%s.%s.%s.%s" % (handle.Type,app_version,env.AppName,self.resource_name)
             handle.ID = "urn:glue2:ApplicationHandle:%s:%s.%s.%s" % \
                         (handle.Type,app_version,env.AppName,self.resource_name)
-            env.ApplicationHandle.append(handle.ID)
+            env.ApplicationHandleID.append(handle.ID)
 
         self.environments.append(env)
         self.handles.extend(handles)

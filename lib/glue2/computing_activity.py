@@ -57,7 +57,7 @@ class ComputingActivitiesStep(GlueStep):
                 activity.id = "%s.%s.%s" % (activity.LocalIDFromManager,activity.LocalOwner,self.resource_name)
             activity.ID = "urn:glue2:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
             if activity.Queue is not None:
-                activity.Share = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
+                activity.ShareID = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
             activity.hide = self.params.get("hide_job_attribs",[])
 
         self._output(ComputingActivities(self.resource_name,activities))
@@ -122,7 +122,7 @@ class ComputingActivityUpdateStep(GlueStep):
             activity.id = "%s.%s.%s" % (activity.LocalIDFromManager,activity.LocalOwner,self.resource_name)
         activity.ID = "urn:glue2:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
         if activity.Queue is not None:
-            activity.Share = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
+            activity.ShareID = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
         activity.hide = self.params.get("hide_job_attribs",[])
         
         self._output(activity)
@@ -363,17 +363,17 @@ class ComputingActivityTeraGridXml(ActivityTeraGridXml):
             e = doc.createElement("OtherMessages")
             e.appendChild(doc.createTextNode(message))
             element.appendChild(e)
-        if self.data.Endpoint is not None:
+        if self.data.EndpointID is not None:
             e = doc.createElement("ComputingEndpoint")
-            e.appendChild(doc.createTextNode(self.data.Endpoint))
+            e.appendChild(doc.createTextNode(self.data.EndpointID))
             element.appendChild(e)
-        if self.data.Share is not None:
+        if self.data.ShareID is not None:
             e = doc.createElement("ComputingShare")
-            e.appendChild(doc.createTextNode(self.data.Share))
+            e.appendChild(doc.createTextNode(self.data.ShareID))
             element.appendChild(e)
-        if self.data.Resource is not None:
+        if self.data.ResourceID is not None:
             e = doc.createElement("ExecutionEnvironment")
-            e.appendChild(doc.createTextNode(self.data.Resource))
+            e.appendChild(doc.createTextNode(self.data.ResourceID))
             element.appendChild(e)
 
         return doc

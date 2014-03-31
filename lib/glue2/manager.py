@@ -30,8 +30,8 @@ class Manager(Entity):
 
         self.ProductName = "unknown"    # string
         self.ProductVersion = None      # string
-        self.Service = None             # string (ID)
-        self.Resource = []              # list of string (ID)
+        self.ServiceID = None           # string (ID)
+        self.ResourceID = []            # list of string (ID)
 
 #######################################################################################################################
 
@@ -64,11 +64,11 @@ class ManagerTeraGridXml(EntityTeraGridXml):
             e = doc.createElement("ProductVersion")
             e.appendChild(doc.createTextNode(self.data.ProductVersion))
             element.appendChild(e)
-        if self.data.Service is not None:
+        if self.data.ServiceID is not None:
             e = doc.createElement("Service")
-            e.appendChild(doc.createTextNode(self.data.Service))
+            e.appendChild(doc.createTextNode(self.data.ServiceID))
             element.appendChild(e)
-        for resource in self.data.Resource:
+        for resource in self.data.ResourceID:
             e = doc.createElement("Resource")
             e.appendChild(doc.createTextNode(resource))
             element.appendChild(e)
@@ -91,10 +91,10 @@ class ManagerOgfJson(EntityOgfJson):
             doc["ProductName"] = self.data.ProductName
         if self.data.ProductVersion != None:
             doc["ProductVersion"] = self.data.ProductVersion
-        if self.data.Service != None:
-            doc["Service"] = self.data.Service
-        if len(self.data.Resource) > 0:
-            doc["Resource"] = self.data.Resource
+        if self.data.ServiceID != None:
+            doc["ServiceID"] = self.data.ServiceID
+        if len(self.data.ResourceID) > 0:
+            doc["ResourceID"] = self.data.ResourceID
 
         return doc
 

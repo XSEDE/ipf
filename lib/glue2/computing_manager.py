@@ -54,7 +54,7 @@ class ComputingManagerStep(GlueStep):
 
         manager.id = "%s" % (self.resource_name)
         manager.ID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
-        manager.Service = "urn:glue2:ComputingService:%s" % (self.resource_name)
+        manager.ServiceID = "urn:glue2:ComputingService:%s" % (self.resource_name)
 
         for exec_env in self.exec_envs:
             manager._addExecutionEnvironment(exec_env)
@@ -93,11 +93,11 @@ class ComputingManager(Manager):
         self.ScratchDir = None                   # string
         self.ApplicationDir = None               # string
         # use Service and Resource of Manager instead of ComputingService and ExecutionEnvironment
-        self.ApplicationEnvironment = []         # list of string (LocalID)
-        self.Benchmark = []                      # list of string(LocalID)
+        self.ApplicationEnvironmentID = []       # list of string (LocalID)
+        self.BenchmarkID = []                    # list of string(LocalID)
 
     def _addExecutionEnvironment(self, exec_env):
-        self.Resource.append(exec_env.ID)
+        self.ResourceID.append(exec_env.ID)
         if exec_env.PhysicalCPUs != None:
             if self.TotalPhysicalCPUs == None:
                 self.TotalPhysicalCPUs = 0
@@ -108,7 +108,7 @@ class ComputingManager(Manager):
             self.TotalLogicalCPUs = self.TotalLogicalCPUs + exec_env.TotalInstances * exec_env.LogicalCPUs
             self.TotalSlots = self.TotalLogicalCPUs
 
-        if len(self.Resource) == 1:
+        if len(self.ResourceID) == 1:
             self.Homogeneous = True
         else:
             self.Homogeneous = False
@@ -245,19 +245,19 @@ class ComputingManagerTeraGridXml(ManagerTeraGridXml):
             e = doc.createElement("ApplicationDir")
             e.appendChild(doc.createTextNode(self.data.ApplicationDir))
             element.appendChild(e)
-        if self.data.Service != None:
+        if self.data.ServiceID != None:
             e = doc.createElement("ComputingService")
-            e.appendChild(doc.createTextNode(self.data.Service))
+            e.appendChild(doc.createTextNode(self.data.ServiceID))
             element.appendChild(e)
-        for id in self.data.Resource:
+        for id in self.data.ResourceID:
             e = doc.createElement("ExecutionEnvironment")
             e.appendChild(doc.createTextNode(id))
             element.appendChild(e)
-        for id in self.data.ApplicationEnvironment:
+        for id in self.data.ApplicationEnvironmentID:
             e = doc.createElement("ApplicationEnvironment")
             e.appendChild(doc.createTextNode(id))
             element.appendChild(e)
-        for benchmark in self.data.Benchmark:
+        for benchmark in self.data.BenchmarkID:
             e = doc.createElement("Benchmark")
             e.appendChild(doc.createTextNode(benchmark))
             element.appendChild(e)
@@ -322,10 +322,10 @@ class ComputingManagerOgfJson(ManagerOgfJson):
             doc["ScratchDir"] = self.data.ScratchDir
         if self.data.ApplicationDir != None:
             doc["ApplicationDir"] = self.data.ApplicationDir
-        if len(self.data.ApplicationEnvironment) > 0:
-            doc["ApplicationEnvironment"] = self.data.ApplicationEnvironment
-        if len(self.data.Benchmark) > 0:
-            doc["Benchmark"] = self.data.Benchmark
+        if len(self.data.ApplicationEnvironmentID) > 0:
+            doc["ApplicationEnvironmentID"] = self.data.ApplicationEnvironmentID
+        if len(self.data.BenchmarkID) > 0:
+            doc["BenchmarkID"] = self.data.BenchmarkID
 
         return doc
 

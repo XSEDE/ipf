@@ -28,12 +28,12 @@ class Share(Entity):
     def __init__(self):
         Entity.__init__(self)
 
-        self.Description = None  # string
-        self.Endpoint = []       # list of string (uri)
-        self.Resource = []       # list of string (uri)
-        self.Service = None      # string (uri)
-        self.Activity = []       # list of string (uri)
-        self.MappingPolicy = []  # list of string (uri)
+        self.Description = None    # string
+        self.EndpointID = []       # list of string (uri)
+        self.ResourceID = []       # list of string (uri)
+        self.ServiceID = None      # string (uri)
+        self.ActivityID = []       # list of string (uri)
+        self.MappingPolicyID = []  # list of string (uri)
 
 #######################################################################################################################
 
@@ -63,23 +63,23 @@ class ShareTeraGridXml(EntityTeraGridXml):
             e = doc.createElement("Description")
             e.appendChild(doc.createTextNode(self.data.Description))
             element.appendChild(e)
-        for endpoint in self.data.Endpoint:
+        for endpoint in self.data.EndpointID:
             e = doc.createElement("Endpoint")
             e.appendChild(doc.createTextNode(endpoint))
             element.appendChild(e)
-        for resource in self.data.Resource:
+        for resource in self.data.ResourceID:
             e = doc.createElement("Resource")
             e.appendChild(doc.createTextNode(resource))
             element.appendChild(e)
-        if self.data.Service is not None:
+        if self.data.ServiceID is not None:
             e = doc.createElement("Service")
-            e.appendChild(doc.createTextNode(self.data.Service))
+            e.appendChild(doc.createTextNode(self.data.ServiceID))
             element.appendChild(e)
-        for activity in self.data.Activity:
+        for activity in self.data.ActivityID:
             e = doc.createElement("Activity")
             e.appendChild(doc.createTextNode(activity))
             element.appendChild(e)
-        for policy in self.data.MappingPolicy:
+        for policy in self.data.MappingPolicyID:
             e = doc.createElement("MappingPolicy")
             e.appendChild(doc.createTextNode(policy))
             element.appendChild(e)
@@ -100,16 +100,16 @@ class ShareOgfJson(EntityOgfJson):
 
         if self.data.Description is not None:
             doc["Description"] = self.data.Description
-        if len(self.data.Endpoint) > 0:
-            doc["Endpoint"] = self.data.Endpoint
-        if len(self.data.Resource) > 0:
-            doc["Resource"] = self.data.Resource
-        if self.data.Service is not None:
-            doc["Service"] = self.data.Service
-        if len(self.data.Activity) > 0:
-            doc["Activity"] = self.data.Activity
-        if len(self.data.MappingPolicy) > 0:
-            doc["MappingPolicy"] = self.data.MappingPolicy
+        if len(self.data.EndpointID) > 0:
+            doc["EndpointID"] = self.data.EndpointID
+        if len(self.data.ResourceID) > 0:
+            doc["ResourceID"] = self.data.ResourceID
+        if self.data.ServiceID is not None:
+            doc["ServiceID"] = self.data.ServiceID
+        if len(self.data.ActivityID) > 0:
+            doc["ActivityID"] = self.data.ActivityID
+        if len(self.data.MappingPolicyID) > 0:
+            doc["MappingPolicyID"] = self.data.MappingPolicyID
 
         return doc
 

@@ -53,7 +53,7 @@ class ComputingEndpointStep(GlueStep):
         for endpoint in endpoints:
             endpoint.id = "%s.%s" % (endpoint.Name,self.resource_name)
             endpoint.ID = "urn:glue2:ComputingEndpoint:%s.%s" % (endpoint.Name,self.resource_name)
-            endpoint.Service = "urn:glue2:ComputingService:%s" % (self.resource_name)
+            endpoint.ServiceID = "urn:glue2:ComputingService:%s" % (self.resource_name)
 
             self._output(endpoint)
 
@@ -196,15 +196,15 @@ class ComputingEndpointTeraGridXml(EndpointTeraGridXml):
             e = doc.createElement("PreLRMSWaitingJobs")
             e.appendChild(doc.createTextNode(str(self.data.PreLRMSWaitingJobs)))
             element.appendChild(e)
-        if self.data.Service is not None:
+        if self.data.ServiceID is not None:
             e = doc.createElement("ComputingService")
-            e.appendChild(doc.createTextNode(self.data.Service))
+            e.appendChild(doc.createTextNode(self.data.ServiceID))
             element.appendChild(e)
-        for share in self.data.Share:
+        for share in self.data.ShareID:
             e = doc.createElement("ComputingShare")
             e.appendChild(doc.createTextNode(share))
             element.appendChild(e)
-        for activity in self.data.Activity:
+        for activity in self.data.ActivityID:
             e = doc.createElement("ComputingActivity")
             e.appendChild(doc.createTextNode(activity))
             element.appendChild(e)

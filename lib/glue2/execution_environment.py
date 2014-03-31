@@ -59,7 +59,7 @@ class ExecutionEnvironmentsStep(GlueStep):
         for host_group in host_groups:
             host_group.id = "%s.%s" % (host_group.Name,self.resource_name)
             host_group.ID = "urn:glue2:ExecutionEnvironment:%s.%s" % (host_group.Name,self.resource_name)
-            host_group.Manager = "urn:glue2:ComputingManager:%s" % (self.resource_name)
+            host_group.ManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
 
         self._output(ExecutionEnvironments(self.resource_name,host_groups))
 
@@ -127,9 +127,9 @@ class ExecutionEnvironmentsStep(GlueStep):
             return False
 
         # if the host is associated with a queue, check that it is a good one
-        if len(host.Share) == 0:
+        if len(host.ShareID) == 0:
             return True
-        for share in host.Share:
+        for share in host.ShareID:
             m = re.search("urn:glue2:ComputingShare:(\S+).%s" % self.resource_name,share)
             if self._includeQueue(m.group(1)):
                 return True
@@ -164,8 +164,8 @@ class ExecutionEnvironment(Resource):
         self.ConnectivityOut = "undefined"  # boolean (ExtendedBoolean)
         self.NetworkInfo = None             # string (NetworkInfo)
         # use Manager, Share, Activity from Resource, not ComputingManager, ComputingShare, ComputingActivity
-        self.ApplicationEnvironment = []    # list of string (LocalID)
-        self.Benchmark = []                 # list of string (LocalID)
+        self.ApplicationEnvironmentID = []  # list of string (ID)
+        self.BenchmarkID = []               # list of string (ID)
 
         # set defaults to be the same as the host where this runs
         (sysName,nodeName,release,version,machine) = os.uname()
@@ -205,10 +205,10 @@ class ExecutionEnvironment(Resource):
         if self.OSVersion != exec_env.OSVersion:
             return False
 
-        if len(self.Share) != len(exec_env.Share):
+        if len(self.ShareID) != len(exec_env.ShareID):
             return False
-        for share in self.Share:
-            if not share in exec_env.Share:
+        for share in self.ShareID:
+            if not share in exec_env.ShareID:
                 return False
 
         return True
@@ -343,23 +343,23 @@ class ExecutionEnvironmentTeraGridXml(ResourceTeraGridXml):
             e = doc.createElement("NetworkInfo")
             e.appendChild(doc.createTextNode(self.data.NetworkInfo))
             element.appendChild(e)
-        if self.data.Manager is not None:
+        if self.data.ManagerID is not None:
             e = doc.createElement("ComputingManager")
-            e.appendChild(doc.createTextNode(self.data.Manager))
+            e.appendChild(doc.createTextNode(self.data.ManagerID))
             element.appendChild(e)
-        for share in self.data.Share:
+        for share in self.data.ShareID:
             e = doc.createElement("ComputingShare")
             e.appendChild(doc.createTextNode(share))
             element.appendChild(e)
-        for activity in self.data.Activity:
+        for activity in self.data.ActivityID:
             e = doc.createElement("ComputingActivity")
             e.appendChild(doc.createTextNode(activity))
             element.appendChild(e)
-        for appEnv in self.data.ApplicationEnvironment:
+        for appEnv in self.data.ApplicationEnvironmentID:
             e = doc.createElement("ApplicationEnvironment")
             e.appendChild(doc.createTextNode(appEnv))
             element.appendChild(e)
-        for benchmark in self.data.Benchmark:
+        for benchmark in self.data.BenchmarkID:
             e = doc.createElement("Benchmark")
             e.appendChild(doc.createTextNode(benchmark))
             element.appendChild(e)
@@ -422,10 +422,10 @@ class ExecutionEnvironmentOgfJson(ResourceOgfJson):
             doc["ConnectivityOut"] = self.data.ConnectivityOut
         if self.data.NetworkInfo is not None:
             doc["NetworkInfo"] = self.data.NetworkInfo
-        if len(self.data.ApplicationEnvironment) > 0:
-            doc["ApplicationEnvironment"] = self.data.ApplicationEnvironment
-        if len(self.data.Benchmark) > 0:
-            doc["Benchmark"] = self.Benchmark
+        if len(self.data.ApplicationEnvironmentID) > 0:
+            doc["ApplicationEnvironmentID"] = self.data.ApplicationEnvironmentID
+        if len(self.data.BenchmarkID) > 0:
+            doc["BenchmarkID"] = self.BenchmarkID
             
         return doc
 

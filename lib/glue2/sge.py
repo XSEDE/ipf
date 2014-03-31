@@ -545,7 +545,7 @@ class HostsHandler(xml.sax.handler.ContentHandler):
             self.cur_host.TotalInstances = 1
         elif name == "queue":
             queue = attrs.getValue("name")
-            self.cur_host.Share.append("urn:glue2:ComputingShare:%s.%s" % (queue,self.step.resource_name))
+            self.cur_host.ShareID.append("urn:glue2:ComputingShare:%s.%s" % (queue,self.step.resource_name))
         elif name == "hostvalue":
             self.hostvalue_name = attrs.getValue("name")
         

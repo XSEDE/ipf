@@ -28,9 +28,9 @@ class Resource(Entity):
     def __init__(self):
         Entity.__init__(self)
 
-        self.Manager = None # string (uri)
-        self.Share = []     # list of string (uri)
-        self.Activity = []  # list of string (uri)
+        self.ManagerID = None # string (uri)
+        self.ShareID = []     # list of string (uri)
+        self.ActivityID = []  # list of string (uri)
 
 #######################################################################################################################
 
@@ -55,17 +55,17 @@ class ResourceTeraGridXml(EntityTeraGridXml):
     def addToDomElement(self, doc, element):
         EntityTeraGridXml.addToDomElement(self,doc,element)
 
-        if self.data.Manager is not None:
+        if self.data.ManagerID is not None:
             e = doc.createElement("Manager")
-            e.appendChild(doc.createTextNode(self.data.Manager))
+            e.appendChild(doc.createTextNode(self.data.ManagerID))
             element.appendChild(e)
-        for share in self.data.Share:
+        for share in self.data.ShareID:
             e = doc.createElement("Share")
             e.appendChild(doc.createTextNode(share))
             element.appendChild(e)
-        for activity in self.data.Activity:
+        for activity in self.data.ActivityID:
             e = doc.createElement("Activity")
-            e.appendChild(doc.createTextNode(self.data.Activity))
+            e.appendChild(doc.createTextNode(self.data.ActivityID))
             element.appendChild(e)
     
 #######################################################################################################################
@@ -82,12 +82,12 @@ class ResourceOgfJson(EntityOgfJson):
     def toJson(self):
         doc = EntityOgfJson.toJson(self)
 
-        if self.data.Manager is not None:
-            doc["Manager"] = self.data.Manager
-        if len(self.data.Share) > 0:
-            doc["Share"] = self.data.Share
-        if len(self.data.Activity) > 0:
-            doc["Activity"] = self.data.Activity
+        if self.data.ManagerID is not None:
+            doc["ManagerID"] = self.data.ManagerID
+        if len(self.data.ShareID) > 0:
+            doc["ShareID"] = self.data.ShareID
+        if len(self.data.ActivityID) > 0:
+            doc["ActivityID"] = self.data.ActivityID
 
         return doc
 
