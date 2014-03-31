@@ -308,7 +308,7 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
 
     def _getActivity(self, job_id):
         try:
-            activity = self.activities[id]
+            activity = self.activities[job_id]
             # activity will be modified - update creation time
             activity.CreationTime = datetime.datetime.now(tzoffset(0))
         except KeyError:
