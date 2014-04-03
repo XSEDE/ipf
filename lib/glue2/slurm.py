@@ -288,7 +288,8 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             activity.StartTime = _getDateTime(m.group(1))
             if self._includeQueue(activity.Queue):
                 self.output(activity)
-            del self.activities[job_id]
+            if job_id in self.activities:
+                del self.activities[job_id]
             return
 
         #[2013-04-21T11:51:53] sched: _slurm_rpc_step_complete StepId=617701.0 usec=43
@@ -304,7 +305,8 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             activity.ComputingManagerEndTime = activity.EndTime
             if self._includeQueue(activity.Queue):
                 self.output(activity)
-            del self.activities[job_id]
+            if job_id in self.activities:
+                del self.activities[job_id]
             return
 
     def _getActivity(self, job_id):

@@ -329,16 +329,19 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         elif "Job deleted" in toks[5]:
             activity.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
             activity.ComputingManagerEndTime = self._getDateTime(toks[0])
-            del self.activities[id]
+            if id in self.activities:
+                del self.activities[id]
         elif "JOB_SUBSTATE_EXITING" in toks[5]:
             activity.State = [glue2.computing_activity.ComputingActivity.STATE_FINISHED]
             activity.ComputingManagerEndTime = self._getDateTime(toks[0])
-            del self.activities[id]
+            if id in self.activities:
+                del self.activities[id]
         elif "Job sent signal SIGKILL on delete" in toks[5]:
             # job ran too long and was killed
             activity.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
             activity.ComputingManagerEndTime = self._getDateTime(toks[0])
-            del self.activities[id]
+            if id in self.activities:
+                del self.activities[id]
         elif "Job Modified" in toks[5]:
             # when nodes aren't available, log has jobs that quickly go from Job Queued to Job Run to Job Modified
             # and the jobs are pending after this
