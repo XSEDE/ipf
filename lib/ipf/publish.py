@@ -139,6 +139,16 @@ class AmqpStep(PublishStep):
         self.info("publishing %s",representation)
         self.debug("  with routing key '%s' to exchange '%s'",representation.data.id.encode("utf-8"),self.exchange)
         try:
+            self._publishOnce(representation)
+        except MtkError:
+            self.info("trying to publish a second time")
+            try:
+                self._publishOnce(representation)
+            except MtkError:
+                self.error("publishing failed twice - discarding data")
+
+    def _publishOnce(self, representation):
+        try:
             self._connectIfNecessary()
         except StepError:
             self.error("not connected to any service, will not publish %s" % representation.__class__)
@@ -147,8 +157,9 @@ class AmqpStep(PublishStep):
             self.channel.basicPublish(representation.get(),
                                       self.exchange,
                                       representation.data.id.encode("utf-8"))
-        except MtkError:
-            self.error("failed to publish %s" % representation.__class__)
+        except MtkError, e:
+            self.error("failed to publish %s: %s" % (representation.__class__,e))
+            self._close()
 
     def _connectIfNecessary(self):
         if self.channel is not None:
