@@ -1,5 +1,6 @@
 {
   "name": "sierra_nimbus",
+  "timeout": 55,
   "params": {
     "nimbus_dir": "/N/u/nimbus/default"
   },

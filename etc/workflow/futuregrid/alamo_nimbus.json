@@ -1,5 +1,6 @@
 {
   "name": "glue2_nimbus",
+  "timeout": 55,
   "params": {
     "nimbus_dir": "/opt/nimbus-2.9"
   },

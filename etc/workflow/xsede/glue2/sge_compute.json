@@ -1,5 +1,6 @@
 {
   "name": "sge_compute",
+  "timeout": 55,
   "description": "This workflow gathers GLUE2 compute information by interacting with SGE",
   "steps": [
     { "name": "teragrid.sysinfo.ResourceNameStep" },

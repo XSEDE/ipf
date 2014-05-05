@@ -1,5 +1,6 @@
 {
   "name": "alamo_pbs",
+  "timeout": 55,
   "steps": [
     { "name": "ipf.name.ResourceNameStep",
       "params": {

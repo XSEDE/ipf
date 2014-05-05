@@ -1,5 +1,6 @@
 {
   "name": "glue2_openstack",
+  "timeout": 55,
   "params": {
     "openstack_version": "2012.2",
     "nimbus_dir": "/opt/nimbus-2.9"
