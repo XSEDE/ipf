@@ -333,3 +333,20 @@ class WorkflowStep(TriggerStep):
         engine.run(workflow_file)
 
 ##############################################################################################################
+
+class SleepStep(Step):
+    def __init__(self):
+        Step.__init__(self)
+        self.description = "a test step that sleeps for a specified amount of time"
+        self._acceptParameter("duration","the number of seconds to sleep for",False)
+
+    def run(self):
+        try:
+            duration = self.params["duration"]  # should be a number
+        except KeyError:
+            duration = 60
+
+        self.info("sleeping for %d seconds" % duration)
+        time.sleep(duration)
+
+##############################################################################################################
