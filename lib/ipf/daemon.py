@@ -26,42 +26,71 @@ logger = logging.getLogger(__name__)
 
 ##############################################################################################################
 
-class Daemon:
+class OneProcessOnly:
+    def __init__(self, pidfile):
+        self.pid_file_name = pidfile
+
+    def start(self):
+        if self.isRunning():
+            logger.error("process is already running at %s" % self.pid_file_name)
+            return
+        self.writePid()
+        self.run()
+        self.removePid()
+
+    def isRunning(self):
+        if self.pid_file_name is None:
+            # no way to tell
+            False
+        try:
+            pid_file = open(self.pid_file_name,"r")
+            pid_str = pid_file.readline()
+            pid_file.close()
+            logger.debug("pid is "+pid_str)
+        except IOError:
+            logger.debug("no pid file")
+            return False
+
+        if (pid_str != None) and os.path.exists("/proc/"+pid_str):
+            # could check /proc/pid_str/cmdline and ...
+            logger.debug("found running daemon")
+            return True
+        logger.debug("no running daemon")
+        return False
+
+    def writePid(self):
+        if self.pid_file_name is None:
+            return
+        # save process id in the .pid file
+        pid_file = open(self.pid_file_name,"w")
+        pid_file.write(str(os.getpid()))
+        pid_file.close()
+
+    def removePid(self):
+        if self.pid_file_name is None:
+            return
+        try:
+            os.remove(self.pid_file_name)
+        except IOError:
+            logger.warning("failed to remove pid file %s" % self.pid_file_name)
+
+    def run(self):
+        raise NotImplementedError()
+
+##############################################################################################################
+
+class Daemon(OneProcessOnly):
     def __init__(self, pidfile=None, stdin="/dev/null", stdout="/dev/null", stderr="/dev/null"):
-        self.pidFileName = pidfile
+        OneProcessOnly.__init__(self,pidfile)
         self.stdin = stdin
         self.stdout = stdout
         self.stderr = stderr
 
     def start(self):
-        if self.shouldStart():
+        if not self.isRunning():
             self.daemonize()
             self.writePid()
             self.run()
-
-    def shouldStart(self):
-        try:
-            pidFile = open(self.pidFileName,"r")
-            pidStr = pidFile.readline()
-            pidFile.close()
-            logger.debug("pid is "+pidStr)
-        except IOError:
-            logger.debug("no pid file")
-            return True
-
-        if (pidStr != None) and os.path.exists("/proc/"+pidStr):
-            logger.debug("found running daemon")
-            return False
-        logger.debug("no running daemon")
-        return True
-
-    def writePid(self):
-        if self.pidFileName == None:
-            return
-        # save process id in the .pid file
-        pidFile = open(self.pidFileName,"w")
-        pidFile.write(str(os.getpid()))
-        pidFile.close()
 
     def daemonize(self):
         try:
