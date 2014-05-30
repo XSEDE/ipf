@@ -25,8 +25,8 @@ import novaclient.v1_1.client
 
 from ipf.dt import *
 from ipf.error import StepError
+from ipf.log import LogFileWatcher
 
-from glue2.log import LogFileWatcher
 import glue2.application
 import glue2.computing_activity
 import glue2.computing_endpoint

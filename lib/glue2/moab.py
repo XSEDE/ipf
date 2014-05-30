@@ -24,7 +24,6 @@ import xml.dom.minidom
 
 from ipf.dt import *
 from ipf.error import StepError
-from glue2.log import LogDirectoryWatcher
 
 import glue2.computing_activity
 
