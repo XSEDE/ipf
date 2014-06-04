@@ -4,7 +4,11 @@
   "steps": [
     { "name": "teragrid.sysinfo.ResourceNameStep" },
     { "name": "teragrid.sysinfo.SiteNameStep" },
-    { "name": "glue2.slurm.ComputingActivityUpdateStep" },
+    { "name": "glue2.slurm.ComputingActivityUpdateStep"
+      "params": {
+        "position_file": "slurm_activity.pos"
+      }
+    },
     {
       "name": "ipf.publish.AmqpStep",
       "params": {

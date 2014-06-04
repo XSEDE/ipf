@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2012 The University of Texas at Austin                          #
+#   Copyright 2012-2014 The University of Texas at Austin                     #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -295,7 +295,8 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         except KeyError:
             raise StepError("nimbus_dir parameter not specified")
 
-        watcher = LogFileWatcher(self._logEntry, os.path.join(nimbus_dir,"var","services.log"))
+        log_file = os.path.join(nimbus_dir,"var","services.log")
+        watcher = LogFileWatcher(self._logEntry,log_file,self.position_file)
         watcher.run()
 
     def _logEntry(self, log_file_name, line):

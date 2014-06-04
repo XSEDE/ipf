@@ -6,7 +6,11 @@
         "resource_name": "torquemoab.india.futuregrid.org"
       }
     },
-    { "name": "glue2.futuregrid.pbs.ComputingActivityUpdateStep" },
+    { "name": "glue2.futuregrid.pbs.ComputingActivityUpdateStep"
+      "params": {
+        "position_file": "india_pbs_job_updates.pos"
+      }
+    },
     {
       "name": "ipf.publish.AmqpStep",
       "params": {

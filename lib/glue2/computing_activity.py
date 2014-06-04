@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2011-2013 The University of Texas at Austin                     #
+#   Copyright 2011-2014 The University of Texas at Austin                     #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -16,12 +16,14 @@
 ###############################################################################
 
 import json
+import os
 import time
 from xml.dom.minidom import getDOMImplementation
 
 from ipf.data import Data, Representation
 from ipf.dt import *
 from ipf.error import StepError
+from ipf.home import IPF_HOME
 from ipf.sysinfo import ResourceName
 
 from glue2.activity import *
@@ -101,6 +103,9 @@ class ComputingActivityUpdateStep(GlueStep):
         self.time_out = None
         self.requires = [ResourceName]
         self.produces = [ComputingActivity]
+
+        self._acceptParameter("position_file","the file to store the read position into the log file - relative to IPF_HOME/var (default none)",False)
+
         self._acceptParameter("hide_job_attribs",
                               "a comma-separated list of ComputingActivity attributes to hide (optional)",
                               False)
@@ -108,10 +113,16 @@ class ComputingActivityUpdateStep(GlueStep):
                               "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. the expression is processed in order and the value for a queue at the end determines if it is shown.",
                               False)
 
+
         self.resource_name = None
         
     def run(self):
         self.resource_name = self._getInput(ResourceName).resource_name
+
+        try:
+            self.position_file = os.path.join(IPF_HOME,"var",self.params["position_file"])
+        except KeyError:
+            self.position_file = None
         
         self._run()
 

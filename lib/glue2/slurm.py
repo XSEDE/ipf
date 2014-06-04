@@ -240,8 +240,7 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
 
     def _run(self):
         log_file = self.params.get("slurmctl_log_file","/usr/local/slurm/var/slurmctl.log")
-
-        watcher = LogFileWatcher(self._logEntry,log_file)
+        watcher = LogFileWatcher(self._logEntry,log_file,self.position_file)
         watcher.run()
 
     def _logEntry(self, log_file_name, entry):
@@ -298,7 +297,8 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
             dt = _getDateTime(m.group(1))
             job_id = m.group(2)
             activity = self._getActivity(job_id)
-            if activity.State[0] == glue2.computing_activity.ComputingActivity.STATE_TERMINATED:
+            if len(activity.State) > 0 and \
+               activity.State[0] == glue2.computing_activity.ComputingActivity.STATE_TERMINATED:
                 return
             activity.State = [glue2.computing_activity.ComputingActivity.STATE_FINISHED]
             activity.EndTime = _getDateTime(m.group(1))

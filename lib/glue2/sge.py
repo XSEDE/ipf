@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2011-2012 The University of Texas at Austin                     #
+#   Copyright 2011-2014 The University of Texas at Austin                     #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -285,15 +285,15 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         # if a site is generating a schedd_runlog, can use it to find jobs that are held because of dependencies
 
         try:
-            reporting_filename = self.params["reporting_file"]
+            reporting_file = self.params["reporting_file"]
         except KeyError:
             try:
-                reporting_filename = os.path.join(os.environ["SGE_ROOT"],"default","common","reporting")
+                reporting_file = os.path.join(os.environ["SGE_ROOT"],"default","common","reporting")
             except KeyError:
                 msg = "no reporting_file specified and the SGE_ROOT environment variable is not set"
                 self.error(msg)
                 raise StepError(msg)
-        watcher = LogFileWatcher(self._logEntry,reporting_filename)
+        watcher = LogFileWatcher(self._logEntry,reporting_file,self.position_file)
         watcher.run()
 
     def _logEntry(self, log_file_name, line):

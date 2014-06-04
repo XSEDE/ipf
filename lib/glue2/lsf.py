@@ -19,7 +19,6 @@ import commands
 import datetime
 
 from ipf.error import StepError
-from ipf.log import LogDirectoryWatcher
 
 import glue2.computing_activity
 import glue2.computing_manager

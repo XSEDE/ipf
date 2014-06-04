@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2012 The University of Texas at Austin                          #
+#   Copyright 2012-2014 The University of Texas at Austin                     #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -260,7 +260,7 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
                 if not os.path.exists(dir_name):
                     raise StepError("could not find server_logs dir starting from the directory PBS_HOME")
 
-        watcher = LogDirectoryWatcher(self._logEntry,dir_name)
+        watcher = LogDirectoryWatcher(self._logEntry,dir_name,self.position_file)
         watcher.run()
 
     def _logEntry(self, log_file_name, entry):
