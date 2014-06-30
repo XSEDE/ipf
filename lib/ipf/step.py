@@ -266,7 +266,7 @@ class TriggerStep(Step):
         except KeyError:
             pass
 
-        if len(self.trigger) and self.maximum_interval is None:
+        if len(self.trigger) == 0 and self.maximum_interval is None:
             raise StepError("You must specify at least one trigger or a maximum_interval")
 
         if len(self.trigger) == 0:
