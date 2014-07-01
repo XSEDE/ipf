@@ -1,0 +1,12 @@
+{
+  "name": "lmod_periodic",
+  "description": "Gather GLUE2 application information periodically",
+  "steps": [
+    { "name": "ipf.step.WorkflowStep",
+      "params": {
+          "workflow": "xsede/glue2/lmod.json",
+          "maximum_interval": 3600
+      }
+    }
+  ]
+}
