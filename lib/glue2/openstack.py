@@ -179,17 +179,35 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep, 
         Authentication.__init__(self)
 
         self.users = {}
+        self.tenants = {}
         self.flavors = {}
+        self.images = {}
 
-    def _getUser(self, keystone, id):
+    def _getUser(self, nova, id):
         if id not in self.users:
-            self.users[id] = keystone.users.get(id)
+            self.users[id] = nova.users.get(id)
         return self.users[id]
 
+    def _getUser2(self, keystone, id):
+        if len(self.users) == 0:
+            for user in keystone.user_list():
+                self.users[user.id] = user
+        return self.users[id]
+
+    def _getTenant(self, nova, id):
+        if id not in self.tenants:
+            self.tenants[id] = nova.tenants.get(id)
+        return self.tenants[id]
+
     def _getFlavor(self, nova, id):
-        if id not in self.users:
+        if id not in self.flavors:
             self.flavors[id] = nova.flavors.get(id)
         return self.flavors[id]
+
+    def _getImage(self, nova, id):
+        if id not in self.images:
+            self.images[id] = nova.images.get(id)
+        return self.images[id]
 
     def _run(self):
         (username,password,tenant,auth_url) = self._getAuthentication()
@@ -210,6 +228,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep, 
         activity.Name = server.name
         activity.LocalOwner = self._getUser(keystone,server.user_id).name
         #activity.Extension["UserId"] = server.user_id
+        activity.Extension["LocalAccount"] = self._getTenant(keystone,server.tenant_id).name
 
         if server.status == "BUILD":
             activity.State = [glue2.computing_activity.ComputingActivity.STATE_STARTING]
@@ -251,7 +270,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep, 
                 addresses.append(add["addr"])
         activity.Extension["IpAddresses"] = addresses
 
-        image = nova.images.get(server.image["id"])
+        image = self._getImage(nova,server.image["id"])
         activity.RequestedApplicationEnvironment = [image.name]
 
         activity.ExecutionNode = [getattr(server,"OS-EXT-SRV-ATTR:host")]
