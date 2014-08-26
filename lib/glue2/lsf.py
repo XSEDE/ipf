@@ -122,7 +122,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
 
         m = re.search(r"Project\s*<\S*>",lines[0])
         if m != None:
-            job.UserDomain = job._betweenAngleBrackets(m.group())
+            job.Extension["LocalAccount"] = job._betweenAngleBrackets(m.group())
         else:
             self.warn("didn't find Project")
 

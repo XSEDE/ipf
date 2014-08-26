@@ -114,7 +114,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
                 job.LocalOwner =  owner[1:len(owner)-1]
             if line.startswith("TGProject = "):
                 project = line.split()[2]
-                job.UserDomain = project[1:len(project)-1]
+                job.Extension["LocalAccount"] = project[1:len(project)-1]
             # job.Queue doesn't apply
             if line.startswith("JobStatus = "):
                 status = line.split()[2]

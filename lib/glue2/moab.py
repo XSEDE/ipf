@@ -117,7 +117,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
         job.LocalIDFromManager = jobElement.getAttribute("JobID")
         job.Name = jobElement.getAttribute("JobName") # showing as NONE
         job.LocalOwner = jobElement.getAttribute("User")
-        job.UserDomain = jobElement.getAttribute("Account")
+        job.Extension["LocalAccount"] = jobElement.getAttribute("Account")
         job.Queue = jobElement.getAttribute("Class")
         # using status is more accurate than using job State since Idle jobs can be blocked
         if status == "active":

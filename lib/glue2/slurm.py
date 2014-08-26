@@ -120,7 +120,7 @@ def _getJob(step, job_str):
         job.LocalOwner = m.group(1)
     m = re.search("Account=(\S+)",job_str)
     if m is not None:
-        job.UserDomain = m.group(1)
+        job.Extension["LocalAccount"] = m.group(1)
     m = re.search("Partition=(\S+)",job_str)
     if m is not None:
         job.Queue = m.group(1)

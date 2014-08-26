@@ -268,10 +268,6 @@ class ComputingActivityTeraGridXml(ActivityTeraGridXml):
             e = doc.createElement("WaitingPosition")
             e.appendChild(doc.createTextNode(str(self.data.WaitingPosition)))
             element.appendChild(e)
-        #if self.data.UserDomain is not None and "UserDomain" not in hide:
-        #    e = doc.createElement("UserDomain")
-        #    e.appendChild(doc.createTextNode(self.data.UserDomain))
-        #    element.appendChild(e)
         if self.data.Owner is not None and "Owner" not in hide:
             e = doc.createElement("Owner")
             e.appendChild(doc.createTextNode(self.data.Owner))
@@ -424,8 +420,6 @@ class ComputingActivityOgfJson(ActivityOgfJson):
             doc["Error"] = self.data.Error
         if self.data.WaitingPosition is not None and "WaitingPosition" not in hide:
             doc["WaitingPosition"] = self.data.WaitingPosition
-        #if self.data.UserDomain is not None and "UserDomain" not in hide:
-        #    doc["UserDomain"] = UserDomain
         if self.data.Owner is not None and "Owner" not in hide:
             doc["Owner"] = self.data.Owner
         if self.data.LocalOwner is not None and "LocalOwner" not in hide:

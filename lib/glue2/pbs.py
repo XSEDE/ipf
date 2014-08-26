@@ -125,7 +125,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             job.LocalOwner = m.group(1).split("@")[0]
         m = re.search("Account_Name = (\S+)",jobString)
         if m is not None:
-            job.UserDomain = m.group(1)
+            job.Extension["LocalAccount"] = m.group(1)
         m = re.search("queue = (\S+)",jobString)
         if m is not None:
             job.Queue = m.group(1)

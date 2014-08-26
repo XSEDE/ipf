@@ -209,7 +209,7 @@ def parseJLines(output, jobs, step):
             cur_job.LocalOwner = m.group(1)
         m = re.search("<JB_account>(\S+)</JB_account>",job_string)
         if m is not None:
-            cur_job.UserDomain = m.group(1)
+            cur_job.Extension["LocalAccount"] = m.group(1)
         m = re.search("<QR_name>(\S+)</QR_name>",job_string)
         if m is not None:
             cur_job.Queue = m.group(1)
@@ -357,7 +357,7 @@ class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpda
         activity.LocalOwner = toks[14]
         # ignore group
         activity.Queue = toks[16]
-        activity.UserDomain = toks[18]
+        activity.Extension["LocalAccount"] = toks[18]
 
         if toks[3] == "pending":
             activity.State = [glue2.computing_activity.ComputingActivity.STATE_PENDING]

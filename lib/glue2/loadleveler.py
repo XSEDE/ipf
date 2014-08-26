@@ -158,7 +158,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             if line.find("Owner:") >= 0:
                 job.LocalOwner = line[7:]
             if line.find("Account:") >= 0:
-                job.UserDomain = line[9:]
+                job.Extension["LocalAccount"] = line[9:]
             if line.find("Class:") >= 0:
                 job.Queue = line[7:]
             if line.find("Status:") >= 0:

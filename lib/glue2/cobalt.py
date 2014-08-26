@@ -123,7 +123,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep):
             if line.startswith("    User "):
                 job.LocalOwner = line.split()[2]
             #if line.find("Account_Name =") >= 0:
-            #    job.UserDomain = line.split()[2]
+            #    job.Extension["LocalAccount"] = line.split()[2]
             if line.startswith("    Queue "):
                 job.Queue = line.split()[2]
             if line.startswith("    State "):
