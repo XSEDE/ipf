@@ -480,7 +480,22 @@ class ComputingSharesStep(glue2.computing_share.ComputingSharesStep):
 
 
     def _getDuration(self, dStr):
-        (hour,minute,second)=dStr.split(":")
+        # format of dStr is hours:minutes:seconds
+        #   but the string could be truncated like: '1000:00:'
+        toks = dStr.split(":")
+        if len(toks) == 0:
+            raise StepError("invalid duration: %s" % dStr)
+
+        hour = toks[0]
+        if len(toks) < 2 or toks[1] == "":
+            minute = "0"
+        else:
+            minute = toks[1]
+        if len(toks) < 3 or toks[2] == "":
+            second = "0"
+        else:
+            second = toks[2]
+
         return int(hour)*60*60 + int(minute)*60 + int(second)
 
 #######################################################################################################################
