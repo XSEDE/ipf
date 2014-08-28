@@ -98,6 +98,13 @@ class ApplicationEnvironmentOgfJson(EntityOgfJson):
         if self.data.FreeUserSeats is not None:
             doc["FreeUserSeats"] = self.data.FreeUserSeats
 
+        associations = {}
+        associations["ExecutionEnvironmentID"] = self.ExecutionEnvironmentID
+        associations["ComputingManagerID"] = self.ComputingManagerID
+        if len(self.ApplicationHandleID) > 0:
+            associations["ApplicationHandleID"] = self.ApplicationHandleID
+        doc["Associations"] = associations
+
         return doc
 
 #######################################################################################################################
@@ -106,9 +113,9 @@ class ApplicationHandle(Entity):
     def __init__(self):
         Entity.__init__(self)
 
-        self.Type = "unknown"                 # string (ApplicationHandle_t)
-        self.Value = "unknown"                # string
-        self.ApplicationEnvironmentID = None  # string (ID)
+        self.Type = "unknown"                                                       # string (ApplicationHandle_t)
+        self.Value = "unknown"                                                      # string
+        self.ApplicationEnvironmentID = "urn:glue2:ApplicationEnvironment:unknown"  # string (ID)
 
 #######################################################################################################################
 
@@ -126,8 +133,10 @@ class ApplicationHandleOgfJson(EntityOgfJson):
         
         doc["Type"] = self.data.Type
         doc["Value"] = self.data.Value
-        if self.data.ApplicationEnvironmentID is not None:
-            doc["ApplicationEnvironmentID"] = self.data.ApplicationEnvironmentID
+
+        associations = {}
+        associations["ApplicationEnvironmentID"] = self.data.ApplicationEnvironmentID
+        doc["Associations"] = associations
 
         return doc
     

@@ -80,10 +80,12 @@ class DomainOgfJson(EntityOgfJson):
             doc["Description"] = domain.Description
         if domain.WWW is not None:
             doc["WWW"] = domain.WWW
+
+        associations = {}
         if len(domain.ContactID) > 0:
-            doc["ContactID"] = domain.ContactID
-        if domain.LocationID is not None:
-            doc["LocationID"] = domain.LocationID
+            associations["ContactID"] = domain.ContactID
+        associations["LocationID"] = domain.LocationID
+        doc["Associations"] = associations
 
         return doc
 
@@ -120,16 +122,18 @@ class AdminDomainOgfJson(DomainOgfJson):
             doc["Distributed"] = domain.Distributed
         if domain.Owner is not None:
             doc["Owner"] = domain.Owner
+
+        associations = {}
         if len(domain.ServiceID) > 0:
-            doc["ServiceID"] = domain.ServiceID
+            associations["ServiceID"] = domain.ServiceID
         if len(domain.ChildDomainID) > 0:
-            doc["ChildDomainID"] = domain.ChildDomainID
-        if domain.ParentDomainID is not None:
-            doc["ParentDomainID"] = domain.ParentDomainID
+            associations["ChildDomainID"] = domain.ChildDomainID
+        associations["ParentDomainID"] = domain.ParentDomainID
         if len(domain.ComputingServiceID) > 0:
-            doc["ComputingServiceID"] = domain.ComputingServiceID
+            associations["ComputingServiceID"] = domain.ComputingServiceID
         if len(domain.StorageServiceID) > 0:
-            doc["StorageServiceID"] = domain.StorageServiceID
+            associations["StorageServiceID"] = domain.StorageServiceID
+        doc["Associations"] = associations
 
         return doc
 

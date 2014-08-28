@@ -28,12 +28,12 @@ class Share(Entity):
     def __init__(self):
         Entity.__init__(self)
 
-        self.Description = None    # string
-        self.EndpointID = []       # list of string (uri)
-        self.ResourceID = []       # list of string (uri)
-        self.ServiceID = None      # string (uri)
-        self.ActivityID = []       # list of string (uri)
-        self.MappingPolicyID = []  # list of string (uri)
+        self.Description = None                       # string
+        self.EndpointID = []                          # list of string (uri)
+        self.ResourceID = []                          # list of string (uri)
+        self.ServiceID = "urn:glue2:Service:unknown"  # string (uri)
+        self.ActivityID = []                          # list of string (uri)
+        self.MappingPolicyID = []                     # list of string (uri)
 
 #######################################################################################################################
 
@@ -100,16 +100,17 @@ class ShareOgfJson(EntityOgfJson):
 
         if self.data.Description is not None:
             doc["Description"] = self.data.Description
+
+        associations = {}
         if len(self.data.EndpointID) > 0:
-            doc["EndpointID"] = self.data.EndpointID
-        if len(self.data.ResourceID) > 0:
-            doc["ResourceID"] = self.data.ResourceID
-        if self.data.ServiceID is not None:
-            doc["ServiceID"] = self.data.ServiceID
+            associations["EndpointID"] = self.data.EndpointID
+        associations["ResourceID"] = self.data.ResourceID
+        associations["ServiceID"] = self.data.ServiceID
         if len(self.data.ActivityID) > 0:
-            doc["ActivityID"] = self.data.ActivityID
+            associations["ActivityID"] = self.data.ActivityID
         if len(self.data.MappingPolicyID) > 0:
-            doc["MappingPolicyID"] = self.data.MappingPolicyID
+            associations["MappingPolicyID"] = self.data.MappingPolicyID
+        doc["Associations"] = associations
 
         return doc
 

@@ -98,11 +98,11 @@ class ComputingManager(Manager):
 
     def _addExecutionEnvironment(self, exec_env):
         self.ResourceID.append(exec_env.ID)
-        if exec_env.PhysicalCPUs != None:
+        if exec_env.PhysicalCPUs is not None:
             if self.TotalPhysicalCPUs == None:
                 self.TotalPhysicalCPUs = 0
             self.TotalPhysicalCPUs = self.TotalPhysicalCPUs + exec_env.TotalInstances * exec_env.PhysicalCPUs
-        if exec_env.LogicalCPUs != None:
+        if exec_env.LogicalCPUs is not None:
             if self.TotalLogicalCPUs == None:
                 self.TotalLogicalCPUs = 0
             self.TotalLogicalCPUs = self.TotalLogicalCPUs + exec_env.TotalInstances * exec_env.LogicalCPUs
@@ -141,111 +141,111 @@ class ComputingManagerTeraGridXml(ManagerTeraGridXml):
     def addToDomElement(self, doc, element):
         ManagerTeraGridXml.addToDomElement(self,doc,element)
 
-        if self.data.Version != None:
+        if self.data.Version is not None:
             e = doc.createElement("Version")
             e.appendChild(doc.createTextNode(self.data.Version))
             element.appendChild(e)
-        if self.data.Reservation != None:
+        if self.data.Reservation is not None:
             e = doc.createElement("Reservation")
             if self.data.Reservation:
                 e.appendChild(doc.createTextNode("true"))
             else:
                 e.appendChild(doc.createTextNode("false"))
             element.appendChild(e)
-        if self.data.BulkSubmission != None:
+        if self.data.BulkSubmission is not None:
             e = doc.createElement("BulkSubmission")
             if self.data.BulkSubmission:
                 e.appendChild(doc.createTextNode("true"))
             else:
                 e.appendChild(doc.createTextNode("false"))
             element.appendChild(e)
-        if self.data.TotalPhysicalCPUs != None:
+        if self.data.TotalPhysicalCPUs is not None:
             e = doc.createElement("TotalPhysicalCPUs")
             e.appendChild(doc.createTextNode(str(self.data.TotalPhysicalCPUs)))
             element.appendChild(e)
-        if self.data.TotalLogicalCPUs != None:
+        if self.data.TotalLogicalCPUs is not None:
             e = doc.createElement("TotalLogicalCPUs")
             e.appendChild(doc.createTextNode(str(self.data.TotalLogicalCPUs)))
             element.appendChild(e)
-        if self.data.TotalSlots != None:
+        if self.data.TotalSlots is not None:
             e = doc.createElement("TotalSlots")
             e.appendChild(doc.createTextNode(str(self.data.TotalSlots)))
             element.appendChild(e)
-        if self.data.SlotsUsedByLocalJobs != None:
+        if self.data.SlotsUsedByLocalJobs is not None:
             e = doc.createElement("SlotsUsedByLocalJobs")
             e.appendChild(doc.createTextNode(str(self.data.SlotsUsedByLocalJobs)))
             element.appendChild(e)
-        if self.data.SlotsUsedByGridJobs != None:
+        if self.data.SlotsUsedByGridJobs is not None:
             e = doc.createElement("SlotsUsedByGridJobs")
             e.appendChild(doc.createTextNode(str(self.data.SlotsUsedByGridJobs)))
             element.appendChild(e)
-        if self.data.Homogeneous != None:
+        if self.data.Homogeneous is not None:
             e = doc.createElement("Homogeneous")
             if self.data.Homogeneous:
                 e.appendChild(doc.createTextNode("true"))
             else:
                 e.appendChild(doc.createTextNode("false"))
             element.appendChild(e)
-        if self.data.NetworkInfo != None:
+        if self.data.NetworkInfo is not None:
             e = doc.createElement("NetworkInfo")
             e.appendChild(doc.createTextNode(self.data.NetworkInfo))
             element.appendChild(e)
-        if self.data.LogicalCPUDistribution != None:
+        if self.data.LogicalCPUDistribution is not None:
             e = doc.createElement("LogicalCPUDistribution")
             e.appendChild(doc.createTextNode(self.data.LogicalCPUDistribution))
             element.appendChild(e)
-        if self.data.WorkingAreaShared != None:
+        if self.data.WorkingAreaShared is not None:
             e = doc.createElement("WorkAreaShared")
             if self.data.WorkingAreaShared:
                 e.appendChild(doc.createTextNode("true"))
             else:
                 e.appendChild(doc.createTextNode("false"))
             element.appendChild(e)
-        if self.data.WorkingAreaTotal != None:
+        if self.data.WorkingAreaTotal is not None:
             e = doc.createElement("WorkingAreaTotal")
             e.appendChild(doc.createTextNode(str(self.data.WorkingAreaTotal)))
             element.appendChild(e)
-        if self.data.WorkingAreaFree != None:
+        if self.data.WorkingAreaFree is not None:
             e = doc.createElement("WorkingAreaFree")
             e.appendChild(doc.createTextNode(str(self.data.WorkingAreaFree)))
             element.appendChild(e)
-        if self.data.WorkingAreaLifeTime != None:
+        if self.data.WorkingAreaLifeTime is not None:
             e = doc.createElement("WorkingAreaLifeTime")
             e.appendChild(doc.createTextNode(str(self.data.WorkingAreaLifeTime)))
             element.appendChild(e)
-        if self.data.WorkingAreaMultiSlotTotal != None:
+        if self.data.WorkingAreaMultiSlotTotal is not None:
             e = doc.createElement("WorkingAreaMultiSlotTotal")
             e.appendChild(doc.createTextNode(str(self.data.WorkingAreaMultiSlotTotal)))
             element.appendChild(e)
-        if self.data.WorkingAreaMultiSlotFree != None:
+        if self.data.WorkingAreaMultiSlotFree is not None:
             e = doc.createElement("WorkingAreaMultiSlotFree")
             e.appendChild(doc.createTextNode(str(self.data.WorkingAreaMultiSlotFree)))
             element.appendChild(e)
-        if self.data.WorkingAreaMultiSlotLifeTime != None:
+        if self.data.WorkingAreaMultiSlotLifeTime is not None:
             e = doc.createElement("WorkingAreaMultiSlotLifeTime")
             e.appendChild(doc.createTextNode(str(self.data.WorkingAreaMultiSlotLifeTime)))
             element.appendChild(e)
-        if self.data.CacheTotal != None:
+        if self.data.CacheTotal is not None:
             e = doc.createElement("CacheTotal")
             e.appendChild(doc.createTextNode(str(self.data.CacheTotal)))
             element.appendChild(e)
-        if self.data.CacheFree != None:
+        if self.data.CacheFree is not None:
             e = doc.createElement("CacheFree")
             e.appendChild(doc.createTextNode(str(self.data.CacheFree)))
             element.appendChild(e)
-        if self.data.TmpDir != None:
+        if self.data.TmpDir is not None:
             e = doc.createElement("TmpDir")
             e.appendChild(doc.createTextNode(self.data.TmpDir))
             element.appendChild(e)
-        if self.data.ScratchDir != None:
+        if self.data.ScratchDir is not None:
             e = doc.createElement("ScratchDir")
             e.appendChild(doc.createTextNode(self.data.ScratchDir))
             element.appendChild(e)
-        if self.data.ApplicationDir != None:
+        if self.data.ApplicationDir is not None:
             e = doc.createElement("ApplicationDir")
             e.appendChild(doc.createTextNode(self.data.ApplicationDir))
             element.appendChild(e)
-        if self.data.ServiceID != None:
+        if self.data.ServiceID is not None:
             e = doc.createElement("ComputingService")
             e.appendChild(doc.createTextNode(self.data.ServiceID))
             element.appendChild(e)
@@ -276,56 +276,57 @@ class ComputingManagerOgfJson(ManagerOgfJson):
     def toJson(self):
         doc = ManagerOgfJson.toJson(self)
 
-        if self.data.Version != None:
+        if self.data.Version is not None:
             doc["Version"] = self.data.Version
-        if self.data.Reservation != None:
+        if self.data.Reservation is not None:
             doc["Reservation"] = self.data.Reservation
-        if self.data.BulkSubmission != None:
+        if self.data.BulkSubmission is not None:
             doc["BulkSubmission"] = self.data.BulkSubmission
-        if self.data.TotalPhysicalCPUs != None:
+        if self.data.TotalPhysicalCPUs is not None:
             doc["TotalPhysicalCPUs"] = self.data.TotalPhysicalCPUs
-        if self.data.TotalLogicalCPUs != None:
+        if self.data.TotalLogicalCPUs is not None:
             doc["TotalLogicalCPUs"] = self.data.TotalLogicalCPUs
-        if self.data.TotalSlots != None:
+        if self.data.TotalSlots is not None:
             doc["TotalSlots"] = self.data.TotalSlots
-        if self.data.SlotsUsedByLocalJobs != None:
+        if self.data.SlotsUsedByLocalJobs is not None:
             doc["SlotsUsedByLocalJobs"] = self.data.SlotsUsedByLocalJobs
-        if self.data.SlotsUsedByGridJobs != None:
+        if self.data.SlotsUsedByGridJobs is not None:
             doc["SlotsUsedByGridJobs"] = self.data.SlotsUsedByGridJobs
-        if self.data.Homogeneous != None:
+        if self.data.Homogeneous is not None:
             doc["Homogeneous"] = self.data.Homogeneous
-        if self.data.NetworkInfo != None:
+        if self.data.NetworkInfo is not None:
             doc["NetworkInfo"] = self.data.NetworkInfo
-        if self.data.LogicalCPUDistribution != None:
+        if self.data.LogicalCPUDistribution is not None:
             doc["LogicalCPUDistribution"] = self.data.LogicalCPUDistribution
-        if self.data.WorkingAreaShared != None:
+        if self.data.WorkingAreaShared is not None:
             doc["WorkingAreaShared"] = self.data.WorkingAreaShared
-        if self.data.WorkingAreaTotal != None:
+        if self.data.WorkingAreaTotal is not None:
             doc["WorkingAreaTotal"] = self.data.WorkingAreaTotal
-        if self.data.WorkingAreaFree != None:
+        if self.data.WorkingAreaFree is not None:
             doc["WorkingAreaFree"] = self.data.WorkingAreaFree
-        if self.data.WorkingAreaLifeTime != None:
+        if self.data.WorkingAreaLifeTime is not None:
             doc["WorkingAreaLifeTime"] = self.data.WorkingAreaLifeTime
-        if self.data.WorkingAreaMultiSlotTotal != None:
+        if self.data.WorkingAreaMultiSlotTotal is not None:
             doc["WorkingAreaMultiSlotTotal"] = self.data.WorkingAreaMultiSlotTotal
-        if self.data.WorkingAreaMultiSlotFree != None:
+        if self.data.WorkingAreaMultiSlotFree is not None:
             doc["WorkingAreaMultiSlotFree"] = self.data.WorkingAreaMultiSlotFree
-        if self.data.WorkingAreaMultiSlotLifeTime != None:
+        if self.data.WorkingAreaMultiSlotLifeTime is not None:
             doc["WorkingAreaMultiSlotLifeTime"] = self.data.WorkingAreaMultiSlotLifeTime
-        if self.data.CacheTotal != None:
+        if self.data.CacheTotal is not None:
             doc["CacheTotal"] = self.data.CacheTotal
-        if self.data.CacheFree != None:
+        if self.data.CacheFree is not None:
             doc["CacheFree"] = self.data.CacheFree
-        if self.data.TmpDir != None:
+        if self.data.TmpDir is not None:
             doc["TmpDir"] = self.data.TmpDir
-        if self.data.ScratchDir != None:
+        if self.data.ScratchDir is not None:
             doc["ScratchDir"] = self.data.ScratchDir
-        if self.data.ApplicationDir != None:
+        if self.data.ApplicationDir is not None:
             doc["ApplicationDir"] = self.data.ApplicationDir
+
         if len(self.data.ApplicationEnvironmentID) > 0:
-            doc["ApplicationEnvironmentID"] = self.data.ApplicationEnvironmentID
+            doc["Associations"]["ApplicationEnvironmentID"] = self.data.ApplicationEnvironmentID
         if len(self.data.BenchmarkID) > 0:
-            doc["BenchmarkID"] = self.data.BenchmarkID
+            doc["Associations"]["BenchmarkID"] = self.data.BenchmarkID
 
         return doc
 

@@ -28,17 +28,17 @@ class Service(Entity):
     def __init__(self):
         Entity.__init__(self)
 
-        self.Capability = None   # string (Capability)
-        self.Type = None         # string (ServiceType)
-        self.QualityLevel = None # string (QualityLevel)
-        self.StatusInfo = []     # list of string (uri)
-        self.Complexity = None   # string
-        self.EndpointID = []     # list of string (ID)
-        self.ShareID = []        # list of string (ID)
-        self.ManagerID = []      # list of string (ID)
-        self.ContactID = []      # list of string (ID)
-        self.LocationID = None   # string (ID)
-        self.ServiceID = []      # list of string (ID)
+        self.Capability = None                          # string (Capability)
+        self.Type = None                                # string (ServiceType)
+        self.QualityLevel = None                        # string (QualityLevel)
+        self.StatusInfo = []                            # list of string (uri)
+        self.Complexity = None                          # string
+        self.EndpointID = []                            # list of string (ID)
+        self.ShareID = []                               # list of string (ID)
+        self.ManagerID = []                             # list of string (ID)
+        self.ContactID = []                             # list of string (ID)
+        self.LocationID = "urn:glue2:Location:unknown"  # string (ID)
+        self.ServiceID = []                             # list of string (ID)
 
 #######################################################################################################################
 
@@ -133,18 +133,18 @@ class ServiceOgfJson(EntityOgfJson):
             doc["StatusInfo"] = self.data.StatusInfo
         if self.data.Complexity is not None:
             doc["Complexity"] = self.data.Complexity
+
+        associations = {}
         if len(self.data.EndpointID) > 0:
-            doc["EndpointID"] = self.data.EndpointID
+            associations["EndpointID"] = self.data.EndpointID
         if len(self.data.ShareID) > 0:
-            doc["ShareID"] = self.data.ShareID
+            associations["ShareID"] = self.data.ShareID
         if len(self.data.ManagerID) > 0:
-            doc["ManagerID"] = self.data.ManagerID
-        if len(self.data.ContactID) > 0:
-            doc["ContactID"] = self.data.ContactID
-        if self.data.LocationID is not None:
-            doc["LocationID"] = self.data.LocationID
-        if len(self.data.ServiceID) > 0:
-            doc["ServiceID"] = self.data.ServiceID
+            associations["ManagerID"] = self.data.ManagerID
+        associations["ContactID"] = self.data.ContactID
+        associations["LocationID"] = self.data.LocationID
+        associations["ServiceID"] = self.data.ServiceID
+        doc["Associations"] = associations
 
         return doc
 

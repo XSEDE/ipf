@@ -141,7 +141,7 @@ class ExecutionEnvironment(Resource):
     def __init__(self):
         Resource.__init__(self)
 
-        self.Platform = None                # string (Platform_t)
+        self.Platform = "unknown"           # string (Platform_t)
         self.VirtualMachine = None          # boolean (ExtendedBoolean)
         self.TotalInstances = None          # integer
         self.UsedInstances = None           # integer
@@ -157,11 +157,11 @@ class ExecutionEnvironment(Resource):
         self.WallTimeScalingFactor = None   # float
         self.MainMemorySize = 0             # integer (MB)
         self.VirtualMemorySize = None       # integer (MB)
-        self.OSFamily = None                # string (OSFamily)
+        self.OSFamily = "unknown"           # string (OSFamily)
         self.OSName = None                  # string (OSName)
         self.OSVersion = None               # string
-        self.ConnectivityIn = "undefined"   # boolean (ExtendedBoolean)
-        self.ConnectivityOut = "undefined"  # boolean (ExtendedBoolean)
+        self.ConnectivityIn = None          # boolean (ExtendedBoolean)
+        self.ConnectivityOut = None         # boolean (ExtendedBoolean)
         self.NetworkInfo = None             # string (NetworkInfo)
         # use Manager, Share, Activity from Resource, not ComputingManager, ComputingShare, ComputingActivity
         self.ApplicationEnvironmentID = []  # list of string (ID)
@@ -378,8 +378,7 @@ class ExecutionEnvironmentOgfJson(ResourceOgfJson):
     def toJson(self):
         doc = ResourceOgfJson.toJson(self)
 
-        if self.data.Platform is not None:
-            doc["Platform"] = self.data.Platform
+        doc["Platform"] = self.data.Platform
         if self.data.VirtualMachine is not None:
             doc["VirtualMachine"] = self.data.VirtualMachine
         if self.data.TotalInstances is not None:
@@ -406,20 +405,16 @@ class ExecutionEnvironmentOgfJson(ResourceOgfJson):
             doc["CPUTimeScalingFactor"] = self.data.CPUTimeScalingFactor
         if self.data.WallTimeScalingFactor is not None:
             doc["WallTimeScalingFactor"] = self.data.WallTimeScalingFactor
-        if self.data.MainMemorySize is not None:
-            doc["MainMemorySize"] = self.data.MainMemorySize
+        doc["MainMemorySize"] = self.data.MainMemorySize
         if self.data.VirtualMemorySize is not None:
             doc["VirtualMemorySize"] = self.data.VirtualMemorySize
-        if self.data.OSFamily is not None:
-            doc["OSFamily"] = self.data.OSFamily
+        doc["OSFamily"] = self.data.OSFamily
         if self.data.OSName is not None:
             doc["OSName"] = self.data.OSName
         if self.data.OSVersion is not None:
             doc["OSVersion"] = self.data.OSVersion
-        if self.data.ConnectivityIn is not None:
-            doc["ConnectivityIn"] = self.data.ConnectivityIn
-        if self.data.ConnectivityOut is not None:
-            doc["ConnectivityOut"] = self.data.ConnectivityOut
+        doc["ConnectivityIn"] = self.data.ConnectivityIn
+        doc["ConnectivityOut"] = self.data.ConnectivityOut
         if self.data.NetworkInfo is not None:
             doc["NetworkInfo"] = self.data.NetworkInfo
         if len(self.data.ApplicationEnvironmentID) > 0:

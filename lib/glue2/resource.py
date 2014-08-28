@@ -28,9 +28,9 @@ class Resource(Entity):
     def __init__(self):
         Entity.__init__(self)
 
-        self.ManagerID = None # string (uri)
-        self.ShareID = []     # list of string (uri)
-        self.ActivityID = []  # list of string (uri)
+        self.ManagerID = "urn:glue2:Manager:unknown"  # string (uri)
+        self.ShareID = []                             # list of string (uri)
+        self.ActivityID = []                          # list of string (uri)
 
 #######################################################################################################################
 
@@ -82,12 +82,13 @@ class ResourceOgfJson(EntityOgfJson):
     def toJson(self):
         doc = EntityOgfJson.toJson(self)
 
-        if self.data.ManagerID is not None:
-            doc["ManagerID"] = self.data.ManagerID
+        associations = {}
+        associations["ManagerID"] = self.data.ManagerID
         if len(self.data.ShareID) > 0:
-            doc["ShareID"] = self.data.ShareID
+            associations["ShareID"] = self.data.ShareID
         if len(self.data.ActivityID) > 0:
-            doc["ActivityID"] = self.data.ActivityID
+            associations["ActivityID"] = self.data.ActivityID
+        doc["Associations"] = associations
 
         return doc
 

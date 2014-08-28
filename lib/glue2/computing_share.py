@@ -447,8 +447,7 @@ class ComputingShareOgfJson(ShareOgfJson):
             doc["DefaultStorageService"] = self.data.DefaultStorageService
         if self.data.Preemption is not None:
             doc["Preemption"] = self.data.Preemption
-        if self.data.ServingState is not None:
-            doc["ServingState"] = self.data.ServingState
+        doc["ServingState"] = self.data.ServingState
         if self.data.TotalJobs is not None:
             doc["TotalJobs"] = self.data.TotalJobs
         if self.data.RunningJobs is not None:

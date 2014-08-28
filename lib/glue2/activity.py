@@ -92,16 +92,14 @@ class ActivityOgfJson(EntityOgfJson):
     def toJson(self):
         doc = EntityOgfJson.toJson(self)
 
-        if self.data.UserDomainID is not None:
-            doc["UserDomainID"] = self.data.UserDomainID
-        if self.data.EndpointID is not None:
-            doc["EndpointID"] = self.data.EndpointID
-        if self.data.ShareID is not None:
-            doc["ShareID"] = self.data.ShareID
-        if self.data.ResourceID is not None:
-            doc["ResourceID"] = self.data.ResourceID
-        if len(self.data.ActivityID) > 0:
-            doc["ActivityID"] = self.data.ActivityID
+        associations = {}
+        associations["UserDomainID"] = self.data.UserDomainID
+        associations["EndpointID"] = self.data.EndpointID
+        associations["ShareID"] = self.data.ShareID
+        associations["ResourceID"] = self.data.ResourceID
+        associations["ActivityID"] = self.data.ActivityID
+
+        doc["Associations"] = associations
 
         return doc
 

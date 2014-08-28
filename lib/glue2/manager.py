@@ -28,10 +28,10 @@ class Manager(Entity):
     def __init__(self):
         Entity.__init__(self)
 
-        self.ProductName = "unknown"    # string
-        self.ProductVersion = None      # string
-        self.ServiceID = None           # string (ID)
-        self.ResourceID = []            # list of string (ID)
+        self.ProductName = "unknown"                  # string
+        self.ProductVersion = None                    # string
+        self.ServiceID = "urn:glue2:Service:unknown"  # string (ID)
+        self.ResourceID = []                          # list of string (ID)
 
 #######################################################################################################################
 
@@ -87,14 +87,14 @@ class ManagerOgfJson(EntityOgfJson):
     def toJson(self):
         doc = EntityOgfJson.toJson(self)
 
-        if self.data.ProductName != None:
-            doc["ProductName"] = self.data.ProductName
+        doc["ProductName"] = self.data.ProductName
         if self.data.ProductVersion != None:
             doc["ProductVersion"] = self.data.ProductVersion
-        if self.data.ServiceID != None:
-            doc["ServiceID"] = self.data.ServiceID
-        if len(self.data.ResourceID) > 0:
-            doc["ResourceID"] = self.data.ResourceID
+
+        associations = {}
+        associations["ServiceID"] = self.data.ServiceID
+        associations["ResourceID"] = self.data.ResourceID
+        doc["Associations"] = associations
 
         return doc
 

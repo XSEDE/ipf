@@ -409,7 +409,10 @@ class ComputingActivityOgfJson(ActivityOgfJson):
             doc["LocalIDFromManager"] = self.data.LocalIDFromManager
         if self.data.JobDescription is not None and "JobDescription" not in hide:
             doc["JobDescription"] = self.data.JobDescription
-        doc["State"] = self.data.State
+        if len(self.data.State) > 0:
+            doc["State"] = self.data.State
+        else:
+            doc["State"] = [ComputingActivity.STATE_UNKNOWN,]
         if len(self.data.RestartState) > 0 and "RestartState" not in hide:
             doc["RestartState"] = self.data.RestartState
         if self.data.ExitCode is not None and "ExitCode" not in hide:
@@ -420,8 +423,7 @@ class ComputingActivityOgfJson(ActivityOgfJson):
             doc["Error"] = self.data.Error
         if self.data.WaitingPosition is not None and "WaitingPosition" not in hide:
             doc["WaitingPosition"] = self.data.WaitingPosition
-        if self.data.Owner is not None and "Owner" not in hide:
-            doc["Owner"] = self.data.Owner
+        doc["Owner"] = self.data.Owner
         if self.data.LocalOwner is not None and "LocalOwner" not in hide:
             doc["LocalOwner"] = self.data.LocalOwner
         if self.data.RequestedTotalWallTime is not None and "RequestedTotalWallTime" not in hide:

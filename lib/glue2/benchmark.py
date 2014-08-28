@@ -28,9 +28,10 @@ class Benchmark(Entity):
     def __init__(self):
         Entity.__init__(self)
 
-        self.Type = None                # Benchmark_t
-        self.Value = None               # a number
-        self.ComputingManagerID = None  # string uri
+        self.Type = None                    # Benchmark_t
+        self.Value = None                   # a number
+        self.ExecutionEnvironmentID = None  # string uri
+        self.ComputingManagerID = None      # string uri
 
 #######################################################################################################################
 
@@ -46,12 +47,13 @@ class BenchmarkOgfJson(EntityOgfJson):
     def toJson(self):
         doc = EntityOgfJson.toJson(self)
 
-        if self.data.Type is not None:
-            doc["Type"] = self.data.Type
-        if self.data.Value is not None:
-            doc["Value"] = self.data.Value
-        if self.data.ComputingManagerID is not None:
-            doc["ComputingManagerID"] = self.data.ComputingManagerID
+        doc["Type"] = self.data.Type
+        doc["Value"] = self.data.Value
+
+        associations = {}
+        associations["ExecutionEnvironmentID"] = self.data.ExecutionEnvironmentID
+        associations["ComputingManagerID"] = self.data.ComputingManagerID
+        doc["Associations"] = associations
 
         return doc
 

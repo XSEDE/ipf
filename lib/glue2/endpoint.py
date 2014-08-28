@@ -30,7 +30,7 @@ class Endpoint(Entity):
 
         self.URL = None                   # string (uri)
         self.Capability = []              # list of string (Capability)
-        self.Technology = "unknown"       # string (EndpointTechnology)
+        self.Technology = None            # string (EndpointTechnology)
         self.InterfaceName = "unknown"    # string (InterfaceName)
         self.InterfaceVersion = None      # string
         self.InterfaceExtension = []      # list of string (uri)
@@ -40,7 +40,7 @@ class Endpoint(Entity):
         self.Implementor = None           # string
         self.ImplementationName = None    # string
         self.ImplementationVersion = None # string
-        self.QualityLevel = None          # string (QualityLevel)
+        self.QualityLevel = "production"  # string (QualityLevel)
         self.HealthState = "unknown"      # string (EndpointHealthState)
         self.HealthStateInfo = None       # string
         self.ServingState = "production"  # string (ServingState)
@@ -204,8 +204,7 @@ class EndpointOgfJson(EntityOgfJson):
             doc["Capability"] = self.data.Capability
         if self.data.Technology is not None:
             doc["Technology"] = self.data.Technology
-        if self.data.InterfaceName is not None:
-            doc["InterfaceName"] = self.data.InterfaceName
+        doc["InterfaceName"] = self.data.InterfaceName
         if self.data.InterfaceVersion is not None:
             doc["InterfaceVersion"] = self.data.InterfaceVersion
         if len(self.data.InterfaceExtension) > 0:
@@ -222,14 +221,11 @@ class EndpointOgfJson(EntityOgfJson):
             doc["ImplementationName"] = self.data.ImplementationName
         if self.data.ImplementationVersion is not None:
             doc["ImplementationVersion"] = self.data.ImplementationVersion
-        if self.data.QualityLevel is not None:
-            doc["QualityLevel"] = self.data.QualityLevel
-        if self.data.HealthState is not None:
-            doc["HealthState"] = self.data.HealthState
+        doc["QualityLevel"] = self.data.QualityLevel
+        doc["HealthState"] = self.data.HealthState
         if self.data.HealthStateInfo is not None:
             doc["HealthStateInfo"] = self.data.HealthStateInfo
-        if self.data.ServingState is not None:
-            doc["ServingState"] = self.data.ServingState
+        doc["ServingState"] = self.data.ServingState
         if self.data.StartTime is not None:
             doc["StartTime"] = dateTimeToText(self.data.StartTime)
         if self.data.IssuerCA is not None:
@@ -244,14 +240,15 @@ class EndpointOgfJson(EntityOgfJson):
             doc["DowntimeEnd"] = dateTimeToText(self.data.DowntimeEnd)
         if self.data.DowntimeInfo is not None:
             doc["DowntimeInfo"] = self.data.DowntimeInfo
-        if self.data.ServiceID is not None:
-            doc["ServiceID"] = self.data.ServiceID
-        if len(self.data.ShareID) > 0:
-            doc["ShareID"] = self.data.ShareID
+
+        associations = {}
+        associations["ServiceID"] = self.data.ServiceID
+        associations["ShareID"] = self.data.ShareID
         if len(self.data.AccessPolicyID) > 0:
-            doc["AccessPolicyID"] = self.data.AccesPolicyID
+            associations["AccessPolicyID"] = self.data.AccesPolicyID
         if len(self.data.ActivityID) > 0:
-            doc["ActivityID"] = self.data.ActivityID
+            associations["ActivityID"] = self.data.ActivityID
+        doc["Associations"] = associations
 
         return doc
 
