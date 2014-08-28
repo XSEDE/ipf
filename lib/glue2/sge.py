@@ -126,7 +126,8 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
         self.cur_job = None
         self.jobs = []
         self.cur_time = time.time()
-        
+
+        self.job_state = ""
         self.text = ""
 
     def startDocument(self):
@@ -137,7 +138,8 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
             self.jobs.append(self.cur_job)
 
     def startElement(self, name, attrs):
-        pass
+        if name == "job_list":
+            self.job_state = attrs["state"]
 
     def endElement(self, name):
         self._handleElement(name)
@@ -171,6 +173,7 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
             else:
                 self.step.warning("found unknown SGE job state '" + self.text + "'")
                 self.cur_job.State = [glue2.computing_activity.ComputingActivity.STATE_UNKNOWN]
+            self.cur_job.State.append("sge:"+self.job_state)
         if name == "JAT_start_time":
             self.cur_job.StartTime = _getDateTime(self.text)         
         # JAT_submission_time isn't provided for running jobs, so just get it from -j
