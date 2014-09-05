@@ -572,7 +572,11 @@ class HostsHandler(xml.sax.handler.ContentHandler):
                     self.cur_host.UsedInstances = 0
                     self.cur_host.UnavailableInstances = 1
                 else:
-                    load = float(self.text)
+                    # saw '1.07K'
+                    if self.text[-1] == "K":
+                        load = float(self.text[:-1]) * 1000
+                    else:
+                        load = float(self.text)
                     if load > float(self.cur_host.PhysicalCPUs)/2:
                         self.cur_host.Extension["UsedAverageLoad"] = load
                         self.cur_host.UsedInstances = 1
