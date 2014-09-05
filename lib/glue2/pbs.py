@@ -417,15 +417,14 @@ class ComputingSharesStep(glue2.computing_share.ComputingSharesStep):
 
     def _run(self):
         qstat = self.params.get("qstat","qstat")
-        cmd = qstat + " -q -G"
+        cmd = qstat + " -Q -f -M"
         self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
             self.error("qstat failed: "+output)
             raise StepError("qstat failed: "+output+"\n")
 
-        queueStrings = output.split("\n")
-        queueStrings = queueStrings[5:len(queueStrings)-2]
+        queueStrings = output.split("\n\n")
 
         queues = []
         for queueString in queueStrings:
@@ -437,47 +436,102 @@ class ComputingSharesStep(glue2.computing_share.ComputingSharesStep):
     def _getQueue(self, queueString):
         queue = glue2.computing_share.ComputingShare()
 
-        (queueName,
-         memoryLimitGB,
-         cpuTimeLimit,
-         wallTimeLimit,
-         nodeLimit,
-         runningJobs,
-         queuedJobs,
-         maxRunningJobs,
-         enableDisable,
-         runningStopped) = queueString.split()
+        m = re.search("^Queue: (\S+)",queueString,re.MULTILINE)
+        if m is not None:
+            queue.Name = m.group(1)
+            queue.MappingQueue = queue.Name
 
-        queue.Name = queueName
-        queue.MappingQueue = queue.Name
-        if cpuTimeLimit != "--":
-            queue.MaxTotalCPUTime = self._getDuration(cpuTimeLimit)
-        if wallTimeLimit != "--":
-            queue.MaxWallTime = self._getDuration(wallTimeLimit)
-        if nodeLimit != "--":
-            queue.MaxSlotsPerJob = int(nodeLimit)
-        queue.TotalJobs = 0
-        if runningJobs != "--":
-            queue.LocalRunningJobs = int(runningJobs)
-            queue.RunningJobs = queue.LocalRunningJobs
-            queue.TotalJobs = queue.TotalJobs + queue.RunningJobs
-        if queuedJobs != "--":
-            queue.LocalWaitingJobs = int(queuedJobs)
-            queue.WaitingJobs = queue.LocalWaitingJobs
-            queue.TotalJobs = queue.TotalJobs + queue.WaitingJobs
-        if maxRunningJobs != "--":
-            queue.MaxRunningJobs = int(maxRunningJobs)
-        if enableDisable == "E":
-            queue.Extension["AcceptingJobs"] = True
-        else:
-            queue.Extension["AcceptingJobs"] = False
-        if runningStopped == "R":
-            queue.Extension["RunningJobs"] = True
-        else:
-            queue.Extension["RunningJobs"] = False
+        m = re.search("^\s+queue_type = (\S+)",queueString,re.MULTILINE)
+        if m is not None:
+            queue.Extension["QueueType"] = m.group(1)
+
+        m = re.search("^\s+Priority = (\S+)",queueString,re.MULTILINE)
+        if m is not None:
+            queue.Extension["Priority"] = int(m.group(1))
+
+        m = re.search("^\s+from_route_only = (\S+)",queueString,re.MULTILINE)
+        if m is not None:
+            if m.group(1) == "True":
+                queue.Extension["FromRouteOnly"] = True
+            else:
+                queue.Extension["FromRouteOnly"] = False
+        m = re.search("^\s+route_destinations = (\S+)",queueString,re.MULTILINE)
+        if m is not None:
+            queue.Extension["RouteDestinations"] = m.group(1).split(",")
+
+        m = re.search("^\s+resources_max.cput = (\S+)",queueString,re.MULTILINE)
+        if m is not None:
+            queue.MaxTotalCPUTime = self._getDuration(m.group(1))  # cput is for all processes
+
+        m = re.search("^\s+resources_min.walltime = (\S+)",queueString,re.MULTILINE)
+        if m is not None:
+            queue.MinWallTime = self._getDuration(m.group(1))
+        m = re.search("^\s+resources_max.walltime = (\S+)",queueString,re.MULTILINE)
+        if m is not None:
+            queue.MaxWallTime = self._getDuration(m.group(1))
+        m = re.search("^\s+resources_default.walltime = (\S+)",queueString,re.MULTILINE)
+        if m is not None:
+            queue.DefaultWallTime = self._getDuration(m.group(1))
+
+        m = re.search("^\s+resources_min.ncpus = (\S+)",queueString,re.MULTILINE)
+        if m is not None:
+            queue.MinSlotsPerJob = int(m.group(1))
+        m = re.search("^\s+resources_max.ncpus = (\S+)",queueString,re.MULTILINE)
+        if m is not None:
+            queue.MaxSlotsPerJob = int(m.group(1))
+        m = re.search("^\s+resources_default.ncpus = (\S+)",queueString,re.MULTILINE)
+        if m is not None:
+            queue.DefaultSlotsPerJob = int(m.group(1))
+
+        m = re.search("^\s+resources_max.mem = (\S+)mb",queueString,re.MULTILINE)
+        if m is not None:
+            queue.MaxMainMemory = int(m.group(1))
+
+        m = re.search("^\s+max_running = (\S+)",queueString,re.MULTILINE)
+        if m is not None:
+            queue.MaxRunningJobs = int(m.group(1))
+
+        m = re.search("^\s+total_jobs = (\S+)",queueString,re.MULTILINE)
+        if m is not None:
+            queue.TotalJobs = int(m.group(1))
+        m = re.search("^\s+state_count = (.+)",queueString,re.MULTILINE)
+        if m is not None:
+            state_count = m.group(1)
+            running = 0
+            waiting = 0
+            m = re.search("Transit:(\S+)",state_count)
+            waiting += int(m.group(1))
+            m = re.search("Queued:(\S+)",state_count)
+            waiting += int(m.group(1))
+            m = re.search("Held:(\S+)",state_count)
+            waiting += int(m.group(1))
+            m = re.search("Waiting:(\S+)",state_count)
+            waiting += int(m.group(1))
+            m = re.search("Running:(\S+)",state_count)
+            running += int(m.group(1))
+            queue.RunningJobs = running
+            queue.WaitingJobs = waiting
+
+        m = re.search("^\s+enabled = (\S+)",queueString,re.MULTILINE)
+        if m is not None:
+            if m.group(1) == "True":
+                enabled = True
+            else:
+                enabled = False
+            m = re.search("^\s+started = (\S+)",queueString,re.MULTILINE)
+            if m is not None:
+                if m.group(1) == "True":
+                    if enabled:
+                        queue.ServingState = "production"
+                    else:
+                        queue.ServingState = "draining"
+                else:
+                    if enabled:
+                        queue.ServingState = "queueing"
+                    else:
+                        queue.ServingState = "closed"
 
         return queue
-
 
     def _getDuration(self, dStr):
         (hour,minute,second)=dStr.split(":")

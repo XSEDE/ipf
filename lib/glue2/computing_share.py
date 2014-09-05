@@ -72,11 +72,8 @@ class ComputingSharesStep(GlueStep):
         for share in shares:
             share.TotalJobs = 0
             share.RunningJobs = 0
-            share.LocalRunningJobs = 0
             share.WaitingJobs = 0
-            share.LocalWaitingJobs = 0
             share.SuspendedJobs = 0
-            share.LocalSuspendedJobs = 0
             share.UsedSlots = 0
             share.RequestedSlots = 0
             share.activity = []
@@ -93,17 +90,14 @@ class ComputingSharesStep(GlueStep):
             share.activity.append(activity)
             if activity.State[0] == ComputingActivity.STATE_RUNNING:
                 share.RunningJobs = share.RunningJobs + 1
-                share.LocalRunningJobs = share.LocalRunningJobs + 1
                 share.TotalJobs = share.TotalJobs + 1
                 share.UsedSlots = share.UsedSlots + activity.RequestedSlots
             elif activity.State[0] == ComputingActivity.STATE_PENDING:
                 share.WaitingJobs = share.WaitingJobs + 1
-                share.LocalWaitingJobs = share.LocalWaitingJobs + 1
                 share.TotalJobs = share.TotalJobs + 1
                 share.RequestedSlots = share.RequestedSlots + activity.RequestedSlots
             elif activity.State[0] == ComputingActivity.STATE_SUSPENDED:
                 share.SuspendedJobs = share.SuspendedJobs + 1
-                share.LocalSuspendedJobs = share.LocalSuspendedJobs + 1
                 share.TotalJobs = share.TotalJobs + 1
                 share.RequestedSlots = share.RequestedSlots + activity.RequestedSlots
             elif activity.State[0] == ComputingActivity.STATE_FINISHED:
