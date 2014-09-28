@@ -26,5 +26,8 @@ setup(name='ipf',
       install_requires=[
         'mtk',
       ],
+      entry_points={
+        'console_scripts': ['ipf_workflow=ipf.run_workflow:main],
+      },
       include_package_data=True,
       zip_safe=False)

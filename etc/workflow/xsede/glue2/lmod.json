@@ -2,11 +2,11 @@
   "name": "lmod",
   "steps": [
     { "name": "teragrid.sysinfo.ResourceNameStep" },
-    { "name": "glue2.modules.LModApplicationsStep" },
+    { "name": "ipf.glue2.modules.LModApplicationsStep" },
     {
       "name": "ipf.publish.AmqpStep",
       "params": {
-        "publish": ["glue2.application.ApplicationsOgfJson"],
+        "publish": ["ipf.glue2.application.ApplicationsOgfJson"],
         "services": [ "info1.dyn.teragrid.org", "info2.dyn.teragrid.org" ],
         "ssl_options": {
           "keyfile": "key.pem",
@@ -20,7 +20,7 @@
     {
       "name": "ipf.publish.FileStep",
       "params": {
-        "publish": ["glue2.application.ApplicationsOgfJson"],
+        "publish": ["ipf.glue2.application.ApplicationsOgfJson"],
         "path": "apps.json"
       }
     }

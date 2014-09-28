@@ -41,4 +41,4 @@ if "IPF_WORKFLOW_PATHS" in os.environ:
 else:
     IPF_WORKFLOW_PATHS = []
 if os.path.join(IPF_PARENT_PATH,"workflow") not in IPF_WORKFLOW_PATHS:
-    IPF_WORKFLOW_PATHS.append(os.path.join(IPF_PARENT_PATH,"workflow"))
+    IPF_WORKFLOW_PATHS.append(os.path.join(IPF_ETC_PATH,"workflow"))

@@ -64,7 +64,7 @@ class OneWorkflowOnly(OneProcessOnly):
 
 #######################################################################################################################
 
-if __name__ == "__main__":
+def main():
     usage = "Usage: %prog [options] <workflow file>"
     parser = optparse.OptionParser(usage=usage)
     parser.add_option("-d","--daemon",action="store_true",default=False,dest="daemon",
@@ -87,3 +87,8 @@ if __name__ == "__main__":
     else:
         engine = WorkflowEngine()
         engine.run(sys.argv[1])
+
+#######################################################################################################################
+
+if __name__ == "__main__":
+    main()

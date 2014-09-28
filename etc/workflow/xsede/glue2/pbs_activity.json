@@ -2,9 +2,9 @@
   "name": "pbs_activity",
   "description": "This workflow watches PBS server logs and publishes updates about individual jobs",
   "steps": [
-    { "name": "teragrid.sysinfo.ResourceNameStep" },
-    { "name": "teragrid.sysinfo.SiteNameStep" },
-    { "name": "glue2.pbs.ComputingActivityUpdateStep"
+    { "name": "ipf.teragrid.sysinfo.ResourceNameStep" },
+    { "name": "ipf.teragrid.sysinfo.SiteNameStep" },
+    { "name": "ipf.glue2.pbs.ComputingActivityUpdateStep"
       "params": {
         "position_file": "pbs_activity.pos"
       }
@@ -12,7 +12,7 @@
     {
       "name": "ipf.publish.AmqpStep",
       "params": {
-        "publish": ["glue2.computing_activity.ComputingActivityOgfJson"],
+        "publish": ["ipf.glue2.computing_activity.ComputingActivityOgfJson"],
         "services": [ "info1.dyn.teragrid.org", "info2.dyn.teragrid.org" ],
         "ssl_options": {
           "keyfile": "key.pem",
