@@ -26,24 +26,40 @@ can be used to run a few commands or look at status files and publish that infor
 workflow can be used to monitor log files and publish entries written to those files. Workflows are typically
 run periodically as cron jobs.  The program libexec/run_workflow.py is for executing workflows that complete
 quickly and the program libexec/run_workflow_daemon.py is used to manage long-running workflows. The daemon
-program only starts a workflow if that workflow is not already running.
 
-Packaging (Incomplete)
-----------------------
 
-To make installation easier for specific projects and non-Python folks, the sbin directory contains programs
-to create tar.gz files that are customized to specific projects (e.g. FutureGrid, XSEDE) that can be provided
-to system administrators.
+License
+----------
+
+This software is licensed under Version 2.0 of the Apache License.
 
 Installation
-------------
+--------------
 
-Installing a package is a matter of untarring it and then running 'python install.py <installation
-directory>'. The python program used in this step will be used by that installation of IPF.
+This software can be configured using pip, setuptools, or if you are participating in `XSEDE <http://www.xsede.org>`_, via RPM packages.
 
-The system administrator can then perform some testing and setup cron jobs to run the appropriate
-workflows. The INSTALL.txt files in the tar files contain additional information and are renamed versions of
-the INSTALL_PROJECT.txt files in the source.
+pip Installation
+-------------------
+
+You may need to install `pip` on your system. There is a package named `python-pip` that a system administrator can install or you can install it as a normal user by downloading and running the `get-pip.py <http://pip.readthedocs.org/en/latest/installing.html>`_ script.
+
+If you are not a system administrator or you wish to install this software outside of the shared Python directories, you may wish to create a Python `virtual environment <http://virtualenv.readthedocs.org/en/latest/>`_. Don't forget to add the virtual environment to your shell environment before running pip.
+
+To install via `pip`, you may need to install simply execute:
+
+    $ pip install ipf
+
+easy_install Installation
+-------------------------------
+
+You can also install IPF via `easy_install` by:
+
+    $ easy_install ipf
+
+Contact Information
+--------------------------
+
+This software is maintained by `Warren Smith <https://bitbucket.org/wwsmith>`_ and you can contact him on bitbucket via a message. If you have problems with this software you are welcome to submit an `issue <https://bitbucket.org/wwsmith/ipf/issues>`_.
 
 Acknowledgements
 ----------------

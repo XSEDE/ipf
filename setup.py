@@ -2,7 +2,7 @@ from setuptools import setup
 from setuptools import find_packages
 
 def readme():
-    with open('README.rst') as f:
+    with open('README.text') as f:
         return f.read()
 
 setup(name='ipf',
@@ -27,7 +27,10 @@ setup(name='ipf',
         'mtk',
       ],
       entry_points={
-        'console_scripts': ['ipf_workflow=ipf.run_workflow:main],
+        'console_scripts': ['ipf_workflow=ipf.run_workflow:main'],
       },
+      data_files=[
+        ('/etc/',['etc/ipf'])
+        ],
       include_package_data=True,
       zip_safe=False)
