@@ -7,7 +7,7 @@
       "name": "ipf.publish.AmqpStep",
       "params": {
         "publish": ["ipf.glue2.application.ApplicationsOgfJson"],
-        "services": [ "info1.dyn.teragrid.org", "info2.dyn.teragrid.org" ],
+        "services": [ "info1.dyn.xsede.org", "info2.dyn.xsede.org" ],
         "ssl_options": {
           "keyfile": "key.pem",
           "certfile": "cert.pem",

@@ -27,7 +27,7 @@
       "description": "Publish compute resource description to subscibers",
       "params": {
         "publish": ["ipf.glue2.compute.PublicOgfJson"],
-        "services": [ "info1.dyn.teragrid.org", "info2.dyn.teragrid.org" ],
+        "services": [ "info1.dyn.xsede.org", "info2.dyn.xsede.org" ],
         "ssl_options": {
           "keyfile": "key.pem",
           "certfile": "cert.pem",
@@ -42,7 +42,7 @@
       "description": "Publish a description of current jobs to subscribers",
       "params": {
         "publish": ["ipf.glue2.compute.PrivateOgfJson"],
-        "services": [ "info1.dyn.teragrid.org", "info2.dyn.teragrid.org" ],
+        "services": [ "info1.dyn.xsede.org", "info2.dyn.xsede.org" ],
         "ssl_options": {
           "keyfile": "key.pem",
           "certfile": "cert.pem",
