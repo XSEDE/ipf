@@ -22,23 +22,23 @@ import sys
 
 path = os.path.abspath(__file__)
 path = os.path.split(path)[0]    # drop file name
-path = os.path.split(path)[0]    # drop containing directory name
 IPF_PARENT_PATH = path
 
 if "IPF_ETC_PATH" in os.environ:
     IPF_ETC_PATH = os.environ["IPF_ETC_PATH"]
 else:
-    IPF_ETC_PATH = os.path.join(IPF_PARENT_PATH,"etc")
+    IPF_ETC_PATH = os.path.join(IPF_PARENT_PATH,"etc","ipf")
 
 if "IPF_VAR_PATH" in os.environ:
     IPF_VAR_PATH = os.environ["IPF_VAR_PATH"]
 else:
-    IPF_VAR_PATH = os.path.join(IPF_PARENT_PATH,"var")
-IPF_LOG_PATH = os.path.join(IPF_VAR_PATH,"log","ipf")
+    IPF_VAR_PATH = os.path.join(IPF_PARENT_PATH,"var","ipf")
+# just use the ipf var directory
+IPF_LOG_PATH = IPF_VAR_PATH
 
 if "IPF_WORKFLOW_PATHS" in os.environ:
     IPF_WORKFLOW_PATHS = os.environ["IPF_WORKFLOW_PATHS"].split(":")
 else:
     IPF_WORKFLOW_PATHS = []
-if os.path.join(IPF_PARENT_PATH,"workflow") not in IPF_WORKFLOW_PATHS:
+if os.path.join(IPF_ETC_PATH,"workflow") not in IPF_WORKFLOW_PATHS:
     IPF_WORKFLOW_PATHS.append(os.path.join(IPF_ETC_PATH,"workflow"))

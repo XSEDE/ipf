@@ -18,7 +18,6 @@
 import copy
 import json
 import logging
-import logging.config
 import os
 import sys
 import time
@@ -31,7 +30,6 @@ from ipf.workflow import Workflow
 
 #######################################################################################################################
 
-logging.config.fileConfig(os.path.join(IPF_ETC_PATH,"logging.conf"))
 logger = logging.getLogger(__name__)
 
 #######################################################################################################################

@@ -284,7 +284,6 @@ if __name__ == "__main__":
 
     import logging.config
     from ipf.paths import IPF_ETC_PATH
-    logging.config.fileConfig(os.path.join(IPF_ETC_PATH,"logging.conf"))
 
     if len(sys.argv) >= 3:
         watcher = LogDirectoryWatcher(echo,sys.argv[1],sys.argv[2])

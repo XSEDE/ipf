@@ -15,7 +15,10 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
+import logging
+import logging.config
 import optparse
+import os
 import sys
 
 min_version = (2,6)
@@ -28,7 +31,11 @@ if sys.version_info < min_version or sys.version_info > max_version:
 from ipf.daemon import Daemon
 from ipf.daemon import OneProcessOnly
 from ipf.engine import WorkflowEngine
-from ipf.paths import IPF_VAR_PATH
+from ipf.paths import IPF_ETC_PATH,IPF_VAR_PATH
+
+#######################################################################################################################
+
+logging.config.fileConfig(os.path.join(IPF_ETC_PATH,"logging.conf"))
 
 #######################################################################################################################
 
@@ -41,8 +48,8 @@ class WorkflowDaemon(Daemon):
 
         Daemon.__init__(self,
                         pidfile=os.path.join(IPF_VAR_PATH,name+".pid"),
-                        stdout=os.path.join(IPF_VAR_PATH,name+".log"),
-                        stderr=os.path.join(IPF_VAR_PATH,name+".log"))
+                        stdout=os.path.join(IPF_LOG_PATH,name+".log"),
+                        stderr=os.path.join(IPF_LOG_PATH,name+".log"))
 
     def run(self):
         engine = WorkflowEngine()
