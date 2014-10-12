@@ -2,6 +2,6 @@
   "name": "test",
   "period": 120,
   "steps": [
-    { "name": "teragrid/resource_name" }
+    { "name": "ipf.teragrid.sysinfo.ResourceNameStep" },
   ]
 }

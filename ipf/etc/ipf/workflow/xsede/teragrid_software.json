@@ -1,8 +1,8 @@
 {
   "name": "teragrid_software",
   "steps": [
-    { "name": "teragrid.sysinfo.ResourceNameStep" },
-    { "name": "teragrid.kits.KitsStep",
+    { "name": "ipf.teragrid.sysinfo.ResourceNameStep" },
+    { "name": "ipf.teragrid.kits.KitsStep",
       "params": {
         "core_kit_directory": "/share1/apps/teragrid/kits/ctss-core-registration-5.0.0-r1"
       }
@@ -10,7 +10,7 @@
     {
       "name": "ipf.publish.AmqpStep",
       "params": {
-        "publish": ["teragrid.kits.KitsXml"],
+        "publish": ["ipfteragrid.kits.KitsXml"],
         "services": [ "info1.dyn.teragrid.org", "info2.dyn.teragrid.org" ],
         "ssl_options": {
           "keyfile": "key.pem",
@@ -21,7 +21,7 @@
         "exchange": "kits"
       }
     },
-    { "name": "teragrid.local_software.LocalSoftwareStep",
+    { "name": "ipf.teragrid.local_software.LocalSoftwareStep",
       "params": {
         "mechanism": "file",
         "file": "/share1/apps/teragrid/globus-mds-info-4.0.8-r1/etc/globus_wsrf_mds_usefulrp/lonestar-local.xml"
@@ -30,7 +30,7 @@
     {
       "name": "ipf.publish.AmqpStep",
       "params": {
-        "publish": ["teragrid.local_software.LocalSoftwareXml"],
+        "publish": ["ipf.teragrid.local_software.LocalSoftwareXml"],
         "services": [ "info1.dyn.teragrid.org", "info2.dyn.teragrid.org" ],
         "ssl_options": {
           "keyfile": "key.pem",
