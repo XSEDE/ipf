@@ -59,7 +59,7 @@ class ComputingServiceStep(GlueStep):
         service.id = self.resource_name
         service.ID = "urn:glue2:ComputingService:%s" % (self.resource_name)
         service.LocationID = self.location
-        service.ManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
+        service.ManagerID = ["urn:glue2:ComputingManager:%s" % (self.resource_name)]
 
 
         service._addActivities(self.activities)
