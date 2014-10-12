@@ -1,0 +1,103 @@
+#!/bin/bash
+#
+# ipf    An Information Publishing Framework daemon
+#
+# chkconfig: 345 40 60
+# description: IPF is a framework for gathering and publishing information via workflows
+# processname: ipf_workflow
+
+# Source function library.
+. /etc/init.d/functions
+
+# a unique name - the workflow file name is likely unique
+NAME=pbs_compute
+
+# pick one of the workflows under $IPF_ETC_PATH/workflow
+WORKFLOW=xsede/glue2/$NAME.json
+
+# Does the environment get passed through to the program run by daemon?
+# if so, setup the environment needed by the workflow here
+
+
+# specify a full path to this program if you need to
+PROGRAM=ipf_workflow
+
+# change these if necessary - see ipf/paths.py
+IPF_ETC_PATH=/etc/ipf
+IPF_VAR_PATH=/var/ipf
+
+# change if you want to run as a different user
+IPF_USER=ipf
+
+PID_FILE=${IPF_VAR_PATH}/${NAME}.pid
+
+check_running() {
+	RETVAL=1
+	if [ -f $PID_FILE ]; then
+	    PID=`cat $PID_FILE`
+	    if [ -n "`ps axf | grep ${PID} | grep -v grep`" ]; then
+	        # process from PID_FILE is running
+	    	RETVAL=0
+	    fi
+	fi
+	return $RETVAL
+}
+
+start() {
+        echo -n "Starting IPF workflow ${NAME}: "
+	check_running
+	if [ $RETVAL = 0 ]; then
+	    echo "IPF workflow is already running"
+	    return 1
+        daemon --user=$IPF_USER --pidfile=${PID_FILE} $PROGRAM $WORKFLOW
+        RETVAL=$?
+        echo
+        return $RETVAL
+}
+
+stop() {
+        echo -n "Shutting down IPF workflow ${NAME}: "
+	PID=`cat $PID_FILE`
+        kill -9 $PID
+        RETVAL=$?
+        echo
+	[ $RETVAL -eq 0 ] && rm -f $PID_FILE
+        return $RETVAL
+}
+
+status() {
+        echo -n "Checking $prog status: "
+	if [ -f $PID_FILE ]; then
+	    PID=`cat $PID_FILE`
+            if [ -z "`ps axf | grep ${PID} | grep -v grep`" ]; then
+                echo "Process dead but pidfile exists"
+            else
+                echo "Running"
+            fi
+        else
+            echo "Service not running"
+
+        RETVAL=$?
+        return $RETVAL
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        status
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    *)
+        echo "Usage: $prog {start|stop|status|restart}"
+        exit 1
+        ;;
+esac
+exit $RETVAL
