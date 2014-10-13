@@ -33,7 +33,7 @@
           "certfile": "cert.pem",
           "ca_certs": "ca_certs.pem"
         },
-        "vhost": "xsede_public",
+        "vhost": "xsede",
         "exchange": "glue2.compute"
       }
     },
@@ -48,7 +48,7 @@
           "certfile": "cert.pem",
           "ca_certs": "ca_certs.pem"
         },
-	"vhost": "xsede_private",
+	"vhost": "xsede",
         "exchange": "glue2.computing_activities"
       }
     },
@@ -57,7 +57,7 @@
       "description": "Publish JSON version of compute resource description to a file for debugging",
       "params": {
         "publish": ["ipf.glue2.compute.PublicOgfJson"],
-        "path": "public.json"
+        "path": "compute.json"
       }
     },
     {
@@ -65,7 +65,7 @@
       "description": "Publish a description of current jobs in JSON to a file for debugging",
       "params": {
         "publish": ["ipf.glue2.compute.PrivateOgfJson"],
-        "path": "private.json"
+        "path": "activities.json"
       }
     }
   ]
