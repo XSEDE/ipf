@@ -99,10 +99,10 @@ class ApplicationEnvironmentOgfJson(EntityOgfJson):
             doc["FreeUserSeats"] = self.data.FreeUserSeats
 
         associations = {}
-        associations["ExecutionEnvironmentID"] = self.ExecutionEnvironmentID
-        associations["ComputingManagerID"] = self.ComputingManagerID
-        if len(self.ApplicationHandleID) > 0:
-            associations["ApplicationHandleID"] = self.ApplicationHandleID
+        associations["ExecutionEnvironmentID"] = self.data.ExecutionEnvironmentID
+        associations["ComputingManagerID"] = self.data.ComputingManagerID
+        if len(self.data.ApplicationHandleID) > 0:
+            associations["ApplicationHandleID"] = self.data.ApplicationHandleID
         doc["Associations"] = associations
 
         return doc

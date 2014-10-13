@@ -20,6 +20,7 @@ import datetime
 import os
 import re
 
+import ipf.dt
 from ipf.error import StepError
 from ipf.log import LogFileWatcher
 
@@ -224,7 +225,7 @@ def _getDateTime(dtStr):
                              hour=hour,
                              minute=minute,
                              second=second,
-                             tzinfo=localtzoffset())
+                             tzinfo=ipf.dt.localtzoffset())
 
 #######################################################################################################################
 
@@ -313,7 +314,7 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
         try:
             activity = self.activities[job_id]
             # activity will be modified - update creation time
-            activity.CreationTime = datetime.datetime.now(tzoffset(0))
+            activity.CreationTime = datetime.datetime.now(ipf.dt.tzoffset(0))
         except KeyError:
             scontrol = self.params.get("scontrol","scontrol")
             cmd = scontrol + " show job "+job_id

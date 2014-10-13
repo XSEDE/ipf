@@ -31,7 +31,7 @@ if sys.version_info < min_version or sys.version_info > max_version:
 from ipf.daemon import Daemon
 from ipf.daemon import OneProcessOnly
 from ipf.engine import WorkflowEngine
-from ipf.paths import IPF_ETC_PATH,IPF_VAR_PATH
+from ipf.paths import *
 
 #######################################################################################################################
 
@@ -85,15 +85,15 @@ def main():
         parser.error("exactly one positional argument expected - a path to a workflow file")
 
     if options.daemon:
-        daemon = WorkflowDaemon(sys.argv[1])
+        daemon = WorkflowDaemon(args[0])
         daemon.start()
     elif options.cron:
         # don't let processes pile up if workflows aren't finishing
-        workflow = OneWorkflowOnly(sys.argv[1])
+        workflow = OneWorkflowOnly(args[0])
         workflow.start()
     else:
         engine = WorkflowEngine()
-        engine.run(sys.argv[1])
+        engine.run(args[0])
 
 #######################################################################################################################
 
