@@ -38,16 +38,24 @@ class FileStep(PublishStep):
         self.description = "publishes documents by writing them to a file"
         self.time_out = 5
         self._acceptParameter("path",
-                              "Path to the file to write. If the path is relative, it is relative to one of the IPF_WORKFLOW_PATH",
+                              "Path to the file to write. If the path is relative, it is relative to IPF_VAR_PATH",
                               True)
+        self._acceptParameter("append",
+                              "Whether to append to the file or to overwrite it (default is overwrite).",
+                              False)
 
     def _publish(self, representation):
-        self.info("writing %s",representation)
-        f = open(self._getPath()+".new","w")
-        f.write(representation.get())
-        f.close()
-        os.chmod(self._getPath()+".new",0644)  # may want other users to be able to read it
-        os.rename(self._getPath()+".new",self._getPath())
+        if self.params.get("append",False):
+            self.info("appending %s",representation)
+            f = open(self._getPath(),"a")
+            f.write(representation.get())
+            f.close()
+        else:
+            self.info("writing %s",representation)
+            f = open(self._getPath()+".new","w")
+            f.write(representation.get())
+            f.close()
+            os.rename(self._getPath()+".new",self._getPath())
 
     def _getPath(self):
         try:
@@ -151,15 +159,14 @@ class AmqpStep(PublishStep):
         try:
             self._connectIfNecessary()
         except StepError:
-            self.error("not connected to any service, will not publish %s" % representation.__class__)
-            return
+            raise StepError("not connected to any service, will not publish %s" % representation.__class__)
         try:
             self.channel.basicPublish(representation.get(),
                                       self.exchange,
                                       representation.data.id.encode("utf-8"))
         except MtkError, e:
-            self.error("failed to publish %s: %s" % (representation.__class__,e))
             self._close()
+            raise StepError("failed to publish %s: %s" % (representation.__class__,e))
 
     def _connectIfNecessary(self):
         if self.channel is not None:
@@ -243,39 +250,32 @@ class HttpStep(PublishStep):
 
     def run(self):
         try:
-            host = self.params["host"]
+            self.host = self.params["host"]
         except KeyError:
             raise StepError("host not specified")
         try:
-            port = self.params["port"]
+            self.port = self.params["port"]
         except KeyError:
-            port = 80
+            self.port = 80
         try:
-            method = self.params["method"]
+            self.method = self.params["method"]
         except KeyError:
-            method = "PUT"
+            self.method = "PUT"
         try:
-            path = self.params["path"]
+            self.path = self.params["path"]
         except ConfigParser.Error:
             raise StepError("path not specified")
 
-        connection = httplib.HTTPConnection(host+":"+str(port))
-        while True:
-            data = self.input_queue.get(True)
-            if data == None:
-                break
-            if data.name not in self.params["representations"]:
-                self.warning("no representation know for data %s with name %s",data.id,data.name)
-                continue
-            cls = self._getRepresentationClass(data)
-            representation = cls(data)
-            self.info("publishing data %s with name %s using representation %s",data.id,data.name,representation.name)
+        PublishStep.run(self)
 
-            connection.request(method,path,doc.body,{"Content-Type": representation.mime_type})
-            response = httplib.getresponse()
-            if not (response.status == httplib.OK or response.status == httplib.CREATED):
-                self.error("failed to '"+method+"' to http://"+host+":"+port+path+" - "+
-                           str(response.status)+" "+response.reason)
+    def _publish(self, representation):
+        self.info("publishing %s",representation)
+        connection = httplib.HTTPConnection(self.host+":"+str(self.port))
+        connection.request(self.method,self.path,representation.get(),{"Content-Type": representation.mime_type})
+        response = httplib.getresponse()
+        if not (response.status == httplib.OK or response.status == httplib.CREATED):
+            self.error("failed to '"+self.method+"' to http://"+self.host+":"+self.port+self.path+" - "+
+                       str(response.status)+" "+response.reason)
         connection.close()
 
 
