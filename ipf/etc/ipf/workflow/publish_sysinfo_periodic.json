@@ -1,0 +1,12 @@
+{
+  "name": "publish_sysinfo_periodic",
+  "description": "this workflow publishes system information periodically",
+  "steps": [
+    { "name": "ipf.step.WorkflowStep",
+      "params": {
+          "workflow": "xsede/publish_sysinfo.json",
+          "maximum_interval": 60
+      }
+    }
+  ]
+}

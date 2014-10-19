@@ -1,0 +1,47 @@
+{
+  "name": "moab_pbs_compute",
+  "timeout": 55,
+  "description": "This workflow gathers GLUE2 compute information by interacting with Moab and PBS",
+  "steps": [
+    { "name": "ipf.sysinfo.ResourceNameStep" },
+    { "name": "ipf.sysinfo.SiteNameStep" },
+    { "name": "ipf.sysinfo.PlatformStep" },
+    { "name": "ipf.glue2.location.LocationStep",
+      "params": {
+        "location": {
+          "Name": "Name of Center",
+          "Place": "City",
+          "Country": "US",
+          "Latitude": 38.000,
+          "Longitude": -90.000
+        }
+      }
+    },
+    { "name": "ipf.glue2.pbs.ComputingActivitiesStep",
+      "outputs": ["step-moab-activities"]
+    },
+    { "name": "ipf.glue2.moab.ComputingActivitiesStep",
+      "id": "step-moab-activities"
+    },
+    { "name": "ipf.glue2.pbs.ComputingSharesStep" },
+    { "name": "ipf.glue2.pbs.ComputingServiceStep" },
+    { "name": "ipf.glue2.pbs.ExecutionEnvironmentsStep" },
+    { "name": "ipf.glue2.pbs.ComputingManagerStep" },
+    {
+      "name": "ipf.publish.FileStep",
+      "description": "Publish JSON version of compute resource description to a file for debugging",
+      "params": {
+        "publish": ["ipf.glue2.compute.PublicOgfJson"],
+        "path": "compute.json"
+      }
+    },
+    {
+      "name": "ipf.publish.FileStep",
+      "description": "Publish a description of current jobs in JSON to a file for debugging",
+      "params": {
+        "publish": ["ipf.glue2.compute.PrivateOgfJson"],
+        "path": "activities.json"
+      }
+    }
+  ]
+}

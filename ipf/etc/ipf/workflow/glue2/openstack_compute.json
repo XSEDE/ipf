@@ -1,0 +1,44 @@
+{
+  "name": "openstack_compute",
+  "timeout": 55,
+  "params": {
+    "openstack_version": "2013.2"
+  },
+  "steps": [
+    { "name": "ipf.sysinfo.ResourceNameStep" },
+    { "name": "ipf.sysinfo.SiteNameStep" },
+    { "name": "ipf.sysinfo.PlatformStep" },
+    { "name": "glue2.location.LocationStep",
+      "params": {
+        "location": {
+          "Name": "Texas Advanced Computing Center",
+          "Place": "Austin",
+          "Country": "US",
+          "Latitude": 30.390132,
+          "Longitude": -97.725309
+        }
+      }
+    },
+    { "name": "glue2.openstack.ComputingActivitiesStep" },
+    { "name": "glue2.openstack.ComputingSharesStep" },
+    { "name": "glue2.openstack.ComputingServiceStep" },
+    { "name": "glue2.openstack.ExecutionEnvironmentsStep" },
+    { "name": "glue2.openstack.ComputingManagerStep" },
+    {
+      "name": "ipf.publish.FileStep",
+      "description": "Publish JSON version of compute resource description to a file for debugging",
+      "params": {
+        "publish": ["ipf.glue2.compute.PublicOgfJson"],
+        "path": "compute.json"
+      }
+    },
+    {
+      "name": "ipf.publish.FileStep",
+      "description": "Publish a description of current jobs in JSON to a file for debugging",
+      "params": {
+        "publish": ["ipf.glue2.compute.PrivateOgfJson"],
+        "path": "activities.json"
+      }
+    }
+  ]
+}
