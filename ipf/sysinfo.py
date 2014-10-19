@@ -188,3 +188,40 @@ class PlatformTxt(Representation):
         return self.data.platform
 
 #######################################################################################################################
+
+class SystemInformationStep(Step):
+    def __init__(self):
+        Step.__init__(self)
+
+        self.description = "produces a document with basic information about a host"
+        self.time_out = 5
+        self.requires = [ResourceName,SiteName,Platform]
+        self.produces = [SystemInformation]
+
+    def run(self):
+        self._output(SystemInformation(self._getInput(ResourceName).resource_name,
+                                       self._getInput(SiteName).site_name,
+                                       self._getInput(Platform).platform))
+
+
+#######################################################################################################################
+
+class SystemInformation(Data):
+    def __init__(self, resource_name, site_name, platform):
+        Data.__init__(self,resource_name)
+        self.resource_name = resource_name
+        self.site_name = site_name
+        self.platform = platform
+
+#######################################################################################################################
+
+class SystemInformationTxt(Representation):
+    data_cls = SystemInformation
+
+    def __init__(self, data):
+        Representation.__init__(self,Representation.MIME_TEXT_PLAIN,data)
+
+    def get(self):
+        return "system %s at site %s is a %s\n" % (self.data.resource_name,self.data.site_name,self.data.platform)
+
+#######################################################################################################################
