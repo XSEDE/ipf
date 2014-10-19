@@ -1,7 +1,7 @@
 {
   "name": "lmod",
   "steps": [
-    { "name": "teragrid.sysinfo.ResourceNameStep" },
+    { "name": "ipf.teragrid.sysinfo.ResourceNameStep" },
     { "name": "ipf.glue2.modules.LModApplicationsStep" },
     {
       "name": "ipf.publish.AmqpStep",
@@ -11,7 +11,7 @@
         "ssl_options": {
           "keyfile": "key.pem",
           "certfile": "cert.pem",
-          "ca_certs": "ca_certs.pem"
+          "ca_certs": "xsede/ca_certs.pem"
         },
 	"vhost": "xsede_public",
         "exchange": "glue2.applications"

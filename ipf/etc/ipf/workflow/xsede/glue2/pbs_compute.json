@@ -31,7 +31,7 @@
         "ssl_options": {
           "keyfile": "key.pem",
           "certfile": "cert.pem",
-          "ca_certs": "ca_certs.pem"
+          "ca_certs": "xsede/ca_certs.pem"
         },
         "vhost": "xsede",
         "exchange": "glue2.compute"
@@ -46,7 +46,7 @@
         "ssl_options": {
           "keyfile": "key.pem",
           "certfile": "cert.pem",
-          "ca_certs": "ca_certs.pem"
+          "ca_certs": "xsede/ca_certs.pem"
         },
 	"vhost": "xsede",
         "exchange": "glue2.computing_activities"
