@@ -24,7 +24,7 @@ if __name__ == "__main__":
     description="XSEDE GLUE v2.0 workflows for the Information Publishing Framework"
     setup(name="ipf-xsede-glue2",
           #version="1.0"
-          version="1.0a9",
+          version="1.0a10",
           description=description,
           long_description=description,
           classifiers=[

@@ -28,7 +28,7 @@ if __name__ == "__main__":
     description="XSEDE workflows to publish TeraGrid kits and local software using the Information Publishing Framework"
     setup(name="ipf-xsede-teragrid-kitssoftware",
           #version="1.0"
-          version="1.0a9",
+          version="1.0a10",
           description=description,
           long_description=description,
           classifiers=[

@@ -61,6 +61,24 @@ Contact Information
 
 This software is maintained by `Warren Smith <https://bitbucket.org/wwsmith>`_ and you can contact him on bitbucket via a message. If you have problems with this software you are welcome to submit an `issue <https://bitbucket.org/wwsmith/ipf/issues>`_.
 
+Building
+--------
+
+Packages of this software can be build using the Python setuptools and the provided setup*.py scripts. Your initial step is to retrieve a copy of this software by:
+
+    $ git clone https://wwsmith@bitbucket.org/wwsmith/mtk.git
+
+And then changing to the "ipf" directory. To build a source distribution from that directory, simply run:
+
+    $ python setup.py sdist
+
+To create a "binary" package such as an RPM run:
+
+    $ python setup.py bdist_rpm
+
+In addition, there are two scripts to create additional packages for XSEDE. setup_xsede_glue2.py creates a package with the XSEDE GLUE v2.0 workflows and supporting legacy TeraGrid information gathering steps. setup_xsede_kits.py creates a package with workflows that publish legacy TeraGrid kit and software information.
+
+
 Acknowledgements
 ----------------
 
