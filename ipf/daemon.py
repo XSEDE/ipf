@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2012 The University of Texas at Austin                          #
+#   Copyright 2012-2014 The University of Texas at Austin                     #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -31,14 +31,14 @@ class OneProcessOnly:
         self.pid_file_name = pidfile
 
     def start(self):
-        if self.isRunning():
+        if self._isRunning():
             logger.error("process is already running at %s" % self.pid_file_name)
             return
-        self.writePid()
+        self._writePid()
         self.run()
-        self.removePid()
+        self._removePid()
 
-    def isRunning(self):
+    def _isRunning(self):
         if self.pid_file_name is None:
             # no way to tell
             False
@@ -58,7 +58,7 @@ class OneProcessOnly:
         logger.debug("no running daemon")
         return False
 
-    def writePid(self):
+    def _writePid(self):
         if self.pid_file_name is None:
             return
         # save process id in the .pid file
@@ -66,7 +66,7 @@ class OneProcessOnly:
         pid_file.write(str(os.getpid()))
         pid_file.close()
 
-    def removePid(self):
+    def _removePid(self):
         if self.pid_file_name is None:
             return
         try:
@@ -74,6 +74,37 @@ class OneProcessOnly:
         except IOError:
             logger.warning("failed to remove pid file %s" % self.pid_file_name)
 
+    def _redirect(self, stdin_file_name, stdout_file_name, stderr_file_name):
+        sys.stdout.flush()
+        sys.stderr.flush()
+        si = file(stdin_file_name, 'r')
+        so = file(stdout_file_name, 'a+')
+        se = file(stderr_file_name, 'a+')
+        os.dup2(si.fileno(), sys.stdin.fileno())
+        os.dup2(so.fileno(), sys.stdout.fileno())
+        os.dup2(se.fileno(), sys.stderr.fileno())
+
+    def run(self):
+        raise NotImplementedError()
+
+##############################################################################################################
+
+class OneProcessWithRedirect(OneProcessOnly):
+    def __init__(self, pidfile=None, stdin="/dev/null", stdout="/dev/null", stderr="/dev/null"):
+        OneProcessOnly.__init__(self,pidfile)
+        self.stdin = stdin
+        self.stdout = stdout
+        self.stderr = stderr
+
+    def start(self):
+        if self._isRunning():
+            logger.error("process is already running at %s" % self.pid_file_name)
+            return
+        self._writePid()
+        self._redirect(self.stdin,self.stdout,self.stderr)
+        self.run()
+        self._removePid()
+ 
     def run(self):
         raise NotImplementedError()
 
@@ -87,12 +118,12 @@ class Daemon(OneProcessOnly):
         self.stderr = stderr
 
     def start(self):
-        if not self.isRunning():
-            self.daemonize()
-            self.writePid()
+        if not self._isRunning():
+            self._daemonize()
+            self._writePid()
             self.run()
 
-    def daemonize(self):
+    def _daemonize(self):
         try:
             pid = os.fork()
             if pid > 0:
@@ -117,15 +148,7 @@ class Daemon(OneProcessOnly):
             logger.error("fork #2 failed: %d (%s)\n" % (e.errno, e.strerror))
             sys.exit(1)
 
-        # redirect standard file descriptors
-        sys.stdout.flush()
-        sys.stderr.flush()
-        si = file(self.stdin, 'r')
-        so = file(self.stdout, 'a+')
-        se = file(self.stderr, 'a+')
-        os.dup2(si.fileno(), sys.stdin.fileno())
-        os.dup2(so.fileno(), sys.stdout.fileno())
-        os.dup2(se.fileno(), sys.stderr.fileno())
+        self._redirect(self.stdin,self.stdout,self.stderr)
  
     def run(self):
         raise NotImplementedError()
