@@ -11,13 +11,13 @@
       "name": "ipf.publish.AmqpStep",
       "params": {
         "publish": ["ipfteragrid.kits.KitsXml"],
-        "services": [ "info1.dyn.teragrid.org", "info2.dyn.teragrid.org" ],
+        "services": [ "info1.dyn.xsede.org", "info2.dyn.xsede.org" ],
         "ssl_options": {
           "keyfile": "key.pem",
           "certfile": "cert.pem",
           "ca_certs": "ca_certs.pem"
         },
-	"vhost": "teragrid_public",
+	"vhost": "xsede",
         "exchange": "kits"
       }
     },
@@ -37,7 +37,7 @@
           "certfile": "cert.pem",
           "ca_certs": "ca_certs.pem"
         },
-	"vhost": "teragrid_public",
+	"vhost": "xsede",
         "exchange": "local_software"
       }
     }

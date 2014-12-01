@@ -1,0 +1,12 @@
+{
+  "name": "teragrid_software_periodic",
+  "description": "Gather TeraGrid kits and software information periodically",
+  "steps": [
+    { "name": "ipf.step.WorkflowStep",
+      "params": {
+          "workflow": "xsede/teragrid_software.json",
+          "maximum_interval": 3600
+      }
+    }
+  ]
+}
