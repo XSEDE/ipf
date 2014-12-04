@@ -40,7 +40,5 @@ if "IPF_WORKFLOW_PATHS" in os.environ:
     IPF_WORKFLOW_PATHS = os.environ["IPF_WORKFLOW_PATHS"].split(":")
 else:
     IPF_WORKFLOW_PATHS = []
-if "/etc/ipf/workflow" not in IPF_WORKFLOW_PATHS:
-    IPF_WORKFLOW_PATHS.append("/etc/ipf/workflow")
 if os.path.join(IPF_ETC_PATH,"workflow") not in IPF_WORKFLOW_PATHS:
     IPF_WORKFLOW_PATHS.append(os.path.join(IPF_ETC_PATH,"workflow"))
