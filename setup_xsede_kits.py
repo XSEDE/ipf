@@ -64,11 +64,12 @@ if __name__ == "__main__":
           license="Apache",
           packages=[],
           install_requires=["ipf-xsede-glue2"],
-          include_package_data=True,
+          include_package_data=False,
+          data_files = [
+              ("/etc/ipf/workflow/xsede",["ipf/etc/ipf/workflow/xsede/teragrid_software.json",
+                                          "ipf/etc/ipf/workflow/xsede/teragrid_software_periodic.json"])
+          ],
           zip_safe=False)
     _deleteManifest()
     _deleteSetupCfg()
-
-
-
 

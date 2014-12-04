@@ -62,6 +62,10 @@ requires =
 def _deleteSetupCfg():
     os.remove(_getSetupCfgFileName())
 
+def workflow_paths(directory):
+    return filter(lambda path: os.path.isfile(path) and path.endswith(".json"),
+                  map(lambda file: os.path.join(directory,file),os.listdir(directory)))
+
 if __name__ == "__main__":
     _createManifest()
     _createSetupCfg()
@@ -87,7 +91,16 @@ if __name__ == "__main__":
           entry_points={
               "console_scripts": ["ipf_workflow=ipf.run_workflow:main"],
           },
-          include_package_data=True,
+          #include_package_data=True,
+          include_package_data=False,
+          # data files only applies to the rpm
+          data_files = [
+              ("/etc/ipf",["ipf/etc/ipf/logging.conf"]),
+              ("/etc/ipf/workflow",workflow_paths("ipf/etc/ipf/workflow")),
+              ("/etc/ipf/workflow/glue2",workflow_paths("ipf/etc/ipf/workflow/glue2")),
+              ("/etc/ipf/init.d",["ipf/etc/init.d/ipf-WORKFLOW"]),
+              ("/var/ipf",[])
+          ],
           zip_safe=False)
     _deleteManifest()
     _deleteSetupCfg()

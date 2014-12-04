@@ -37,6 +37,10 @@ requires =
 def _deleteSetupCfg():
     os.remove(_getSetupCfgFileName())
 
+def workflow_paths(directory):
+    return filter(lambda path: os.path.isfile(path) and path.endswith(".json"),
+                  map(lambda file: os.path.join(directory,file),os.listdir(directory)))
+
 if __name__ == "__main__":
     _createManifest()
     _createSetupCfg()
@@ -62,7 +66,11 @@ if __name__ == "__main__":
           #   ipf.etc results in the files under ipf/etc/in the MANIFEST.in being included in the rpm
           packages=["ipf.teragrid","ipf.etc"],
           install_requires=["ipf"],
-          include_package_data=True,
+          include_package_data=False,
+          data_files = [
+              ("/etc/ipf/xsede",["ipf/etc/ipf/xsede/ca_certs.pem"]),
+              ("/etc/ipf/workflow/xsede/glue2",workflow_paths("ipf/etc/ipf/workflow/xsede/glue2"))
+          ],
           zip_safe=False)
     _deleteManifest()
     _deleteSetupCfg()
