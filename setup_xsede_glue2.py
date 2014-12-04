@@ -19,18 +19,36 @@ include ipf/etc/ipf/workflow/xsede/glue2/*.json
 def _deleteManifest():
     os.remove(_getManifestFileName())
 
+def _getSetupCfgFileName():
+    path = os.path.abspath(__file__)
+    path = os.path.split(path)[0]    # drop file name
+    return os.path.join(path,"setup.cfg")
+
+def _createSetupCfg():
+    f = open(_getSetupCfgFileName(),"w")
+    f.write("""
+[bdist_rpm]
+requires =
+    ipf >= 1.0b1
+    ipf < 2.0
+    """)
+    f.close()
+
+def _deleteSetupCfg():
+    os.remove(_getSetupCfgFileName())
+
 if __name__ == "__main__":
     _createManifest()
+    _createSetupCfg()
     description="XSEDE GLUE v2.0 workflows for the Information Publishing Framework"
     setup(name="ipf-xsede-glue2",
-          #version="1.0"
-          version="1.0a10",
+          version="1.0b1",
           description=description,
           long_description=description,
           classifiers=[
               #"Development Status :: 5 - Production/Stable",
-              #"Development Status :: 4 - Beta",
-              "Development Status :: 3 - Alpha",
+              "Development Status :: 4 - Beta",
+              #"Development Status :: 3 - Alpha",
               "License :: OSI Approved :: Apache Software License",
               "Programming Language :: Python :: 2",
               "Topic :: System :: Monitoring",
@@ -40,10 +58,11 @@ if __name__ == "__main__":
           author="Warren Smith",
           author_email="wsmith@tacc.utexas.edu",
           license="Apache",
-          packages=["ipf.teragrid"],
+          # this is dumb, but it gets the right files from etc into the rpm:
+          #   ipf.etc results in the files under ipf/etc/in the MANIFEST.in being included in the rpm
+          packages=["ipf.teragrid","ipf.etc"],
           install_requires=["ipf"],
           include_package_data=True,
           zip_safe=False)
     _deleteManifest()
-
-
+    _deleteSetupCfg()

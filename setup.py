@@ -17,7 +17,6 @@ from setuptools import find_packages
 # To create a source distribution and upload to pypi:
 # $ python setup.py sdist upload
 
-
 def readme():
     with open("README.rst") as f:
         return f.read()
@@ -27,6 +26,7 @@ def _getManifestFileName():
     path = os.path.split(path)[0]    # drop file name
     return os.path.join(path,"MANIFEST.in")
 
+# manifest specifies files to include in the source distribution
 def _createManifest():
     f = open(_getManifestFileName(),"w")
     f.write("""
@@ -37,25 +37,42 @@ include ipf/etc/ipf/workflow/*.json
 include ipf/etc/ipf/workflow/glue2/*.json
 include ipf/etc/init.d/ipf-WORKFLOW
 include ipf/var/ipf/README.txt
-include ipf/var/log/ipf/README.txt
     """)
     f.close()
 
 def _deleteManifest():
     os.remove(_getManifestFileName())
 
+def _getSetupCfgFileName():
+    path = os.path.abspath(__file__)
+    path = os.path.split(path)[0]    # drop file name
+    return os.path.join(path,"setup.cfg")
+
+# A setup.cfg file seems to be the best way to define RPM Requires
+def _createSetupCfg():
+    f = open(_getSetupCfgFileName(),"w")
+    f.write("""
+[bdist_rpm]
+requires =
+    mtk >= 1.0b1
+    mtk < 2.0
+    """)
+    f.close()
+
+def _deleteSetupCfg():
+    os.remove(_getSetupCfgFileName())
 
 if __name__ == "__main__":
     _createManifest()
+    _createSetupCfg()
     setup(name="ipf",
-          #version="1.0"
-          version="1.0a10",
+          version="1.0b1",
           description="The Information Publishing Framework",
           long_description=readme(),
           classifiers=[
               #"Development Status :: 5 - Production/Stable",
-              #"Development Status :: 4 - Beta",
-              "Development Status :: 3 - Alpha",
+              "Development Status :: 4 - Beta",
+              #"Development Status :: 3 - Alpha",
               "License :: OSI Approved :: Apache Software License",
               "Programming Language :: Python :: 2",
               "Topic :: System :: Monitoring",
@@ -73,6 +90,7 @@ if __name__ == "__main__":
           include_package_data=True,
           zip_safe=False)
     _deleteManifest()
+    _deleteSetupCfg()
 
 
 
