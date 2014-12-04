@@ -50,7 +50,7 @@ class SiteNameStep(ipf.sysinfo.SiteNameStep):
         ipf.sysinfo.SiteNameStep.__init__(self)
 
         self.description = "produces a site name document using tgwhereami"
-        self._acceptParameter("tgwheremi","path to the tgwhereami program (default 'tgwhereami')",False)
+        self._acceptParameter("tgwhereami","path to the tgwhereami program (default 'tgwhereami')",False)
 
     def run(self):
         try:
