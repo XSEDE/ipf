@@ -13,7 +13,7 @@
 NAME=pbs_compute
 
 # pick one of the workflows under $IPF_ETC_PATH/workflow
-WORKFLOW=xsede/glue2/$NAME.json
+WORKFLOW=xsede/glue2/${NAME}_periodic.json
 
 # Does the environment get passed through to the program run by daemon?
 # if so, setup the environment needed by the workflow here
@@ -49,7 +49,7 @@ start() {
 	if [ $RETVAL = 0 ]; then
 	    echo "IPF workflow is already running"
 	    return 1
-        daemon --user=$IPF_USER --pidfile=${PID_FILE} $PROGRAM $WORKFLOW
+        daemon --user=$IPF_USER --pidfile=${PID_FILE} exec "$PROGRAM $WORKFLOW 2>&1 >> ${IPF_VAR_PATH}/${NAME}.log"
         RETVAL=$?
         echo
         return $RETVAL
@@ -80,7 +80,7 @@ status() {
         RETVAL=$?
         return $RETVAL
 }
-
+p
 case "$1" in
     start)
         start
