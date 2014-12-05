@@ -20,7 +20,7 @@ export IPF_ETC_PATH=/etc/ipf
 export IPF_VAR_PATH=/var/ipf
 
 # change if you want to run as a different user
-IPF_USER=root
+IPF_USER=ipf
 
 PID_FILE=${IPF_VAR_PATH}/${NAME}.pid
 
