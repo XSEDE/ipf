@@ -6,30 +6,29 @@
 # description: IPF is a framework for gathering and publishing information via workflows
 # processname: ipf_workflow
 
-# Source function library.
-. /etc/init.d/functions
-
 # a unique name - the workflow file name is likely unique
-NAME=pbs_compute
+NAME=pbs_compute_periodic
 
-# pick one of the workflows under $IPF_ETC_PATH/workflow
-WORKFLOW=xsede/glue2/${NAME}_periodic.json
+# pick one of the periodic workflows under $IPF_ETC_PATH/workflow
+WORKFLOW=xsede/glue2/${NAME}.json
 
-# Does the environment get passed through to the program run by daemon?
-# if so, setup the environment needed by the workflow here
-
-
-# specify a full path to this program if you need to
+# specify a full path to the ipf_workflow program if you need to
 PROGRAM=ipf_workflow
 
-# change these if necessary - see ipf/paths.py
-IPF_ETC_PATH=/etc/ipf
-IPF_VAR_PATH=/var/ipf
+# change (or don't set) these if necessary - see ipf/paths.py
+export IPF_ETC_PATH=/etc/ipf
+export IPF_VAR_PATH=/var/ipf
 
 # change if you want to run as a different user
-IPF_USER=ipf
+IPF_USER=root
 
 PID_FILE=${IPF_VAR_PATH}/${NAME}.pid
+
+###################################################################
+##### Add any environment setup needed for this workflow here #####
+###################################################################
+
+
 
 check_running() {
 	RETVAL=1
@@ -49,7 +48,8 @@ start() {
 	if [ $RETVAL = 0 ]; then
 	    echo "IPF workflow is already running"
 	    return 1
-        daemon --user=$IPF_USER --pidfile=${PID_FILE} exec "$PROGRAM $WORKFLOW 2>&1 >> ${IPF_VAR_PATH}/${NAME}.log"
+        fi
+        su $IPF_USER -c "$PROGRAM -d $WORKFLOW"
         RETVAL=$?
         echo
         return $RETVAL
@@ -58,7 +58,7 @@ start() {
 stop() {
         echo -n "Shutting down IPF workflow ${NAME}: "
 	PID=`cat $PID_FILE`
-        kill -9 $PID
+        pkill -9 -P $PID
         RETVAL=$?
         echo
 	[ $RETVAL -eq 0 ] && rm -f $PID_FILE
@@ -66,7 +66,7 @@ stop() {
 }
 
 status() {
-        echo -n "Checking $prog status: "
+        echo -n "Checking status of IPF workflow ${NAME}: "
 	if [ -f $PID_FILE ]; then
 	    PID=`cat $PID_FILE`
             if [ -z "`ps axf | grep ${PID} | grep -v grep`" ]; then
@@ -76,11 +76,11 @@ status() {
             fi
         else
             echo "Service not running"
-
+        fi
         RETVAL=$?
         return $RETVAL
 }
-p
+
 case "$1" in
     start)
         start
