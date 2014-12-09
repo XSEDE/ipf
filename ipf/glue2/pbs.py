@@ -20,7 +20,7 @@ import datetime
 import os
 import re
 
-from ipf.dt import localtzoffset
+from ipf.dt import *
 from ipf.error import StepError
 from ipf.log import LogDirectoryWatcher
 
@@ -346,7 +346,7 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
         elif "Job Modified" in toks[5]:
             # when nodes aren't available, log has jobs that quickly go from Job Queued to Job Run to Job Modified
             # and the jobs are pending after this
-            if activity.State[0] == computing_activity.ComputingActivity.STATE_RUNNING:
+            if len(activity.State) > 0 and activity.State[0] == computing_activity.ComputingActivity.STATE_RUNNING:
                 activity.State[0] = computing_activity.ComputingActivity.STATE_PENDING
                 activity.StartTime = None
             else:

@@ -19,7 +19,7 @@ import commands
 import datetime
 import os
 
-from ipf.dt import localtzoffset
+from ipf.dt import *
 from ipf.error import StepError
 
 from . import computing_activity
