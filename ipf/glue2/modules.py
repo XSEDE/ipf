@@ -75,7 +75,11 @@ class LModApplicationsStep(application.ApplicationsStep):
         env.AppName = name
         env.AppVersion = version
 
-        file = open(path)
+        try:
+            file = open(path)
+        except IOError, e:
+            self.warning("%s" % e)
+            return
         text = file.read()
         file.close()
 
