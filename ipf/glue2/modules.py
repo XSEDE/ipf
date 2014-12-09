@@ -165,7 +165,7 @@ class ModulesApplicationsStep(application.ApplicationsStep):
         lines = file.readlines()
         file.close()
 
-        if not lines[0].startswith("#%Module"):
+        if len(lines) == 0 or not lines[0].startswith("#%Module"):
             return
 
         env = application.ApplicationEnvironment()
