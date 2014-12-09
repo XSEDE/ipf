@@ -474,16 +474,21 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
             if line.startswith("h_data "):
                 value = line[6:].lstrip()
                 if value != "INFINITY":
+                    # MaxMainMemory is MB
                     try:
-                        queue.MaxMainMemory = int(value)
+                        # if no units, it is bytes
+                        queue.MaxMainMemory = int(value) / 1024 / 1024
                     except ValueError:
                         # may have a unit on the end
                         unit = value[len(value-1):]
-                        queue.MaxMainMemory = int(value[:len(value-1)])
-                        if unit == "K":
-                            queue.MaxMainMemory /= 1024
-                        if unit == "G":
-                            queue.MaxMainMemory *= 1024
+                        try:
+                            mem = int(value[:len(value-1)])
+                            if unit == "K":
+                                queue.MaxMainMemory = mem / 1024
+                            if unit == "G":
+                                queue.MaxMainMemory = mem * 1024
+                        except ValueError:
+                            pass
         return queue
     
     def _getDuration(self, dStr):
