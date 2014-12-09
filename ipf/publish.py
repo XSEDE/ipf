@@ -106,7 +106,12 @@ class AmqpStep(PublishStep):
         except KeyError:
             self.password = "guest"
         try:
-            self.ssl_options = self.params["ssl_options"]
+            self.ssl_options = {}
+            for (key,value) in self.params["ssl_options"].iteritems():
+                if isinstance(value,unicode):
+                    self.ssl_options[key.encode("utf-8")] = value.encode("utf-8")
+                else:
+                    self.ssl_options[key.encode("utf-8")] = value
             try:
                 if not os.path.isabs(self.ssl_options["keyfile"]):
                     self.ssl_options["keyfile"] = os.path.join(IPF_ETC_PATH,self.ssl_options["keyfile"])
