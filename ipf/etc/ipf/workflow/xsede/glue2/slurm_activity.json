@@ -2,8 +2,8 @@
   "name": "sge_activity",
   "description": "This workflow watches the SLURM reporting file and publishes updates about individual jobs",
   "steps": [
-    { "name": "ipf.teragrid.sysinfo.ResourceNameStep" },
-    { "name": "ipf.teragrid.sysinfo.SiteNameStep" },
+    { "name": "ipf.xsede.sysinfo.ResourceNameStep" },
+    { "name": "ipf.xsede.sysinfo.SiteNameStep" },
     { "name": "ipf.glue2.slurm.ComputingActivityUpdateStep"
       "params": {
         "position_file": "slurm_activity.pos"

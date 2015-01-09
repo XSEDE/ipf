@@ -5,9 +5,9 @@
     "openstack_version": "2013.2"
   },
   "steps": [
-    { "name": "ipf.teragrid.sysinfo.ResourceNameStep" },
-    { "name": "ipf.teragrid.sysinfo.SiteNameStep" },
-    { "name": "ipf.teragrid.sysinfo.PlatformStep" },
+    { "name": "ipf.xsede.sysinfo.ResourceNameStep" },
+    { "name": "ipf.xsede.sysinfo.SiteNameStep" },
+    { "name": "ipf.sysinfo.PlatformStep" },
     { "name": "glue2.location.LocationStep",
       "params": {
         "location": {

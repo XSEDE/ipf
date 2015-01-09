@@ -2,8 +2,8 @@
   "name": "sge_activity",
   "description": "This workflow watches the SGE reporting file and publishes updates about individual jobs",
   "steps": [
-    { "name": "ipf.teragrid.sysinfo.ResourceNameStep" },
-    { "name": "ipf.teragrid.sysinfo.SiteNameStep" },
+    { "name": "ipf.xsede.sysinfo.ResourceNameStep" },
+    { "name": "ipf.xsede.sysinfo.SiteNameStep" },
     { "name": "ipf.glue2.sge.ComputingActivityUpdateStep"
       "params": {
         "position_file": "sge_activity.pos"

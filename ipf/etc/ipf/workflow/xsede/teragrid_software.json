@@ -1,7 +1,7 @@
 {
   "name": "teragrid_software",
   "steps": [
-    { "name": "ipf.teragrid.sysinfo.ResourceNameStep" },
+    { "name": "ipf.xsede.sysinfo.ResourceNameStep" },
     { "name": "ipf.teragrid.kits.KitsStep",
       "params": {
         "core_kit_directory": "/share1/apps/teragrid/kits/ctss-core-registration-5.0.0-r1"
@@ -10,7 +10,7 @@
     {
       "name": "ipf.publish.AmqpStep",
       "params": {
-        "publish": ["ipfteragrid.kits.KitsXml"],
+        "publish": ["ipf.teragrid.kits.KitsXml"],
         "services": [ "info1.dyn.xsede.org", "info2.dyn.xsede.org" ],
         "ssl_options": {
           "keyfile": "key.pem",

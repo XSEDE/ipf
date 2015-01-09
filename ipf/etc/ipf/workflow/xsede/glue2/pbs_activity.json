@@ -2,8 +2,8 @@
   "name": "pbs_activity",
   "description": "This workflow watches PBS server logs and publishes updates about individual jobs",
   "steps": [
-    { "name": "ipf.teragrid.sysinfo.ResourceNameStep" },
-    { "name": "ipf.teragrid.sysinfo.SiteNameStep" },
+    { "name": "ipf.xsede.sysinfo.ResourceNameStep" },
+    { "name": "ipf.xsede.sysinfo.SiteNameStep" },
     { "name": "ipf.glue2.pbs.ComputingActivityUpdateStep"
       "params": {
         "position_file": "pbs_activity.pos"

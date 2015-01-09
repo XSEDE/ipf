@@ -1,7 +1,7 @@
 {
   "name": "teragrid_portal",
   "steps": [
-    { "name": "ipf.teragrid.sysinfo.ResourceNameStep" },
+    { "name": "ipf.xsede.sysinfo.ResourceNameStep" },
     { "name": "ipf.teragrid.portal.UserPortalLoadStep",
       "params": {
         "provider_script": "/share1/apps/teragrid/globus-wsrf-4.0.8-r2/libexec/tg_user_portal_provider",

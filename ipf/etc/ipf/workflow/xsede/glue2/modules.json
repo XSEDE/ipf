@@ -1,7 +1,7 @@
 {
   "name": "modules",
   "steps": [
-    { "name": "ipf.teragrid.sysinfo.ResourceNameStep" },
+    { "name": "ipf.xsede.sysinfo.ResourceNameStep" },
     { "name": "ipf.glue2.modules.ModulesApplicationsStep" },
     {
       "name": "ipf.publish.AmqpStep",
