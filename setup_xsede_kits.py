@@ -33,7 +33,7 @@ def _createSetupCfg():
     f.write("""
 [bdist_rpm]
 requires =
-    ipf-xsede-glue2 >= 1.0b1
+    ipf-xsede-glue2 >= 1.0b2
     ipf-xsede-glue2 < 2.0
     """)
     f.close()
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     _createSetupCfg()
     description="XSEDE workflows to publish TeraGrid kits and local software using the Information Publishing Framework"
     setup(name="ipf-xsede-teragrid-kitssoftware",
-          version="1.0b1",
+          version="1.0b2",
           description=description,
           long_description=description,
           classifiers=[

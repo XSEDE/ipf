@@ -29,7 +29,7 @@ def _createSetupCfg():
     f.write("""
 [bdist_rpm]
 requires =
-    ipf >= 1.0b1
+    ipf >= 1.0b2
     ipf < 2.0
     """)
     f.close()
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     _createSetupCfg()
     description="XSEDE GLUE v2.0 workflows for the Information Publishing Framework"
     setup(name="ipf-xsede-glue2",
-          version="1.0b1",
+          version="1.0b2",
           description=description,
           long_description=description,
           classifiers=[
