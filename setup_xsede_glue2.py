@@ -64,7 +64,7 @@ if __name__ == "__main__":
           license="Apache",
           # this is dumb, but it gets the right files from etc into the rpm:
           #   ipf.etc results in the files under ipf/etc/in the MANIFEST.in being included in the rpm
-          packages=["ipf.teragrid","ipf.etc"],
+          packages=["ipf.xsede","ipf.teragrid","ipf.etc"],
           install_requires=["ipf"],
           include_package_data=False,
           data_files = [
