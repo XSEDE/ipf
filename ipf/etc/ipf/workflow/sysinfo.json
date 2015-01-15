@@ -1,5 +1,5 @@
 {
-  "name": "publish_sysinfo",
+  "name": "sysinfo",
   "timeout": 15,
   "description": "This workflow publishes information about the system in a variety of ways",
   "steps": [
