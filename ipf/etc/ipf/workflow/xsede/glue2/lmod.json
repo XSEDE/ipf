@@ -13,7 +13,7 @@
           "certfile": "cert.pem",
           "ca_certs": "xsede/ca_certs.pem"
         },
-	"vhost": "xsede_public",
+	"vhost": "xsede",
         "exchange": "glue2.applications"
       }
     },

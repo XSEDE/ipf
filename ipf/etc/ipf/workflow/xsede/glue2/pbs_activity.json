@@ -19,7 +19,7 @@
           "certfile": "cert.pem",
           "ca_certs": "xsede/ca_certs.pem"
         },
-	"vhost": "xsede_private",
+	"vhost": "xsede",
         "exchange": "glue2.computing_activity"
       }
     }
