@@ -158,6 +158,7 @@ class Applications(Data):
         env.Name = "%s-%s" % (env.AppName,app_version)
         env.id =  "%s.%s.%s" % (app_version,env.AppName,self.resource_name)
         env.ID = "urn:glue2:ApplicationEnvironment:%s.%s.%s" % (app_version,env.AppName,self.resource_name)
+        env.ComputingManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
 
         env.ApplicationHandleID = []
         for handle in handles:
