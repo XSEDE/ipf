@@ -248,7 +248,7 @@ def parseJLines(output, jobs, step):
                 if int(float(m.group(1))) > 0:
                     cur_job.ComputingManagerEndTime = epochToDateTime(float(m.group(1)),localtzoffset())
             if "<UA_name>exit_status</UA_name>" in str:
-                cur_job.ComputingManagerExitCode = int(float(m.group(1)))
+                cur_job.ComputingManagerExitCode = m.group(1)
 
 #######################################################################################################################
 

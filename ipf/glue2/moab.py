@@ -156,7 +156,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
         exitCode = jobElement.getAttribute("CompletionCode")
         if exitCode != "":
-            job.ExitCode = exitCode
+            job.ComputingManagerExitCode = exitCode
 
         # don't see used CPU time anywhere
         #job.UsedTotalCPUTime = 
