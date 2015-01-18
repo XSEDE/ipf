@@ -173,6 +173,11 @@ class AmqpStep(PublishStep):
             self._close()
             raise StepError("failed to publish %s: %s" % (representation.__class__,e))
 
+    def _connection_closed(self, reason):
+        self.info("server closed connection: %s" % reason)
+        self.channel = None
+        self.connection = None
+
     def _connectIfNecessary(self):
         if self.channel is not None:
             return
@@ -205,7 +210,8 @@ class AmqpStep(PublishStep):
                                          self.vhost,
                                          PlainMechanism(self.username,self.password),
                                          None,
-                                         60)
+                                         60,
+                                         self._connection_closed)
         else:
             if "keyfile" in self.ssl_options:
                 self.connection = Connection(host,
@@ -213,14 +219,16 @@ class AmqpStep(PublishStep):
                                              self.vhost,
                                              X509Mechanism(),
                                              self.ssl_options,
-                                             60)
+                                             60,
+                                             self._connection_closed)
             else:
                 self.connection = Connection(host,
                                              port,
                                              self.vhost,
                                              PlainMechanism(self.username,self.password),
                                              self.ssl_options,
-                                             60)
+                                             60,
+                                             self._connection_closed)
         self.channel = self.connection.channel()
 
     def _selectService(self):
