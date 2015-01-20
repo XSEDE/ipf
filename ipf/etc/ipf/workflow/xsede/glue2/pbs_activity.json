@@ -3,8 +3,7 @@
   "description": "This workflow watches PBS server logs and publishes updates about individual jobs",
   "steps": [
     { "name": "ipf.xsede.sysinfo.ResourceNameStep" },
-    { "name": "ipf.xsede.sysinfo.SiteNameStep" },
-    { "name": "ipf.glue2.pbs.ComputingActivityUpdateStep"
+    { "name": "ipf.glue2.pbs.ComputingActivityUpdateStep",
       "params": {
         "position_file": "pbs_activity.pos"
       }
