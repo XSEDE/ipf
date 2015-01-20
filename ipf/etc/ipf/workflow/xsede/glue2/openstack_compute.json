@@ -6,7 +6,6 @@
   },
   "steps": [
     { "name": "ipf.xsede.sysinfo.ResourceNameStep" },
-    { "name": "ipf.xsede.sysinfo.SiteNameStep" },
     { "name": "ipf.sysinfo.PlatformStep" },
     { "name": "glue2.location.LocationStep",
       "params": {

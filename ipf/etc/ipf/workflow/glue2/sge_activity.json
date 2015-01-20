@@ -3,8 +3,7 @@
   "description": "This workflow watches the SGE reporting file and publishes updates about individual jobs",
   "steps": [
     { "name": "ipf.sysinfo.ResourceNameStep" },
-    { "name": "ipf.sysinfo.SiteNameStep" },
-    { "name": "ipf.glue2.sge.ComputingActivityUpdateStep"
+    { "name": "ipf.glue2.sge.ComputingActivityUpdateStep",
       "params": {
         "position_file": "sge_activity.pos"
       }

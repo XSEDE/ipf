@@ -22,7 +22,7 @@ from xml.dom.minidom import getDOMImplementation
 from ipf.data import Data, Representation
 from ipf.dt import *
 from ipf.error import NoMoreInputsError, StepError
-from ipf.sysinfo import ResourceName,SiteName
+from ipf.sysinfo import ResourceName
 from ipf.step import Step
 
 from computing_activity import ComputingActivities, ComputingActivityTeraGridXml, ComputingActivityOgfJson
@@ -42,15 +42,15 @@ class PublicStep(Step):
 
         self.description = "creates a single data containing all nonsensitive compute-related information"
         self.time_out = 5
-        # TeraGridXML requires SiteName
-        self.requires = [ResourceName,SiteName,Location,
+        self.requires = [ResourceName,Location,
                          ComputingService,ComputingShares,ComputingManager,ExecutionEnvironments]
         self.produces = [Public]
 
     def run(self):
         public = Public()
         public.resource_name = self._getInput(ResourceName).resource_name
-        public.site_name = self._getInput(SiteName).site_name
+        # the old TeraGridXML wants a site_name, so just derive it
+        public.site_name = public.resource_name[public.resource_name.find(".")+1:]
         public.location = [self._getInput(Location)]
         public.service = [self._getInput(ComputingService)]
         public.share = self._getInput(ComputingShares).shares
@@ -171,14 +171,14 @@ class PrivateStep(Step):
 
         self.description = "creates a single data containing all sensitive compute-related information"
         self.time_out = 5
-        # TeraGridXML requires SiteName
-        self.requires = [ResourceName,SiteName,ComputingActivities]
+        self.requires = [ResourceName,ComputingActivities]
         self.produces = [Private]
 
     def run(self):
         private = Private()
         private.resource_name = self._getInput(ResourceName).resource_name
-        private.site_name = self._getInput(SiteName).site_name
+        # the old TeraGridXML wants a site_name, so just derive it
+        private.site_name = private.resource_name[private.resource_name.find(".")+1:]
         private.activity = self._getInput(ComputingActivities).activities
         private.id = private.resource_name
         
