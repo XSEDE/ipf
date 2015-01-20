@@ -174,7 +174,7 @@ class AmqpStep(PublishStep):
             raise StepError("failed to publish %s: %s" % (representation.__class__,e))
 
     def _connection_closed(self, reason):
-        self.info("server closed connection: %s" % reason)
+        #self.info("server closed connection: %s" % reason)
         self.channel = None
         self.connection = None
 
