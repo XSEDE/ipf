@@ -46,7 +46,7 @@ if __name__ == "__main__":
     _createSetupCfg()
     description="XSEDE GLUE v2.0 workflows for the Information Publishing Framework"
     setup(name="ipf-xsede-glue2",
-          version="1.0b2",
+          version="1.0b3",
           description=description,
           long_description=description,
           classifiers=[

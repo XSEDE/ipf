@@ -46,7 +46,7 @@ if __name__ == "__main__":
     _createSetupCfg()
     description="XSEDE workflows to publish TeraGrid kits and local software using the Information Publishing Framework"
     setup(name="ipf-xsede-teragrid-kitssoftware",
-          version="1.0b2",
+          version="1.0b3",
           description=description,
           long_description=description,
           classifiers=[
