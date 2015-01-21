@@ -49,7 +49,7 @@ start() {
 	    echo "IPF workflow is already running"
 	    return 1
         fi
-        su $IPF_USER -c "$PROGRAM -d $WORKFLOW"
+        su $IPF_USER -s /bin/sh -c "$PROGRAM -d $WORKFLOW"
         RETVAL=$?
         echo
         return $RETVAL
