@@ -9,7 +9,7 @@ Setup
 
 Change to this directory:
 
-    $ cd ipf/xsede_tests
+    $ cd ipf/ipf/xsede/test
 
 Download the current GLUE 2.0 JSON schema:
 
