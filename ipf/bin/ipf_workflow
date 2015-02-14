@@ -1,0 +1,10 @@
+#!/bin/bash
+
+PYTHON=python
+
+MTK_HOME=/opt/mtk-1.0
+IPF_HOME=/opt/ipf-1.0
+
+export PYTHONPATH=$MTK_HOME:$IPF_HOME
+
+$PYTHON $IPF_HOME/ipf/run_workflow.py $@
