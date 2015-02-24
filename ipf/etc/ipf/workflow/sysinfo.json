@@ -1,7 +1,7 @@
 {
   "name": "sysinfo",
   "timeout": 15,
-  "description": "This workflow publishes information about the system in a variety of ways",
+  "description": "This workflow publishes information about the system to the screen",
   "steps": [
     { "name": "ipf.sysinfo.ResourceNameStep" },
     { "name": "ipf.sysinfo.SiteNameStep" },
@@ -11,35 +11,6 @@
       "name": "ipf.publish.PrintStep",
       "params": {
         "publish": ["ipf.sysinfo.SystemInformationTxt"]
-      }
-    },
-    {
-      "name": "ipf.publish.FileStep",
-      "params": {
-        "publish": ["ipf.sysinfo.SystemInformationTxt"],
-        "path": "sysinfo.txt"
-      }
-    },
-    {
-      "name": "ipf.publish.AmqpStep",
-      "params": {
-        "publish": ["ipf.sysinfo.SystemInformationTxt"],
-        "services": ["localhost"],
-        "username": "guest",
-        "password": "guest",
-        "ssl_options": {
-          "ca_certs": "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"
-        },
-        "vhost": "/",
-        "exchange": "amq.topic"
-      }
-    },
-    {
-      "name": "ipf.publish.HttpStep",
-      "params": {
-        "publish": ["ipf.sysinfo.SystemInformationTxt"],
-        "host": "localhost",
-        "path": "ipf/sysinfo"
       }
     }
   ]
