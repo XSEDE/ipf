@@ -2,9 +2,9 @@
 
 PYTHON=python
 
-MTK_HOME=/opt/mtk-1.0
-IPF_HOME=/opt/ipf-1.0
+MTK_PATH=/opt/mtk-1.0
+IPF_PATH=/opt/ipf-1.0
 
-export PYTHONPATH=$MTK_HOME:$IPF_HOME
+export PYTHONPATH=$MTK_PATH:$IPF_PATH
 
-$PYTHON $IPF_HOME/ipf/run_workflow.py $@
+$PYTHON $IPF_PATH/ipf/run_workflow.py $@
