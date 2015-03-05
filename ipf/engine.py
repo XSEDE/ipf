@@ -61,6 +61,11 @@ class WorkflowEngine(object):
                 step.start()
             except OSError, e:
                 logger.error("failed to start step: %d (%s)\n" % (e.errno, e.strerror))
+                logger.warn("aborting workflow")
+                for step in workflow.steps:
+                    if step.is_alive():
+                        step.terminate()
+                return
 
         start_time = time.time()
         steps_with_inputs = filter(self._sendNoMoreInputs,workflow.steps)
