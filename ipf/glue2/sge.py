@@ -201,7 +201,10 @@ def parseJLines(output, jobs, step):
     for job_string in job_strings:
         m = re.search("<JB_job_number>(\S+)</JB_job_number>",job_string)
         if m is not None:
-            cur_job = jobs.get(m.group(1))
+            try:
+                cur_job = jobs[m.group(1)]
+            except KeyError:
+                continue
         else:
             continue
         m = re.search("<JB_job_name>(\S+)</JB_job_name>",job_string)
