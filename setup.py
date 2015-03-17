@@ -54,7 +54,7 @@ def _createSetupCfg():
     f.write("""
 [bdist_rpm]
 requires =
-    mtk >= 1.0b1
+    mtk >= 1.0
     mtk < 2.0
     """)
     f.close()
@@ -70,13 +70,11 @@ if __name__ == "__main__":
     _createManifest()
     _createSetupCfg()
     setup(name="ipf",
-          version="1.0b4",
+          version="1.0",
           description="The Information Publishing Framework",
           long_description=readme(),
           classifiers=[
-              #"Development Status :: 5 - Production/Stable",
-              "Development Status :: 4 - Beta",
-              #"Development Status :: 3 - Alpha",
+              "Development Status :: 5 - Production/Stable",
               "License :: OSI Approved :: Apache Software License",
               "Programming Language :: Python :: 2",
               "Topic :: System :: Monitoring",
