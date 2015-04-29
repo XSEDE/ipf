@@ -116,6 +116,10 @@ def _getJob(step, job_str):
     m = re.search(" Name=(\S+)",job_str)
     if m is not None:
         job.Name = m.group(1)
+    else:
+        m = re.search(" JobName=(\S+)",job_str)
+        if m is not None:
+            job.Name = m.group(1)
     m = re.search("UserId=(\S+)\(",job_str)
     if m is not None:
         job.LocalOwner = m.group(1)
@@ -441,6 +445,12 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
             elif "MAINT" in state:
                 node.UsedInstances = 0
                 node.UnavailableInstances = 1
+            elif "RESERVED" in state:
+                node.UsedInstances = 1
+                node.UnavailableInstances = 0
+            elif "MIXED" in state:
+                node.UsedInstances = 1
+                node.UnavailableInstances = 0
             else:
                 self.warning("unknown node state: %s",state)
                 node.UsedInstances = 0
