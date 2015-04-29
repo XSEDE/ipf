@@ -18,6 +18,7 @@
 import commands
 import sys
 
+from ipf.error import StepError
 from . import computing_activity
 
 ##############################################################################################################
@@ -46,7 +47,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
         self.debug("running "+query_priority)
         status, output = commands.getstatusoutput(query_priority)
         if status != 0:
-            raise StepError("'%s' failed: %s\n" % (cmd,output))
+            raise StepError("'%s' failed: %s\n" % (query_priority,output))
 
         state = None
         for line in output.splitlines():
