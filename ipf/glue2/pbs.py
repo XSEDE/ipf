@@ -20,7 +20,7 @@ import datetime
 import os
 import re
 
-from ipf.dt import *
+from ipf.dt import localtzoffset
 from ipf.error import StepError
 from ipf.log import LogDirectoryWatcher
 
@@ -191,12 +191,17 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
         if m is not None:
             job.UsedTotalCPUTime = cls._getDuration(m.group(1))
 
-        # ctime - time job was created
         # etime - time job was queued
         m = re.search("etime = (.+)",jobString)
         if m is not None:
             job.SubmissionTime = cls._getDateTime(m.group(1))
             job.ComputingManagerSubmissionTime = job.SubmissionTime
+        else:
+            # ctime - time job was created
+            m = re.search("ctime = (.+)",jobString)
+            if m is not None:
+                job.SubmissionTime = cls._getDateTime(m.group(1))
+                job.ComputingManagerSubmissionTime = job.SubmissionTime
 
         # qtime - time job became eligible to run
 
