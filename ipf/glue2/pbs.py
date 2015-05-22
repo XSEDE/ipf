@@ -568,7 +568,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         hosts = map(self._getHost,nodeStrings)
         hosts = filter(self._testProperties,hosts)
         hosts = filter(self._goodHost,hosts)
-        return hosts
+        return self._groupHosts(hosts)
 
     def _getHost(self, nodeString):
         host = execution_environment.ExecutionEnvironment()

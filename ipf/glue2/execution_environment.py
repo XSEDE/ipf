@@ -53,9 +53,7 @@ class ExecutionEnvironmentsStep(GlueStep):
     def run(self):
         self.resource_name = self._getInput(ResourceName).resource_name
         
-        hosts = self._run()
-        host_groups = self._groupHosts(hosts)
-
+        host_groups = self._run()
         for host_group in host_groups:
             host_group.id = "%s.%s" % (host_group.Name,self.resource_name)
             host_group.ID = "urn:glue2:ExecutionEnvironment:%s.%s" % (host_group.Name,self.resource_name)

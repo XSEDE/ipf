@@ -528,7 +528,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
             if self._goodHost(host):
                 hosts.append(host)
 
-        return hosts
+        return self._groupHosts(hosts)
 
 #######################################################################################################################
 

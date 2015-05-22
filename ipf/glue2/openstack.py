@@ -321,7 +321,7 @@ class ExecutionEnvironmentsStep(glue2.execution_environment.ExecutionEnvironment
             exec_env = self._getExecEnv(nova,host_name)
             if exec_env is not None:
                 exec_envs.append(exec_env)
-        return exec_envs
+        return self._groupHosts(exec_envs)
 
     def _getExecEnv(self, nova, host_name):
         node = glue2.execution_environment.ExecutionEnvironment()

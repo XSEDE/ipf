@@ -467,7 +467,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
             raise StepError("nimbus-nodes failed: "+output+"\n")
 
         nodeStrings = output.split("\n\n")
-        return map(self._getNode,nodeStrings)
+        return self._groupHosts(map(self._getNode,nodeStrings))
 
     def _getNode(self, nodeString):
         lines = nodeString.split("\n")
