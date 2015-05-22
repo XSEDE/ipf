@@ -612,7 +612,9 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
             return map(lambda suffix: prefix+suffix,suffixes)
         m = re.search("^(\d+)-(\d+)$",expr)
         if m is not None:
-            return map(lambda num: str(num),range(int(m.group(1)),int(m.group(2))+1))
+            # don't drop leading any leading 0s
+            pattern = "%%0%dd" % len(m.group(1))
+            return map(lambda num: pattern % num,range(int(m.group(1)),int(m.group(2))+1))
         return [expr]
 
     def _splitCommas(self, expr):
