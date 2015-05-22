@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2012 The University of Texas at Austin                          #
+#   Copyright 2015 The University of Texas at Austin                          #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -17,6 +17,7 @@
 
 import commands
 import datetime
+import itertools
 import os
 import re
 
@@ -74,7 +75,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
     def __init__(self):
         computing_activity.ComputingActivitiesStep.__init__(self)
 
-        self._acceptParameter("scontrol","the path to the SLURM squeue program (default 'scontrol')",False)
+        self._acceptParameter("scontrol","the path to the SLURM scontrol program (default 'scontrol')",False)
 
     def _run(self):
         # squeue command doesn't provide submit time
@@ -129,6 +130,11 @@ def _getJob(step, job_str):
     m = re.search("Partition=(\S+)",job_str)
     if m is not None:
         job.Queue = m.group(1)
+    m = re.search("Reservation=(\S+)",job_str)
+    if m is not None and m.group(1) != "(null)":
+        job.Queue = m.group(1)  # override
+        job.Extension["ReservationName"] = m.group(1)
+        job.ResourceID = "urn:glue2:ExecutionEnvironment:%s.%s" % (m.group(1),step.resource_name)
     m = re.search("JobState=(\S+)",job_str)
     if m is not None:
         state = m.group(1)  # see squeue man page for state descriptions
@@ -186,10 +192,12 @@ def _getJob(step, job_str):
         # ignore if job hasn't started (it is an estimated start time used for backfill scheduling)
         if job.State[0] != computing_activity.ComputingActivity.STATE_PENDING:
             job.StartTime = _getDateTime(m.group(1))
-    m = re.search("EndTime=(\S+)",job_str)
-    if m is not None and m.group(1) != "Unknown":
-        job.EndTime = _getDateTime(m.group(1))
-        job.ComputingManagerEndTime = job.EndTime
+    # SLURM sets EndTime to StartTime+TimeLimit while the job is running, so ignore it then
+    if job.State != computing_activity.ComputingActivity.STATE_RUNNING:
+        m = re.search("EndTime=(\S+)",job_str)
+        if m is not None and m.group(1) != "Unknown":
+            job.EndTime = _getDateTime(m.group(1))
+            job.ComputingManagerEndTime = job.EndTime
 
     # not sure how to interpret NodeList yet
     #m = re.search("exec_host = (\S+)",job_str)
@@ -343,21 +351,27 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
         self._acceptParameter("scontrol","the path to the SLURM scontrol program (default 'scontrol')",False)
 
     def _run(self):
+        # create shares for partitions
         scontrol = self.params.get("scontrol","scontrol")
         cmd = scontrol + " show partition"
         self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
             raise StepError("scontrol failed: "+output+"\n")
-
         partition_strs = output.split("\n\n")
+        partitions = filter(lambda share: self._includeQueue(share.Name),map(self._getShare,partition_strs))
 
-        partitions = []
-        for partition_str in partition_strs:
-            partition = self._getShare(partition_str)
-            if self._includeQueue(partition.Name):
-                partitions.append(partition)
-        return partitions
+        # create shares for reservations
+        scontrol = self.params.get("scontrol","scontrol")
+        cmd = scontrol + " show reservation"
+        self.debug("running "+cmd)
+        status, output = commands.getstatusoutput(cmd)
+        if status != 0:
+            raise StepError("scontrol failed: "+output+"\n")
+        reservation_strs = output.split("\n\n")
+        reservations = map(self._getReservation,reservation_strs)
+
+        return partitions + reservations
 
     def _getShare(self, partition_str):
         share = computing_share.ComputingShare()
@@ -395,6 +409,33 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
 
         return share
 
+    def _getReservation(self, rsrv_str):
+        share = computing_share.ComputingShare()
+
+        m = re.search("ReservationName=(\S+)",rsrv_str)
+        if m is not None:
+            share.Name = m.group(1)
+            share.MappingQueue = share.Name
+            share.ShareID = ["urn:glue2:ExecutionEnvironment:%s.%s" % (share.Name,self.resource_name)]
+        m = re.search("NodCnt=(\S+)",rsrv_str)
+        if m is not None:
+            share.MaxSlotsPerJob = int(m.group(1))
+
+        m = re.search("State=(\S+)",rsrv_str)
+        if m is not None:
+            if m.group(1) != "ACTIVE":
+                share.ServingState = "production"
+            elif m.group(1) != "INACTIVE":
+                m = re.search("StartTime=(\S+)",rsrv_str)
+                if m is not None:
+                    start_time = _getDateTime(m.group(1))
+                    now = datetime.datetime.now(ipf.dt.localtzoffset())
+                    if start_time > now:
+                        share.ServingState = "queuing"
+                    else:
+                        share.ServingState = "closed"
+        return share
+
 #######################################################################################################################
 
 class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep):
@@ -404,17 +445,63 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         self._acceptParameter("scontrol","the path to the SLURM scontrol program (default 'scontrol')",False)
 
     def _run(self):
+        # get info on the nodes
         scontrol = self.params.get("scontrol","scontrol")
         cmd = scontrol + " show node"
         self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
             raise StepError("scontrol failed: "+output+"\n")
-
         node_strs = output.split("\n\n")
-        nodes = map(self._getNode,node_strs)
-        nodes = filter(self._goodHost,nodes)
-        return nodes
+        nodes = filter(self._goodHost,map(self._getNode,node_strs))
+
+        # ignore partitions for now since a node can be part of more than one of them (plus a reservation)
+
+        # create environments for reservations
+        scontrol = self.params.get("scontrol","scontrol")
+        cmd = scontrol + " show reservation"
+        self.debug("running "+cmd)
+        status, output = commands.getstatusoutput(cmd)
+        if status != 0:
+            raise StepError("scontrol failed: "+output+"\n")
+        reservation_strs = output.split("\n\n")
+        reservations = map(self._getReservation,reservation_strs)
+
+        node_map = {}
+        for node in nodes:
+            node_map[node.Name] = node
+        for exec_env in reservations:
+            try:
+                node_names = exec_env.Extension["Nodes"]
+            except KeyError:
+                continue
+
+            example_node = node_map[node_names[0]]
+            exec_env.ConnectivityIn = example_node.ConnectivityIn
+            exec_env.ConnectivityOut = example_node.ConnectivityOut
+            exec_env.OSName = example_node.OSName
+            exec_env.OSVersion = example_node.OSVersion
+            exec_env.Platform = example_node.Platform
+
+            exec_env.PhysicalCPUs = sum(map(lambda node_name: node_map[node_name].PhysicalCPUs,
+                                            node_names)) / len(node_names)
+            exec_env.LogicalCPUs = sum(map(lambda node_name: node_map[node_name].LogicalCPUs,
+                                           node_names)) / len(node_names)
+            exec_env.MainMemorySize = sum(map(lambda node_name: node_map[node_name].MainMemorySize,
+                                              node_names)) / len(node_names)
+            exec_env.TotalInstances = len(node_names)
+            exec_env.UsedInstances = sum(map(lambda node_name: node_map[node_name].UsedInstances,node_names))
+            exec_env.UnavailableInstances = sum(map(lambda node_name: node_map[node_name].UnavailableInstances,
+                                                    node_names))
+            # remove nodes that are part of a current reservation so that they aren't counted twice
+            for node_name in node_names:
+                del node_map[node_name]
+
+            # don't need to publish the node names
+            del exec_env.Extension["Nodes"]
+
+        # group up nodes that aren't part of a current reservation
+        return reservations + self._groupHosts(node_map.values())
 
     def _getNode(self, node_str):
         node = execution_environment.ExecutionEnvironment()
@@ -429,6 +516,9 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         m = re.search("CPUTot=(\S+)",node_str)
         if m is not None:
             node.LogicalCPUs = int(m.group(1))
+        m = re.search("RealMemory=(\S+)",node_str)  # MB
+        if m is not None:
+            node.MainMemorySize = int(m.group(1))
         m = re.search("State=(\S+)",node_str)
         if m is not None:
             node.TotalInstances = 1
@@ -456,8 +546,89 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
                 node.UsedInstances = 0
                 node.UnavailableInstances = 1
 
-        # 'RealMemory' is 1. not sure if this is a bad value or what
-
         return node
+
+    # not being used right now
+    def _getPartition(self, partition_str):
+        partition = execution_environment.ExecutionEnvironment()
+
+        # ID set by ExecutionEnvironment
+        m = re.search("PartitionName=(\S+)",partition_str)
+        if m is not None:
+            partition.Name = m.group(1)
+
+        m = re.search("TotalNodes=(\S+)",partition_str)
+        if m is not None and m.group(1) != "(null)":
+            partition.TotalInstances = int(m.group(1))
+
+        m = re.search("\sNodes=(\S+)",partition_str)
+        if m is not None and m.group(1) != "(null)":
+            partition.Extension["Nodes"] = self._expandNames(m.group(1))
+
+        return partition
+
+    def _getReservation(self, rsrv_str):
+        rsrv = execution_environment.ExecutionEnvironment()
+
+        # ID set by ExecutionEnvironment
+        m = re.search("ReservationName=(\S+)",rsrv_str)
+        if m is None:
+            raise StepError("didn't find 'ReservationName'")
+        rsrv.Name = m.group(1)
+        rsrv.ShareID = ["urn:glue2:ComputingShare:%s.%s" % (rsrv.Name,self.resource_name)]
+
+        m = re.search("StartTime=(\S+)",rsrv_str)
+        if m is not None:
+            rsrv.Extension["StartTime"] = _getDateTime(m.group(1))
+        m = re.search("EndTime=(\S+)",rsrv_str)
+        if m is not None:
+            rsrv.Extension["EndTime"] = _getDateTime(m.group(1))
+
+        m = re.search("NodeCnt=(\S+)",rsrv_str)
+        if m is not None:
+            rsrv.Extension["RequestedInstances"] = int(m.group(1))
+
+        m = re.search("Nodes=(\S+)",rsrv_str)
+        if m is not None:
+            if m.group(1) != "(null)":
+                rsrv.Extension["Nodes"] = self._expandNames(m.group(1))
+
+        m = re.search("State=(\S+)",rsrv_str)
+        if m is not None:
+            if m.group(1) != "ACTIVE":
+                if "Nodes" in rsrv.Extension:
+                    del rsrv.Extension["Nodes"]   # not active, so no nodes at the current time
+
+        return rsrv
+
+    def _expandNames(self, expr):
+        exprs = self._splitCommas(expr)
+        if len(exprs) > 1:
+            return list(itertools.chain.from_iterable(map(self._expandNames,exprs)))
+        m = re.search("^(\S+)\[(\S+)\]$",expr)
+        if m is not None:
+            prefix = m.group(1)
+            suffixes = self._expandNames(m.group(2))
+            return map(lambda suffix: prefix+suffix,suffixes)
+        m = re.search("^(\d+)-(\d+)$",expr)
+        if m is not None:
+            return map(lambda num: str(num),range(int(m.group(1)),int(m.group(2))+1))
+        return [expr]
+
+    def _splitCommas(self, expr):
+        exprs = []
+        start_pos = 0
+        depth = 0
+        for pos in range(len(expr)):
+            if expr[pos] == "[":
+                depth += 1
+            elif expr[pos] == "]":
+                depth -= 1
+            elif expr[pos] == ",":
+                if depth == 0:
+                    exprs.append(expr[start_pos:pos])
+                    start_pos = pos + 1
+        exprs.append(expr[start_pos:])
+        return exprs
 
 #######################################################################################################################
