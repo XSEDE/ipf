@@ -483,6 +483,9 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
             exec_env.OSVersion = example_node.OSVersion
             exec_env.Platform = example_node.Platform
 
+            # in case a node is in multiple active reservations
+            node_names = filter(lambda node_name: node_name in node_map,node_names)
+
             exec_env.PhysicalCPUs = sum(map(lambda node_name: node_map[node_name].PhysicalCPUs,
                                             node_names)) / len(node_names)
             exec_env.LogicalCPUs = sum(map(lambda node_name: node_map[node_name].LogicalCPUs,
