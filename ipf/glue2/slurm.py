@@ -423,9 +423,9 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
 
         m = re.search("State=(\S+)",rsrv_str)
         if m is not None:
-            if m.group(1) != "ACTIVE":
+            if m.group(1) == "ACTIVE":
                 share.ServingState = "production"
-            elif m.group(1) != "INACTIVE":
+            elif m.group(1) == "INACTIVE":
                 m = re.search("StartTime=(\S+)",rsrv_str)
                 if m is not None:
                     start_time = _getDateTime(m.group(1))
