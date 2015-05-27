@@ -53,8 +53,8 @@ class ComputingSharesStep(GlueStep):
         shares = self._run()
 
         for share in shares:
-            share.id = "%s.%s" % (share.MappingQueue,self.resource_name)
-            share.ID = "urn:glue2:ComputingShare:%s.%s" % (share.MappingQueue,self.resource_name)
+            share.id = "%s.%s" % (share.Name,self.resource_name)
+            share.ID = "urn:glue2:ComputingShare:%s.%s" % (share.Name,self.resource_name)
             share.ServiceID = "urn:glue2:ComputingService:%s" % (self.resource_name)
 
         self._addActivities(shares)

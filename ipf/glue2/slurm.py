@@ -411,12 +411,15 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
 
     def _getReservation(self, rsrv_str):
         share = computing_share.ComputingShare()
+        share.Extension["Reservation"] = True
 
         m = re.search("ReservationName=(\S+)",rsrv_str)
         if m is not None:
             share.Name = m.group(1)
-            share.MappingQueue = share.Name
-            share.ShareID = ["urn:glue2:ExecutionEnvironment:%s.%s" % (share.Name,self.resource_name)]
+            share.ResourceID = ["urn:glue2:ExecutionEnvironment:%s.%s" % (share.Name,self.resource_name)]
+        m = re.search("PartitionName=(\S+)",rsrv_str)
+        if m is not None:                                                                                              
+            share.MappingQueue = m.group(1)
         m = re.search("NodCnt=(\S+)",rsrv_str)
         if m is not None:
             share.MaxSlotsPerJob = int(m.group(1))
@@ -539,7 +542,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
                 node.UsedInstances = 0
                 node.UnavailableInstances = 1
             elif "RESERVED" in state:
-                node.UsedInstances = 1
+                node.UsedInstances = 0
                 node.UnavailableInstances = 0
             elif "MIXED" in state:
                 node.UsedInstances = 1
@@ -572,6 +575,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
 
     def _getReservation(self, rsrv_str):
         rsrv = execution_environment.ExecutionEnvironment()
+        rsrv.Extension["Reservation"] = True
 
         # ID set by ExecutionEnvironment
         m = re.search("ReservationName=(\S+)",rsrv_str)
