@@ -431,7 +431,7 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
                     start_time = _getDateTime(m.group(1))
                     now = datetime.datetime.now(ipf.dt.localtzoffset())
                     if start_time > now:
-                        share.ServingState = "queuing"
+                        share.ServingState = "queueing"
                     else:
                         share.ServingState = "closed"
         return share
