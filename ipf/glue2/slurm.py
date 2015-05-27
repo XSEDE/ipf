@@ -132,7 +132,6 @@ def _getJob(step, job_str):
         job.Queue = m.group(1)
     m = re.search("Reservation=(\S+)",job_str)
     if m is not None and m.group(1) != "(null)":
-        job.Queue = m.group(1)  # override
         job.Extension["ReservationName"] = m.group(1)
         job.ResourceID = "urn:glue2:ExecutionEnvironment:%s.%s" % (m.group(1),step.resource_name)
     m = re.search("JobState=(\S+)",job_str)
