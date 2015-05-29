@@ -82,11 +82,15 @@ class ComputingSharesStep(GlueStep):
             if activity.Queue is None:
                 self.debug("no queue specified for activity %s",activity)
                 continue
-            share = shareDict.get(activity.Queue)
-            if share == None:
-                self.warning("  didn't find share for queue "+str(activity.Queue))
-                continue
-
+            try:
+                # if an activity is associated with a reservation, use that share
+                share = shareDict[activity.Extension["ReservationName"]]
+            except KeyError:
+                try:
+                    share = shareDict[activity.Queue]
+                except KeyError:
+                    self.warning("  didn't find share for queue "+str(activity.Queue))
+                    continue
             share.activity.append(activity)
             if activity.State[0] == ComputingActivity.STATE_RUNNING:
                 share.RunningJobs = share.RunningJobs + 1
