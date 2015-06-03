@@ -20,14 +20,16 @@ import os
 import random
 import ssl
 import sys
+import threading
 import time
+from Queue import Empty
 
 from ipf.error import NoMoreInputsError, StepError
 from ipf.paths import IPF_ETC_PATH, IPF_VAR_PATH
 from ipf.step import PublishStep  # won't need in a bit
 from ipf.step import TriggerStep
 
-from mtk.amqp_0_9_1 import *
+import amqp
 
 #######################################################################################################################
 
@@ -68,6 +70,21 @@ class FileStep(PublishStep):
 
 #######################################################################################################################
 
+# There is a hang problem that comes up now and then, particularly with long-lived connections:
+#
+#   * ssl connection to server
+#   * the connection is lost to the server
+#     * e.g. network outage
+#     * or for testing, suspending the virtual machine running the RabbitMQ service
+# What happens is:
+#   * the basic_publish returns, but no message is sent
+#   * amqp.Connection.close() hangs
+#   * heartbeats aren't being sent, so that times out
+#
+# Approach is to:
+#   * use heartbeats to detect the connection is down
+#   * call close() in a separate thread
+
 class AmqpStep(PublishStep):
     def __init__(self):
         PublishStep.__init__(self)
@@ -105,13 +122,10 @@ class AmqpStep(PublishStep):
             self.password = self.params["password"].encode("utf-8")
         except KeyError:
             self.password = "guest"
-        try:
+        if "ssl_options" in self.params:
             self.ssl_options = {}
             for (key,value) in self.params["ssl_options"].iteritems():
-                if isinstance(value,unicode):
-                    self.ssl_options[key.encode("utf-8")] = value.encode("utf-8")
-                else:
-                    self.ssl_options[key.encode("utf-8")] = value
+                self.ssl_options[key.encode("utf-8")] = value.encode("utf-8")
             try:
                 if not os.path.isabs(self.ssl_options["keyfile"]):
                     self.ssl_options["keyfile"] = os.path.join(IPF_ETC_PATH,self.ssl_options["keyfile"])
@@ -129,8 +143,6 @@ class AmqpStep(PublishStep):
                 pass
             if "ca_certs" in self.ssl_options and "cert_reqs" not in self.ssl_options:
                 self.ssl_options["cert_reqs"] = ssl.CERT_REQUIRED
-        except KeyError:
-            self.ssl_options = None
 
         try:
             self.vhost = self.params["vhost"].encode("utf-8")
@@ -141,24 +153,40 @@ class AmqpStep(PublishStep):
         except KeyError:
             self.exchange = ""
 
-        PublishStep.run(self)
-
-        try:
-            self.connection.close()
-        except:
-            pass
+        # don't use PublishStep.run since we need to handle AMQP heartbeats
+        while True:
+            try:
+                data = self.input_queue.get(True,5)
+                if data == None:
+                    break
+                for rep_class in self.publish:
+                    if rep_class.data_cls != data.__class__:
+                        continue
+                    rep = rep_class(data)
+                    self._publish(rep)
+                    break
+            except Empty:
+                pass
+            if self.connection is None:
+                continue
+            try:
+                self.connection.heartbeat_tick()
+            except amqp.ConnectionForced:
+                self.warning("closing connection - missed too many heartbeats")
+                self._close()
+        self._close()
 
     def _publish(self, representation):
         self.info("publishing %s",representation)
         self.debug("  with routing key '%s' to exchange '%s'",representation.data.id.encode("utf-8"),self.exchange)
         try:
             self._publishOnce(representation)
-        except MtkError:
-            self.info("trying to publish a second time")
+        except Exception, e:
+            self.info("first publish failed: %s",e)
             try:
                 self._publishOnce(representation)
-            except MtkError:
-                self.error("publishing failed twice - discarding data")
+            except Exception, e:
+                self.error("publishing failed twice - discarding data: %s",e)
 
     def _publishOnce(self, representation):
         try:
@@ -166,17 +194,12 @@ class AmqpStep(PublishStep):
         except StepError:
             raise StepError("not connected to any service, will not publish %s" % representation.__class__)
         try:
-            self.channel.basicPublish(representation.get(),
-                                      self.exchange,
-                                      representation.data.id.encode("utf-8"))
-        except MtkError, e:
+            self.channel.basic_publish(amqp.Message(body=representation.get()),
+                                       self.exchange,
+                                       representation.data.id.encode("utf-8"))
+        except Exception, e:
             self._close()
             raise StepError("failed to publish %s: %s" % (representation.__class__,e))
-
-    def _connection_closed(self, reason):
-        #self.info("server closed connection: %s" % reason)
-        self.channel = None
-        self.connection = None
 
     def _connectIfNecessary(self):
         if self.channel is not None:
@@ -203,33 +226,22 @@ class AmqpStep(PublishStep):
                 port = 5672
             else:
                 port = 5671
-                
+
         if self.ssl_options is None:
-            self.connection = Connection(host,
-                                         port,
-                                         self.vhost,
-                                         PlainMechanism(self.username,self.password),
-                                         None,
-                                         60,
-                                         self._connection_closed)
+            ssl = False
         else:
-            if "keyfile" in self.ssl_options:
-                self.connection = Connection(host,
-                                             port,
-                                             self.vhost,
-                                             X509Mechanism(),
-                                             self.ssl_options,
-                                             60,
-                                             self._connection_closed)
-            else:
-                self.connection = Connection(host,
-                                             port,
-                                             self.vhost,
-                                             PlainMechanism(self.username,self.password),
-                                             self.ssl_options,
-                                             60,
-                                             self._connection_closed)
+            ssl = self.ssl_options
+        self.connection = amqp.Connection(host="%s:%d" % (host,port),
+                                          userid=self.username,
+                                          password=self.password,
+                                          virtual_host=self.vhost,
+                                          ssl=ssl,
+                                          heartbeat=60)
         self.channel = self.connection.channel()
+
+        # need a thread to call self.connection.wait() to receive heartbeats
+        self.wait_thread = _AmqpChannelWait(self.channel)
+        self.wait_thread.start()
 
     def _selectService(self):
         if self.cur_service is None:
@@ -241,12 +253,48 @@ class AmqpStep(PublishStep):
     def _close(self):
         if self.connection is None:
             return
+
+        self.wait_thread.stop()
+        self.wait_thread = None
+
+        # call close in a thread in case it takes a long time (e.g. network outage)
+        thread = _AmqpConnectionClose(self.connection)
+        self.channel = None
+        self.connection = None
+        thread.start()
+        thread.join(5)
+        if thread.isAlive():
+            self.warning("close didn't finish quickly")
+
+class _AmqpChannelWait(threading.Thread):
+    def __init__(self, channel):
+        threading.Thread.__init__(self)
+        self.daemon = True
+        self.channel = channel
+        self.keep_running = True
+
+    def stop(self):
+        self.keep_running = False
+
+    def run(self):
+        while self.keep_running:
+            try:
+                self.channel.wait()
+            except Exception, e:
+                time.sleep(1)
+
+class _AmqpConnectionClose(threading.Thread):
+    def __init__(self, connection):
+        threading.Thread.__init__(self)
+        self.daemon = True
+        self.connection = connection
+
+    def run(self):
         try:
             self.connection.close()
         except:
             pass
-        self.channel = None
-        self.connection = None
+
 
 ##############################################################################################################
 

@@ -53,9 +53,7 @@ def _createSetupCfg():
     f = open(_getSetupCfgFileName(),"w")
     f.write("""
 [bdist_rpm]
-requires =
-    mtk >= 1.0
-    mtk < 2.0
+requires = python-amqp
     """)
     f.close()
 
@@ -85,7 +83,7 @@ if __name__ == "__main__":
           author_email="wsmith@tacc.utexas.edu",
           license="Apache",
           packages=["ipf","ipf.glue2"],
-          install_requires=["mtk"],
+          install_requires=["amqp"],
           entry_points={
               "console_scripts": ["ipf_workflow=ipf.run_workflow:main"],
           },

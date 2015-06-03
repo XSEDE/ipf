@@ -27,7 +27,6 @@ workflow can be used to monitor log files and publish entries written to those f
 run periodically as cron jobs.  The program libexec/run_workflow.py is for executing workflows that complete
 quickly and the program libexec/run_workflow_daemon.py is used to manage long-running workflows. The daemon
 
-
 License
 ----------
 
@@ -66,7 +65,7 @@ Building
 
 Packages of this software can be build using the Python setuptools and the provided setup*.py scripts. Your initial step is to retrieve a copy of this software by:
 
-    $ git clone https://wwsmith@bitbucket.org/wwsmith/mtk.git
+    $ git clone https://wwsmith@bitbucket.org/wwsmith/ipf.git
 
 And then changing to the "ipf" directory. To build a source distribution from that directory, simply run:
 
@@ -75,8 +74,6 @@ And then changing to the "ipf" directory. To build a source distribution from th
 To create a "binary" package such as an RPM run:
 
     $ python setup.py bdist_rpm
-
-In addition, there are two scripts to create additional packages for XSEDE. setup_xsede_glue2.py creates a package with the XSEDE GLUE v2.0 workflows and supporting legacy TeraGrid information gathering steps. setup_xsede_kits.py creates a package with workflows that publish legacy TeraGrid kit and software information.
 
 
 Acknowledgements

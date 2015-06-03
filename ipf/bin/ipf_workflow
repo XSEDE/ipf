@@ -1,10 +1,17 @@
 #!/bin/bash
 
+# this script does about the same things as the ipf_workflow script generated during a rpm or pip install
+
 PYTHON=python
 
-MTK_PATH=/opt/mtk-1.0
-IPF_PATH=/opt/ipf-1.0
+BIN_PATH=`dirname $0`
+PACKAGE_PATH=`dirname $BIN_PATH`
+IPF_PATH=`dirname $PACKAGE_PATH`
+export PYTHONPATH=$IPF_PATH
 
-export PYTHONPATH=$MTK_PATH:$IPF_PATH
+# if the Python amqp package isn't installed in your default python locations:
+#   (Linux package 'python-amqp', pip package 'amqp')
+#AMQP_PATH=/opt/amqp-1.4.6
+#export PYTHONPATH=$PYTHONPATH:$AMQP_PATH
 
 $PYTHON $IPF_PATH/ipf/run_workflow.py $@
