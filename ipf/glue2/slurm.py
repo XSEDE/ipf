@@ -500,7 +500,10 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
                                                     node_names))
             # remove nodes that are part of a current reservation so that they aren't counted twice
             for node_name in node_names:
-                del node_map[node_name]
+                try:
+                    del node_map[node_name]
+                except KeyError:
+                    self.warning("didn't find %s in remaining nodes" % node_name)
 
             # don't need to publish the node names
             del exec_env.Extension["Nodes"]
