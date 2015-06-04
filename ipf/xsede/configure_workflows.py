@@ -364,19 +364,19 @@ def writePeriodicModulesWorkflow(resource_name):
 
 def writeComputeInit(resource_name, module_names, env_vars):
     res_name = resource_name.split(".")[0]
-    path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"_glue2_compute")
+    path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"-glue2-compute")
     name = "%s_glue2_compute_periodic\n" % res_name
     writeInit(resource_name,module_names,env_vars,name,path)
 
 def writeActivityInit(resource_name, module_names, env_vars):
     res_name = resource_name.split(".")[0]
-    path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"_glue2_activity")
+    path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"-glue2-activity")
     name = "%s_glue2_activity\n" % res_name
     writeInit(resource_name,module_names,env_vars,name,path)
 
 def writeModulesInit(resource_name, module_names, env_vars):
     res_name = resource_name.split(".")[0]
-    path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"_glue2_modules")
+    path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"-glue2-modules")
     name = "%s_glue2_modules\n" % res_name
     writeInit(resource_name,module_names,env_vars,name,path)
 
