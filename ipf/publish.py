@@ -1,6 +1,6 @@
 
 ###############################################################################
-#   Copyright 2011,2012 The University of Texas at Austin                     #
+#   Copyright 2011-2015 The University of Texas at Austin                     #
 #                                                                             #
 #   Licensed under the Apache License, Version 2.0 (the "License");           #
 #   you may not use this file except in compliance with the License.          #
@@ -84,6 +84,8 @@ class FileStep(PublishStep):
 # Approach is to:
 #   * use heartbeats to detect the connection is down
 #   * call close() in a separate thread
+#
+# publisher confirms don't help since the wait() for the confirm could just hang
 
 class AmqpStep(PublishStep):
     def __init__(self):
@@ -169,11 +171,21 @@ class AmqpStep(PublishStep):
                 pass
             if self.connection is None:
                 continue
+
+            # quick wait with no allowed_mthods to get heartbeats from the server
+            #   hack since amqp.Connection.wait() doesn't have a timeout argument
+            try:
+                self.connection._wait_multiple({self.channel.channel_id:self.channel},[],1)
+            except:
+                # timeouts are expected
+                pass
+
             try:
                 self.connection.heartbeat_tick()
             except amqp.ConnectionForced:
                 self.warning("closing connection - missed too many heartbeats")
                 self._close()
+
         self._close()
 
     def _publish(self, representation):
@@ -239,10 +251,6 @@ class AmqpStep(PublishStep):
                                           heartbeat=60)
         self.channel = self.connection.channel()
 
-        # need a thread to call self.connection.wait() to receive heartbeats
-        self.wait_thread = _AmqpChannelWait(self.channel)
-        self.wait_thread.start()
-
     def _selectService(self):
         if self.cur_service is None:
             self.cur_service = random.randint(0,len(self.services)-1)     # pick a random one the first time
@@ -253,10 +261,6 @@ class AmqpStep(PublishStep):
     def _close(self):
         if self.connection is None:
             return
-
-        self.wait_thread.stop()
-        self.wait_thread = None
-
         # call close in a thread in case it takes a long time (e.g. network outage)
         thread = _AmqpConnectionClose(self.connection)
         self.channel = None
@@ -265,23 +269,6 @@ class AmqpStep(PublishStep):
         thread.join(5)
         if thread.isAlive():
             self.warning("close didn't finish quickly")
-
-class _AmqpChannelWait(threading.Thread):
-    def __init__(self, channel):
-        threading.Thread.__init__(self)
-        self.daemon = True
-        self.channel = channel
-        self.keep_running = True
-
-    def stop(self):
-        self.keep_running = False
-
-    def run(self):
-        while self.keep_running:
-            try:
-                self.channel.wait()
-            except Exception, e:
-                time.sleep(1)
 
 class _AmqpConnectionClose(threading.Thread):
     def __init__(self, connection):
