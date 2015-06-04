@@ -1,5 +1,5 @@
 {
-  "name": "sge_activity",
+  "name": "activity",
   "description": "This workflow watches the SGE reporting file and publishes updates about individual jobs",
   "steps": [
     { "name": "ipf.sysinfo.ResourceNameStep" },
@@ -13,7 +13,7 @@
       "description": "Publish JSON version of a computing activity by appending it to a file",
       "params": {
         "publish": ["ipf.glue2.computing_activity.ComputingActivityOgfJson"],
-	"append": True,
+	"append": true,
         "path": "activity.json"
       }
     }

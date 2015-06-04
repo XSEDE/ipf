@@ -1,5 +1,5 @@
 {
-  "name": "pbs_compute",
+  "name": "compute",
   "timeout": 55,
   "description": "This workflow gathers GLUE2 compute information by interacting with PBS",
   "steps": [

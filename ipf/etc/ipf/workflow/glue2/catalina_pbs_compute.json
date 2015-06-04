@@ -1,5 +1,5 @@
 {
-  "name": "catalina_pbs_compute",
+  "name": "compute",
   "timeout": 55,
   "description": "This workflow gathers GLUE2 compute information by interacting with Catalina and PBS",
   "steps": [
@@ -8,11 +8,11 @@
     { "name": "ipf.glue2.location.LocationStep",
       "params": {
         "location": {
-          "Name": "San Diego Supercomputing Center",
-          "Place": "San Diego",
+          "Name": "Name of Center",
+          "Place": "City",
           "Country": "US",
-          "Latitude": 32.8844,
-          "Longitude": -117.23990
+          "Latitude": 38.000,
+          "Longitude": -90.000
         }
       }
     },

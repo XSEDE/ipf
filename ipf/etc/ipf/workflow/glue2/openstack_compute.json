@@ -1,5 +1,5 @@
 {
-  "name": "openstack_compute",
+  "name": "compute",
   "timeout": 55,
   "params": {
     "openstack_version": "2013.2"
@@ -10,11 +10,11 @@
     { "name": "glue2.location.LocationStep",
       "params": {
         "location": {
-          "Name": "Texas Advanced Computing Center",
-          "Place": "Austin",
+          "Name": "Name of Center",
+          "Place": "City",
           "Country": "US",
-          "Latitude": 30.390132,
-          "Longitude": -97.725309
+          "Latitude": 38.000,
+          "Longitude": -90.000
         }
       }
     },

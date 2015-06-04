@@ -32,10 +32,13 @@ def _createManifest():
     f.write("""
 include README.rst
 include LICENSE-2.0.txt
+include ipf/bin/ipf_workflow
+include ipf/bin/ipf_configure_xsede
 include ipf/etc/ipf/logging.conf
 include ipf/etc/ipf/workflow/*.json
 include ipf/etc/ipf/workflow/glue2/*.json
-include ipf/etc/init.d/ipf-WORKFLOW
+include ipf/etc/ipf/init.d/ipf-WORKFLOW
+include ipf/etc/ipf/xsede/ca_certs.pem
 include ipf/var/ipf/README.txt
     """)
     f.close()
@@ -82,7 +85,7 @@ if __name__ == "__main__":
           author="Warren Smith",
           author_email="wsmith@tacc.utexas.edu",
           license="Apache",
-          packages=["ipf","ipf.glue2"],
+          packages=["ipf","ipf.glue2","ipf.xsede","ipf.xsede.test"],
           install_requires=["amqp"],
           entry_points={
               "console_scripts": ["ipf_workflow=ipf.run_workflow:main",
@@ -95,7 +98,7 @@ if __name__ == "__main__":
               ("/etc/ipf",["ipf/etc/ipf/logging.conf"]),
               ("/etc/ipf/workflow",workflow_paths("ipf/etc/ipf/workflow")),
               ("/etc/ipf/workflow/glue2",workflow_paths("ipf/etc/ipf/workflow/glue2")),
-              ("/etc/ipf/init.d",["ipf/etc/init.d/ipf-WORKFLOW"]),
+              ("/etc/ipf/init.d",["ipf/etc/ipf/init.d/ipf-WORKFLOW"]),
               ("/var/ipf",[])
           ],
           zip_safe=False)

@@ -14,16 +14,14 @@ def configure():
     print
     print("This script asks you for information and configures your IPF installation.")
     print("  Warning: At the current time, this script overwrites your existing configuration, it does not modify it")
-    print
 
     resource_name = getResourceName()
     sched_name = getSchedulerName()
     compute_json = getComputeJsonForScheduler(sched_name)
-    
+    setResourceName(resource_name,compute_json)
     setLocation(compute_json)
-
+    updateFilePublishPaths(resource_name,compute_json)
     addXsedeAmqpToCompute(compute_json)
-
     writeComputeWorkflow(resource_name,compute_json)
     writePeriodicComputeWorkflow(resource_name)
 
@@ -31,7 +29,6 @@ def configure():
     print("You may need to modify the default environment in your init scripts so that the information gathering works correctly. For example:")
     print("  * batch scheduler commands need to be in PATH")
     print("  * scheduler-related environment variables may need to be set")
-    print
     module_names = getModules()
     env_vars = getEnvironmentVariables()
     writeComputeInit(resource_name,module_names,env_vars)
@@ -40,7 +37,9 @@ def configure():
                      ["yes","no"],"yes")
     if answer == "yes":
         activity_json = getActivityJsonForScheduler(sched_name)
+        setResourceName(resource_name,activity_json)
         updateActivityLogFile(resource_name,activity_json)
+        updateFilePublishPaths(resource_name,activity_json)
         addXsedeAmqpToActivity(activity_json,compute_json)
         writeActivityWorkflow(resource_name,activity_json)
         writeActivityInit(resource_name,module_names,env_vars)
@@ -50,6 +49,8 @@ def configure():
         modules_json = getModulesJson()
     elif modules_type == "lmod":
         modules_json = getLModJson()
+    setResourceName(resource_name,modules_json)
+    updateFilePublishPaths(resource_name,modules_json)
     addXsedeAmqpToModules(modules_json,compute_json)
     writeModulesWorkflow(resource_name,modules_json)
     writePeriodicModulesWorkflow(resource_name)
@@ -94,6 +95,16 @@ def getSchedulerName():
     names = sorted(names)
     sched_name = options("Which scheduler/resource manager does this resource use?",names)
     return sched_name
+
+def setResourceName(resource_name, workflow_json):
+    res_name = resource_name.split(".")[0]
+    workflow_json["name"] = res_name + "_" + workflow_json["name"]
+    for step_json in workflow_json["steps"]:
+        if step_json["name"] == "ipf.sysinfo.ResourceNameStep":
+            step_json["params"] = {}
+            step_json["params"]["resource_name"] = resource_name
+            return
+    raise Exception("didn't find a ResourceNameStep to modify")
 
 def setLocation(compute_json):
     for step_json in compute_json["steps"]:
@@ -144,6 +155,12 @@ class FreeGeoIp(threading.Thread):
     def run(self):
         host_name = socket.getfqdn()
         self.output = urllib2.urlopen("http://freegeoip.net/json/"+host_name).read()
+
+def updateFilePublishPaths(resource_name, workflow_json):
+    res_name = resource_name.split(".")[0]
+    for step_json in workflow_json["steps"]:
+        if step_json["name"] == "ipf.publish.FileStep":
+            step_json["params"]["path"] = res_name + "_" + step_json["params"]["path"]
 
 def addXsedeAmqpToCompute(compute_json, ask=True):
     answer = options("Do you wish to publish to the XSEDE AMQP service?",["yes","no"],"yes")
@@ -233,6 +250,7 @@ def addXsedeAmqpToActivity(activity_json, compute_json):
         if step["name"] == "ipf.publish.AmqpStep" and "xsede.org" in step["params"]["services"][0]:
                 amqp_step = copy.deepcopy(step)
                 amqp_step["description"] = "Publish job updates to XSEDE"
+                amqp_step["params"]["publish"] = ["ipf.glue2.computing_activity.ComputingActivityOgfJson"]
                 amqp_step["exchange"] = "glue2.computing_activity"
                 activity_json["steps"].append(amqp_step)
                 return
@@ -243,6 +261,7 @@ def addXsedeAmqpToModules(modules_json, compute_json):
         if step["name"] == "ipf.publish.AmqpStep" and "xsede.org" in step["params"]["services"][0]:
             amqp_step = copy.deepcopy(step)
             amqp_step["description"] = "Publish modules to XSEDE"
+            amqp_step["params"]["publish"] = ["ipf.glue2.application.ApplicationsOgfJson"]
             amqp_step["exchange"] = "glue2.applications"
             modules_json["steps"].append(amqp_step)
             return
@@ -275,7 +294,7 @@ def getEnvironmentVariables():
 
 def writeComputeWorkflow(resource_name, compute_json):
     res_name = resource_name.split(".")[0]
-    path = os.path.join(getWorkflowDir(),res_name+"_glue2_compute.json")
+    path = os.path.join(getGlueWorkflowDir(),res_name+"_compute.json")
     print("  -> writing compute workflow to %s" % path)
     f = open(path,"w")
     f.write(json.dumps(compute_json,indent=4,sort_keys=True))
@@ -284,20 +303,20 @@ def writeComputeWorkflow(resource_name, compute_json):
 def writePeriodicComputeWorkflow(resource_name):
     res_name = resource_name.split(".")[0]
     periodic_json = {}
-    periodic_json["name"] = res_name+"_glue2_compute_periodic"
+    periodic_json["name"] = res_name+"_compute_periodic"
     periodic_json["description"] = "Gather GLUE2 compute information periodically"
     periodic_json["steps"] = []
 
     step_json = {}
     step_json["name"] = "ipf.step.WorkflowStep"
     step_json["params"] = {}
-    step_json["params"]["workflow"] = res_name+"_glue2_compute.json"
+    step_json["params"]["workflow"] = res_name+"_compute.json"
     interval_str = question("How often should compute information be gathered (seconds)?","60")
     step_json["params"]["maximum_interval"] = int(interval_str)
 
     periodic_json["steps"].append(step_json)
 
-    path = os.path.join(getWorkflowDir(),res_name+"_glue2_compute_periodic.json")
+    path = os.path.join(getGlueWorkflowDir(),res_name+"_compute_periodic.json")
     print("  -> writing periodic compute workflow to %s" % path)
     f = open(path,"w")
     f.write(json.dumps(periodic_json,indent=4,sort_keys=True))
@@ -305,7 +324,7 @@ def writePeriodicComputeWorkflow(resource_name):
 
 def writeActivityWorkflow(resource_name, activity_json):
     res_name = resource_name.split(".")[0]
-    path = os.path.join(getWorkflowDir(),res_name+"_glue2_activity.json")
+    path = os.path.join(getGlueWorkflowDir(),res_name+"_activity.json")
     print("  -> writing activity workflow to %s" % path)
     f = open(path,"w")
     f.write(json.dumps(activity_json,indent=4,sort_keys=True))
@@ -313,7 +332,7 @@ def writeActivityWorkflow(resource_name, activity_json):
 
 def writeModulesWorkflow(resource_name, modules_json):
     res_name = resource_name.split(".")[0]
-    path = os.path.join(getWorkflowDir(),res_name+"_glue2_modules.json")
+    path = os.path.join(getGlueWorkflowDir(),res_name+"_modules.json")
     print("  -> writing modules workflow to %s" % path)
     f = open(path,"w")
     f.write(json.dumps(modules_json,indent=4,sort_keys=True))
@@ -322,20 +341,20 @@ def writeModulesWorkflow(resource_name, modules_json):
 def writePeriodicModulesWorkflow(resource_name):
     res_name = resource_name.split(".")[0]
     periodic_json = {}
-    periodic_json["name"] = res_name+"_glue2_modules_periodic"
+    periodic_json["name"] = res_name+"_modules_periodic"
     periodic_json["description"] = "Gather GLUE2 module information periodically"
     periodic_json["steps"] = []
 
     step_json = {}
     step_json["name"] = "ipf.step.WorkflowStep"
     step_json["params"] = {}
-    step_json["params"]["workflow"] = res_name+"_glue2_modules.json"
+    step_json["params"]["workflow"] = res_name+"_modules.json"
     interval_str = question("How often should module information be gathered (hours)?","1")
     step_json["params"]["maximum_interval"] = int(interval_str) * 60 * 60
 
     periodic_json["steps"].append(step_json)
 
-    path = os.path.join(getWorkflowDir(),res_name+"_glue2_modules_periodic.json")
+    path = os.path.join(getGlueWorkflowDir(),res_name+"_modules_periodic.json")
     print("  -> writing periodic modules workflow to %s" % path)
     f = open(path,"w")
     f.write(json.dumps(periodic_json,indent=4,sort_keys=True))
@@ -345,26 +364,26 @@ def writePeriodicModulesWorkflow(resource_name):
 
 def writeComputeInit(resource_name, module_names, env_vars):
     res_name = resource_name.split(".")[0]
-    path = os.path.join(getBaseDir(),"etc","init.d","ipf-"+res_name+"_glue2_compute")
+    path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"_glue2_compute")
     name = "%s_glue2_compute_periodic\n" % res_name
     writeInit(resource_name,module_names,env_vars,name,path)
 
 def writeActivityInit(resource_name, module_names, env_vars):
     res_name = resource_name.split(".")[0]
-    path = os.path.join(getBaseDir(),"etc","init.d","ipf-"+res_name+"_glue2_activity")
+    path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"_glue2_activity")
     name = "%s_glue2_activity\n" % res_name
     writeInit(resource_name,module_names,env_vars,name,path)
 
 def writeModulesInit(resource_name, module_names, env_vars):
     res_name = resource_name.split(".")[0]
-    path = os.path.join(getBaseDir(),"etc","init.d","ipf-"+res_name+"_glue2_modules")
+    path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"_glue2_modules")
     name = "%s_glue2_modules\n" % res_name
     writeInit(resource_name,module_names,env_vars,name,path)
 
 def writeInit(resource_name, module_names, env_vars, name, path):
     res_name = resource_name.split(".")[0]
 
-    in_file = open(os.path.join(getBaseDir(),"etc","init.d","ipf-WORKFLOW"),"r")
+    in_file = open(os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-WORKFLOW"),"r")
     out_file = open(path,"w")
     for line in in_file:
         if line.startswith("NAME="):
@@ -393,8 +412,7 @@ def writeInit(resource_name, module_names, env_vars, name, path):
 
 def getModulesType():
     return options("What modules system is used on this resource?",
-                   ["lmod","modules"],
-                   "modules")
+                   ["lmod","modules"])
 
 def getGlueWorkflowDir():
     return os.path.join(getWorkflowDir(),"glue2")
@@ -426,6 +444,7 @@ def readWorkflowFile(path):
 #######################################################################################################################
 
 def question(text, default=None):
+    print
     if default is None:
         answer = raw_input("%s: " % text)
         if answer == "":
@@ -437,6 +456,7 @@ def question(text, default=None):
     return answer
 
 def options(text, opts, default=None):
+    print
     if default is None:
         print("%s:" % text)
     else:

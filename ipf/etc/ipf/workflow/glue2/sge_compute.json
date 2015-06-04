@@ -8,11 +8,11 @@
     { "name": "ipf.glue2.location.LocationStep",
       "params": {
         "location": {
-          "Name": "Texas Advanced Computing Center",
-          "Place": "Austin",
+          "Name": "Name of Center",
+          "Place": "City",
           "Country": "US",
-          "Latitude": 30.387055,
-          "Longitude": -97.726865
+          "Latitude": 38.000,
+          "Longitude": -90.000
         }
       }
     },
