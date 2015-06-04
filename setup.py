@@ -85,7 +85,8 @@ if __name__ == "__main__":
           packages=["ipf","ipf.glue2"],
           install_requires=["amqp"],
           entry_points={
-              "console_scripts": ["ipf_workflow=ipf.run_workflow:main"],
+              "console_scripts": ["ipf_workflow=ipf.run_workflow:main",
+                                  "ipf_configure_xsede=ipf.xsede.configure_workflows"],
           },
           #include_package_data=True,
           include_package_data=False,

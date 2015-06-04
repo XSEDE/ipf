@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# this script does about the same things as the ipf_configure_xsede script generated during a rpm or pip install
+
+PYTHON=python
+
+SCRIPT_PATH=$(readlink -f $0)
+BIN_PATH=`dirname $SCRIPT_PATH`
+PACKAGE_PATH=`dirname $BIN_PATH`
+IPF_PATH=`dirname $PACKAGE_PATH`
+export PYTHONPATH=$IPF_PATH
+
+$PYTHON $IPF_PATH/ipf/xsede/configure_workflows.py $@
