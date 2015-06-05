@@ -368,7 +368,10 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
         if status != 0:
             raise StepError("scontrol failed: "+output+"\n")
         reservation_strs = output.split("\n\n")
-        reservations = map(self._getReservation,reservation_strs)
+        try:
+            reservations = map(self._getReservation,reservation_strs)
+        except:
+            reservations = []
 
         return partitions + reservations
 
@@ -413,9 +416,10 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
         share.Extension["Reservation"] = True
 
         m = re.search("ReservationName=(\S+)",rsrv_str)
-        if m is not None:
-            share.Name = m.group(1)
-            share.ResourceID = ["urn:glue2:ExecutionEnvironment:%s.%s" % (share.Name,self.resource_name)]
+        if m is None:
+            raise StepError("didn't find 'ReservationName'")
+        share.Name = m.group(1)
+        share.ResourceID = ["urn:glue2:ExecutionEnvironment:%s.%s" % (share.Name,self.resource_name)]
         m = re.search("PartitionName=(\S+)",rsrv_str)
         if m is not None:                                                                                              
             share.MappingQueue = m.group(1)
@@ -466,12 +470,11 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
             raise StepError("scontrol failed: "+output+"\n")
-        if "ReservationName" not in output:
-            # no reservations in the system
-            reservations = []
-        else:
-            reservation_strs = output.split("\n\n")
+        reservation_strs = output.split("\n\n")
+        try:
             reservations = map(self._getReservation,reservation_strs)
+        except:
+            reservations = []
 
         node_map = {}
         for node in nodes:
