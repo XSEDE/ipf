@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import getpass
 import optparse
 import os
 import signal
