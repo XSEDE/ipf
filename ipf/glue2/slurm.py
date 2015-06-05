@@ -466,8 +466,12 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
             raise StepError("scontrol failed: "+output+"\n")
-        reservation_strs = output.split("\n\n")
-        reservations = map(self._getReservation,reservation_strs)
+        if "ReservationName" not in output:
+            # no reservations in the system
+            reservations = []
+        else:
+            reservation_strs = output.split("\n\n")
+            reservations = map(self._getReservation,reservation_strs)
 
         node_map = {}
         for node in nodes:
