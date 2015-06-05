@@ -203,6 +203,7 @@ def addXsedeAmqpToCompute(compute_json, ask=True):
 
     amqp_step = copy.deepcopy(amqp_step)
     amqp_step["description"] = "Publish description of current jobs to XSEDE"
+    amqp_step["params"]["publish"] = ["ipf.glue2.compute.PrivateOgfJson"]
     amqp_step["params"]["exchange"] = "glue2.computing_activities"
     compute_json["steps"].append(amqp_step)
 
