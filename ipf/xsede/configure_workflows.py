@@ -216,20 +216,22 @@ def updateActivityLogFile(resource_name, activity_json):
         if "pbs" in step["name"]:
             if "PBS_HOME" not in os.environ:
                 print("  Warning: PBS_HOME environment variable not set - can't check for server_logs directory")
+                log_dir = None
             else:
-                if not testReadFile(os.path.join(os.environ["PBS_HOME"],"spool","server_logs"),False):
-                    print("  Warning: couldn't find or read $PBS_HOME/spool/server_logs")
-            log_dir = question("Where is your server_logs directory?","$PBS_HOME/spool/server_logs")
+                log_dir = os.path.join(os.environ["PBS_HOME"],"spool","server_logs")
+                testReadDirectory(log_dir)
+            log_dir = question("Where is your server_logs directory?",log_dir)
             if not testReadDirectory(log_dir):
                 return updateActivityLogFile(resource_name,activity_json)
             step["params"]["server_logs_dir"] = log_dir
         elif "sge" in step["name"]:
             if "SGE_ROOT" not in os.environ:
                 print("  Warning: SGE_ROOT environment variable not set - can't check for reporting file")
+                log_file = None
             else:
-                if not testReadFile(os.path.join(os.environ["SGE_ROOT"],"default","common","reporting"),False):
-                    print("  Warning: couldn't find or read $SGE_ROOT/default/common/reporting")
-            log_file = question("Where is your reporting file?","$SGE_ROOT/default/common/reporting")
+                log_file = os.path.join(os.environ["SGE_ROOT"],"default","common","reporting")
+                testReadFile(log_file)
+            log_file = question("Where is your reporting file?",log_file)
             if not testReadFile(log_file):
                 return updateActivityLogFile(resource_name,activity_json)
             step["params"]["reporting_file"] = log_file
