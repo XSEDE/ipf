@@ -75,6 +75,14 @@ def getComputeJsonForScheduler(sched_name):
     return readWorkflowFile(os.path.join(getGlueWorkflowDir(),sched_name+"_compute.json"))
 
 def getActivityJsonForScheduler(sched_name):
+    parts = sched_name.split("_")
+    if len(parts) == 1:
+        sched_name = sched_name
+    elif len(parts) == 2:
+        sched_name = parts[1]
+    else:
+        print("Warning: expected one or two parts in scheduler name - may not find _activity workflow file")
+        sched_name = sched_name
     return readWorkflowFile(os.path.join(getGlueWorkflowDir(),sched_name+"_activity.json"))
 
 def getModulesJson():
