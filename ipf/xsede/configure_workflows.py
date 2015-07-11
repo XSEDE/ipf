@@ -144,9 +144,10 @@ def updateFromFreeGeoIp(params):
     params["Longitude"] = float(json_doc["longitude"])
 
 def getFreeGeoIp(print_message=False):
+    print("Querying for physical location...")
     thread = FreeGeoIp()
     thread.start()
-    thread.join(5)
+    thread.join(60)
     if thread.isAlive():
         if print_message:
             print("Warning: Query to http:/freegeoip.net didn't complete")
@@ -321,7 +322,7 @@ def writePeriodicComputeWorkflow(resource_name):
     step_json = {}
     step_json["name"] = "ipf.step.WorkflowStep"
     step_json["params"] = {}
-    step_json["params"]["workflow"] = res_name+"_compute.json"
+    step_json["params"]["workflow"] = "glue2/"+res_name+"_compute.json"
     interval_str = question("How often should compute information be gathered (seconds)?","60")
     step_json["params"]["maximum_interval"] = int(interval_str)
 
