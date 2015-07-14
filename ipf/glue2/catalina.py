@@ -73,7 +73,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
                     if job_map[id].State[0] == computing_activity.ComputingActivity.STATE_PENDING:
                         job_map[id].State[0] = computing_activity.ComputingActivity.STATE_HELD
             except KeyError:
-                self.warning("didn't find job %s in resource manager jobs")
+                self.warning("didn't find job %s in resource manager jobs",id)
 
         jobs = sorted(jobs,key=self._jobPriority)
         jobs = sorted(jobs,key=self._jobStateKey)
