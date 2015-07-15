@@ -15,9 +15,12 @@ Download the current GLUE 2.0 JSON schema:
 
     $ git clone https://github.com/OGF-GLUE/JSON.git
 
-Download the jsonschema validator:
+Download the jsonschema validator and select a version that is known to work for us:
 
     $ git clone https://github.com/Julian/jsonschema.git
+    $ cd jsonschema/
+    $ git checkout tags/v2.4.0
+    $ cd ..
 
 And include it in your PYTHONPATH:
 
