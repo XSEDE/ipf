@@ -16,6 +16,7 @@
 ###############################################################################
 
 import commands
+import re
 import sys
 
 from ipf.error import StepError
@@ -68,12 +69,18 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
             else:
                 priority = int(toks[1])
             try:
+                # torque qstat shows a single JOB_ID[] for a job array, but catalina has multiple JOB_ID[##]
+                m = re.search("(\S+)\[\d+\]",id)
+                if m is not None:
+                    id = m.group(1) + "[]"
+
                 job_map[id].Extension["Priority"] = priority
                 if state == "held":
                     if job_map[id].State[0] == computing_activity.ComputingActivity.STATE_PENDING:
                         job_map[id].State[0] = computing_activity.ComputingActivity.STATE_HELD
             except KeyError:
                 self.warning("didn't find job %s in resource manager jobs",id)
+
 
         jobs = sorted(jobs,key=self._jobPriority)
         jobs = sorted(jobs,key=self._jobStateKey)
