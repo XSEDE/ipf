@@ -241,9 +241,16 @@ class AmqpStep(PublishStep):
 
         if self.ssl_options is None:
             ssl = False
+            login_method = "AMQPLAIN"
         else:
             ssl = self.ssl_options
+            if "certfile" in ssl:
+                login_method = "EXTERNAL"
+            else:
+                login_method = "AMQPLAIN"
+
         self.connection = amqp.Connection(host="%s:%d" % (host,port),
+                                          login_method=login_method,
                                           userid=self.username,
                                           password=self.password,
                                           virtual_host=self.vhost,

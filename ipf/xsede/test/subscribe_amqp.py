@@ -69,6 +69,7 @@ def connect(options):
         print("connecting to %s:5671 with certificate and key" % options.server)
 
         return amqp.Connection(host="%s:%d" % (options.server,5671),
+                               login_method="EXTERNAL",
                                virtual_host=options.vhost,
                                ssl={"keyfile":options.keyfile,
                                     "certfile":options.certfile,
