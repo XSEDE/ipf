@@ -1,4 +1,20 @@
 
+###############################################################################
+#   Copyright 2015 The University of Texas at Austin                          #
+#                                                                             #
+#   Licensed under the Apache License, Version 2.0 (the "License");           #
+#   you may not use this file except in compliance with the License.          #
+#   You may obtain a copy of the License at                                   #
+#                                                                             #
+#       http://www.apache.org/licenses/LICENSE-2.0                            #
+#                                                                             #
+#   Unless required by applicable law or agreed to in writing, software       #
+#   distributed under the License is distributed on an "AS IS" BASIS,         #
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  #
+#   See the License for the specific language governing permissions and       #
+#   limitations under the License.                                            #
+###############################################################################
+
 import copy
 import getpass
 import json
@@ -263,7 +279,7 @@ def addXsedeAmqpToActivity(activity_json, compute_json):
                 amqp_step = copy.deepcopy(step)
                 amqp_step["description"] = "Publish job updates to XSEDE"
                 amqp_step["params"]["publish"] = ["ipf.glue2.computing_activity.ComputingActivityOgfJson"]
-                amqp_step["exchange"] = "glue2.computing_activity"
+                amqp_step["params"]["exchange"] = "glue2.computing_activity"
                 activity_json["steps"].append(amqp_step)
                 return
     raise Exception("didn't find AmqpStep in compute workflow")
@@ -274,7 +290,7 @@ def addXsedeAmqpToModules(modules_json, compute_json):
             amqp_step = copy.deepcopy(step)
             amqp_step["description"] = "Publish modules to XSEDE"
             amqp_step["params"]["publish"] = ["ipf.glue2.application.ApplicationsOgfJson"]
-            amqp_step["exchange"] = "glue2.applications"
+            amqp_step["params"]["exchange"] = "glue2.applications"
             modules_json["steps"].append(amqp_step)
             return
     raise Exception("didn't find AmqpStep in compute workflow")
