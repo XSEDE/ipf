@@ -453,11 +453,13 @@ def getBaseDir():
     global _base_dir
     if _base_dir is not None:
         return _base_dir
-    base_dir_opts = [os.path.dirname(os.path.dirname(os.path.abspath(__file__)))]
-    if os.path.exists(os.path.join("etc","ipf")):
+    base_dir_opts = []
+    if os.path.exists(os.path.join("/etc","ipf")):
         base_dir_opts.append("/")
+    base_dir_opts.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     base_dir_opts.append("other")
-    _base_dir = options("Select base directory (files will be read/written to $BASE/etc/ipf, $BASE/var/ipf)",
+    _base_dir = options("Select base directory (files will be read/written to $BASE/etc/ipf, $BASE/var/ipf - "+
+                        "  RPM install should use '/')",
                         base_dir_opts)
     if _base_dir == "other":
         _base_dir = question("Enter base directory")
