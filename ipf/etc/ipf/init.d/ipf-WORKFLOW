@@ -10,7 +10,7 @@
 NAME=pbs_compute_periodic
 
 # pick one of the periodic workflows under $IPF_ETC_PATH/workflow
-WORKFLOW=xsede/glue2/${NAME}.json
+WORKFLOW=glue2/${NAME}.json
 
 # specify a full path to the ipf_workflow program if you need to
 PROGRAM=ipf_workflow
@@ -25,7 +25,7 @@ IPF_USER=ipf
 PID_FILE=${IPF_VAR_PATH}/${NAME}.pid
 
 ###################################################################
-##### Add any environment setup needed for this workflow here #####
+##### Add any environment variables setup needed for this workflow here #####
 ###################################################################
 
 

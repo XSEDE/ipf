@@ -89,13 +89,14 @@ if __name__ == "__main__":
           install_requires=["amqp"],
           entry_points={
               "console_scripts": ["ipf_workflow=ipf.run_workflow:main",
-                                  "ipf_configure_xsede=ipf.xsede.configure_workflows"],
+                                  "ipf_configure_xsede=ipf.xsede.configure_workflows:configure"],
           },
           #include_package_data=True,
           include_package_data=False,
           # data files only applies to the rpm
           data_files = [
               ("/etc/ipf",["ipf/etc/ipf/logging.conf"]),
+              ("/etc/ipf/xsede",["ipf/etc/ipf/xsede/ca_certs.pem"]),
               ("/etc/ipf/workflow",workflow_paths("ipf/etc/ipf/workflow")),
               ("/etc/ipf/workflow/glue2",workflow_paths("ipf/etc/ipf/workflow/glue2")),
               ("/etc/ipf/init.d",["ipf/etc/ipf/init.d/ipf-WORKFLOW"]),

@@ -306,6 +306,18 @@ def getModules():
 
 def getEnvironmentVariables():
     vars = {}
+    if "MODULEPATH" in os.environ:
+         _modulepath = os.environ["MODULEPATH"]
+	 print("MODULEPATH=%s" % _modulepath)
+	 answer = options("is set in your environment.  Do you want to use this value in the Modules workflow?",["yes","no"],"yes")
+         if answer == "no":
+	    answer = options("do you want to set a different value for MODULEPATH for use in the Modules workflow?",["yes","no"],"yes")
+	    if answer == "yes":
+	       _modulepath = question("Enter the value for MODULEPATH")
+	    else:
+	       _modulepath = None
+         if _modulepath is not None:
+	    vars["MODULEPATH"] = _modulepath
     while True:
         if len(vars) > 0:
             print("current variables:")
@@ -393,19 +405,19 @@ def writePeriodicModulesWorkflow(resource_name):
 def writeComputeInit(resource_name, module_names, env_vars):
     res_name = resource_name.split(".")[0]
     path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"-glue2-compute")
-    name = "%s_glue2_compute_periodic\n" % res_name
+    name = "%s_compute_periodic\n" % res_name
     writeInit(resource_name,module_names,env_vars,name,path)
 
 def writeActivityInit(resource_name, module_names, env_vars):
     res_name = resource_name.split(".")[0]
     path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"-glue2-activity")
-    name = "%s_glue2_activity\n" % res_name
+    name = "%s_activity\n" % res_name
     writeInit(resource_name,module_names,env_vars,name,path)
 
 def writeModulesInit(resource_name, module_names, env_vars):
     res_name = resource_name.split(".")[0]
     path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"-glue2-modules")
-    name = "%s_glue2_modules\n" % res_name
+    name = "%s_modules\n" % res_name
     writeInit(resource_name,module_names,env_vars,name,path)
 
 def writeInit(resource_name, module_names, env_vars, name, path):
@@ -419,9 +431,9 @@ def writeInit(resource_name, module_names, env_vars, name, path):
         elif line.startswith("IPF_USER="):
             out_file.write("IPF_USER=%s\n" % getpass.getuser())
         elif line.startswith("export IPF_ETC_PATH="):
-            out_file.write("export IPF_ETC_PATH=%s\n" % os.path.join(getBaseDir(),"etc"))
+            out_file.write("export IPF_ETC_PATH=%s\n" % os.path.join(getBaseDir(),"etc/ipf"))
         elif line.startswith("export IPF_VAR_PATH="):
-            out_file.write("export IPF_VAR_PATH=%s\n" % os.path.join(getBaseDir(),"var"))
+            out_file.write("export IPF_VAR_PATH=%s\n" % os.path.join(getBaseDir(),"var/ipf"))
         elif "modules" in line and module_names != None:
             out_file.write(line)
             out_file.write("source %s\n" % os.path.join(os.environ["MODULESHOME"],"init","bash"))
