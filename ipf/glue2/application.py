@@ -48,8 +48,11 @@ class ApplicationEnvironment(Entity):
         self.FreeJobs = None             # integer
         self.FreeUserSeats = None        # integer
         self.ExecutionEnvironmentID = [] # string (ID)
-        self.ComputingManagerID = None   # string (ID)
+        self.ComputingManagerD = None   # string (ID)
         self.ApplicationHandleID = []    # string (ID)
+	self.Keywords = []	 #string (ID)
+	self.Extension = {}
+	self.SupportStatus = None
         
     def __str__(self):
         return json.dumps(ApplicationEnvironmentOgfJson(self).toJson(),sort_keys=True,indent=4)
@@ -97,13 +100,22 @@ class ApplicationEnvironmentOgfJson(EntityOgfJson):
             doc["FreeJobs"] = self.data.FreeJobs
         if self.data.FreeUserSeats is not None:
             doc["FreeUserSeats"] = self.data.FreeUserSeats
+	if len(self.data.Keywords) > 0:
+	    doc["Keywords"] = self.data.Keywords
+	if len(self.data.Extension) > 0:
+	    extensions = [] 
+	    for  ext in self.data.Extension:
+		extensions.append(ext)
+	    #doc["Extensions"] = list(extensions)
+	if self.data.SupportStatus is not None:
+	   doc["SupportStatus"] = self.data.SupportStatus	    
 
         associations = {}
         associations["ExecutionEnvironmentID"] = self.data.ExecutionEnvironmentID
         associations["ComputingManagerID"] = self.data.ComputingManagerID
         if len(self.data.ApplicationHandleID) > 0:
             associations["ApplicationHandleID"] = self.data.ApplicationHandleID
-        doc["Associations"] = associations
+        #doc["Associations"] = associations
 
         return doc
 

@@ -21,6 +21,10 @@ import re
 
 from ipf.error import StepError
 from . import application
+from . import service
+from . import endpoint
+from .step import GlueStep
+from .step import computing_service
 from .types import AppEnvState,ApplicationHandle
 
 #######################################################################################################################
@@ -205,3 +209,202 @@ class ModulesApplicationsStep(application.ApplicationsStep):
         apps.add(env,[handle])
 
 #######################################################################################################################
+
+class ExtendedModApplicationsStep(application.ApplicationsStep):
+    def __init__(self):
+        application.ApplicationsStep.__init__(self)
+
+        self._acceptParameter("exclude","a comma-separated list of modules to ignore (default is to ignore none)",
+                              False)
+
+    def _run(self):
+        try:
+            self.exclude = self.params["exclude"].split(",")
+        except KeyError:
+            self.exclude = []
+
+        apps = application.Applications(self.resource_name)
+
+        module_paths = []
+        try:
+            paths = os.environ["MODULEPATH"]
+            module_paths.extend(paths.split(":"))
+        except KeyError:
+            raise StepError("didn't find environment variable MODULEPATH")
+
+        apps = application.Applications(self.resource_name)
+        for path in module_paths:
+            try:
+                packages = os.listdir(path)
+            except OSError:
+                continue
+            for name in packages:
+		print("name of package is" +name)
+                if name.startswith("."):
+                    continue
+                if not os.path.isdir(os.path.join(path,name)):
+                    # assume these are modules that just import other modules
+                    continue
+                for file_name in os.listdir(os.path.join(path,name)):
+                    if file_name.startswith("."):
+                        continue
+                    if file_name.endswith("~"):
+                        continue
+                    if file_name.endswith(".lua"):
+                        self._addModule(os.path.join(path,name,file_name),name,file_name[:len(file_name)-4],apps)
+                    else:
+			self.info("calling addmodule w/ version")
+			print("calling addmodule w/ version")
+                        self._addModule(os.path.join(path,name,file_name),name,file_name,apps)
+        return apps
+    
+    def _addModule(self, path, name, version, apps):
+        env = application.ApplicationEnvironment()
+        env.AppName = name
+        env.AppVersion = version
+
+        try:
+            file = open(path)
+        except IOError, e:
+            self.warning("%s" % e)
+            return
+        text = file.read()
+        file.close()
+	print("in correct _addModule")
+        m = re.search("\"Description:([^\"]+)\"",text)
+        if m is not None:
+            env.Description = m.group(1).strip()
+        else:
+            self.debug("no description in "+path)
+            print("no description in "+path)
+        m = re.search("\"URL:([^\"]+)\"",text)
+        if m is not None:
+            env.Repository = m.group(1).strip()
+        else:
+            self.debug("no URL in "+path)
+        m = re.search("\"Category:([^\"]+)\"",text)
+        if m is not None:
+            env.Extension["Category"] = map(str.strip,m.group(1).split(","))
+	    print(" python is silly")
+		
+        else:
+            self.debug("no Category in "+path)
+        m = re.search("\"Keywords:([^\"]+)\"",text)
+        if m is not None:
+	    env.Keywords = map(str.strip,m.group(1).split(","))
+        else:
+            self.debug("no Keywords in "+path)
+        m = re.search("\"SupportStatus:([^\"]+)\"",text)
+        if m is not None:
+	    supportstatus = []
+	    supportstatus.append(map(str.strip,m.group(1).split(",")))
+            env.Extension["SupportStatus"] = m.group(1).strip()
+        else:
+            self.debug("no SupportStatus in "+path)
+
+        handle = application.ApplicationHandle()
+        handle.Type = ApplicationHandle.MODULE
+        handle.Value = name+"/"+version
+
+        apps.add(env,[handle])
+
+
+#######################################################################################################################
+class InstalledServiceStep(computing_service.ComputingServiceStep):
+    def __init__(self):
+        computing_service.ComputingServiceStep.__init__(self)
+
+    def _run(self):
+        service = computing_service.ComputingService()
+        #service.Name = "PBS"
+        #service.Capability = ["executionmanagement.jobexecution",
+        #                      "executionmanagement.jobdescription",
+        #                      "executionmanagement.jobmanager",
+        #                      "executionmanagement.executionandplanning",
+        #                      "executionmanagement.reservation",
+        #                      ]
+        #service.Type = "ipf.PBS"
+        #service.QualityLevel = "production"
+
+        module_paths = []
+        try:
+            paths = os.environ["SERVICEPATH"]
+            module_paths.extend(paths.split(":"))
+        except KeyError:
+            raise StepError("didn't find environment variable SERVICEPATH")
+
+        for path in module_paths:
+            try:
+                packages = os.listdir(path)
+            except OSError:
+                continue
+            for name in packages:
+                print("name of package is" +name)
+                if name.startswith("."):
+                    continue
+                if not os.path.isdir(os.path.join(path,name)):
+                    # assume these are modules that just import other modules
+                    continue
+                for file_name in os.listdir(os.path.join(path,name)):
+                    if file_name.startswith("."):
+                        continue
+                    if file_name.endswith("~"):
+                        continue
+                    if file_name.endswith(".lua"):
+                        self._addModule(os.path.join(path,name,file_name),name,file_name[:len(file_name)-4],apps)
+                    else:
+                        self.info("calling addmodule w/ version")
+                        self._addModule(os.path.join(path,name,file_name),name,file_name,service)
+
+        return service
+
+    
+    def _addModule(self, path, name, version, service):
+        env = application.ApplicationEnvironment()
+        #env.AppName = name
+        #env.AppVersion = version
+
+        try:
+            file = open(path)
+        except IOError, e:
+            self.warning("%s" % e)
+            return
+        text = file.read()
+        file.close()
+	print("in correct _addModule")
+        m = re.search("\"Description:([^\"]+)\"",text)
+        if m is not None:
+            env.Description = m.group(1).strip()
+        else:
+            self.debug("no description in "+path)
+            print("no description in "+path)
+        m = re.search("\"URL:([^\"]+)\"",text)
+        if m is not None:
+            env.Repository = m.group(1).strip()
+        else:
+            self.debug("no URL in "+path)
+        m = re.search("\"Category:([^\"]+)\"",text)
+        if m is not None:
+            env.Extension["Category"] = map(str.strip,m.group(1).split(","))
+	    print(" python is silly")
+		
+        else:
+            self.debug("no Category in "+path)
+        m = re.search("\"Keywords:([^\"]+)\"",text)
+        if m is not None:
+	    env.Keywords = map(str.strip,m.group(1).split(","))
+        else:
+            self.debug("no Keywords in "+path)
+        m = re.search("\"SupportStatus:([^\"]+)\"",text)
+        if m is not None:
+	    supportstatus = []
+	    supportstatus.append(map(str.strip,m.group(1).split(",")))
+            env.Extension["SupportStatus"] = m.group(1).strip()
+        else:
+            self.debug("no SupportStatus in "+path)
+
+        handle = application.ApplicationHandle()
+        handle.Type = ApplicationHandle.MODULE
+        handle.Value = name+"/"+version
+
+        apps.add(env,[handle])
