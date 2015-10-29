@@ -25,28 +25,35 @@ from ipf.error import StepError
 from ipf.log import LogDirectoryWatcher
 
 from . import computing_manager
-from . import storage_service
+from . import service
 #from . import computing_share
 from . import execution_environment
+from ipf.step import Step
+import json
+#from xml.dom.minidom import getDOMImplementation
+
+from ipf.data import Data, Representation
+
+from .entity import *
 
 #######################################################################################################################
 
-class StorageServiceStep(storage_service.StorageBaseServiceStep):
+class StorageServiceStep(Step):
 
     def __init__(self):
-        storage_service.StorageBaseServiceStep.__init__(self)
+        Step.__init__(self)
 
-    def _run(self):
-        service = storage_service.StorageBaseService()
-        service.Name = "PBS"
-        service.Capability = ["executionmanagement.jobexecution",
-                              "executionmanagement.jobdescription",
-                              "executionmanagement.jobmanager",
-                              "executionmanagement.executionandplanning",
-                              "executionmanagement.reservation",
-                              ]
-        service.Type = "ipf.PBS"
-        service.QualityLevel = "production"
+    def run(self):
+        serv = service.Service()
+        #service.Name = "PBS"
+        #service.Capability = ["executionmanagement.jobexecution",
+        #                      "executionmanagement.jobdescription",
+        #                      "executionmanagement.jobmanager",
+        #                      "executionmanagement.executionandplanning",
+        #                      "executionmanagement.reservation",
+        #                      ]
+        #service.Type = "ipf.PBS"
+        #service.QualityLevel = "production"
 
 #	 try:
 #            self.exclude = self.params["exclude"].split(",")
@@ -73,15 +80,15 @@ class StorageServiceStep(storage_service.StorageBaseServiceStep):
                 if name.endswith("~"):
                     continue
                 if name.endswith(".lua"):
-                    self._addService(os.path.join(path,name),path,service)
+                    self._addService(os.path.join(path,name),path,serv)
                 else:
                     self.info("calling addmodule w/ version")
                     print("calling addmodule w/ version")
-                    self._addService(os.path.join(path,name),path,service)
+                    self._addService(os.path.join(path,name),path,serv)
 #
-        return service
+        return serv
 #
-    def _addService(self, path, name, service):
+    def _addService(self, path, name, serv):
 #
         try:
             file = open(path)
@@ -93,65 +100,57 @@ class StorageServiceStep(storage_service.StorageBaseServiceStep):
         print("in correct _addService")
         m = re.search("Name = ([^\ ]+)",text)
         if m is not None:
-            service.Name = m.group(1).strip()
-	    print(service.Name)
+            serv.Name = m.group(1).strip()
+	    print(serv.Name)
         else:
             self.debug("no name in "+path)
             print("no name in "+path)
         m = re.search("Type = ([^\ ]+)",text)
         if m is not None:
-            service.Type = m.group(1).strip()
-	    print(service.Type)
+            serv.Type = m.group(1).strip()
+	    print(serv.Type)
         else:
             self.debug("no type in "+path)
             print("no type in "+path)
         m = re.search("Version = ([^\ ]+)",text)
         if m is not None:
-            service.Version = m.group(1).strip()
-	    print(service.Version)
+            serv.Version = m.group(1).strip()
+	    print(serv.Version)
         else:
             self.debug("no Version in "+path)
             print("no Version in "+path)
         m = re.search("Endpoint = ([^\ ]+)",text)
         if m is not None:
-            service.Endpoint = m.group(1).strip()
-	    print(service.Endpoint)
+            serv.Endpoint = m.group(1).strip()
+	    print(serv.Endpoint)
         else:
             self.debug("no endpoint in "+path)
             print("no endpoint in "+path)
         m = re.search("Capability = ([^\ ]+)",text)
         if m is not None:
-            service.Capability.append(m.group(1).strip())
+	    capability=[]
+            capability.append(m.group(1).strip())
+            serv.Capability = capability
         else:
             self.debug("no Capability in "+path)
             print("no capability in "+path)
         m = re.search("SupportStatus = ([^\ ]+)",text)
         if m is not None:
-            service.QualityLevel = m.group(1).strip()
+            serv.QualityLevel = m.group(1).strip()
         else:
             self.debug("no support status in "+path)
             print("no support status in "+path)
         m = re.search("QualityLevel = ([^\ ]+)",text)
         if m is not None:
-            service.QualityLevel = m.group(1).strip()
+            serv.QualityLevel = m.group(1).strip()
         else:
             self.debug("no qualitylevel in "+path)
             print("no qualitylevel in "+path)
         m = re.search("Keywords = ([^\ ]+)",text)
         if m is not None:
-            service.Extension["Keywords"] = map(str.strip,m.group(1).split(","))
+            serv.Extension["Keywords"] = map(str.strip,m.group(1).split(","))
         else:
             self.debug("no keywords in "+path)
             print("no keywords in "+path)
         
 #######################################################################################################################
-
-#class ComputingSharesStep(computing_share.ComputingSharesStep):
-#
-#    def __init__(self):
-#        computing_share.ComputingSharesStep.__init__(self)
-#
-#        self._acceptParameter("qstat","the path to the PBS qstat program (default 'qstat')",False)
-#
-#    def _run(self):
-#	return self
