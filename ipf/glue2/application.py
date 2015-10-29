@@ -48,7 +48,7 @@ class ApplicationEnvironment(Entity):
         self.FreeJobs = None             # integer
         self.FreeUserSeats = None        # integer
         self.ExecutionEnvironmentID = [] # string (ID)
-        self.ComputingManagerD = None   # string (ID)
+        self.ComputingManagerID = None   # string (ID)
         self.ApplicationHandleID = []    # string (ID)
 	self.Keywords = []	 #string (ID)
 	self.Extension = {}
@@ -115,7 +115,7 @@ class ApplicationEnvironmentOgfJson(EntityOgfJson):
         associations["ComputingManagerID"] = self.data.ComputingManagerID
         if len(self.data.ApplicationHandleID) > 0:
             associations["ApplicationHandleID"] = self.data.ApplicationHandleID
-        #doc["Associations"] = associations
+        doc["Associations"] = associations
 
         return doc
 

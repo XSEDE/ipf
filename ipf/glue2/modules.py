@@ -256,9 +256,11 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         return apps
     
     def _addModule(self, path, name, version, apps):
+        DEFAULT_VALIDITY = 60*60*24*7 # seconds in a week
         env = application.ApplicationEnvironment()
         env.AppName = name
         env.AppVersion = version
+	env.Validity = DEFAULT_VALIDITY
 
         try:
             file = open(path)
@@ -302,6 +304,7 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         handle = application.ApplicationHandle()
         handle.Type = ApplicationHandle.MODULE
         handle.Value = name+"/"+version
+	env.ExecutionEnvironmentID = "urn:glue2:ExecutionEnvironment:%s" % (self.resource_name)
 
         apps.add(env,[handle])
 

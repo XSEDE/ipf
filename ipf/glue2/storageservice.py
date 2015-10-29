@@ -19,6 +19,7 @@ import commands
 import datetime
 import os
 import re
+import pprint
 
 from ipf.dt import localtzoffset
 from ipf.error import StepError
@@ -35,6 +36,7 @@ import json
 from ipf.data import Data, Representation
 
 from .entity import *
+from .service import *
 
 #######################################################################################################################
 
@@ -42,6 +44,7 @@ class StorageServiceStep(Step):
 
     def __init__(self):
         Step.__init__(self)
+	self.produces = [Service]
 
     def run(self):
         serv = service.Service()
@@ -86,10 +89,12 @@ class StorageServiceStep(Step):
                     print("calling addmodule w/ version")
                     self._addService(os.path.join(path,name),path,serv)
 #
-        return serv
+        #return serv
+	self._output(serv)
 #
     def _addService(self, path, name, serv):
 #
+	ServiceType = ""
         try:
             file = open(path)
         except IOError, e:
@@ -98,59 +103,136 @@ class StorageServiceStep(Step):
         text = file.read()
         file.close()
         print("in correct _addService")
-        m = re.search("Name = ([^\ ]+)",text)
+        m = re.search("Name = ([^\ ]+)\n",text)
         if m is not None:
             serv.Name = m.group(1).strip()
 	    print(serv.Name)
         else:
             self.debug("no name in "+path)
             print("no name in "+path)
-        m = re.search("Type = ([^\ ]+)",text)
+        m = re.search("Name = ([^\ ]+)\n",text)
         if m is not None:
             serv.Type = m.group(1).strip()
 	    print(serv.Type)
         else:
             self.debug("no type in "+path)
             print("no type in "+path)
-        m = re.search("Version = ([^\ ]+)",text)
+        m = re.search("Version = ([^\ ]+)\n",text)
         if m is not None:
             serv.Version = m.group(1).strip()
 	    print(serv.Version)
         else:
             self.debug("no Version in "+path)
             print("no Version in "+path)
-        m = re.search("Endpoint = ([^\ ]+)",text)
+        m = re.search("Endpoint = ([^\ ]+)\n",text)
         if m is not None:
             serv.Endpoint = m.group(1).strip()
 	    print(serv.Endpoint)
         else:
             self.debug("no endpoint in "+path)
             print("no endpoint in "+path)
-        m = re.search("Capability = ([^\ ]+)",text)
+        m = re.findall("Capability = ([^\ ]+)\n",text)
         if m is not None:
-	    capability=[]
-            capability.append(m.group(1).strip())
-            serv.Capability = capability
+	    if serv.Capability is not None:
+                serv.Capability.append(m.group(1).strip())
+	    else:
+	        #kjcapability=[]
+                #capability.append(m.group(1).strip())
+                #serv.Capability = capability
+                serv.Capability = m
         else:
             self.debug("no Capability in "+path)
             print("no capability in "+path)
-        m = re.search("SupportStatus = ([^\ ]+)",text)
+        m = re.search("SupportStatus = ([^\ ]+)\n",text)
         if m is not None:
             serv.QualityLevel = m.group(1).strip()
         else:
             self.debug("no support status in "+path)
             print("no support status in "+path)
-        m = re.search("QualityLevel = ([^\ ]+)",text)
+        m = re.search("QualityLevel = ([^\ ]+)\n",text)
         if m is not None:
             serv.QualityLevel = m.group(1).strip()
         else:
             self.debug("no qualitylevel in "+path)
             print("no qualitylevel in "+path)
-        m = re.search("Keywords = ([^\ ]+)",text)
+        m = re.search("Keywords = ([^\ ]+)\n",text)
         if m is not None:
             serv.Extension["Keywords"] = map(str.strip,m.group(1).split(","))
         else:
             self.debug("no keywords in "+path)
             print("no keywords in "+path)
+	st = serv.Capability[0].split(".")
+	print("st is %s", st)
+	if st[0] == "data":
+	    ServiceType = "StorageService"
+	#for cap in serv.Capability
+        #    m = re.search("data",cap)
+	#    if m is not None:
+	#        ServiceType = "StorageService"
+        #m = re.search("information",serv.Capability)
+	#if m is not None:
+	#    ServiceType = "InformationService"
+	
+	serv.ID = "urn:glue2:%s:%s" % (ServiceType,serv.Name)
+	pprint.pprint(serv)
+	pprint.pprint(serv.Name)
+	#return
         
 #######################################################################################################################
+
+class StorageServiceOgfJson(EntityOgfJson):
+    data_cls = Service
+
+    def __init__(self, data):
+        EntityOgfJson.__init__(self,data)
+
+    def get(self):
+        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+
+    def toJson(self):
+        doc = EntityOgfJson.toJson(self)
+	print("in StorageServiceOgfJson toJson")
+        # Service
+        if len(self.data.Capability) > 0:
+            doc["Capability"] = self.data.Capability
+        if self.data.Type is not None:
+            doc["Type"] = self.data.Type
+        if self.data.QualityLevel is not None:
+            doc["QualityLevel"] = self.data.QualityLevel
+        if len(self.data.StatusInfo) > 0:
+            doc["StatusInfo"] = self.data.StatusInfo
+        if self.data.Complexity is not None:
+            doc["Complexity"] = self.data.Complexity
+
+        associations = {}
+        if len(self.data.EndpointID) > 0:
+            associations["EndpointID"] = self.data.EndpointID
+        if len(self.data.ShareID) > 0:
+            associations["ShareID"] = self.data.ShareID
+        if len(self.data.ManagerID) > 0:
+            associations["ManagerID"] = self.data.ManagerID
+        associations["ContactID"] = self.data.ContactID
+        associations["LocationID"] = self.data.LocationID
+        associations["ServiceID"] = self.data.ServiceID
+        doc["Associations"] = associations
+
+        return doc
+
+class SSOgfJson(Representation):
+    data_cls = Service
+
+    def __init__(self, data):
+        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+
+    def get(self):
+        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+
+    def toJson(self):
+        doc = {}
+        doc["ApplicationEnvironment"] = []
+        for env in self.data.environments:
+            doc["ApplicationEnvironment"].append(ApplicationEnvironmentOgfJson(env).toJson())
+        doc["ApplicationHandle"] = []
+        for handle in self.data.handles:
+            doc["ApplicationHandle"].append(ApplicationHandleOgfJson(handle).toJson())
+        return doc
