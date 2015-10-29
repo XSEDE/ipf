@@ -54,8 +54,8 @@ class StorageBaseServiceStep(GlueStep):
 
         service = self._run()
 
-        service.id = self.resource_name
-        service.ID = "urn:glue2:StorageBaseService:%s" % (self.resource_name)
+        #service.id = self.resource_name
+        #service.ID = "urn:glue2:StorageBaseService:%s" % (self.resource_name)
 #        service.LocationID = self.location
 #        service.ManagerID = ["urn:glue2:ComputingManager:%s" % (self.resource_name)]
 
