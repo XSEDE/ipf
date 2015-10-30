@@ -37,6 +37,7 @@ from ipf.data import Data, Representation
 
 from .entity import *
 from .service import *
+from ipf.sysinfo import ResourceName
 
 #######################################################################################################################
 
@@ -44,10 +45,12 @@ class StorageServiceStep(Step):
 
     def __init__(self):
         Step.__init__(self)
+        self.requires = [ResourceName]
 	self.produces = [Service]
 
     def run(self):
         serv = service.Service()
+        self.resource_name = self._getInput(ResourceName).resource_name
         #service.Name = "PBS"
         #service.Capability = ["executionmanagement.jobexecution",
         #                      "executionmanagement.jobdescription",
@@ -173,7 +176,7 @@ class StorageServiceStep(Step):
 	#if m is not None:
 	#    ServiceType = "InformationService"
 	
-	serv.ID = "urn:glue2:%s:%s" % (ServiceType,serv.Name)
+	serv.ID = "urn:glue2:%s:%s-%s" % (ServiceType,serv.Name,self.resource_name)
 	pprint.pprint(serv)
 	pprint.pprint(serv.Name)
 	#return
