@@ -37,6 +37,7 @@ from ipf.data import Data, Representation
 
 from .entity import *
 from .service import *
+from .endpoint import *
 from ipf.sysinfo import ResourceName
 
 #######################################################################################################################
@@ -46,25 +47,11 @@ class StorageServiceStep(Step):
     def __init__(self):
         Step.__init__(self)
         self.requires = [ResourceName]
-	self.produces = [Service]
+        self.produces = [Service]
+        self.services = []
 
     def run(self):
-        serv = service.Service()
         self.resource_name = self._getInput(ResourceName).resource_name
-        #service.Name = "PBS"
-        #service.Capability = ["executionmanagement.jobexecution",
-        #                      "executionmanagement.jobdescription",
-        #                      "executionmanagement.jobmanager",
-        #                      "executionmanagement.executionandplanning",
-        #                      "executionmanagement.reservation",
-        #                      ]
-        #service.Type = "ipf.PBS"
-        #service.QualityLevel = "production"
-
-#	 try:
-#            self.exclude = self.params["exclude"].split(",")
-#        except KeyError:
-#            self.exclude = []
 
         service_paths = []
         try:
@@ -72,7 +59,7 @@ class StorageServiceStep(Step):
             service_paths.extend(paths.split(":"))
         except KeyError:
             raise StepError("didn't find environment variable SERVICEPATH")
-#
+
         for path in service_paths:
             try:
                 packages = os.listdir(path)
@@ -80,7 +67,7 @@ class StorageServiceStep(Step):
                 continue
             for name in packages:
                 print("name of package is" +name)
-		print("path is " +path)
+                print("path is " +path)
                 if name.startswith("."):
                     continue
                 if name.endswith("~"):
@@ -90,14 +77,15 @@ class StorageServiceStep(Step):
                 else:
                     self.info("calling addmodule w/ version")
                     print("calling addmodule w/ version")
+                    serv = service.Service()
                     self._addService(os.path.join(path,name),path,serv)
 #
         #return serv
-	self._output(serv)
+        self._output(serv)
 #
     def _addService(self, path, name, serv):
 #
-	ServiceType = ""
+        ServiceType = ""
         try:
             file = open(path)
         except IOError, e:
@@ -109,37 +97,37 @@ class StorageServiceStep(Step):
         m = re.search("Name = ([^\ ]+)\n",text)
         if m is not None:
             serv.Name = m.group(1).strip()
-	    print(serv.Name)
+            print(serv.Name)
         else:
             self.debug("no name in "+path)
             print("no name in "+path)
         m = re.search("Name = ([^\ ]+)\n",text)
         if m is not None:
             serv.Type = m.group(1).strip()
-	    print(serv.Type)
+            print(serv.Type)
         else:
             self.debug("no type in "+path)
             print("no type in "+path)
         m = re.search("Version = ([^\ ]+)\n",text)
         if m is not None:
             serv.Version = m.group(1).strip()
-	    print(serv.Version)
+            print(serv.Version)
         else:
             self.debug("no Version in "+path)
             print("no Version in "+path)
         m = re.search("Endpoint = ([^\ ]+)\n",text)
         if m is not None:
             serv.Endpoint = m.group(1).strip()
-	    print(serv.Endpoint)
+            print(serv.Endpoint)
         else:
             self.debug("no endpoint in "+path)
             print("no endpoint in "+path)
         m = re.findall("Capability = ([^\ ]+)\n",text)
         if m is not None:
-	    if serv.Capability is not None:
+            if serv.Capability is not None:
                 serv.Capability.append(m.group(1).strip())
-	    else:
-	        #kjcapability=[]
+            else:
+            #kjcapability=[]
                 #capability.append(m.group(1).strip())
                 #serv.Capability = capability
                 serv.Capability = m
@@ -164,22 +152,13 @@ class StorageServiceStep(Step):
         else:
             self.debug("no keywords in "+path)
             print("no keywords in "+path)
-	st = serv.Capability[0].split(".")
-	print("st is %s", st)
-	if st[0] == "data":
-	    ServiceType = "StorageService"
-	#for cap in serv.Capability
-        #    m = re.search("data",cap)
-	#    if m is not None:
-	#        ServiceType = "StorageService"
-        #m = re.search("information",serv.Capability)
-	#if m is not None:
-	#    ServiceType = "InformationService"
-	
-	serv.ID = "urn:glue2:%s:%s-%s" % (ServiceType,serv.Name,self.resource_name)
-	pprint.pprint(serv)
-	pprint.pprint(serv.Name)
-	#return
+        st = serv.Capability[0].split(".")
+        print("st is %s", st)
+        if st[0] == "data":
+            ServiceType = "StorageService"
+    
+        serv.ID = "urn:glue2:%s:%s-%s" % (ServiceType,serv.Name,self.resource_name)
+        self.ServiceType = ServiceType
         
 #######################################################################################################################
 
@@ -194,7 +173,8 @@ class StorageServiceOgfJson(EntityOgfJson):
 
     def toJson(self):
         doc = EntityOgfJson.toJson(self)
-	print("in StorageServiceOgfJson toJson")
+#   endpointdoc = EndpointOgfJson.toJson(self)
+        print("in StorageServiceOgfJson toJson")
         # Service
         if len(self.data.Capability) > 0:
             doc["Capability"] = self.data.Capability
@@ -214,28 +194,28 @@ class StorageServiceOgfJson(EntityOgfJson):
             associations["ShareID"] = self.data.ShareID
         if len(self.data.ManagerID) > 0:
             associations["ManagerID"] = self.data.ManagerID
-        associations["ContactID"] = self.data.ContactID
-        associations["LocationID"] = self.data.LocationID
-        associations["ServiceID"] = self.data.ServiceID
-        doc["Associations"] = associations
+            associations["ContactID"] = self.data.ContactID
+            associations["LocationID"] = self.data.LocationID
+            associations["ServiceID"] = self.data.ServiceID
+        #doc["Associations"] = associations
+#   doc["ENdpoint"] = endpointdoc
 
         return doc
 
-class SSOgfJson(Representation):
+class SSOgfJson(EntityOgfJson):
     data_cls = Service
 
     def __init__(self, data):
-        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+        EntityOgfJson.__init__(self,data)
 
     def get(self):
         return json.dumps(self.toJson(),sort_keys=True,indent=4)
 
     def toJson(self):
         doc = {}
-        doc["ApplicationEnvironment"] = []
-        for env in self.data.environments:
-            doc["ApplicationEnvironment"].append(ApplicationEnvironmentOgfJson(env).toJson())
-        doc["ApplicationHandle"] = []
-        for handle in self.data.handles:
-            doc["ApplicationHandle"].append(ApplicationHandleOgfJson(handle).toJson())
+        #for serv in self.services:
+        #    doc["self.ServiceType"] = []
+        #    doc["self.ServiceType"].append(ServiceOgfJson(serv))
+            #doc["Endpoint"] = []
+            #doc["Endpoint"].append(EndpointOgfJson(self))
         return doc
