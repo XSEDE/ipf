@@ -129,12 +129,13 @@ class StorageServiceStep(Step):
         else:
             self.debug("no Version in "+path)
             print("no Version in "+path)
-        m = re.search("Endpoint = ([^\ ]+)\n",text)
+        m = re.search("Endpoint = ([^\ ]+)\ *\n",text)
         if m is not None:
             serv.Endpoint = m.group(1).strip()
-            print(serv.Endpoint)
+            print("SERV ENDPOINT IS " +serv.Endpoint)
         else:
             self.debug("no endpoint in "+path)
+            serv.Endpoint = ""
             print("no endpoint in "+path)
         m = re.findall("Capability = ([^\ ]+)\n",text)
         if m is not None:
@@ -170,7 +171,18 @@ class StorageServiceStep(Step):
         print("st is %s", st)
         if st[0] == "data":
             ServiceType = "StorageService"
-    
+        else:
+            if st[0] == "information":
+                ServiceType = "InformationService"
+            else:
+                if st[0] == "executionmanagement":
+                    ServiceType = "ComputingService"
+                else:
+                    if st[0] == "information":
+                        ServiceType = "InformationService"
+                    else:
+                        ServiceType = "LoginService"
+        serv.resource_name = self.resource_name 
         serv.ID = "urn:glue2:%s:%s-%s" % (ServiceType,serv.Name,self.resource_name)
         serv.ServiceType = ServiceType
         servlist.add(serv)
@@ -190,7 +202,7 @@ class StorageServiceOgfJson(EntityOgfJson):
     def toJson(self):
         doc = {}
         doc = EntityOgfJson.toJson(self)
-#   endpointdoc = EndpointOgfJson.toJson(self)
+
         print("in StorageServiceOgfJson toJson")
         # Service
         if len(self.data.Capability) > 0:
@@ -215,7 +227,7 @@ class StorageServiceOgfJson(EntityOgfJson):
             associations["LocationID"] = self.data.LocationID
             associations["ServiceID"] = self.data.ServiceID
         doc["Associations"] = associations
-#   doc["ENdpoint"] = endpointdoc
+        #doc["ENdpoint"] = endpointdoc
 
         return doc
 
@@ -233,10 +245,22 @@ class SSOgfJson(Representation):
     def toJson(self):
         doc = {}
         doc["StorageService"] = []
+        doc["ComputingService"] = []
+        doc["LoginService"] = []
+        doc["InformationService"] = []
+        doc["Endpoint"] = []
         for serv in self.data.services:
             if serv is not None:
-                doc["StorageService"].append(serv.Name)
-                doc["StorageService"].append(StorageServiceOgfJson(serv).toJson())
+                endpoint = Endpoint()
+                endpoint.URL = serv.Endpoint
+                endpoint.InterfaceName = serv.Type
+                endpoint.InterfaceVersion = serv.Version
+                endpoint.Name = serv.Name
+                endpoint.ID = "urn:glue2:Endpoint:%s-%s-%s" % (serv.Version, serv.Name, serv.resource_name)
+                endpoint.ServiceID = serv.ID
+                serv.EndpointID = endpoint.ID
+                doc[serv.ServiceType].append(StorageServiceOgfJson(serv).toJson())
+                doc["Endpoint"].append(EndpointOgfJson(endpoint).toJson())
         #        doc["StorageService"].append(StorageServiceOgfJson(serv))
             #if doc["serv.ServiceType"] is not None:
             #    doc["serv.ServiceType"].append(StorageServiceOgfJson(serv))
