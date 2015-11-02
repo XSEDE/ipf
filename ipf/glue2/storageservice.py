@@ -42,8 +42,10 @@ from ipf.sysinfo import ResourceName
 
 #######################################################################################################################
 class StorageService(Data):
-    def __init__(self):
-        Data.__init__(self)
+    #def __init__(self):
+    def __init__(self, id):
+        #Data.__init__(self)
+        Data.__init__(self,id)
         #self.id = resource_name
         self.services = []
         self.handles = []
@@ -63,7 +65,8 @@ class StorageServiceStep(Step):
 
     def run(self):
         self.resource_name = self._getInput(ResourceName).resource_name
-        servlist = StorageService()
+        #self.id = self.resource_name
+        servlist = StorageService(self.resource_name)
         service_paths = []
         try:
             paths = os.environ["SERVICEPATH"]
@@ -258,7 +261,10 @@ class SSOgfJson(Representation):
                 endpoint.Name = serv.Name
                 endpoint.ID = "urn:glue2:Endpoint:%s-%s-%s" % (serv.Version, serv.Name, serv.resource_name)
                 endpoint.ServiceID = serv.ID
+                endpoint.QualityLevel = serv.QualityLevel
                 serv.EndpointID = endpoint.ID
+                #if self.data.id is None:
+                #self.data.id = serv.resource_name
                 doc[serv.ServiceType].append(StorageServiceOgfJson(serv).toJson())
                 doc["Endpoint"].append(EndpointOgfJson(endpoint).toJson())
         #        doc["StorageService"].append(StorageServiceOgfJson(serv))
