@@ -41,18 +41,29 @@ from .endpoint import *
 from ipf.sysinfo import ResourceName
 
 #######################################################################################################################
+class StorageService(Data):
+    def __init__(self):
+        Data.__init__(self)
+        #self.id = resource_name
+        self.services = []
+        self.handles = []
+        #self.resource_name = resource_name
+
+    def add(self, serv):
+        self.services.append(serv)
+        #self.handles.extend(handles)
 
 class StorageServiceStep(Step):
 
     def __init__(self):
         Step.__init__(self)
         self.requires = [ResourceName]
-        self.produces = [Service]
+        self.produces = [StorageService]
         self.services = []
 
     def run(self):
         self.resource_name = self._getInput(ResourceName).resource_name
-
+        servlist = StorageService()
         service_paths = []
         try:
             paths = os.environ["SERVICEPATH"]
@@ -78,13 +89,16 @@ class StorageServiceStep(Step):
                     self.info("calling addmodule w/ version")
                     print("calling addmodule w/ version")
                     serv = service.Service()
-                    self._addService(os.path.join(path,name),path,serv)
+                    self._addService(os.path.join(path,name),path,servlist)
 #
         #return serv
-        self._output(serv)
+        #self._output(serv)
+        self._output(servlist)
+        #self._output(self._run)
 #
-    def _addService(self, path, name, serv):
+    def _addService(self, path, name, servlist):
 #
+        serv = service.Service()
         ServiceType = ""
         try:
             file = open(path)
@@ -158,7 +172,8 @@ class StorageServiceStep(Step):
             ServiceType = "StorageService"
     
         serv.ID = "urn:glue2:%s:%s-%s" % (ServiceType,serv.Name,self.resource_name)
-        self.ServiceType = ServiceType
+        serv.ServiceType = ServiceType
+        servlist.add(serv)
         
 #######################################################################################################################
 
@@ -171,7 +186,9 @@ class StorageServiceOgfJson(EntityOgfJson):
     def get(self):
         return json.dumps(self.toJson(),sort_keys=True,indent=4)
 
+
     def toJson(self):
+        doc = {}
         doc = EntityOgfJson.toJson(self)
 #   endpointdoc = EndpointOgfJson.toJson(self)
         print("in StorageServiceOgfJson toJson")
@@ -197,25 +214,35 @@ class StorageServiceOgfJson(EntityOgfJson):
             associations["ContactID"] = self.data.ContactID
             associations["LocationID"] = self.data.LocationID
             associations["ServiceID"] = self.data.ServiceID
-        #doc["Associations"] = associations
+        doc["Associations"] = associations
 #   doc["ENdpoint"] = endpointdoc
 
         return doc
 
-class SSOgfJson(EntityOgfJson):
-    data_cls = Service
+#class SSOgfJson(EntityOgfJson):
+class SSOgfJson(Representation):
+    data_cls = StorageService
 
     def __init__(self, data):
-        EntityOgfJson.__init__(self,data)
+        #EntityOgfJson.__init__(self,data)
+        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
 
     def get(self):
         return json.dumps(self.toJson(),sort_keys=True,indent=4)
 
     def toJson(self):
         doc = {}
-        #for serv in self.services:
-        #    doc["self.ServiceType"] = []
-        #    doc["self.ServiceType"].append(ServiceOgfJson(serv))
+        doc["StorageService"] = []
+        for serv in self.data.services:
+            if serv is not None:
+                doc["StorageService"].append(serv.Name)
+                doc["StorageService"].append(StorageServiceOgfJson(serv).toJson())
+        #        doc["StorageService"].append(StorageServiceOgfJson(serv))
+            #if doc["serv.ServiceType"] is not None:
+            #    doc["serv.ServiceType"].append(StorageServiceOgfJson(serv))
+            #else:
+            #    doc["serv.ServiceType"] = []
+            #    doc["serv.ServiceType"].append(StorageServiceOgfJson(serv))
             #doc["Endpoint"] = []
             #doc["Endpoint"].append(EndpointOgfJson(self))
         return doc
