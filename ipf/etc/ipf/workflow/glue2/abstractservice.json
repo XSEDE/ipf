@@ -1,0 +1,29 @@
+{
+  "name": "XSEDEservices",
+  "steps": [
+    { "name": "ipf.glue2.location.LocationStep",
+      "params": {
+        "location": {
+          "Name": "Name of Center",
+          "Place": "City",
+          "Country": "US",
+          "Latitude": 38.000,
+          "Longitude": -90.000
+        }
+      }
+    },
+    { "name": "ipf.sysinfo.ResourceNameStep" ,
+      "params": {
+          "resource_name": "testing.xsede.org"
+     	        } 
+    },
+    { "name": "ipf.glue2.abstractservice.AbstractServiceStep" },
+    {
+      "name": "ipf.publish.FileStep",
+      "params": {
+        "publish": ["ipf.glue2.abstractservice.ASOgfJson"],
+        "path": "extserv.json"
+      }
+    }
+  ]
+}
