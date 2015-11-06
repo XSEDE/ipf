@@ -42,18 +42,13 @@ from ipf.sysinfo import ResourceName
 
 #######################################################################################################################
 class AbstractService(Data):
-    #def __init__(self):
     def __init__(self, id):
-        #Data.__init__(self)
         Data.__init__(self,id)
-        #self.id = resource_name
         self.services = []
         self.handles = []
-        #self.resource_name = resource_name
 
     def add(self, serv):
         self.services.append(serv)
-        #self.handles.extend(handles)
 
 class AbstractServiceStep(Step):
 
@@ -65,7 +60,6 @@ class AbstractServiceStep(Step):
 
     def run(self):
         self.resource_name = self._getInput(ResourceName).resource_name
-        #self.id = self.resource_name
         servlist = AbstractService(self.resource_name)
         service_paths = []
         try:
@@ -93,14 +87,12 @@ class AbstractServiceStep(Step):
                     print("calling addmodule w/ version")
                     serv = service.Service()
                     self._addService(os.path.join(path,name),path,servlist)
-#
-        #return serv
-        #self._output(serv)
+
         self._output(servlist)
-        #self._output(self._run)
-#
+
+
     def _addService(self, path, name, servlist):
-#
+
         serv = service.Service()
         ServiceType = ""
         try:
@@ -145,9 +137,6 @@ class AbstractServiceStep(Step):
             if serv.Capability is not None:
                 serv.Capability.append(m.group(1).strip())
             else:
-            #kjcapability=[]
-                #capability.append(m.group(1).strip())
-                #serv.Capability = capability
                 serv.Capability = m
         else:
             self.debug("no Capability in "+path)
@@ -207,7 +196,6 @@ class AbstractServiceOgfJson(EntityOgfJson):
         doc = EntityOgfJson.toJson(self)
 
         print("in AbstractServiceOgfJson toJson")
-        # Service
         if len(self.data.Capability) > 0:
             doc["Capability"] = self.data.Capability
         if self.data.Type is not None:
@@ -230,7 +218,6 @@ class AbstractServiceOgfJson(EntityOgfJson):
             associations["LocationID"] = self.data.LocationID
             associations["ServiceID"] = self.data.ServiceID
         doc["Associations"] = associations
-        #doc["ENdpoint"] = endpointdoc
 
         return doc
 
@@ -261,16 +248,6 @@ class ASOgfJson(Representation):
                 endpoint.ServiceID = serv.ID
                 endpoint.QualityLevel = serv.QualityLevel
                 serv.EndpointID = endpoint.ID
-                #if self.data.id is None:
-                #self.data.id = serv.resource_name
                 doc[serv.ServiceType].append(AbstractServiceOgfJson(serv).toJson())
                 doc["Endpoint"].append(EndpointOgfJson(endpoint).toJson())
-        #        doc["StorageService"].append(StorageServiceOgfJson(serv))
-            #if doc["serv.ServiceType"] is not None:
-            #    doc["serv.ServiceType"].append(StorageServiceOgfJson(serv))
-            #else:
-            #    doc["serv.ServiceType"] = []
-            #    doc["serv.ServiceType"].append(StorageServiceOgfJson(serv))
-            #doc["Endpoint"] = []
-            #doc["Endpoint"].append(EndpointOgfJson(self))
         return doc
