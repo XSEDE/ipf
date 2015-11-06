@@ -427,7 +427,7 @@ def writeExtModulesWorkflow(resource_name, extmodules_json):
 def writeAbstractServicesWorkflow(resource_name, services_json):
     res_name = resource_name.split(".")[0]
     path = os.path.join(getGlueWorkflowDir(),res_name+"_services.json")
-    print("  -> writing modules workflow to %s" % path)
+    print("  -> writing abstract services workflow to %s" % path)
     f = open(path,"w")
     f.write(json.dumps(services_json,indent=4,sort_keys=True))
     f.close()
