@@ -83,6 +83,8 @@ def configure():
     writePeriodicExtModulesWorkflow(resource_name)
     writePeriodicAbstractServicesWorkflow(resource_name)
     writeModulesInit(resource_name,module_names,env_vars)
+    writeExtModulesInit(resource_name,module_names,env_vars)
+    writeAbstractServicesInit(resource_name,module_names,env_vars)
 
 #######################################################################################################################
 
@@ -531,6 +533,18 @@ def writeModulesInit(resource_name, module_names, env_vars):
     res_name = resource_name.split(".")[0]
     path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"-glue2-modules")
     name = "%s_modules\n" % res_name
+    writeInit(resource_name,module_names,env_vars,name,path)
+
+def writeExtModulesInit(resource_name, module_names, env_vars):
+    res_name = resource_name.split(".")[0]
+    path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"-glue2-extmodules")
+    name = "%s_extmodules\n" % res_name
+    writeInit(resource_name,module_names,env_vars,name,path)
+
+def writeAbstractServicesInit(resource_name, module_names, env_vars):
+    res_name = resource_name.split(".")[0]
+    path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"-glue2-services")
+    name = "%s_services\n" % res_name
     writeInit(resource_name,module_names,env_vars,name,path)
 
 def writeInit(resource_name, module_names, env_vars, name, path):
