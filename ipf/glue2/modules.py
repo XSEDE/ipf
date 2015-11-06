@@ -236,7 +236,7 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
             except OSError:
                 continue
             for name in packages:
-		print("name of package is" +name)
+		#print("name of package is" +name)
                 if name.startswith("."):
                     continue
                 if not os.path.isdir(os.path.join(path,name)):
@@ -251,7 +251,7 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
                         self._addModule(os.path.join(path,name,file_name),name,file_name[:len(file_name)-4],apps)
                     else:
 			self.info("calling addmodule w/ version")
-			print("calling addmodule w/ version")
+			#print("calling addmodule w/ version")
                         self._addModule(os.path.join(path,name,file_name),name,file_name,apps)
         return apps
     
@@ -269,13 +269,13 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
             return
         text = file.read()
         file.close()
-	print("in correct _addModule")
+	#print("in correct _addModule")
         m = re.search("\"Description:([^\"]+)\"",text)
         if m is not None:
             env.Description = m.group(1).strip()
         else:
             self.debug("no description in "+path)
-            print("no description in "+path)
+            #print("no description in "+path)
         m = re.search("\"URL:([^\"]+)\"",text)
         if m is not None:
             env.Repository = m.group(1).strip()
@@ -284,7 +284,6 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         m = re.search("\"Category:([^\"]+)\"",text)
         if m is not None:
             env.Extension["Category"] = map(str.strip,m.group(1).split(","))
-	    print(" python is silly")
 		
         else:
             self.debug("no Category in "+path)

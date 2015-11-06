@@ -74,8 +74,8 @@ class AbstractServiceStep(Step):
             except OSError:
                 continue
             for name in packages:
-                print("name of package is" +name)
-                print("path is " +path)
+                #print("name of package is" +name)
+                #print("path is " +path)
                 if name.startswith("."):
                     continue
                 if name.endswith("~"):
@@ -84,7 +84,7 @@ class AbstractServiceStep(Step):
                     self._addService(os.path.join(path,name),path,serv)
                 else:
                     self.info("calling addmodule w/ version")
-                    print("calling addmodule w/ version")
+                    #print("calling addmodule w/ version")
                     serv = service.Service()
                     self._addService(os.path.join(path,name),path,servlist)
 
@@ -102,36 +102,36 @@ class AbstractServiceStep(Step):
             return
         text = file.read()
         file.close()
-        print("in correct _addService")
+        #print("in correct _addService")
         m = re.search("Name = ([^\ ]+)\n",text)
         if m is not None:
             serv.Name = m.group(1).strip()
-            print(serv.Name)
+            #print(serv.Name)
         else:
             self.debug("no name in "+path)
-            print("no name in "+path)
+            #print("no name in "+path)
         m = re.search("Name = ([^\ ]+)\n",text)
         if m is not None:
             serv.Type = m.group(1).strip()
-            print(serv.Type)
+            #print(serv.Type)
         else:
             self.debug("no type in "+path)
-            print("no type in "+path)
+            #print("no type in "+path)
         m = re.search("Version = ([^\ ]+)\n",text)
         if m is not None:
             serv.Version = m.group(1).strip()
-            print(serv.Version)
+            #print(serv.Version)
         else:
             self.debug("no Version in "+path)
-            print("no Version in "+path)
+            #print("no Version in "+path)
         m = re.search("Endpoint = ([^\ ]+)\ *\n",text)
         if m is not None:
             serv.Endpoint = m.group(1).strip()
-            print("SERV ENDPOINT IS " +serv.Endpoint)
+            #print("SERV ENDPOINT IS " +serv.Endpoint)
         else:
             self.debug("no endpoint in "+path)
             serv.Endpoint = ""
-            print("no endpoint in "+path)
+            #print("no endpoint in "+path)
         m = re.findall("Capability = ([^\ ]+)\n",text)
         if m is not None:
             if serv.Capability is not None:
@@ -140,27 +140,27 @@ class AbstractServiceStep(Step):
                 serv.Capability = m
         else:
             self.debug("no Capability in "+path)
-            print("no capability in "+path)
+            #print("no capability in "+path)
         m = re.search("SupportStatus = ([^\ ]+)\n",text)
         if m is not None:
             serv.QualityLevel = m.group(1).strip()
         else:
             self.debug("no support status in "+path)
-            print("no support status in "+path)
+            #print("no support status in "+path)
         m = re.search("QualityLevel = ([^\ ]+)\n",text)
         if m is not None:
             serv.QualityLevel = m.group(1).strip()
         else:
             self.debug("no qualitylevel in "+path)
-            print("no qualitylevel in "+path)
+            #print("no qualitylevel in "+path)
         m = re.search("Keywords = ([^\ ]+)\n",text)
         if m is not None:
             serv.Extension["Keywords"] = map(str.strip,m.group(1).split(","))
         else:
             self.debug("no keywords in "+path)
-            print("no keywords in "+path)
+            #print("no keywords in "+path)
         st = serv.Capability[0].split(".")
-        print("st is %s", st)
+        #print("st is %s", st)
         if st[0] == "data":
             ServiceType = "StorageService"
         else:
@@ -195,7 +195,7 @@ class AbstractServiceOgfJson(EntityOgfJson):
         doc = {}
         doc = EntityOgfJson.toJson(self)
 
-        print("in AbstractServiceOgfJson toJson")
+        #print("in AbstractServiceOgfJson toJson")
         if len(self.data.Capability) > 0:
             doc["Capability"] = self.data.Capability
         if self.data.Type is not None:
