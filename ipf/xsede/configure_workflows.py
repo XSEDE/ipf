@@ -80,6 +80,8 @@ def configure():
     writeExtModulesWorkflow(resource_name,extmodules_json)
     writeAbstractServicesWorkflow(resource_name,services_json)
     writePeriodicModulesWorkflow(resource_name)
+    writePeriodicExtModulesWorkflow(resource_name)
+    writePeriodicAbstractServicesWorkflow(resource_name)
     writeModulesInit(resource_name,module_names,env_vars)
 
 #######################################################################################################################
@@ -356,6 +358,18 @@ def getEnvironmentVariables():
 	       _modulepath = None
          if _modulepath is not None:
 	    vars["MODULEPATH"] = _modulepath
+    if "SERVICEPATH" in os.environ:
+         _servicepath = os.environ["SERVICEPATH"]
+	 print("SERVICEPATH=%s" % _servicepath)
+	 answer = options("is set in your environment.  Do you want to use this value in the Services workflow?",["yes","no"],"yes")
+         if answer == "no":
+	    answer = options("do you want to set a different value for SERVICEPATH for use in the Services workflow?",["yes","no"],"yes")
+	    if answer == "yes":
+	       _servicepath = question("Enter the value for SERVICEPATH")
+	    else:
+	       _servicepath = None
+         if _servicepath is not None:
+	    vars["SERVICEPATH"] = _servicepath
     while True:
         if len(vars) > 0:
             print("current variables:")
@@ -453,6 +467,51 @@ def writePeriodicModulesWorkflow(resource_name):
     f = open(path,"w")
     f.write(json.dumps(periodic_json,indent=4,sort_keys=True))
     f.close()
+
+def writePeriodicExtModulesWorkflow(resource_name):
+    res_name = resource_name.split(".")[0]
+    periodic_json = {}
+    periodic_json["name"] = res_name+"_extmodules_periodic"
+    periodic_json["description"] = "Gather GLUE2 Extended module (Software) information periodically"
+    periodic_json["steps"] = []
+
+    step_json = {}
+    step_json["name"] = "ipf.step.WorkflowStep"
+    step_json["params"] = {}
+    step_json["params"]["workflow"] = res_name+"_extmodules.json"
+    interval_str = question("How often should extended module information (XSEDE software) be gathered (hours)?","1")
+    step_json["params"]["maximum_interval"] = int(interval_str) * 60 * 60
+
+    periodic_json["steps"].append(step_json)
+
+    path = os.path.join(getGlueWorkflowDir(),res_name+"_extmodules_periodic.json")
+    print("  -> writing periodic extended modules (software) workflow to %s" % path)
+    f = open(path,"w")
+    f.write(json.dumps(periodic_json,indent=4,sort_keys=True))
+    f.close()
+
+def writePeriodicAbstractServicesWorkflow(resource_name):
+    res_name = resource_name.split(".")[0]
+    periodic_json = {}
+    periodic_json["name"] = res_name+"_services_periodic"
+    periodic_json["description"] = "Gather GLUE2 AbstractService information periodically"
+    periodic_json["steps"] = []
+
+    step_json = {}
+    step_json["name"] = "ipf.step.WorkflowStep"
+    step_json["params"] = {}
+    step_json["params"]["workflow"] = res_name+"_services.json"
+    interval_str = question("How often should AbstractService (XSEDE Services) information be gathered (hours)?","1")
+    step_json["params"]["maximum_interval"] = int(interval_str) * 60 * 60
+
+    periodic_json["steps"].append(step_json)
+
+    path = os.path.join(getGlueWorkflowDir(),res_name+"_services_periodic.json")
+    print("  -> writing periodic Abstract Services workflow to %s" % path)
+    f = open(path,"w")
+    f.write(json.dumps(periodic_json,indent=4,sort_keys=True))
+    f.close()
+
 
 #######################################################################################################################
 
