@@ -1,7 +1,7 @@
 {
   "name": "XSEDEservices",
   "steps": [
-    { "name": "ipf.sysinfo.ResourceNameStep" ,
+    { "name": "ipf.sysinfo.ResourceNameStep" 
     },
     { "name": "ipf.glue2.abstractservice.AbstractServiceStep" },
     {
