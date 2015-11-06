@@ -65,10 +65,20 @@ def configure():
         modules_json = getModulesJson()
     elif modules_type == "lmod":
         modules_json = getLModJson()
+    extmodules_json = getExtModulesJson()
+    services_json = getAbstractServicesJson()
     setResourceName(resource_name,modules_json)
+    setResourceName(resource_name,extmodules_json)
+    setResourceName(resource_name,services_json)
     updateFilePublishPaths(resource_name,modules_json)
+    updateFilePublishPaths(resource_name,extmodules_json)
+    updateFilePublishPaths(resource_name,services_json)
     addXsedeAmqpToModules(modules_json,compute_json)
+    addXsedeAmqpToExtModules(extmodules_json,compute_json)
+    addXsedeAmqpToAbstractServices(services_json,compute_json)
     writeModulesWorkflow(resource_name,modules_json)
+    writeExtModulesWorkflow(resource_name,extmodules_json)
+    writeAbstractServicesWorkflow(resource_name,services_json)
     writePeriodicModulesWorkflow(resource_name)
     writeModulesInit(resource_name,module_names,env_vars)
 
@@ -103,6 +113,12 @@ def getActivityJsonForScheduler(sched_name):
 
 def getModulesJson():
     return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"modules.json"))
+
+def getExtModulesJson():
+    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"extmodules.json"))
+
+def getAbstractServicesJson():
+    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"abstractservice.json"))
 
 def getLModJson():
     return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"lmod.json"))
@@ -295,6 +311,28 @@ def addXsedeAmqpToModules(modules_json, compute_json):
             return
     raise Exception("didn't find AmqpStep in compute workflow")
 
+def addXsedeAmqpToExtModules(modules_json, compute_json):
+    for step in compute_json["steps"]:
+        if step["name"] == "ipf.publish.AmqpStep" and "xsede.org" in step["params"]["services"][0]:
+            amqp_step = copy.deepcopy(step)
+            amqp_step["description"] = "Publish modules to XSEDE"
+            amqp_step["params"]["publish"] = ["ipf.glue2.application.ApplicationsOgfJson"]
+            amqp_step["params"]["exchange"] = "glue2.applications"
+            modules_json["steps"].append(amqp_step)
+            return
+    raise Exception("didn't find AmqpStep in compute workflow")
+
+def addXsedeAmqpToAbstractServices(modules_json, compute_json):
+    for step in compute_json["steps"]:
+        if step["name"] == "ipf.publish.AmqpStep" and "xsede.org" in step["params"]["services"][0]:
+            amqp_step = copy.deepcopy(step)
+            amqp_step["description"] = "Publish modules to XSEDE"
+            amqp_step["params"]["publish"] = ["ipf.glue2.abstractservice.ASOgfJson"]
+            amqp_step["params"]["exchange"] = "glue2.compute"
+            modules_json["steps"].append(amqp_step)
+            return
+    raise Exception("didn't find AmqpStep in compute workflow")
+
 #######################################################################################################################
 
 def getModules():
@@ -376,6 +414,22 @@ def writeModulesWorkflow(resource_name, modules_json):
     print("  -> writing modules workflow to %s" % path)
     f = open(path,"w")
     f.write(json.dumps(modules_json,indent=4,sort_keys=True))
+    f.close()
+
+def writeExtModulesWorkflow(resource_name, extmodules_json):
+    res_name = resource_name.split(".")[0]
+    path = os.path.join(getGlueWorkflowDir(),res_name+"_extmodules.json")
+    print("  -> writing extended modules workflow to %s" % path)
+    f = open(path,"w")
+    f.write(json.dumps(extmodules_json,indent=4,sort_keys=True))
+    f.close()
+
+def writeAbstractServicesWorkflow(resource_name, services_json):
+    res_name = resource_name.split(".")[0]
+    path = os.path.join(getGlueWorkflowDir(),res_name+"_services.json")
+    print("  -> writing modules workflow to %s" % path)
+    f = open(path,"w")
+    f.write(json.dumps(services_json,indent=4,sort_keys=True))
     f.close()
 
 def writePeriodicModulesWorkflow(resource_name):

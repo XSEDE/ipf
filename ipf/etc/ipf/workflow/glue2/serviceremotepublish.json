@@ -17,11 +17,11 @@
           "resource_name": "testing.xsede.org"
      	        } 
     },
-    { "name": "ipf.glue2.storageservice.StorageServiceStep" },
+    { "name": "ipf.glue2.abstractservice.AbstractServiceStep" },
     {
       "name": "ipf.publish.FileStep",
       "params": {
-        "publish": ["ipf.glue2.storageservice.SSOgfJson"],
+        "publish": ["ipf.glue2.abstractservice.ASOgfJson"],
         "path": "extserv.json"
       }
     },
@@ -31,7 +31,7 @@
       "params": {
         "exchange": "glue2.compute",
         "publish": [
-                    "ipf.glue2.storageservice.SSOgfJson"
+                    "ipf.glue2.abstractservice.ASOgfJson"
                 ],
         "services": [
                     "info1.dyn.xsede.org",

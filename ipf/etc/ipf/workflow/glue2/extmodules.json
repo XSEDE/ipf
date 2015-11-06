@@ -1,10 +1,7 @@
 {
-  "name": "modules",
+  "name": "Extended modules",
   "steps": [
     { "name": "ipf.sysinfo.ResourceNameStep",
-      "params": {
-          "resource_name": "testing.xsede.org"
-                }
     },
     { "name": "ipf.glue2.modules.ExtendedModApplicationsStep" },
     {
