@@ -159,6 +159,11 @@ class AbstractServiceStep(Step):
         else:
             self.debug("no keywords in "+path)
             #print("no keywords in "+path)
+        #n = re.finditer("Extensions.(.*?) = ([^\ ]+)\n",text)
+        n = re.finditer("Extensions.(.*?) = (.*?)\n",text)
+	    for match in n:
+            serv.Extension[match.group(1).strip()] = match.group(2).strip()
+
         st = serv.Capability[0].split(".")
         #print("st is %s", st)
         if st[0] == "data":
