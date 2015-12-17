@@ -161,7 +161,7 @@ class AbstractServiceStep(Step):
             #print("no keywords in "+path)
         #n = re.finditer("Extensions.(.*?) = ([^\ ]+)\n",text)
         n = re.finditer("Extensions.(.*?) = (.*?)\n",text)
-	    for match in n:
+        for match in n:
             serv.Extension[match.group(1).strip()] = match.group(2).strip()
 
         st = serv.Capability[0].split(".")

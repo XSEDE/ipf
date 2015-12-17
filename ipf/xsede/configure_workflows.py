@@ -97,7 +97,7 @@ def getResourceName():
         print("Failed to use xdresourceid to get resource name: %s" % e)
         xdresid_name = None
     else:
-        xdresid_name = out
+        xdresid_name = out.rstrip()
     resource_name = question("Enter the XSEDE resource name",xdresid_name)
     return resource_name
 
