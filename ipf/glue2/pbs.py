@@ -276,6 +276,13 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
         # Svr/Req/Job
         # ? job id (with Job)
         # message
+        #It is necessary for Torque to log at the correct level in order for IPF
+        #to be able to parse the messages that it uses in determining state.  
+        #Furthermore, the logging level of Torque can be confusing, as it has 
+        #both a log_level and a log_events (which is a bitmask).  The most 
+        #important setting is that log_events should be set to 255.  This 
+        #ensures that all types of events are logged.  You can check the setting
+        # on your Torque installation by using "qmgr".
         toks = entry.split(";")
         if len(toks) < 6:
             self.warning("too few tokens in line: %s",entry)
