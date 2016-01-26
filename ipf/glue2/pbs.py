@@ -380,7 +380,7 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
         try:
             activity = self.activities[id]
             # activity will be modified - update creation time
-            activity.CreationTime = datetime.datetime.now(tzoffset(0))
+            activity.CreationTime = datetime.datetime.now(localtzoffset(0))
         except KeyError:
             activity = self._queryActivity(id)
         return activity
