@@ -135,9 +135,12 @@ class AbstractServiceStep(Step):
         m = re.findall("Capability = ([^\ ]+)\n",text)
         if m is not None:
             if serv.Capability is not None:
-                serv.Capability.append(m.group(1).strip())
+                serv.Capability.append(m.group(1).lower().strip())
             else:
-                serv.Capability = m
+		mlower = []
+		for cap in m:
+                    mlower.append(cap.lower())
+                serv.Capability = mlower
         else:
             self.debug("no Capability in "+path)
             #print("no capability in "+path)
@@ -178,7 +181,10 @@ class AbstractServiceStep(Step):
                     if st[0] == "information":
                         ServiceType = "InformationService"
                     else:
-                        ServiceType = "LoginService"
+                        if st[0] == "login":
+                            ServiceType = "LoginService"
+                        else:
+                            ServiceType = "UntypedService"
         serv.resource_name = self.resource_name 
         serv.ID = "urn:glue2:%s:%s-%s" % (ServiceType,serv.Name,self.resource_name)
         serv.ServiceType = ServiceType
@@ -253,6 +259,8 @@ class ASOgfJson(Representation):
                 endpoint.ServiceID = serv.ID
                 endpoint.QualityLevel = serv.QualityLevel
                 serv.EndpointID = endpoint.ID
+                if serv.ServiceType not in doc:
+                    doc[serv.ServiceType] = []
                 doc[serv.ServiceType].append(AbstractServiceOgfJson(serv).toJson())
                 doc["Endpoint"].append(EndpointOgfJson(endpoint).toJson())
         return doc

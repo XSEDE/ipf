@@ -370,7 +370,7 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
                 return
             activity.Queue = m.group(1)
         else:
-            self.warning("unhandled log event: %s",toks)
+            self.debug("unhandled log event: %s",toks)
             return
 
         if activity.Queue is None or self._includeQueue(activity.Queue):
