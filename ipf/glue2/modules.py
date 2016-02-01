@@ -188,6 +188,15 @@ class ModulesApplicationsStep(application.ApplicationsStep):
             handle.Value = env.AppName+"/"+env.AppVersion
 
         description = ""
+        modvars = {}
+	modfile = ' '.join(lines)
+        for m in re.finditer("set (\S*)\s*\"([^\"]*)\"",modfile):
+            if m is not None:
+                #Replace \\n followed by whitespace in descriptions:
+                sanitize = re.sub(r'\\\s+', ' ', m.group(2))
+                modvars[m.group(1)] = sanitize
+                #print(m.group(1)+"="+sanitize)
+	#print("modvars keys, %s",modvars.keys())
         for line in lines:
             m = re.search("puts stderr \"([^\"]+)\"",line)
             if m is not None:
@@ -195,6 +204,9 @@ class ModulesApplicationsStep(application.ApplicationsStep):
                     description += " "
                 description += m.group(1)
         if description != "":
+            for modvar in modvars.keys():
+                if modvar in description:
+                    description = description.replace("$"+modvar,modvars[modvar])
             description = description.replace("$_module_name",handle.Value)
             if env.AppVersion is not None:
                 description = description.replace("$version",env.AppVersion)
