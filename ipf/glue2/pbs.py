@@ -322,7 +322,11 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
             
     def _handleJobEntry(self, toks):
         id = toks[4].split(".")[0]  # just the id part of id.host.name
-        activity = self._getActivity(id)
+        if id.isdigit():
+            activity = self._getActivity(id)
+        else:
+            self.debug("%s not a valid job id in unhandled log event: %s",id,toks)
+            return
         if "Job Queued" in toks[5]:
             if activity.published:
                 # this is duplicate information - don't publish it again
