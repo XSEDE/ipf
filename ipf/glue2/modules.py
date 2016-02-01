@@ -44,7 +44,7 @@ class LModApplicationsStep(application.ApplicationsStep):
         module_paths = []
         try:
             paths = os.environ["MODULEPATH"]
-            module_paths.extend(paths.split(":"))
+            module_paths.extend(map(os.path.realpath,paths.split(":")))
         except KeyError:
             raise StepError("didn't find environment variable MODULEPATH")
 
@@ -131,7 +131,7 @@ class ModulesApplicationsStep(application.ApplicationsStep):
         module_paths = []
         try:
             paths = os.environ["MODULEPATH"]
-            module_paths.extend(paths.split(":"))
+            module_paths.extend(map(os.path.realpath,paths.split(":")))
         except KeyError:
             raise StepError("didn't find environment variable MODULEPATH")
 
@@ -237,7 +237,7 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         module_paths = []
         try:
             paths = os.environ["MODULEPATH"]
-            module_paths.extend(paths.split(":"))
+            module_paths.extend(map(os.path.realpath,paths.split(":")))
         except KeyError:
             raise StepError("didn't find environment variable MODULEPATH")
 
