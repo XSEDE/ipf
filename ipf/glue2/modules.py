@@ -254,6 +254,8 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
                 if not os.path.isdir(os.path.join(path,name)):
                     # assume these are modules that just import other modules
                     continue
+                if not os.access(os.path.join(path,name),os.R_OK):
+                    continue
                 for file_name in os.listdir(os.path.join(path,name)):
                     if file_name.startswith("."):
                         continue
