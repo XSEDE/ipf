@@ -29,7 +29,11 @@ from ipf.paths import IPF_ETC_PATH, IPF_VAR_PATH
 from ipf.step import PublishStep  # won't need in a bit
 from ipf.step import TriggerStep
 
-import amqp
+try:
+   import amqp
+except ImportError as exc:
+    sys.stderr.write("Error importing amqp: Please set PYTHONPATH to include path to AMQP :"+format(exc)+"\n\n")
+
 
 #######################################################################################################################
 
