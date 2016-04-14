@@ -458,7 +458,7 @@ def writePeriodicModulesWorkflow(resource_name):
     step_json = {}
     step_json["name"] = "ipf.step.WorkflowStep"
     step_json["params"] = {}
-    step_json["params"]["workflow"] = res_name+"_modules.json"
+    step_json["params"]["workflow"] = "glue2/"+res_name+"_modules.json"
     interval_str = question("How often should module information be gathered (hours)?","1")
     step_json["params"]["maximum_interval"] = int(interval_str) * 60 * 60
 
@@ -480,7 +480,7 @@ def writePeriodicExtModulesWorkflow(resource_name):
     step_json = {}
     step_json["name"] = "ipf.step.WorkflowStep"
     step_json["params"] = {}
-    step_json["params"]["workflow"] = res_name+"_extmodules.json"
+    step_json["params"]["workflow"] = "glue2/"+res_name+"_extmodules.json"
     interval_str = question("How often should extended module information (XSEDE software) be gathered (hours)?","1")
     step_json["params"]["maximum_interval"] = int(interval_str) * 60 * 60
 
@@ -502,7 +502,7 @@ def writePeriodicAbstractServicesWorkflow(resource_name):
     step_json = {}
     step_json["name"] = "ipf.step.WorkflowStep"
     step_json["params"] = {}
-    step_json["params"]["workflow"] = res_name+"_services.json"
+    step_json["params"]["workflow"] = "glue2/"+res_name+"_services.json"
     interval_str = question("How often should AbstractService (XSEDE Services) information be gathered (hours)?","1")
     step_json["params"]["maximum_interval"] = int(interval_str) * 60 * 60
 
