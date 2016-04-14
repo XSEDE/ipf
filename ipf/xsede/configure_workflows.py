@@ -159,8 +159,8 @@ def setLocation(compute_json):
 
 def updateLocationStep(params):
     params["Name"] = question("Enter your organization",params.get("Name",None))
-    if params.get("Place",None) == None:
-        updateFromFreeGeoIp(params)
+#    if params.get("Place",None) == None:
+#        updateFromFreeGeoIp(params)
     params["Place"] = question("Enter your city",params.get("Place",None))
     params["Country"] = question("Enter your country",params.get("Country",None))
     params["Latitude"] = question("Enter your latitude",params.get("Latitude",None))
