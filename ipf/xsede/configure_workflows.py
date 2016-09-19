@@ -60,29 +60,29 @@ def configure():
         writeActivityWorkflow(resource_name,activity_json)
         writeActivityInit(resource_name,module_names,env_vars)
 
-    modules_type = getModulesType()
-    if modules_type == "modules":
-        modules_json = getModulesJson()
-    elif modules_type == "lmod":
-        modules_json = getLModJson()
+    #modules_type = getModulesType()
+    #if modules_type == "modules":
+    #    modules_json = getModulesJson()
+    #elif modules_type == "lmod":
+    #    modules_json = getLModJson()
     extmodules_json = getExtModulesJson()
     services_json = getAbstractServicesJson()
-    setResourceName(resource_name,modules_json)
+    #setResourceName(resource_name,modules_json)
     setResourceName(resource_name,extmodules_json)
     setResourceName(resource_name,services_json)
-    updateFilePublishPaths(resource_name,modules_json)
+    #updateFilePublishPaths(resource_name,modules_json)
     updateFilePublishPaths(resource_name,extmodules_json)
     updateFilePublishPaths(resource_name,services_json)
-    addXsedeAmqpToModules(modules_json,compute_json)
+    #addXsedeAmqpToModules(modules_json,compute_json)
     addXsedeAmqpToExtModules(extmodules_json,compute_json)
     addXsedeAmqpToAbstractServices(services_json,compute_json)
-    writeModulesWorkflow(resource_name,modules_json)
+    #writeModulesWorkflow(resource_name,modules_json)
     writeExtModulesWorkflow(resource_name,extmodules_json)
     writeAbstractServicesWorkflow(resource_name,services_json)
     writePeriodicModulesWorkflow(resource_name)
     writePeriodicExtModulesWorkflow(resource_name)
     writePeriodicAbstractServicesWorkflow(resource_name)
-    writeModulesInit(resource_name,module_names,env_vars)
+    #writeModulesInit(resource_name,module_names,env_vars)
     writeExtModulesInit(resource_name,module_names,env_vars)
     writeAbstractServicesInit(resource_name,module_names,env_vars)
 
@@ -389,6 +389,8 @@ def getEnvironmentVariables():
 def writeComputeWorkflow(resource_name, compute_json):
     res_name = resource_name.split(".")[0]
     path = os.path.join(getGlueWorkflowDir(),res_name+"_compute.json")
+    if os.path.isfile(path):
+        os.rename(path, path+"backup-"+time.localtime())
     print("  -> writing compute workflow to %s" % path)
     f = open(path,"w")
     f.write(json.dumps(compute_json,indent=4,sort_keys=True))
@@ -412,6 +414,8 @@ def writePeriodicComputeWorkflow(resource_name):
 
     path = os.path.join(getGlueWorkflowDir(),res_name+"_compute_periodic.json")
     print("  -> writing periodic compute workflow to %s" % path)
+    if os.path.isfile(path):
+        os.rename(path, path+"backup-"+time.localtime())
     f = open(path,"w")
     f.write(json.dumps(periodic_json,indent=4,sort_keys=True))
     f.close()
@@ -420,6 +424,8 @@ def writeActivityWorkflow(resource_name, activity_json):
     res_name = resource_name.split(".")[0]
     path = os.path.join(getGlueWorkflowDir(),res_name+"_activity.json")
     print("  -> writing activity workflow to %s" % path)
+    if os.path.isfile(path):
+        os.rename(path, path+"backup-"+time.localtime())
     f = open(path,"w")
     f.write(json.dumps(activity_json,indent=4,sort_keys=True))
     f.close()
@@ -428,6 +434,8 @@ def writeModulesWorkflow(resource_name, modules_json):
     res_name = resource_name.split(".")[0]
     path = os.path.join(getGlueWorkflowDir(),res_name+"_modules.json")
     print("  -> writing modules workflow to %s" % path)
+    if os.path.isfile(path):
+        os.rename(path, path+"backup-"+time.localtime())
     f = open(path,"w")
     f.write(json.dumps(modules_json,indent=4,sort_keys=True))
     f.close()
@@ -436,6 +444,8 @@ def writeExtModulesWorkflow(resource_name, extmodules_json):
     res_name = resource_name.split(".")[0]
     path = os.path.join(getGlueWorkflowDir(),res_name+"_extmodules.json")
     print("  -> writing extended modules workflow to %s" % path)
+    if os.path.isfile(path):
+        os.rename(path, path+"backup-"+time.localtime())
     f = open(path,"w")
     f.write(json.dumps(extmodules_json,indent=4,sort_keys=True))
     f.close()
@@ -444,6 +454,8 @@ def writeAbstractServicesWorkflow(resource_name, services_json):
     res_name = resource_name.split(".")[0]
     path = os.path.join(getGlueWorkflowDir(),res_name+"_services.json")
     print("  -> writing abstract services workflow to %s" % path)
+    if os.path.isfile(path):
+        os.rename(path, path+"backup-"+time.localtime())
     f = open(path,"w")
     f.write(json.dumps(services_json,indent=4,sort_keys=True))
     f.close()
@@ -466,6 +478,8 @@ def writePeriodicModulesWorkflow(resource_name):
 
     path = os.path.join(getGlueWorkflowDir(),res_name+"_modules_periodic.json")
     print("  -> writing periodic modules workflow to %s" % path)
+    if os.path.isfile(path):
+        os.rename(path, path+"backup-"+time.localtime())
     f = open(path,"w")
     f.write(json.dumps(periodic_json,indent=4,sort_keys=True))
     f.close()
@@ -488,6 +502,8 @@ def writePeriodicExtModulesWorkflow(resource_name):
 
     path = os.path.join(getGlueWorkflowDir(),res_name+"_extmodules_periodic.json")
     print("  -> writing periodic extended modules (software) workflow to %s" % path)
+    if os.path.isfile(path):
+        os.rename(path, path+"backup-"+time.localtime())
     f = open(path,"w")
     f.write(json.dumps(periodic_json,indent=4,sort_keys=True))
     f.close()
@@ -510,6 +526,8 @@ def writePeriodicAbstractServicesWorkflow(resource_name):
 
     path = os.path.join(getGlueWorkflowDir(),res_name+"_services_periodic.json")
     print("  -> writing periodic Abstract Services workflow to %s" % path)
+    if os.path.isfile(path):
+        os.rename(path, path+"backup-"+time.localtime())
     f = open(path,"w")
     f.write(json.dumps(periodic_json,indent=4,sort_keys=True))
     f.close()
