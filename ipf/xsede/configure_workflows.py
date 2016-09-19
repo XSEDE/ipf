@@ -23,13 +23,14 @@ import socket
 import subprocess
 import threading
 import urllib2
+import time
 
 #######################################################################################################################
 
 def configure():
     print
     print("This script asks you for information and configures your IPF installation.")
-    print("  Warning: At the current time, this script overwrites your existing configuration, it does not modify it")
+    print("  This script backs up your existing configuration, by renaming the existing configuration files with .backup-TIMESTAMP")
 
     resource_name = getResourceName()
     sched_name = getSchedulerName()
@@ -49,7 +50,7 @@ def configure():
     env_vars = getEnvironmentVariables()
     writeComputeInit(resource_name,module_names,env_vars)
 
-    answer = options("Do you want to publish job updates? Your scheduler log files must be readable.",
+    answer = options("Do you want to publish job updates? Your scheduler log files must be readable. Condor users should answer 'no'.",
                      ["yes","no"],"yes")
     if answer == "yes":
         activity_json = getActivityJsonForScheduler(sched_name)
@@ -79,7 +80,7 @@ def configure():
     #writeModulesWorkflow(resource_name,modules_json)
     writeExtModulesWorkflow(resource_name,extmodules_json)
     writeAbstractServicesWorkflow(resource_name,services_json)
-    writePeriodicModulesWorkflow(resource_name)
+    #writePeriodicModulesWorkflow(resource_name)
     writePeriodicExtModulesWorkflow(resource_name)
     writePeriodicAbstractServicesWorkflow(resource_name)
     #writeModulesInit(resource_name,module_names,env_vars)
@@ -390,7 +391,7 @@ def writeComputeWorkflow(resource_name, compute_json):
     res_name = resource_name.split(".")[0]
     path = os.path.join(getGlueWorkflowDir(),res_name+"_compute.json")
     if os.path.isfile(path):
-        os.rename(path, path+"backup-"+time.localtime())
+        os.rename(path, path+".backup-"+time.strftime('%Y-%M-%d-%X',time.localtime()))
     print("  -> writing compute workflow to %s" % path)
     f = open(path,"w")
     f.write(json.dumps(compute_json,indent=4,sort_keys=True))
@@ -415,7 +416,7 @@ def writePeriodicComputeWorkflow(resource_name):
     path = os.path.join(getGlueWorkflowDir(),res_name+"_compute_periodic.json")
     print("  -> writing periodic compute workflow to %s" % path)
     if os.path.isfile(path):
-        os.rename(path, path+"backup-"+time.localtime())
+        os.rename(path, path+".backup-"+time.strftime('%Y-%M-%d-%X', time.localtime()))
     f = open(path,"w")
     f.write(json.dumps(periodic_json,indent=4,sort_keys=True))
     f.close()
@@ -425,7 +426,7 @@ def writeActivityWorkflow(resource_name, activity_json):
     path = os.path.join(getGlueWorkflowDir(),res_name+"_activity.json")
     print("  -> writing activity workflow to %s" % path)
     if os.path.isfile(path):
-        os.rename(path, path+"backup-"+time.localtime())
+        os.rename(path, path+".backup-"+time.strftime('%Y-%M-%d-%X', time.localtime()))
     f = open(path,"w")
     f.write(json.dumps(activity_json,indent=4,sort_keys=True))
     f.close()
@@ -435,7 +436,7 @@ def writeModulesWorkflow(resource_name, modules_json):
     path = os.path.join(getGlueWorkflowDir(),res_name+"_modules.json")
     print("  -> writing modules workflow to %s" % path)
     if os.path.isfile(path):
-        os.rename(path, path+"backup-"+time.localtime())
+        os.rename(path, path+".backup-"+time.strftime('%Y-%M-%d-%X', time.localtime()))
     f = open(path,"w")
     f.write(json.dumps(modules_json,indent=4,sort_keys=True))
     f.close()
@@ -445,7 +446,7 @@ def writeExtModulesWorkflow(resource_name, extmodules_json):
     path = os.path.join(getGlueWorkflowDir(),res_name+"_extmodules.json")
     print("  -> writing extended modules workflow to %s" % path)
     if os.path.isfile(path):
-        os.rename(path, path+"backup-"+time.localtime())
+        os.rename(path, path+".backup-"+time.strftime('%Y-%M-%d-%X', time.localtime()))
     f = open(path,"w")
     f.write(json.dumps(extmodules_json,indent=4,sort_keys=True))
     f.close()
@@ -455,7 +456,7 @@ def writeAbstractServicesWorkflow(resource_name, services_json):
     path = os.path.join(getGlueWorkflowDir(),res_name+"_services.json")
     print("  -> writing abstract services workflow to %s" % path)
     if os.path.isfile(path):
-        os.rename(path, path+"backup-"+time.localtime())
+        os.rename(path, path+".backup-"+time.strftime('%Y-%M-%d-%X', time.localtime()))
     f = open(path,"w")
     f.write(json.dumps(services_json,indent=4,sort_keys=True))
     f.close()
@@ -479,7 +480,7 @@ def writePeriodicModulesWorkflow(resource_name):
     path = os.path.join(getGlueWorkflowDir(),res_name+"_modules_periodic.json")
     print("  -> writing periodic modules workflow to %s" % path)
     if os.path.isfile(path):
-        os.rename(path, path+"backup-"+time.localtime())
+        os.rename(path, path+".backup-"+time.strftime('%Y-%M-%d-%X', time.localtime()))
     f = open(path,"w")
     f.write(json.dumps(periodic_json,indent=4,sort_keys=True))
     f.close()
@@ -503,7 +504,7 @@ def writePeriodicExtModulesWorkflow(resource_name):
     path = os.path.join(getGlueWorkflowDir(),res_name+"_extmodules_periodic.json")
     print("  -> writing periodic extended modules (software) workflow to %s" % path)
     if os.path.isfile(path):
-        os.rename(path, path+"backup-"+time.localtime())
+        os.rename(path, path+".backup-"+time.strftime('%Y-%M-%d-%X', time.localtime()))
     f = open(path,"w")
     f.write(json.dumps(periodic_json,indent=4,sort_keys=True))
     f.close()
@@ -527,7 +528,7 @@ def writePeriodicAbstractServicesWorkflow(resource_name):
     path = os.path.join(getGlueWorkflowDir(),res_name+"_services_periodic.json")
     print("  -> writing periodic Abstract Services workflow to %s" % path)
     if os.path.isfile(path):
-        os.rename(path, path+"backup-"+time.localtime())
+        os.rename(path, path+".backup-"+time.strftime('%Y-%M-%d-%X', time.localtime()))
     f = open(path,"w")
     f.write(json.dumps(periodic_json,indent=4,sort_keys=True))
     f.close()
@@ -538,30 +539,40 @@ def writePeriodicAbstractServicesWorkflow(resource_name):
 def writeComputeInit(resource_name, module_names, env_vars):
     res_name = resource_name.split(".")[0]
     path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"-glue2-compute")
+    if os.path.isfile(path):
+        os.rename(path, path+".backup-"+time.strftime('%Y-%M-%d-%X',time.localtime()))
     name = "%s_compute_periodic\n" % res_name
     writeInit(resource_name,module_names,env_vars,name,path)
 
 def writeActivityInit(resource_name, module_names, env_vars):
     res_name = resource_name.split(".")[0]
     path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"-glue2-activity")
+    if os.path.isfile(path):
+        os.rename(path, path+".backup-"+time.strftime('%Y-%M-%d-%X',time.localtime()))
     name = "%s_activity\n" % res_name
     writeInit(resource_name,module_names,env_vars,name,path)
 
 def writeModulesInit(resource_name, module_names, env_vars):
     res_name = resource_name.split(".")[0]
     path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"-glue2-modules")
+    if os.path.isfile(path):
+        os.rename(path, path+".backup-"+time.strftime('%Y-%M-%d-%X',time.localtime()))
     name = "%s_modules_periodic\n" % res_name
     writeInit(resource_name,module_names,env_vars,name,path)
 
 def writeExtModulesInit(resource_name, module_names, env_vars):
     res_name = resource_name.split(".")[0]
     path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"-glue2-extmodules")
+    if os.path.isfile(path):
+        os.rename(path, path+".backup-"+time.strftime('%Y-%M-%d-%X',time.localtime()))
     name = "%s_extmodules_periodic\n" % res_name
     writeInit(resource_name,module_names,env_vars,name,path)
 
 def writeAbstractServicesInit(resource_name, module_names, env_vars):
     res_name = resource_name.split(".")[0]
     path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipf-"+res_name+"-glue2-services")
+    if os.path.isfile(path):
+        os.rename(path, path+".backup-"+time.strftime('%Y-%M-%d-%X',time.localtime()))
     name = "%s_services_periodic\n" % res_name
     writeInit(resource_name,module_names,env_vars,name,path)
 
@@ -573,8 +584,8 @@ def writeInit(resource_name, module_names, env_vars, name, path):
     for line in in_file:
         if line.startswith("NAME="):
             out_file.write("NAME=%s\n" % name)
-        elif line.startswith("IPF_USER="):
-            out_file.write("IPF_USER=%s\n" % getpass.getuser())
+       # elif line.startswith("IPF_USER="):
+       #     out_file.write("IPF_USER=%s\n" % getpass.getuser())
         elif line.startswith("export IPF_ETC_PATH="):
             out_file.write("export IPF_ETC_PATH=%s\n" % os.path.join(getBaseDir(),"etc/ipf"))
         elif line.startswith("export IPF_VAR_PATH="):
