@@ -219,6 +219,7 @@ class ModulesApplicationsStep(application.ApplicationsStep):
 
 #######################################################################################################################
 
+
 class ExtendedModApplicationsStep(application.ApplicationsStep):
     def __init__(self):
         application.ApplicationsStep.__init__(self)
@@ -241,40 +242,44 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         except KeyError:
             raise StepError("didn't find environment variable MODULEPATH")
 
-        apps = application.Applications(self.resource_name)
         for path in module_paths:
-            try:
-                packages = os.listdir(path)
-            except OSError:
-                continue
-            for name in packages:
-		#print("name of package is" +name)
-                if name.startswith("."):
-                    continue
-                if not os.path.isdir(os.path.join(path,name)):
-                    # assume these are modules that just import other modules
-                    continue
-                if not os.access(os.path.join(path,name),os.R_OK):
-                    continue
-                for file_name in os.listdir(os.path.join(path,name)):
-                    if file_name.startswith("."):
-                        continue
-                    if file_name.endswith("~"):
-                        continue
-                    if file_name.endswith(".lua"):
-                        self._addModule(os.path.join(path,name,file_name),name,file_name[:len(file_name)-4],apps)
-                    else:
-			self.info("calling addmodule w/ version")
-			#print("calling addmodule w/ version")
-                        self._addModule(os.path.join(path,name,file_name),name,file_name,apps)
+            self._addPath(path,path,module_paths,apps)
         return apps
-    
+
+    def _addPath(self, path, module_path, module_paths, apps):
+        try:
+            file_names = os.listdir(path)
+        except OSError:
+            return
+        for file in file_names:
+            if os.path.join(path,file) in module_paths:
+                # don't visit other module paths
+                continue
+            if os.path.isdir(os.path.join(path,file)):
+                self._addPath(os.path.join(path,file),module_path,module_paths,apps)
+            else:
+                if path == module_path:
+                   #if true, all files are top-level within a modulepath
+                   #which we assume only load modules, and don't represent
+                   #software
+                   continue
+                if file.startswith("."):
+                    continue
+                if file.endswith("~"):
+                    continue
+                name = os.path.basename(path)
+                #ignore files in the top level of a "modulefiles" dir
+                #if name != "modulefiles":
+                self._addModule(os.path.join(path,file),name,file,apps)
+
+
     def _addModule(self, path, name, version, apps):
         DEFAULT_VALIDITY = 60*60*24*7 # seconds in a week
         env = application.ApplicationEnvironment()
         env.AppName = name
-        env.AppVersion = version
-	env.Validity = DEFAULT_VALIDITY
+        env.Validity = DEFAULT_VALIDITY
+        #env.AppVersion set below, after massaging and/or reading from file
+
 
         try:
             file = open(path)
@@ -283,12 +288,39 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
             return
         text = file.read()
         file.close()
-	#print("in correct _addModule")
+
+        if not version.endswith(".lua"):
+            #Weed out files that are not Module files
+            m = re.search("#%Module",text)
+            if m is None:
+                return
+        else:
+            #correct version string to remove ".lua"
+            version = version[:len(version)-4]
+
+        #Allow key: value Name to override filename value
+        m = re.search("\"Name:([^\"]+)\"",text)
+        if m is not None:
+            name = m.group(1).strip()
+            env.AppName = name
+        else:
+            self.debug("no Name in "+path)
+
+        #Allow key: value Version to override filename value
+        m = re.search("\"Version:([^\"]+)\"",text)
+        if m is not None:
+            version = m.group(1).strip()
+        else:
+            self.debug("no Version in "+path)
+
+        env.AppVersion = version
+
         m = re.search("\"Description:([^\"]+)\"",text)
         if m is not None:
             env.Description = m.group(1).strip()
         else:
             self.debug("no description in "+path)
+            env.Description = self._InferDescription(text, env)
             #print("no description in "+path)
         m = re.search("\"URL:([^\"]+)\"",text)
         if m is not None:
@@ -298,18 +330,18 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         m = re.search("\"Category:([^\"]+)\"",text)
         if m is not None:
             env.Extension["Category"] = map(str.strip,m.group(1).split(","))
-		
+
         else:
             self.debug("no Category in "+path)
         m = re.search("\"Keywords:([^\"]+)\"",text)
         if m is not None:
-	    env.Keywords = map(str.strip,m.group(1).split(","))
+            env.Keywords = map(str.strip,m.group(1).split(","))
         else:
             self.debug("no Keywords in "+path)
         m = re.search("\"SupportStatus:([^\"]+)\"",text)
         if m is not None:
-	    supportstatus = []
-	    supportstatus.append(map(str.strip,m.group(1).split(",")))
+            supportstatus = []
+            supportstatus.append(map(str.strip,m.group(1).split(",")))
             env.Extension["SupportStatus"] = m.group(1).strip()
         else:
             self.debug("no SupportStatus in "+path)
@@ -317,8 +349,43 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         handle = application.ApplicationHandle()
         handle.Type = ApplicationHandle.MODULE
         handle.Value = name+"/"+version
-	env.ExecutionEnvironmentID = "urn:glue2:ExecutionEnvironment:%s" % (self.resource_name)
+        env.ExecutionEnvironmentID = "urn:glue2:ExecutionEnvironment:%s" % (self.resource_name)
 
         apps.add(env,[handle])
 
 
+    def _InferDescription(self, text, env):
+        handle = application.ApplicationHandle()
+        handle.Type = ApplicationHandle.MODULE
+        if env.AppVersion is None:
+            handle.Value = env.AppName
+        else:
+            handle.Value = env.AppName+"/"+env.AppVersion
+
+        description = ""
+        modvars = {}
+        modfile = text
+        for m in re.finditer("set (\S*)\s*\"([^\"]*)\"",modfile):
+            if m is not None:
+                #Replace \\n followed by whitespace in descriptions:
+                sanitize = re.sub(r'\\\s+', ' ', m.group(2))
+                modvars[m.group(1)] = sanitize
+                #print(m.group(1)+"="+sanitize)
+    #print("modvars keys, %s",modvars.keys())
+        for line in text:
+            m = re.search("puts stderr \"([^\"]+)\"",line)
+            if m is not None:
+                if description != "":
+                    description += " "
+                description += m.group(1)
+        if description != "":
+            for modvar in modvars.keys():
+                if modvar in description:
+                    description = description.replace("$"+modvar,modvars[modvar])
+            description = description.replace("$_module_name",handle.Value)
+        if env.AppVersion is not None:
+            description = description.replace("$version",env.AppVersion)
+            description = description.replace("\\t"," ")
+            description = description.replace("\\n","")
+            description = re.sub(" +"," ",description)
+        return description
