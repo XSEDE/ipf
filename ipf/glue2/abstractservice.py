@@ -20,6 +20,7 @@ import datetime
 import os
 import re
 import pprint
+import hashlib
 
 from ipf.dt import localtzoffset
 from ipf.error import StepError
@@ -185,8 +186,12 @@ class AbstractServiceStep(Step):
                             ServiceType = "LoginService"
                         else:
                             ServiceType = "UntypedService"
-        serv.resource_name = self.resource_name 
-        serv.ID = "urn:glue2:%s:%s-%s" % (ServiceType,serv.Name,self.resource_name)
+        serv.resource_name = self.resource_name
+        endpointhash = ''
+        if (serv.Endpoint != ''):
+            endpointhashobject = hashlib.md5(serv.Endpoint)
+            endpointhash = "-"+endpointhashobject.hexdigest()
+        serv.ID = "urn:glue2:%s:%s-%s%s" % (ServiceType,serv.Name,self.resource_name,endpointhash)
         serv.ServiceType = ServiceType
         servlist.add(serv)
         
@@ -255,7 +260,11 @@ class ASOgfJson(Representation):
                 endpoint.InterfaceName = serv.Type
                 endpoint.InterfaceVersion = serv.Version
                 endpoint.Name = serv.Name
-                endpoint.ID = "urn:glue2:Endpoint:%s-%s-%s" % (serv.Version, serv.Name, serv.resource_name)
+                endpointhash = ''
+                if (serv.Endpoint != ''):
+                    endpointhashobject = hashlib.md5(serv.Endpoint)
+                    endpointhash = "-"+endpointhashobject.hexdigest()
+                endpoint.ID = "urn:glue2:Endpoint:%s-%s-%s%s" % (serv.Version, serv.Name, serv.resource_name,endpointhash)
                 endpoint.ServiceID = serv.ID
                 endpoint.QualityLevel = serv.QualityLevel
                 serv.EndpointID = endpoint.ID
