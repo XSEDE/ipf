@@ -302,7 +302,7 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         m = re.search("\"Name:([^\"]+)\"",text)
         if m is not None:
             name = m.group(1).strip()
-            env.AppName = name
+            env.SpecifiedName = name
         else:
             self.debug("no Name in "+path)
 

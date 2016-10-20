@@ -584,8 +584,8 @@ def writeInit(resource_name, module_names, env_vars, name, path):
     for line in in_file:
         if line.startswith("NAME="):
             out_file.write("NAME=%s\n" % name)
-       # elif line.startswith("IPF_USER="):
-       #     out_file.write("IPF_USER=%s\n" % getpass.getuser())
+        elif line.startswith("IPF_USER="):
+            out_file.write("IPF_USER=%s\n" % getpass.getuser())
         elif line.startswith("export IPF_ETC_PATH="):
             out_file.write("export IPF_ETC_PATH=%s\n" % os.path.join(getBaseDir(),"etc/ipf"))
         elif line.startswith("export IPF_VAR_PATH="):

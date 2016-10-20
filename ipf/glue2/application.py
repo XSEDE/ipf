@@ -33,6 +33,7 @@ class ApplicationEnvironment(Entity):
         Entity.__init__(self)
 
         self.AppName = "unknown"         # string
+        self.SpecifiedName = None        # string
         self.AppVersion = None           # string
         self.Repository = None           # string (url)
         self.State = None                # string (AppEnvState_t)
@@ -71,7 +72,10 @@ class ApplicationEnvironmentOgfJson(EntityOgfJson):
     def toJson(self):
         doc = EntityOgfJson.toJson(self)
 
-        doc["AppName"] = self.data.AppName
+        if self.data.SpecifiedName is not None:
+            doc["AppName"] = self.data.SpecifiedName
+        else:
+            doc["AppName"] = self.data.AppName
         if self.data.AppVersion is not None:
             doc["AppVersion"] = self.data.AppVersion
         if self.data.Repository is not None:
