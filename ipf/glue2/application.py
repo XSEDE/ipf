@@ -71,10 +71,10 @@ class ApplicationEnvironmentOgfJson(EntityOgfJson):
 
     def toJson(self):
         doc = EntityOgfJson.toJson(self)
-
+	#Specified name is descriptive Name: field from inside module file
         if self.data.SpecifiedName is not None:
-            doc["AppName"] = self.data.SpecifiedName
-        else:
+            doc["Name"] = self.data.SpecifiedName
+        if self.data.AppName is not None:
             doc["AppName"] = self.data.AppName
         if self.data.AppVersion is not None:
             doc["AppVersion"] = self.data.AppVersion
@@ -173,7 +173,7 @@ class Applications(Data):
             app_version = env.AppVersion
         env.Name = "%s-%s" % (env.AppName,app_version)
         env.id =  "%s.%s.%s" % (app_version,env.AppName,self.resource_name)
-        env.ID = "urn:glue2:ApplicationEnvironment:%s.%s.%s" % (app_version,env.AppName,self.resource_name)
+        env.ID = "urn:glue2:ApplicationEnvironment:%s.%s.%s.%s" % (app_version,env.AppName,self.resource_name,env.path_hash)
         env.ComputingManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
 
         env.ApplicationHandleID = []
@@ -181,8 +181,8 @@ class Applications(Data):
             handle.ApplicationEnvironmentID = env.ID
             handle.Name = "%s-%s" % (env.AppName,app_version)
             handle.id =  "%s.%s.%s.%s" % (handle.Type,app_version,env.AppName,self.resource_name)
-            handle.ID = "urn:glue2:ApplicationHandle:%s:%s.%s.%s" % \
-                        (handle.Type,app_version,env.AppName,self.resource_name)
+            handle.ID = "urn:glue2:ApplicationHandle:%s:%s.%s.%s.%s" % \
+                        (handle.Type,app_version,env.AppName,self.resource_name,env.path_hash)
             env.ApplicationHandleID.append(handle.ID)
 
         self.environments.append(env)

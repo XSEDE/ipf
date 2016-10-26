@@ -18,6 +18,7 @@
 import commands
 import os
 import re
+import hashlib
 
 from ipf.error import StepError
 from . import application
@@ -289,6 +290,10 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         text = file.read()
         file.close()
 
+	#Take hash of path to uniquify the AppEnv and AppHandle IDs
+        pathhashobject = hashlib.md5(path)
+        env.path_hash = pathhashobject.hexdigest()
+
         if not version.endswith(".lua"):
             #Weed out files that are not Module files
             m = re.search("#%Module",text)
@@ -297,6 +302,7 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         else:
             #correct version string to remove ".lua"
             version = version[:len(version)-4]
+        env.AppVersion = version
 
         #Allow key: value Name to override filename value
         m = re.search("\"Name:([^\"]+)\"",text)
@@ -306,14 +312,6 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         else:
             self.debug("no Name in "+path)
 
-        #Allow key: value Version to override filename value
-        m = re.search("\"Version:([^\"]+)\"",text)
-        if m is not None:
-            version = m.group(1).strip()
-        else:
-            self.debug("no Version in "+path)
-
-        env.AppVersion = version
 
         m = re.search("\"Description:([^\"]+)\"",text)
         if m is not None:
