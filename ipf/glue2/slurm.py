@@ -158,6 +158,8 @@ def _getJob(step, job_str):
                 # could add what the dependency is
         elif state == "PREEMPTED":
             job.State = [computing_activity.ComputingActivity.STATE_TERMINATED]
+        elif state == "REQUEUE_HOLD":
+            job.State = [computing_activity.ComputingActivity.STATE_HELD]
         elif state == "RUNNING":
             job.State = [computing_activity.ComputingActivity.STATE_RUNNING]
         elif state == "SUSPENDED":
