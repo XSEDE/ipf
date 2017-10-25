@@ -15,4 +15,5 @@ export PYTHONPATH=$IPF_PATH
 #AMQP_PATH=/opt/amqp-1.4.6
 #export PYTHONPATH=$PYTHONPATH:$AMQP_PATH
 
-$PYTHON $IPF_PATH/ipf/run_workflow.py $@
+$PYTHON -m pdb $IPF_PATH/ipf/run_workflow.py $@
+#$PYTHON $IPF_PATH/ipf/run_workflow.py $@

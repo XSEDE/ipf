@@ -26,6 +26,7 @@ from ipf.sysinfo import ResourceName
 
 from .computing_share import ComputingShares
 from .execution_environment import ExecutionEnvironments
+from .execution_environment import AcceleratorEnvironments
 from .manager import *
 from .step import GlueStep
 
@@ -38,6 +39,7 @@ class ComputingManagerStep(GlueStep):
 
         self.description = "This step provides documents in the GLUE 2 ComputingManager schema. For a batch scheduled system, this is typically that scheduler."
         self.time_out = 10
+        #self.requires = [ResourceName,ExecutionEnvironments,AcceleratorEnvironments,ComputingShares]
         self.requires = [ResourceName,ExecutionEnvironments,ComputingShares]
         self.produces = [ComputingManager]
 
@@ -68,7 +70,7 @@ class ComputingManagerStep(GlueStep):
 class ComputingManager(Manager):
     def __init__(self):
         Manager.__init__(self)
-
+        
         self.Version = None                      # string
         self.Reservation = None                  # boolean (ExtendedBoolean)
         self.BulkSubmission = None               # boolean (ExtendedBoolean)
@@ -94,6 +96,7 @@ class ComputingManager(Manager):
         self.ApplicationDir = None               # string
         # use Service and Resource of Manager instead of ComputingService and ExecutionEnvironment
         self.ApplicationEnvironmentID = []       # list of string (LocalID)
+        self.ComputingManagerAcceleratorInfoID = []       # list of string (LocalID)
         self.BenchmarkID = []                    # list of string(LocalID)
 
     def _addExecutionEnvironment(self, exec_env):
@@ -107,6 +110,23 @@ class ComputingManager(Manager):
                 self.TotalLogicalCPUs = 0
             self.TotalLogicalCPUs = self.TotalLogicalCPUs + exec_env.TotalInstances * exec_env.LogicalCPUs
             self.TotalSlots = self.TotalLogicalCPUs
+
+        if len(self.ResourceID) == 1:
+            self.Homogeneous = True
+        else:
+            self.Homogeneous = False
+
+    def _addAcceleratorEnvironment(self, exec_env):
+        self.ResourceID.append(exec_env.ID)
+        if exec_env.PhysicalAccelerators is not None:
+            if self.TotalPhysicalAccelerators == None:
+                self.TotalPhysicalAccelerators = 0
+            self.TotalPhysicalAccelerators = self.TotalPhysicalAccelerators + exec_env.TotalInstances * exec_env.PhysicalAccelerators
+        if exec_env.LogicalAccelerators is not None:
+            if self.TotalLogicalAccelerators == None:
+                self.TotalLogicalAccelerators = 0
+            self.TotalLogicalAcclerators = self.TotalLogicalAccelerators + exec_env.TotalInstances * exec_env.LogicalAccelerators
+            self.TotalSlots = self.TotalLogicalAccelerators
 
         if len(self.ResourceID) == 1:
             self.Homogeneous = True
@@ -257,6 +277,10 @@ class ComputingManagerTeraGridXml(ManagerTeraGridXml):
             e = doc.createElement("ApplicationEnvironment")
             e.appendChild(doc.createTextNode(id))
             element.appendChild(e)
+        for id in self.data.ComputingManagerAcceleratorInfoID:
+            e = doc.createElement("ComputingManagerAcceleratorInfo")
+            e.appendChild(doc.createTextNode(id))
+            element.appendChild(e)
         for benchmark in self.data.BenchmarkID:
             e = doc.createElement("Benchmark")
             e.appendChild(doc.createTextNode(benchmark))
@@ -325,6 +349,8 @@ class ComputingManagerOgfJson(ManagerOgfJson):
 
         if len(self.data.ApplicationEnvironmentID) > 0:
             doc["Associations"]["ApplicationEnvironmentID"] = self.data.ApplicationEnvironmentID
+        if len(self.data.ComputingManagerAcceleratorInfoID) > 0:
+            doc["Associations"]["ComputingManagerAcceleratorInfoID"] = self.data.ComputingManagerAcceleratorInfoID
         if len(self.data.BenchmarkID) > 0:
             doc["Associations"]["BenchmarkID"] = self.data.BenchmarkID
 

@@ -455,7 +455,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
     def _run(self):
         # get info on the nodes
         scontrol = self.params.get("scontrol","scontrol")
-        cmd = scontrol + " show node"
+        cmd = scontrol + " show node -d"
         self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
@@ -504,8 +504,14 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
 
             exec_env.PhysicalCPUs = sum(map(lambda node_name: node_map[node_name].PhysicalCPUs,
                                             node_names)) / len(node_names)
+            exec_env.PhysicalAccelerators = sum(map(lambda node_name: node_map[node_name].PhysicalAccelerators,
+                                            node_names)) / len(node_names)
+            exec_env.UsedAcceleratorSlots = sum(map(lambda node_name: node_map[node_name].UsedAcceleratorSlots,
+                                            node_names)) / len(node_names)
             exec_env.LogicalCPUs = sum(map(lambda node_name: node_map[node_name].LogicalCPUs,
                                            node_names)) / len(node_names)
+            #exec_env.LogicalAccelerators = sum(map(lambda node_name: node_map[node_name].LogicalAccelerators,
+                                           #node_names)) / len(node_names)
             exec_env.MainMemorySize = sum(map(lambda node_name: node_map[node_name].MainMemorySize,
                                               node_names)) / len(node_names)
             exec_env.TotalInstances = len(node_names)
@@ -541,6 +547,31 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         m = re.search("RealMemory=(\S+)",node_str)  # MB
         if m is not None:
             node.MainMemorySize = int(m.group(1))
+        #AcceleratorEnvironment:
+        m = re.search("Gres=(\S+)",node_str)
+        if m is not None:
+            greslist=[]
+            #greslist = split(":",m.group(1))
+            greslist = m.group(1).split(":")
+            if len(greslist) == 2:
+                node.PhysicalAccelerators = int(greslist[1])
+                print node.PhysicalAccelerators
+                node.Type = ""
+            elif len(greslist) == 3:
+                node.PhysicalAccelerators = int(greslist[2])
+                node.Type = greslist[1] 
+        m = re.search("GresUsed=(\S+)",node_str)
+        if m is not None:
+            greslist=[]
+            #greslist = split(":",m.group(1))
+            greslist = m.group(1).split(":")
+            if len(greslist) == 2:
+                node.UsedAcceleratorSlots = int(greslist[1])
+                node.Type = ""
+            elif len(greslist) == 3:
+                node.UsedAcceleratorSlots = int(greslist[2])
+                node.Type = greslist[1] 
+                
         m = re.search("State=(\S+)",node_str)
         if m is not None:
             node.TotalInstances = 1

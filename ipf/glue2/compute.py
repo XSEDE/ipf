@@ -32,8 +32,9 @@ from computing_share import ComputingShares, ComputingShareTeraGridXml, Computin
 from execution_environment import ExecutionEnvironments, ExecutionEnvironmentTeraGridXml
 from execution_environment import ExecutionEnvironmentTeraGridXml
 from execution_environment import ExecutionEnvironmentOgfJson
+from execution_environment import AcceleratorEnvironments
+from execution_environment import AcceleratorEnvironmentOgfJson
 from location import Location, LocationOgfJson, LocationTeraGridXml
-
 #######################################################################################################################
 
 class PublicStep(Step):
@@ -56,6 +57,7 @@ class PublicStep(Step):
         public.share = self._getInput(ComputingShares).shares
         public.manager = [self._getInput(ComputingManager)]
         public.environment = self._getInput(ExecutionEnvironments).exec_envs
+        public.accelenvironment = self._getInput(AcceleratorEnvironments).exec_envs
         public.id = public.resource_name
 
         self._output(public)
@@ -71,6 +73,7 @@ class Public(Data):
         self.share = []
         self.manager = []
         self.environment = []
+        self.accelenvironment = []
 
     def fromJson(self, doc):
         self.location = []
@@ -88,6 +91,9 @@ class Public(Data):
         self.environment = []
         for edoc in doc.get("ExecutionEnvironment",[]):
             self.environment.append(ExecutionEnvironment().fromJson(edoc))
+        self.accleenvironment = []
+        #for edoc in doc.get("AcceleratorEnvironment",[]):
+        #    self.environment.append(AcceleratorEnvironment().fromJson(edoc))
 
 #######################################################################################################################
 
@@ -160,6 +166,9 @@ class PublicOgfJson(Representation):
         if len(self.data.environment) > 0:
             doc["ExecutionEnvironment"] = map(lambda exec_env: ExecutionEnvironmentOgfJson(exec_env).toJson(),
                                               self.data.environment)
+        if len(self.data.accelenvironment) > 0:
+            doc["AcceleratorEnvironment"] = map(lambda exec_env: AcceleratorEnvironmentOgfJson(exec_env).toJson(),
+                                              self.data.accelenvironment)
         
         return doc
 
