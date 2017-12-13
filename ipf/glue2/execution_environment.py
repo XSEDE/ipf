@@ -44,7 +44,7 @@ class ExecutionEnvironmentsStep(GlueStep):
         self.description = "Produces a document containing one or more GLUE 2 ExecutionEnvironment. For a batch scheduled system, an ExecutionEnivonment is typically a compute node."
         self.time_out = 30
         self.requires = [ResourceName,Platform]
-        self.produces = [ExecutionEnvironments,AcceleratorEnvironments]
+        self.produces = [ExecutionEnvironments]
         self._acceptParameter("queues",
                               "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. The expression is processed in order and the value for a queue at the end determines if it is shown.",
                               False)
@@ -59,14 +59,14 @@ class ExecutionEnvironmentsStep(GlueStep):
             host_group.id = "%s.%s" % (host_group.Name,self.resource_name)
             host_group.ID = "urn:glue2:ExecutionEnvironment:%s.%s" % (host_group.Name,self.resource_name)
             host_group.ManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
-        accel_groups = copy.deepcopy(host_groups)
-        for accel_group in accel_groups:
-            accel_group.id = "%s.%s" % (host_group.Name,self.resource_name)
-            accel_group.ID = "urn:glue2:AcceleratorEnvironment:%s.%s" % (accel_group.Name,self.resource_name)
-            accel_group.ManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
+        #accel_groups = copy.deepcopy(host_groups)
+        #for accel_group in accel_groups:
+        #    accel_group.id = "%s.%s" % (host_group.Name,self.resource_name)
+        #    accel_group.ID = "urn:glue2:AcceleratorEnvironment:%s.%s" % (accel_group.Name,self.resource_name)
+        #    accel_group.ManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
         
         self._output(ExecutionEnvironments(self.resource_name,host_groups))
-        self._output(AcceleratorEnvironments(self.resource_name,accel_groups))
+        #self._output(AcceleratorEnvironments(self.resource_name,accel_groups))
 
     def _shouldUseName(self, hosts):
         names = set()
@@ -451,64 +451,6 @@ class ExecutionEnvironmentOgfJson(ResourceOgfJson):
             doc["BenchmarkID"] = self.BenchmarkID
             
         return doc
-
-#######################################################################################################################
-
-class AcceleratorEnvironmentOgfJson(ResourceOgfJson):
-    data_cls = ExecutionEnvironment
-
-    def __init__(self, data):
-        ResourceOgfJson.__init__(self,data)
-
-    def get(self):
-        return json.dumps(self.toJson(),sort_keys=True,indent=4)
-
-    def toJson(self):
-        doc = ResourceOgfJson.toJson(self)
-
-        doc["Platform"] = self.data.Platform
-        if self.data.PhysicalAccelerators is not None:
-            doc["PhysicalAccelerators"] = self.data.PhysicalAccelerators
-        if self.data.LogicalAccelerators is not None:
-            doc["LogicalAccelerators"] = self.data.LogicalAccelerators
-        if self.data.Vendor is not None:
-            doc["Vendor"] = self.data.Vendor
-        if self.data.Model is not None:
-            doc["Model"] = self.data.Model
-        if self.data.Version is not None:
-            doc["Version"] = self.data.Version
-        if self.data.ClockSpeed is not None:
-            doc["ClockSpeed"] = self.data.ClockSpeed
-        if self.data.Memory is not None:
-            doc["Memory"] = self.data.Memory
-        if self.data.ComputeCapability is not None:
-            doc["ComputeCapability"] = self.data.ComputeCapability
-
-        return doc
-
-#######################################################################################################################
-
-class AcceleratorEnvironments(Data):
-    def __init__(self, id, exec_envs=[]):
-        Data.__init__(self,id)
-        self.exec_envs = exec_envs
-
-#######################################################################################################################
-
-class AcceleratorEnvironmentsOgfJson(Representation):
-    data_cls = AcceleratorEnvironments
-
-    def __init__(self, data):
-        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
-
-    def get(self):
-        return json.dumps(self.toJson(),sort_keys=True,indent=4)
-
-    def toJson(self):
-        eedoc = []
-        for exec_env in self.data.exec_envs:
-            eedoc.append(AcceleratorEnvironmentOgfJson(exec_env).toJson())
-        return eedoc
 
 #######################################################################################################################
 

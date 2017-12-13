@@ -26,7 +26,7 @@ from ipf.sysinfo import ResourceName
 
 from .computing_share import ComputingShares
 from .execution_environment import ExecutionEnvironments
-from .execution_environment import AcceleratorEnvironments
+from .accelerator_environment import AcceleratorEnvironments
 from .manager import *
 from .step import GlueStep
 
@@ -39,8 +39,8 @@ class ComputingManagerStep(GlueStep):
 
         self.description = "This step provides documents in the GLUE 2 ComputingManager schema. For a batch scheduled system, this is typically that scheduler."
         self.time_out = 10
-        #self.requires = [ResourceName,ExecutionEnvironments,AcceleratorEnvironments,ComputingShares]
-        self.requires = [ResourceName,ExecutionEnvironments,ComputingShares]
+        self.requires = [ResourceName,ExecutionEnvironments,AcceleratorEnvironments,ComputingShares]
+        #self.requires = [ResourceName,ExecutionEnvironments,ComputingShares]
         self.produces = [ComputingManager]
 
         self.resource_name = None

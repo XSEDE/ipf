@@ -21,6 +21,7 @@ import logging
 import os
 import sys
 import time
+from forkablepdb import ForkablePdb
 
 from ipf.catalog import catalog
 from ipf.error import *
@@ -49,6 +50,7 @@ class Workflow(object):
             raise WorkflowError("could not parse workflow file %s: %s" % (file_name,e))
         file.close()
 
+        ForkablePdb().set_trace()
         if "timeout" in doc:
             self.timeout = doc["timeout"]
 
@@ -75,6 +77,7 @@ class Workflow(object):
 
     def _addMissingSteps(self):
         requires = set()
+        ForkablePdb().set_trace()
         for step in self.steps:
             self._addRequires(step,requires)
         produces = set()

@@ -20,6 +20,7 @@ import logging.config
 import os
 import pkgutil
 import traceback
+from forkablepdb import ForkablePdb
 
 import ipf
 from ipf.data import Data,Representation
@@ -45,6 +46,7 @@ class Catalog(object):
 
         # Data -> [Representations]
         self.reps_for_data = {}
+        ForkablePdb().set_trace()
 
         module_names = self._getModules()
 

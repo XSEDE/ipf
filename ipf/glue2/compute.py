@@ -32,8 +32,8 @@ from computing_share import ComputingShares, ComputingShareTeraGridXml, Computin
 from execution_environment import ExecutionEnvironments, ExecutionEnvironmentTeraGridXml
 from execution_environment import ExecutionEnvironmentTeraGridXml
 from execution_environment import ExecutionEnvironmentOgfJson
-from execution_environment import AcceleratorEnvironments
-from execution_environment import AcceleratorEnvironmentOgfJson
+from accelerator_environment import AcceleratorEnvironments
+from accelerator_environment import AcceleratorEnvironmentOgfJson
 from location import Location, LocationOgfJson, LocationTeraGridXml
 #######################################################################################################################
 
@@ -44,7 +44,7 @@ class PublicStep(Step):
         self.description = "creates a single data containing all nonsensitive compute-related information"
         self.time_out = 5
         self.requires = [ResourceName,Location,
-                         ComputingService,ComputingShares,ComputingManager,ExecutionEnvironments]
+                         ComputingService,ComputingShares,ComputingManager,ExecutionEnvironments,AcceleratorEnvironments]
         self.produces = [Public]
 
     def run(self):
@@ -57,7 +57,7 @@ class PublicStep(Step):
         public.share = self._getInput(ComputingShares).shares
         public.manager = [self._getInput(ComputingManager)]
         public.environment = self._getInput(ExecutionEnvironments).exec_envs
-        public.accelenvironment = self._getInput(AcceleratorEnvironments).exec_envs
+        public.accelenvironment = self._getInput(AcceleratorEnvironments).accel_envs
         public.id = public.resource_name
 
         self._output(public)
@@ -92,8 +92,8 @@ class Public(Data):
         for edoc in doc.get("ExecutionEnvironment",[]):
             self.environment.append(ExecutionEnvironment().fromJson(edoc))
         self.accleenvironment = []
-        #for edoc in doc.get("AcceleratorEnvironment",[]):
-        #    self.environment.append(AcceleratorEnvironment().fromJson(edoc))
+        for edoc in doc.get("AcceleratorEnvironment",[]):
+            self.environment.append(AcceleratorEnvironment().fromJson(edoc))
 
 #######################################################################################################################
 
