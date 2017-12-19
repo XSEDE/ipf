@@ -27,6 +27,7 @@ from ipf.log import LogFileWatcher
 
 from . import computing_activity
 from . import computing_manager
+from . import computing_manager_accel_info
 from . import computing_service
 from . import computing_share
 from . import execution_environment
@@ -68,6 +69,22 @@ class ComputingManagerStep(computing_manager.ComputingManagerStep):
         #self.BulkSubmission = True
 
         return manager
+
+#######################################################################################################################
+
+class ComputingManagerAcceleratorInfoStep(computing_manager_accel_info.ComputingManagerAcceleratorInfoStep):
+
+    def __init__(self):
+        computing_manager_accel_info.ComputingManagerAcceleratorInfoStep.__init__(self)
+
+    def _run(self):
+        manager_accel_info = computing_manager_accel_info.ComputingManagerAcceleratorInfo()
+        #manager.ProductName = "SLURM"
+        #manager.Name = "SLURM"
+        #manager.Reservation = True
+        #self.BulkSubmission = True
+
+        return manager_accel_info
 
 #######################################################################################################################
 

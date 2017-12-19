@@ -27,6 +27,7 @@ from ipf.step import Step
 
 from computing_activity import ComputingActivities, ComputingActivityTeraGridXml, ComputingActivityOgfJson
 from computing_manager import ComputingManager, ComputingManagerTeraGridXml, ComputingManagerOgfJson
+from computing_manager_accel_info import ComputingManagerAcceleratorInfo, ComputingManagerAcceleratorInfoOgfJson
 from computing_service import ComputingService, ComputingServiceTeraGridXml, ComputingServiceOgfJson
 from computing_share import ComputingShares, ComputingShareTeraGridXml, ComputingShareOgfJson
 from execution_environment import ExecutionEnvironments, ExecutionEnvironmentTeraGridXml
@@ -44,7 +45,7 @@ class PublicStep(Step):
         self.description = "creates a single data containing all nonsensitive compute-related information"
         self.time_out = 5
         self.requires = [ResourceName,Location,
-                         ComputingService,ComputingShares,ComputingManager,ExecutionEnvironments,AcceleratorEnvironments]
+                         ComputingService,ComputingShares,ComputingManager,ExecutionEnvironments,AcceleratorEnvironments,ComputingManagerAcceleratorInfo]
         self.produces = [Public]
 
     def run(self):
@@ -56,6 +57,7 @@ class PublicStep(Step):
         public.service = [self._getInput(ComputingService)]
         public.share = self._getInput(ComputingShares).shares
         public.manager = [self._getInput(ComputingManager)]
+        public.manager_accel_info = [self._getInput(ComputingManagerAcceleratorInfo)]
         public.environment = self._getInput(ExecutionEnvironments).exec_envs
         public.accelenvironment = self._getInput(AcceleratorEnvironments).accel_envs
         public.id = public.resource_name
@@ -169,6 +171,9 @@ class PublicOgfJson(Representation):
         if len(self.data.accelenvironment) > 0:
             doc["AcceleratorEnvironment"] = map(lambda exec_env: AcceleratorEnvironmentOgfJson(exec_env).toJson(),
                                               self.data.accelenvironment)
+        if len(self.data.manager_accel_info) > 0:
+            doc["ComputingMangagerAcceleratorInfo"] = map(lambda exec_env: ComputingManagerAcceleratorInfoOgfJson(exec_env).toJson(),
+                                              self.data.manager_accel_info)
         
         return doc
 

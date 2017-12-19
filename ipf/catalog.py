@@ -95,6 +95,7 @@ class Catalog(object):
         #    print(str(key)+": "+str(self.producers[key]))
 
     def _handleModuleError(self, module_name):
+        ForkablePdb().set_trace()
         logger.warn("failed to load module %s" % module_name)
 
     def _getModules(self):

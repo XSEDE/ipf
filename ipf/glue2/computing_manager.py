@@ -27,6 +27,7 @@ from ipf.sysinfo import ResourceName
 from .computing_share import ComputingShares
 from .execution_environment import ExecutionEnvironments
 from .accelerator_environment import AcceleratorEnvironments
+from .computing_manager_accel_info import ComputingManagerAcceleratorInfo
 from .manager import *
 from .step import GlueStep
 
@@ -39,7 +40,7 @@ class ComputingManagerStep(GlueStep):
 
         self.description = "This step provides documents in the GLUE 2 ComputingManager schema. For a batch scheduled system, this is typically that scheduler."
         self.time_out = 10
-        self.requires = [ResourceName,ExecutionEnvironments,AcceleratorEnvironments,ComputingShares]
+        self.requires = [ResourceName,ExecutionEnvironments,AcceleratorEnvironments,ComputingShares,ComputingManagerAcceleratorInfo]
         #self.requires = [ResourceName,ExecutionEnvironments,ComputingShares]
         self.produces = [ComputingManager]
 
@@ -117,7 +118,7 @@ class ComputingManager(Manager):
             self.Homogeneous = False
 
     def _addAcceleratorEnvironment(self, exec_env):
-        self.ResourceID.append(exec_env.ID)
+        self.ComputingManagerAcceleratorInfoID.append(exec_env.ID)
         if exec_env.PhysicalAccelerators is not None:
             if self.TotalPhysicalAccelerators == None:
                 self.TotalPhysicalAccelerators = 0
