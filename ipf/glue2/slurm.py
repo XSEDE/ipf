@@ -30,8 +30,10 @@ from . import computing_manager
 from . import computing_manager_accel_info
 from . import computing_service
 from . import computing_share
+from . import computing_share_accel_info
 from . import execution_environment
 from . import accelerator_environment
+
 
 #######################################################################################################################
 
@@ -85,6 +87,22 @@ class ComputingManagerAcceleratorInfoStep(computing_manager_accel_info.Computing
         #self.BulkSubmission = True
 
         return manager_accel_info
+
+#######################################################################################################################
+
+class ComputingShareAcceleratorInfoStep(computing_share_accel_info.ComputingShareAcceleratorInfoStep):
+
+    def __init__(self):
+        computing_share_accel_info.ComputingShareAcceleratorInfoStep.__init__(self)
+
+    def _run(self):
+        share_accel_info = computing_share_accel_info.ComputingShareAcceleratorInfo()
+        #manager.ProductName = "SLURM"
+        #manager.Name = "SLURM"
+        #manager.Reservation = True
+        #self.BulkSubmission = True
+
+        return share_accel_info
 
 #######################################################################################################################
 
@@ -717,7 +735,7 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
                 node_names = accel_env.Extension["Nodes"]
             except KeyError:
                 continue
-
+            self.debug("size of node map before defining"+str(len(node_map)))
             # in case a node is in multiple active reservations
             node_names = filter(lambda node_name: node_name in node_map,node_names)
 
@@ -853,7 +871,7 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
         return partition
 
     def _getReservation(self, rsrv_str):
-        rsrv = accelerator_environment.ExecutionEnvironment()
+        rsrv = accelerator_environment.AcceleratorEnvironment()
         rsrv.Extension["Reservation"] = True
 
         # ID set by ExecutionEnvironment

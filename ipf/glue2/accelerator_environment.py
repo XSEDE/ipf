@@ -110,6 +110,10 @@ class AcceleratorEnvironmentsStep(GlueStep):
                     host_group.TotalInstances += host.TotalInstances
                     host_group.UsedInstances += host.UsedInstances
                     host_group.UnavailableInstances += host.UnavailableInstances
+                    host_group.UsedAcceleratorSlots += host.UsedAcceleratorSlots
+                    if host_group.TotalAcceleratorSlots is None:
+                        host_group.TotalAcceleratorSlots = 0
+                    host_group.TotalAcceleratorSlots += host.PhysicalAccelerators
                     host = None
                     break
             if host is not None:
@@ -123,8 +127,8 @@ class AcceleratorEnvironmentsStep(GlueStep):
         raise StepError("AcceleratorEnvironmentsStep._run not overriden")
 
     def _goodHost(self, host):
-        # check that it has cpu information
-        if host.PhysicalCPUs == None:
+        # check that it has gpu information
+        if host.PhysicalAccelerators == None:
             return False
 
         # if the host is associated with a queue, check that it is a good one
@@ -171,6 +175,7 @@ class AcceleratorEnvironment(Resource):
         self.Type = "unknown"               # string (AccType_t)
         self.PhysicalAccelerators = None    # integer
         self.UsedAcceleratorSlots = None    # integer
+        self.TotalAcceleratorSlots = None    # integer
         self.LogicalAccelerators = None             # integer
         self.Vendor = None                  # string
         self.Model = None                   # string

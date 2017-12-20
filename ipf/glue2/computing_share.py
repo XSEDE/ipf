@@ -26,6 +26,8 @@ from ipf.error import StepError
 from ipf.sysinfo import ResourceName
 
 from .computing_activity import ComputingActivity, ComputingActivities
+from .accelerator_environment import AcceleratorEnvironments
+#from .computing_share_accel_info import ComputingShareAcceleratorInfo
 from .step import GlueStep
 from .share import *
 
@@ -37,6 +39,7 @@ class ComputingSharesStep(GlueStep):
 
         self.description = "produces a document containing one or more GLUE 2 ComputingShare"
         self.time_out = 30
+        #self.requires = [ResourceName,ComputingActivities,ComputingShareAcceleratorInfo]
         self.requires = [ResourceName,ComputingActivities]
         self.produces = [ComputingShares]
         self._acceptParameter("queues",
@@ -75,6 +78,7 @@ class ComputingSharesStep(GlueStep):
             share.WaitingJobs = 0
             share.SuspendedJobs = 0
             share.UsedSlots = 0
+            share.UsedAcceleratorSlots = 0
             share.RequestedSlots = 0
             share.activity = []
 
@@ -158,6 +162,7 @@ class ComputingShare(Share):
         self.FreeSlots = None                   # integer
         self.FreeSlotsWithDuration = None       # string 
         self.UsedSlots = None                   # integer
+        self.UsedAcceleratorSlots = None                   # integer
         self.RequestedSlots = None              # integer
         self.ReservationPolicy = None           # string
         self.Tag = []                           # list of string

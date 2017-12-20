@@ -24,7 +24,7 @@ from ipf.data import Data, Representation
 from ipf.dt import *
 from ipf.sysinfo import ResourceName
 
-#from .computing_share import ComputingShares
+from .computing_share import ComputingShares
 #from .computing_manager import ComputingManager
 from .accelerator_environment import AcceleratorEnvironments
 from .entity import *
@@ -41,7 +41,7 @@ class ComputingShareAcceleratorInfoStep(GlueStep):
         self.description = "This step provides documents in the GLUE 2 ComputingShareAcceleratorInfo schema. For a batch scheduled system, this is typically that scheduler."
         self.time_out = 10
         #self.requires = [ResourceName,AcceleratorEnvironments,ComputingShares]
-        self.requires = [ResourceName,AcceleratorEnvironments]
+        self.requires = [ResourceName,AcceleratorEnvironments,ComputingShares]
         self.produces = [ComputingShareAcceleratorInfo]
 
         self.resource_name = None
@@ -53,8 +53,9 @@ class ComputingShareAcceleratorInfoStep(GlueStep):
         self.resource_name = self._getInput(ResourceName).resource_name
         self.accel_envs = self._getInput(AcceleratorEnvironments).accel_envs
         #self.manager = self._getInput(ComputingManager).manager
-        #self.shares = self._getInput(ComputingShares).shares
+        self.shares = self._getInput(ComputingShares).shares
         self.ComputingManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
+        #self.UsedAcceleratorSlots = None         # integer
 
         share_accel_info = self._run()
 
@@ -63,7 +64,21 @@ class ComputingShareAcceleratorInfoStep(GlueStep):
 
         for accel_env in self.accel_envs:
             share_accel_info._addAcceleratorEnvironment(accel_env)
+        #if share_accel_info.UsedAcceleratorSlots is not None:
+        #    if share_accel_info.TotalPhysicalAccelerators is not None:
+        #        self.debug("TotalPhysicalAccelerators "+str(share_accel_info.TotalPhysicalAccelerators))
+        #        if share_accel_info.FreeAcceleratorSlots == None:
+        #            share_accel_info.FreeAcceleratorSlots = 0
+        #        share_accel_info.FreeAcceleratorSlots = share_accel_info.TotalPhysicalAccelerators - share_accel_info.UsedAcceleratorSlots    
+        if share_accel_info.UsedAcceleratorSlots is not None:
+            if share_accel_info.TotalAcceleratorSlots is not None:
+                if share_accel_info.FreeAcceleratorSlots == None:
+                    share_accel_info.FreeAcceleratorSlots = 0
+                share_accel_info.FreeAcceleratorSlots = share_accel_info.TotalAcceleratorSlots - share_accel_info.UsedAcceleratorSlots    
         #share_accel_info._addComputingShares(self.shares)
+        #kkshare_accel_info._addComputingShare(self.share)
+        #for share in self.shares:
+        #    share_accel_info._addComputingShare(share)
 
         self._output(share_accel_info)
 
@@ -79,6 +94,7 @@ class ComputingShareAcceleratorInfo(Entity):
         self.MaxAcceleratorSlotsPerJob = None         # integer
         self.TotalPhysicalAccelerators = None           # integer
         self.TotalLogicalAccelerators = None           # integer
+        self.TotalAcceleratorSlots = None                   # integer
         # use Service and Resource of Manager instead of ComputingService and ExecutionEnvironment
         self.ComputingShareID = []       # list of string (LocalID)
 
@@ -88,21 +104,19 @@ class ComputingShareAcceleratorInfo(Entity):
         if accel_env.PhysicalAccelerators is not None:
             if self.TotalPhysicalAccelerators == None:
                 self.TotalPhysicalAccelerators = 0
-            self.TotalPhysicalAccelerators = self.TotalPhysicalAccelerators + accel_env.TotalInstances * accel_env.PhysicalAccelerators
-        if accel_env.LogicalAccelerators is not None:
-            if self.TotalLogicalAccelerators == None:
-                self.TotalLogicalAccelerators = 0
-            self.TotalLogicalAcclerators = self.TotalLogicalAccelerators + accel_env.TotalInstances * accel_env.LogicalAccelerators
-            self.TotalSlots = self.TotalLogicalAccelerators
+            self.TotalPhysicalAccelerators = self.TotalPhysicalAccelerators + accel_env.PhysicalAccelerators
+            if self.TotalAcceleratorSlots == None:
+                self.TotalAcceleratorSlots = 0
+            self.TotalAcceleratorSlots = self.TotalAcceleratorSlots + accel_env.TotalAcceleratorSlots
+            #self.TotalPhysicalAccelerators = self.TotalPhysicalAccelerators + accel_env.TotalInstances * accel_env.PhysicalAccelerators
+            #if self.TotalLogicalAccelerators == None:
+            #    self.TotalLogicalAccelerators = 0
+            #self.TotalLogicalAcclerators = self.TotalLogicalAccelerators + accel_env.TotalInstances * accel_env.LogicalAccelerators
+            #self.TotalSlots = self.TotalLogicalAccelerators
         if accel_env.UsedAcceleratorSlots is not None:
             if self.UsedAcceleratorSlots == None:
                 self.UsedAcceleratorSlots = 0
             self.UsedAcceleratorSlots = self.UsedAcceleratorSlots + accel_env.UsedAcceleratorSlots
-        if self.UsedAcceleratorSlots is not None:
-            if self.TotalPhysicalAccelerators is not None:
-                if self.FreeAcceleratorSlots == None:
-                    self.FreeAcceleratorSlots = 0
-                self.FreeAcceleratorSlots - self.TotalPhysicalAccelerators - self.UsedAcceleratorSlots    
         if self.Type == None:
             if accel_env.Type is not None:
                 self.Type = accel_env.Type
@@ -115,6 +129,12 @@ class ComputingShareAcceleratorInfo(Entity):
             return
         for share in shares:
             self.ComputingShareID.append(share.ID)
+
+    def _addComputingShare(self, share):
+        if self.UsedAcceleratorSlots == None:
+            self.UsedAcceleratorSlots = 0
+        self.UsedAcceleratorSlots = self.UsedAcceleratorSlots + share.UsedSlots
+
 
 
 #######################################################################################################################

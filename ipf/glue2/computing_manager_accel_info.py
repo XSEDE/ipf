@@ -41,7 +41,7 @@ class ComputingManagerAcceleratorInfoStep(GlueStep):
         self.description = "This step provides documents in the GLUE 2 ComputingManagerAcceleratorInfo schema. For a batch scheduled system, this is typically that scheduler."
         self.time_out = 10
         #self.requires = [ResourceName,AcceleratorEnvironments,ComputingManager]
-        self.requires = [ResourceName,AcceleratorEnvironments]
+        self.requires = [ResourceName,AcceleratorEnvironments,ComputingShares]
         self.produces = [ComputingManagerAcceleratorInfo]
 
         self.resource_name = None
@@ -53,6 +53,8 @@ class ComputingManagerAcceleratorInfoStep(GlueStep):
         self.resource_name = self._getInput(ResourceName).resource_name
         self.accel_envs = self._getInput(AcceleratorEnvironments).accel_envs
         #self.manager = self._getInput(ComputingManager).manager
+        #self.shares = self._getInput(ComputingShares).shares
+        self.ComputingManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
 
         manager_accel_info = self._run()
 
@@ -91,6 +93,11 @@ class ComputingManagerAcceleratorInfo(Entity):
                 self.TotalLogicalAccelerators = 0
             self.TotalLogicalAcclerators = self.TotalLogicalAccelerators + accel_env.TotalInstances * accel_env.LogicalAccelerators
             self.TotalSlots = self.TotalLogicalAccelerators
+        if accel_env.UsedAcceleratorSlots is not None:
+            if self.UsedAcceleratorSlots == None:
+                self.UsedAcceleratorSlots = 0
+            self.UsedAcceleratorSlots = self.UsedAcceleratorSlots + accel_env.UsedAcceleratorSlots
+        
 
 
     def _addComputingShare(self, share):

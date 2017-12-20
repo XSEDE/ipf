@@ -30,6 +30,7 @@ from computing_manager import ComputingManager, ComputingManagerTeraGridXml, Com
 from computing_manager_accel_info import ComputingManagerAcceleratorInfo, ComputingManagerAcceleratorInfoOgfJson
 from computing_service import ComputingService, ComputingServiceTeraGridXml, ComputingServiceOgfJson
 from computing_share import ComputingShares, ComputingShareTeraGridXml, ComputingShareOgfJson
+from computing_share_accel_info import ComputingShareAcceleratorInfo, ComputingShareAcceleratorInfoOgfJson
 from execution_environment import ExecutionEnvironments, ExecutionEnvironmentTeraGridXml
 from execution_environment import ExecutionEnvironmentTeraGridXml
 from execution_environment import ExecutionEnvironmentOgfJson
@@ -45,7 +46,7 @@ class PublicStep(Step):
         self.description = "creates a single data containing all nonsensitive compute-related information"
         self.time_out = 5
         self.requires = [ResourceName,Location,
-                         ComputingService,ComputingShares,ComputingManager,ExecutionEnvironments,AcceleratorEnvironments,ComputingManagerAcceleratorInfo]
+                         ComputingService,ComputingShares,ComputingManager,ExecutionEnvironments,AcceleratorEnvironments,ComputingManagerAcceleratorInfo,ComputingShareAcceleratorInfo]
         self.produces = [Public]
 
     def run(self):
@@ -58,6 +59,7 @@ class PublicStep(Step):
         public.share = self._getInput(ComputingShares).shares
         public.manager = [self._getInput(ComputingManager)]
         public.manager_accel_info = [self._getInput(ComputingManagerAcceleratorInfo)]
+        public.share_accel_info = [self._getInput(ComputingShareAcceleratorInfo)]
         public.environment = self._getInput(ExecutionEnvironments).exec_envs
         public.accelenvironment = self._getInput(AcceleratorEnvironments).accel_envs
         public.id = public.resource_name
@@ -163,6 +165,9 @@ class PublicOgfJson(Representation):
             doc["ComputingService"] = map(lambda service: ComputingServiceOgfJson(service).toJson(),self.data.service)
         if len(self.data.share) > 0:
             doc["ComputingShare"] = map(lambda share: ComputingShareOgfJson(share).toJson(),self.data.share)
+        if len(self.data.share_accel_info) > 0:
+            doc["ComputingShareAcceleratorInfo"] = map(lambda exec_env: ComputingShareAcceleratorInfoOgfJson(exec_env).toJson(),
+                                              self.data.share_accel_info)
         if len(self.data.manager) > 0:
             doc["ComputingManager"] = map(lambda manager: ComputingManagerOgfJson(manager).toJson(),self.data.manager)
         if len(self.data.environment) > 0:
