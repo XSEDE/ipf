@@ -46,21 +46,27 @@ class ComputingManagerStep(GlueStep):
 
         self.resource_name = None
         self.exec_envs = None
+        self.accel_envs = None
         self.shares = None
 
     def run(self):
         self.resource_name = self._getInput(ResourceName).resource_name
         self.exec_envs = self._getInput(ExecutionEnvironments).exec_envs
         self.shares = self._getInput(ComputingShares).shares
+        self.accel_envs = self._getInput(AcceleratorEnvironments).accel_envs
+        self.CMAccelInfo = self._getInput(ComputingManagerAcceleratorInfo)
 
         manager = self._run()
 
         manager.id = "%s" % (self.resource_name)
         manager.ID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
         manager.ServiceID = "urn:glue2:ComputingService:%s" % (self.resource_name)
+        manager.ComputingManagerAcceleratorInfoID=self.CMAccelInfo.ID
 
         for exec_env in self.exec_envs:
             manager._addExecutionEnvironment(exec_env)
+        for accel_env in self.accel_envs:
+            manager._addAcceleratorEnvironment(accel_env)
         for share in self.shares:
             manager._addComputingShare(share)
 
@@ -118,21 +124,22 @@ class ComputingManager(Manager):
             self.Homogeneous = False
 
     def _addAcceleratorEnvironment(self, exec_env):
-        self.ComputingManagerAcceleratorInfoID.append(exec_env.ID)
-        if exec_env.PhysicalAccelerators is not None:
-            if self.TotalPhysicalAccelerators == None:
-                self.TotalPhysicalAccelerators = 0
-            self.TotalPhysicalAccelerators = self.TotalPhysicalAccelerators + exec_env.TotalInstances * exec_env.PhysicalAccelerators
-        if exec_env.LogicalAccelerators is not None:
-            if self.TotalLogicalAccelerators == None:
-                self.TotalLogicalAccelerators = 0
-            self.TotalLogicalAcclerators = self.TotalLogicalAccelerators + exec_env.TotalInstances * exec_env.LogicalAccelerators
-            self.TotalSlots = self.TotalLogicalAccelerators
+        self.ResourceID.append(exec_env.ID)
+        #self.ComputingManagerAcceleratorInfoID.append(exec_env.ID)
+        #if exec_env.PhysicalAccelerators is not None:
+        #    if self.TotalPhysicalAccelerators == None:
+        #        self.TotalPhysicalAccelerators = 0
+        #    self.TotalPhysicalAccelerators = self.TotalPhysicalAccelerators + exec_env.TotalInstances * exec_env.PhysicalAccelerators
+        #if exec_env.LogicalAccelerators is not None:
+        #    if self.TotalLogicalAccelerators == None:
+        #        self.TotalLogicalAccelerators = 0
+        #    self.TotalLogicalAcclerators = self.TotalLogicalAccelerators + exec_env.TotalInstances * exec_env.LogicalAccelerators
+        #    self.TotalSlots = self.TotalLogicalAccelerators
 
-        if len(self.ResourceID) == 1:
-            self.Homogeneous = True
-        else:
-            self.Homogeneous = False
+        #if len(self.ResourceID) == 1:
+        #    self.Homogeneous = True
+        #else:
+        #    self.Homogeneous = False
 
     def _addComputingShare(self, share):
         if self.SlotsUsedByLocalJobs == None:

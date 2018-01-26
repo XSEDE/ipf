@@ -210,6 +210,9 @@ def _getJob(step, job_str):
     m = re.search("NumCPUs=(\d+)",job_str)
     if m is not None:
         job.RequestedSlots = int(m.group(1))
+    m = re.search("gres/gpu=(\d+)",job_str)
+    if m is not None:
+        job.RequestedAcceleratorSlots = int(m.group(1))
     m = re.search("TimeLimit=(\S+)",job_str)
     if m is not None:
         wall_time = _getDuration(m.group(1))
@@ -411,6 +414,7 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
         except:
             reservations = []
 
+        self.debug("returning "+ str(partitions + reservations))
         return partitions + reservations
 
     def _getShare(self, partition_str):

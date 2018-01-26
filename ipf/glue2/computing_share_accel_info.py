@@ -56,25 +56,22 @@ class ComputingShareAcceleratorInfoStep(GlueStep):
         self.shares = self._getInput(ComputingShares).shares
         self.ComputingManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
         #self.UsedAcceleratorSlots = None         # integer
+        accel_shares = []
 
-        share_accel_info = self._run()
-
-        share_accel_info.id = "%s" % (self.resource_name)
-        share_accel_info.ID = "urn:glue2:ComputingShareAcceleratorInfo:%s" % (self.resource_name)
-
-        for accel_env in self.accel_envs:
-            share_accel_info._addAcceleratorEnvironment(accel_env)
-        #if share_accel_info.UsedAcceleratorSlots is not None:
-        #    if share_accel_info.TotalPhysicalAccelerators is not None:
-        #        self.debug("TotalPhysicalAccelerators "+str(share_accel_info.TotalPhysicalAccelerators))
-        #        if share_accel_info.FreeAcceleratorSlots == None:
-        #            share_accel_info.FreeAcceleratorSlots = 0
-        #        share_accel_info.FreeAcceleratorSlots = share_accel_info.TotalPhysicalAccelerators - share_accel_info.UsedAcceleratorSlots    
-        if share_accel_info.UsedAcceleratorSlots is not None:
-            if share_accel_info.TotalAcceleratorSlots is not None:
-                if share_accel_info.FreeAcceleratorSlots == None:
-                    share_accel_info.FreeAcceleratorSlots = 0
-                share_accel_info.FreeAcceleratorSlots = share_accel_info.TotalAcceleratorSlots - share_accel_info.UsedAcceleratorSlots    
+        for computing_share in self.shares:
+            share_accel_info = self._run()
+            share_accel_info.id = "%s" % (self.resource_name)
+            share_accel_info.ID = "urn:glue2:ComputingShareAcceleratorInfo:%s.%s" % (computing_share.Name,self.resource_name)
+            #share_accel_info.ID = "urn:glue2:ComputingShareAcceleratorInfo:%s" % (self.resource_name)
+            share_accel_info.ComputingShareID.append(computing_share.ID)
+            share_accel_info._addComputingShare(computing_share)
+            computing_share.ComputingShareAccelInfoID=share_accel_info.ID
+            if share_accel_info.UsedAcceleratorSlots is not None:
+                if share_accel_info.TotalAcceleratorSlots is not None:
+                    if share_accel_info.FreeAcceleratorSlots == None:
+                        share_accel_info.FreeAcceleratorSlots = 0
+                    share_accel_info.FreeAcceleratorSlots = share_accel_info.TotalAcceleratorSlots - share_accel_info.UsedAcceleratorSlots    
+            accel_shares.append(share_accel_info)
         #share_accel_info._addComputingShares(self.shares)
         #kkshare_accel_info._addComputingShare(self.share)
         #for share in self.shares:
@@ -133,7 +130,7 @@ class ComputingShareAcceleratorInfo(Entity):
     def _addComputingShare(self, share):
         if self.UsedAcceleratorSlots == None:
             self.UsedAcceleratorSlots = 0
-        self.UsedAcceleratorSlots = self.UsedAcceleratorSlots + share.UsedSlots
+        self.UsedAcceleratorSlots = self.UsedAcceleratorSlots + share.UsedAcceleratorSlots
 
 
 
@@ -158,7 +155,9 @@ class ComputingShareAcceleratorInfoOgfJson(EntityOgfJson):
         if self.data.UsedAcceleratorSlots is not None:
             doc["UsedAcceleratorSlots"] = self.data.UsedAcceleratorSlots
 
+        print self.data.ComputingShareID
         if len(self.data.ComputingShareID) > 0:
+            doc["Associations"]={}
             doc["Associations"]["ComputingShareID"] = self.data.ComputingShareID
 
         return doc

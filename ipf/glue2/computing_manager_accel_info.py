@@ -41,7 +41,8 @@ class ComputingManagerAcceleratorInfoStep(GlueStep):
         self.description = "This step provides documents in the GLUE 2 ComputingManagerAcceleratorInfo schema. For a batch scheduled system, this is typically that scheduler."
         self.time_out = 10
         #self.requires = [ResourceName,AcceleratorEnvironments,ComputingManager]
-        self.requires = [ResourceName,AcceleratorEnvironments,ComputingShares]
+        #self.requires = [ResourceName,AcceleratorEnvironments,ComputingShares]
+        self.requires = [ResourceName,AcceleratorEnvironments]
         self.produces = [ComputingManagerAcceleratorInfo]
 
         self.resource_name = None
@@ -54,9 +55,9 @@ class ComputingManagerAcceleratorInfoStep(GlueStep):
         self.accel_envs = self._getInput(AcceleratorEnvironments).accel_envs
         #self.manager = self._getInput(ComputingManager).manager
         #self.shares = self._getInput(ComputingShares).shares
-        self.ComputingManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
 
         manager_accel_info = self._run()
+        manager_accel_info.ComputingManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
 
         manager_accel_info.id = "%s" % (self.resource_name)
         manager_accel_info.ID = "urn:glue2:ComputingManagerAcceleratorInfo:%s" % (self.resource_name)
@@ -127,6 +128,7 @@ class ComputingManagerAcceleratorInfoOgfJson(EntityOgfJson):
             doc["UsedAcceleratorSlots"] = self.data.UsedAcceleratorSlots
 
         if len(self.data.ComputingManagerID) > 0:
+            doc["Associations"]={}
             doc["Associations"]["ComputingManagerID"] = self.data.ComputingManagerID
 
         return doc
