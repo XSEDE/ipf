@@ -61,7 +61,8 @@ class ComputingManagerStep(GlueStep):
         manager.id = "%s" % (self.resource_name)
         manager.ID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
         manager.ServiceID = "urn:glue2:ComputingService:%s" % (self.resource_name)
-        manager.ComputingManagerAcceleratorInfoID=self.CMAccelInfo.ID
+        if self.CMAccelInfo.TotalPhysicalAccelerators is not None:
+            manager.ComputingManagerAcceleratorInfoID=self.CMAccelInfo.ID
 
         for exec_env in self.exec_envs:
             manager._addExecutionEnvironment(exec_env)

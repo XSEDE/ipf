@@ -162,6 +162,9 @@ class ComputingShareAcceleratorInfoOgfJson(EntityOgfJson):
             doc["Associations"]={}
             doc["Associations"]["ComputingShareID"] = self.data.ComputingShareID
 
-        return doc
+        if self.data.FreeAcceleratorSlots is not None:
+            return doc
+        else:
+            return
 
 #######################################################################################################################

@@ -166,8 +166,11 @@ class PublicOgfJson(Representation):
         if len(self.data.share) > 0:
             doc["ComputingShare"] = map(lambda share: ComputingShareOgfJson(share).toJson(),self.data.share)
         if len(self.data.share_accel_info) > 0:
-            doc["ComputingShareAcceleratorInfo"] = map(lambda exec_env: ComputingShareAcceleratorInfoOgfJson(exec_env).toJson(),
+            csai = map(lambda exec_env: ComputingShareAcceleratorInfoOgfJson(exec_env).toJson(),
                                               self.data.share_accel_info)
+	    csaii = list(filter(None, csai))
+            if len(csaii) > 0:
+                doc["ComputingShareAcceleratorInfo"] = csaii
         if len(self.data.manager) > 0:
             doc["ComputingManager"] = map(lambda manager: ComputingManagerOgfJson(manager).toJson(),self.data.manager)
         if len(self.data.environment) > 0:
@@ -178,8 +181,11 @@ class PublicOgfJson(Representation):
                 doc["AcceleratorEnvironment"] = map(lambda exec_env: AcceleratorEnvironmentOgfJson(exec_env).toJson(),
                                               self.data.accelenvironment)
         if len(self.data.manager_accel_info) > 0:
-            doc["ComputingManagerAcceleratorInfo"] = map(lambda exec_env: ComputingManagerAcceleratorInfoOgfJson(exec_env).toJson(),
+            cmai = map(lambda exec_env: ComputingManagerAcceleratorInfoOgfJson(exec_env).toJson(),
                                               self.data.manager_accel_info)
+	    cmaii = list(filter(None, cmai))
+            if len(cmaii) > 0:
+                doc["ComputingManagerAcceleratorInfo"] = cmaii
         
         return doc
 
