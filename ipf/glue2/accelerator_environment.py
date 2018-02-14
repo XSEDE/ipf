@@ -56,11 +56,12 @@ class AcceleratorEnvironmentsStep(GlueStep):
         self.resource_name = self._getInput(ResourceName).resource_name
         
         host_groups = self._run()
-        for host_group in host_groups:
-            host_group.id = "%s.%s" % (host_group.Name,self.resource_name)
-            host_group.ID = "urn:glue2:AcceleratorEnvironment:%s.%s" % (host_group.Name,self.resource_name)
-            host_group.ManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
-            self.debug("host_group.id "+host_group.id)
+	if host_groups:
+            for host_group in host_groups:
+                host_group.id = "%s.%s" % (host_group.Name,self.resource_name)
+                host_group.ID = "urn:glue2:AcceleratorEnvironment:%s.%s" % (host_group.Name,self.resource_name)
+                host_group.ManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
+                self.debug("host_group.id "+host_group.id)
 
         self._output(AcceleratorEnvironments(self.resource_name,host_groups))
 

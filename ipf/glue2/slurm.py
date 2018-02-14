@@ -74,38 +74,6 @@ class ComputingManagerStep(computing_manager.ComputingManagerStep):
 
 #######################################################################################################################
 
-class ComputingManagerAcceleratorInfoStep(computing_manager_accel_info.ComputingManagerAcceleratorInfoStep):
-
-    def __init__(self):
-        computing_manager_accel_info.ComputingManagerAcceleratorInfoStep.__init__(self)
-
-    def _run(self):
-        manager_accel_info = computing_manager_accel_info.ComputingManagerAcceleratorInfo()
-        #manager.ProductName = "SLURM"
-        #manager.Name = "SLURM"
-        #manager.Reservation = True
-        #self.BulkSubmission = True
-
-        return manager_accel_info
-
-#######################################################################################################################
-
-class ComputingShareAcceleratorInfoStep(computing_share_accel_info.ComputingShareAcceleratorInfoStep):
-
-    def __init__(self):
-        computing_share_accel_info.ComputingShareAcceleratorInfoStep.__init__(self)
-
-    def _run(self):
-        share_accel_info = computing_share_accel_info.ComputingShareAcceleratorInfo()
-        #manager.ProductName = "SLURM"
-        #manager.Name = "SLURM"
-        #manager.Reservation = True
-        #self.BulkSubmission = True
-
-        return share_accel_info
-
-#######################################################################################################################
-
 class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
     def __init__(self):
@@ -695,6 +663,38 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
                     start_pos = pos + 1
         exprs.append(expr[start_pos:])
         return exprs
+
+#######################################################################################################################
+
+class ComputingManagerAcceleratorInfoStep(computing_manager_accel_info.ComputingManagerAcceleratorInfoStep):
+
+    def __init__(self):
+        computing_manager_accel_info.ComputingManagerAcceleratorInfoStep.__init__(self)
+
+    def _run(self):
+        manager_accel_info = computing_manager_accel_info.ComputingManagerAcceleratorInfo()
+        #manager.ProductName = "SLURM"
+        #manager.Name = "SLURM"
+        #manager.Reservation = True
+        #self.BulkSubmission = True
+
+        return manager_accel_info
+
+#######################################################################################################################
+
+class ComputingShareAcceleratorInfoStep(computing_share_accel_info.ComputingShareAcceleratorInfoStep):
+
+    def __init__(self):
+        computing_share_accel_info.ComputingShareAcceleratorInfoStep.__init__(self)
+
+    def _run(self):
+        share_accel_info = computing_share_accel_info.ComputingShareAcceleratorInfo()
+        #manager.ProductName = "SLURM"
+        #manager.Name = "SLURM"
+        #manager.Reservation = True
+        #self.BulkSubmission = True
+
+        return share_accel_info
 
 #######################################################################################################################
 

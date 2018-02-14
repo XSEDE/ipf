@@ -62,6 +62,7 @@ class ComputingShareAcceleratorInfoStep(GlueStep):
             share_accel_info = self._run()
             share_accel_info.id = "%s" % (self.resource_name)
             share_accel_info.ID = "urn:glue2:ComputingShareAcceleratorInfo:%s.%s" % (computing_share.Name,self.resource_name)
+            share_accel_info.Name = computing_share.Name
             #share_accel_info.ID = "urn:glue2:ComputingShareAcceleratorInfo:%s" % (self.resource_name)
             share_accel_info.ComputingShareID.append(computing_share.ID)
             share_accel_info._addComputingShare(computing_share)
@@ -76,8 +77,9 @@ class ComputingShareAcceleratorInfoStep(GlueStep):
         #kkshare_accel_info._addComputingShare(self.share)
         #for share in self.shares:
         #    share_accel_info._addComputingShare(share)
-
-        self._output(share_accel_info)
+        for sai in accel_shares:
+            self._output(sai)
+        #self._output(accel_shares)
 
 #######################################################################################################################
 

@@ -62,8 +62,9 @@ class ComputingManagerAcceleratorInfoStep(GlueStep):
         manager_accel_info.id = "%s" % (self.resource_name)
         manager_accel_info.ID = "urn:glue2:ComputingManagerAcceleratorInfo:%s" % (self.resource_name)
 
-        for accel_env in self.accel_envs:
-            manager_accel_info._addAcceleratorEnvironment(accel_env)
+        if self.accel_envs:
+            for accel_env in self.accel_envs:
+                manager_accel_info._addAcceleratorEnvironment(accel_env)
         #for share in self.shares:
         #    manager_accel_info._addComputingShare(share)
 
@@ -130,7 +131,9 @@ class ComputingManagerAcceleratorInfoOgfJson(EntityOgfJson):
         if len(self.data.ComputingManagerID) > 0:
             doc["Associations"]={}
             doc["Associations"]["ComputingManagerID"] = self.data.ComputingManagerID
-
-        return doc
+	if self.data.TotalPhysicalAccelerators is not None:
+            return doc
+        else:
+            return
 
 #######################################################################################################################

@@ -104,7 +104,8 @@ class ComputingSharesStep(GlueStep):
                 share.RunningJobs = share.RunningJobs + 1
                 share.TotalJobs = share.TotalJobs + 1
                 share.UsedSlots = share.UsedSlots + activity.RequestedSlots
-                share.UsedAcceleratorSlots = share.UsedAcceleratorSlots + activity.RequestedAcceleratorSlots
+                if activity.RequestedAcceleratorSlots:
+                    share.UsedAcceleratorSlots = share.UsedAcceleratorSlots + activity.RequestedAcceleratorSlots
             elif activity.State[0] == ComputingActivity.STATE_PENDING:
                 share.WaitingJobs = share.WaitingJobs + 1
                 share.TotalJobs = share.TotalJobs + 1

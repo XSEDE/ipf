@@ -65,8 +65,9 @@ class ComputingManagerStep(GlueStep):
 
         for exec_env in self.exec_envs:
             manager._addExecutionEnvironment(exec_env)
-        for accel_env in self.accel_envs:
-            manager._addAcceleratorEnvironment(accel_env)
+        if self.accel_envs:
+            for accel_env in self.accel_envs:
+                manager._addAcceleratorEnvironment(accel_env)
         for share in self.shares:
             manager._addComputingShare(share)
 

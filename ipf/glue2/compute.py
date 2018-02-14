@@ -173,11 +173,12 @@ class PublicOgfJson(Representation):
         if len(self.data.environment) > 0:
             doc["ExecutionEnvironment"] = map(lambda exec_env: ExecutionEnvironmentOgfJson(exec_env).toJson(),
                                               self.data.environment)
-        if len(self.data.accelenvironment) > 0:
-            doc["AcceleratorEnvironment"] = map(lambda exec_env: AcceleratorEnvironmentOgfJson(exec_env).toJson(),
+        if self.data.accelenvironment:
+            if len(self.data.accelenvironment) > 0:
+                doc["AcceleratorEnvironment"] = map(lambda exec_env: AcceleratorEnvironmentOgfJson(exec_env).toJson(),
                                               self.data.accelenvironment)
         if len(self.data.manager_accel_info) > 0:
-            doc["ComputingMangagerAcceleratorInfo"] = map(lambda exec_env: ComputingManagerAcceleratorInfoOgfJson(exec_env).toJson(),
+            doc["ComputingManagerAcceleratorInfo"] = map(lambda exec_env: ComputingManagerAcceleratorInfoOgfJson(exec_env).toJson(),
                                               self.data.manager_accel_info)
         
         return doc
