@@ -1,0 +1,21 @@
+{
+  "name": "activity",
+  "description": "This workflow watches PBS server logs and publishes updates about individual jobs",
+  "steps": [
+    { "name": "ipf.sysinfo.ResourceNameStep" },
+    { "name": "ipf.glue2.pbs.ComputingActivityUpdateStep",
+      "params": {
+        "position_file": "pbs_activity.pos"
+      }
+    },
+    {
+      "name": "ipf.publish.FileStep",
+      "description": "Publish JSON version of a computing activity by appending it to a file",
+      "params": {
+        "publish": ["ipf.glue2.computing_activity.ComputingActivityOgfJson"],
+	"append": true,
+        "path": "activity.json"
+      }
+    }
+  ]
+}

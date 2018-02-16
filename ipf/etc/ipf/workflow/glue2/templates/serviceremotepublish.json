@@ -1,0 +1,50 @@
+{
+  "name": "XSEDEservices",
+  "steps": [
+    { "name": "ipf.glue2.location.LocationStep",
+      "params": {
+        "location": {
+          "Name": "Name of Center",
+          "Place": "City",
+          "Country": "US",
+          "Latitude": 38.000,
+          "Longitude": -90.000
+        }
+      }
+    },
+    { "name": "ipf.sysinfo.ResourceNameStep" ,
+      "params": {
+          "resource_name": "testing.xsede.org"
+     	        } 
+    },
+    { "name": "ipf.glue2.abstractservice.AbstractServiceStep" },
+    {
+      "name": "ipf.publish.FileStep",
+      "params": {
+        "publish": ["ipf.glue2.abstractservice.ASOgfJson"],
+        "path": "extserv.json"
+      }
+    },
+    {
+      "description": "Publish service and endpoint information to XSEDE",
+      "name": "ipf.publish.AmqpStep",
+      "params": {
+        "exchange": "glue2.compute",
+        "publish": [
+                    "ipf.glue2.abstractservice.ASOgfJson"
+                ],
+        "services": [
+                    "info1.dyn.xsede.org",
+                    "info2.dyn.xsede.org"
+                ],
+        "ssl_options": {
+                    "ca_certs": "xsede/ca_certs.pem",
+                    "certfile": "/tmp/x509up_u501",
+                    "keyfile": "/tmp/x509up_u501"
+                },
+        "vhost": "xsede"
+            }
+     }
+
+  ]
+}
