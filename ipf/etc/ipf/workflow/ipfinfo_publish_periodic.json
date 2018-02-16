@@ -5,7 +5,7 @@
     { "name": "ipf.step.WorkflowStep",
       "params": {
           "workflow": "ipfinfo_publish.json",
-          "maximum_interval": 60
+          "maximum_interval": 3600
       }
     }
   ]
