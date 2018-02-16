@@ -25,6 +25,9 @@ from . import computing_manager
 from . import computing_service
 from . import computing_share
 from . import execution_environment
+from . import accelerator_environment
+from . import computing_manager_accel_info
+from . import computing_share_accel_info
 
 #######################################################################################################################
 
@@ -299,4 +302,39 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
 
         return host
         
+#######################################################################################################################
+
+class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironmentsStep):
+    def __init__(self):
+        accelerator_environment.AcceleratorEnvironmentsStep.__init__(self)
+
+        self._acceptParameter("scontrol","the path to the SLURM scontrol program (default 'scontrol')",False)
+
+    def _run(self):
+        # get info on the nodes
+	return
+
+#######################################################################################################################
+
+class ComputingManagerAcceleratorInfoStep(computing_manager_accel_info.ComputingManagerAcceleratorInfoStep):
+
+    def __init__(self):
+        computing_manager_accel_info.ComputingManagerAcceleratorInfoStep.__init__(self)
+
+    def _run(self):
+        manager_accel_info = computing_manager_accel_info.ComputingManagerAcceleratorInfo()
+
+        return manager_accel_info
+
+#######################################################################################################################
+
+class ComputingShareAcceleratorInfoStep(computing_share_accel_info.ComputingShareAcceleratorInfoStep):
+
+    def __init__(self):
+        computing_share_accel_info.ComputingShareAcceleratorInfoStep.__init__(self)
+
+    def _run(self):
+        share_accel_info = computing_share_accel_info.ComputingShareAcceleratorInfo()
+        return share_accel_info
+
 #######################################################################################################################

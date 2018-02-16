@@ -20,7 +20,6 @@ import logging.config
 import os
 import pkgutil
 import traceback
-from forkablepdb import ForkablePdb
 
 import ipf
 from ipf.data import Data,Representation
@@ -35,7 +34,6 @@ logger = logging.getLogger(__name__)
 
 class Catalog(object):
     def __init__(self):
-        # step class name -> Step for when reading workflows
         self.steps = {}
 
         self.data = {}             # class name -> [Data,]
@@ -46,7 +44,6 @@ class Catalog(object):
 
         # Data -> [Representations]
         self.reps_for_data = {}
-        ForkablePdb().set_trace()
 
         module_names = self._getModules()
 
@@ -95,7 +92,6 @@ class Catalog(object):
         #    print(str(key)+": "+str(self.producers[key]))
 
     def _handleModuleError(self, module_name):
-        ForkablePdb().set_trace()
         logger.warn("failed to load module %s" % module_name)
 
     def _getModules(self):

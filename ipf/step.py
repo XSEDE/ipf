@@ -20,7 +20,6 @@ import logging
 import multiprocessing
 import time
 import pdb
-from forkablepdb import ForkablePdb
 from Queue import Empty
 
 from ipf.data import Data,Representation
@@ -40,7 +39,6 @@ class Step(multiprocessing.Process):
         self.requires = []    # Data or Representation that this step requires
         self.produces = []    # Data that this step produces
 
-        #ForkablePdb().set_trace()
         self.accepts_params = {}
         self._acceptParameter("id","an identifier for this step",False)
         self._acceptParameter("requires","list of additional types this step requires",False)

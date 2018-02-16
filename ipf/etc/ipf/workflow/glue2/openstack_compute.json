@@ -18,11 +18,14 @@
         }
       }
     },
-    { "name": "glue2.openstack.ComputingActivitiesStep" },
-    { "name": "glue2.openstack.ComputingSharesStep" },
-    { "name": "glue2.openstack.ComputingServiceStep" },
-    { "name": "glue2.openstack.ExecutionEnvironmentsStep" },
-    { "name": "glue2.openstack.ComputingManagerStep" },
+    { "name": "ipf.glue2.openstack.ComputingActivitiesStep" },
+    { "name": "ipf.glue2.openstack.ComputingSharesStep" },
+    { "name": "ipf.glue2.openstack.ComputingShareAcceleratorInfoStep" },
+    { "name": "ipf.glue2.openstack.ComputingServiceStep" },
+    { "name": "ipf.glue2.openstack.ExecutionEnvironmentsStep" },
+    { "name": "ipf.glue2.openstack.AcceleratorEnvironmentsStep" },
+    { "name": "ipf.glue2.openstack.ComputingManagerStep" },
+    { "name": "ipf.glue2.openstack.ComputingManagerAcceleratorInfoStep" },
     {
       "name": "ipf.publish.FileStep",
       "description": "Publish JSON version of compute resource description to a file for debugging",

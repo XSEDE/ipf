@@ -18,9 +18,12 @@
     },
     { "name": "ipf.glue2.sge.ComputingActivitiesStep" },
     { "name": "ipf.glue2.sge.ComputingSharesStep" },
+    { "name": "ipf.glue2.sge.ComputingShareAcceleratorInfoStep" },
     { "name": "ipf.glue2.sge.ComputingServiceStep" },
     { "name": "ipf.glue2.sge.ExecutionEnvironmentsStep" },
+    { "name": "ipf.glue2.sge.AcceleratorEnvironmentsStep" },
     { "name": "ipf.glue2.sge.ComputingManagerStep" },
+    { "name": "ipf.glue2.sge.ComputingManagerAcceleratorInfoStep" },
     {
       "name": "ipf.publish.FileStep",
       "description": "Publish JSON version of compute resource description to a file for debugging",
