@@ -34,7 +34,6 @@ logger = logging.getLogger(__name__)
 
 class Catalog(object):
     def __init__(self):
-        # step class name -> Step for when reading workflows
         self.steps = {}
 
         self.data = {}             # class name -> [Data,]

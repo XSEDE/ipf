@@ -18,9 +18,12 @@
     },
     { "name": "ipf.glue2.condor.ComputingActivitiesStep" },
     { "name": "ipf.glue2.condor.ComputingSharesStep" },
+    { "name": "ipf.glue2.condor.ComputingShareAcceleratorInfoStep" },
     { "name": "ipf.glue2.condor.ComputingServiceStep" },
     { "name": "ipf.glue2.condor.ExecutionEnvironmentsStep" },
+    { "name": "ipf.glue2.condor.AcceleratorEnvironmentsStep" },
     { "name": "ipf.glue2.condor.ComputingManagerStep" },
+    { "name": "ipf.glue2.condor.ComputingManagerAcceleratorInfoStep" },
     {
       "name": "ipf.publish.FileStep",
       "description": "Publish JSON version of compute resource description to a file for debugging",

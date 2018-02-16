@@ -26,6 +26,8 @@ from ipf.error import StepError
 from ipf.sysinfo import ResourceName
 
 from .computing_activity import ComputingActivity, ComputingActivities
+from .accelerator_environment import AcceleratorEnvironments
+#from .computing_share_accel_info import ComputingShareAcceleratorInfo
 from .step import GlueStep
 from .share import *
 
@@ -36,7 +38,9 @@ class ComputingSharesStep(GlueStep):
         GlueStep.__init__(self)
 
         self.description = "produces a document containing one or more GLUE 2 ComputingShare"
-        self.time_out = 30
+        #self.time_out = 30
+        self.time_out = 120
+        #self.requires = [ResourceName,ComputingActivities,ComputingShareAcceleratorInfo]
         self.requires = [ResourceName,ComputingActivities]
         self.produces = [ComputingShares]
         self._acceptParameter("queues",
@@ -58,6 +62,9 @@ class ComputingSharesStep(GlueStep):
             share.ServiceID = "urn:glue2:ComputingService:%s" % (self.resource_name)
 
         self._addActivities(shares)
+        for share in shares:
+            if share.UsedAcceleratorSlots > 0:
+                share.ComputingShareAccelInfoID = "urn:glue2:ComputingShareAcceleratorInfo:%s.%s" % (share.Name,self.resource_name)
 
         self._output(ComputingShares(self.resource_name,shares))
 
@@ -75,6 +82,7 @@ class ComputingSharesStep(GlueStep):
             share.WaitingJobs = 0
             share.SuspendedJobs = 0
             share.UsedSlots = 0
+            share.UsedAcceleratorSlots = 0
             share.RequestedSlots = 0
             share.activity = []
 
@@ -96,6 +104,8 @@ class ComputingSharesStep(GlueStep):
                 share.RunningJobs = share.RunningJobs + 1
                 share.TotalJobs = share.TotalJobs + 1
                 share.UsedSlots = share.UsedSlots + activity.RequestedSlots
+                if activity.RequestedAcceleratorSlots:
+                    share.UsedAcceleratorSlots = share.UsedAcceleratorSlots + activity.RequestedAcceleratorSlots
             elif activity.State[0] == ComputingActivity.STATE_PENDING:
                 share.WaitingJobs = share.WaitingJobs + 1
                 share.TotalJobs = share.TotalJobs + 1
@@ -158,8 +168,10 @@ class ComputingShare(Share):
         self.FreeSlots = None                   # integer
         self.FreeSlotsWithDuration = None       # string 
         self.UsedSlots = None                   # integer
+        self.UsedAcceleratorSlots = None        # integer
         self.RequestedSlots = None              # integer
         self.ReservationPolicy = None           # string
+        self.ComputingShareAccelInfoID = ""     # string
         self.Tag = []                           # list of string
         # use Endpoint, Resource, Service, Activity from Share
         #   instead of ComputingEndpoint, ExecutionEnvironment, ComputingService, ComputingActivity
@@ -474,12 +486,16 @@ class ComputingShareOgfJson(ShareOgfJson):
             doc["FreeSlotsWithDuration"] = self.data.FreeSlotsWithDuration
         if self.data.UsedSlots is not None:
             doc["UsedSlots"] = self.data.UsedSlots
+        #if self.data.UsedAcceleratorSlots is not None:
+        #    doc["UsedAcceleratorSlots"] = self.data.UsedAcceleratorSlots
         if self.data.RequestedSlots is not None:
             doc["RequestedSlots"] = self.data.RequestedSlots
         if self.data.ReservationPolicy is not None:
             doc["ReservationPolicy"] = self.data.ReservationPolicy
         if len(self.data.Tag) > 0:
             doc["Tag"] = self.data.Tag
+        if len(self.data.ComputingShareAccelInfoID) > 0:
+            doc["Associations"]["ComputingShareAcceleratorInfo"]=self.data.ComputingShareAccelInfoID
 
         return doc
 
