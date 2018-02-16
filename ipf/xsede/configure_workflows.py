@@ -103,7 +103,7 @@ def getResourceName():
     return resource_name
 
 def getComputeJsonForScheduler(sched_name):
-    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),sched_name+"_compute.json"))
+    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"/templates/"+sched_name+"_compute.json"))
 
 def getActivityJsonForScheduler(sched_name):
     parts = sched_name.split("_")
@@ -114,23 +114,24 @@ def getActivityJsonForScheduler(sched_name):
     else:
         print("Warning: expected one or two parts in scheduler name - may not find _activity workflow file")
         sched_name = sched_name
-    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),sched_name+"_activity.json"))
+    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"/templates/"+sched_name+"_activity.json"))
 
 def getModulesJson():
-    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"modules.json"))
+    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"/templates/"+"modules.json"))
 
 def getExtModulesJson():
-    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"extmodules.json"))
+    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"/templates/"+"extmodules.json"))
 
 def getAbstractServicesJson():
-    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"abstractservice.json"))
+    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"/templates/"+"abstractservice.json"))
 
 def getLModJson():
-    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"lmod.json"))
+    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"/templates/"+"lmod.json"))
 
 def getSchedulerName():
     names = []
-    for file_name in os.listdir(getGlueWorkflowDir()):
+    sched_dir = os.path.join(getGlueWorkflowDir(),"templates")
+    for file_name in os.listdir(sched_dir):
         if file_name.endswith("_compute.json"):
             parts = file_name.split("_")
             if len(parts) == 2:
@@ -234,7 +235,7 @@ def addXsedeAmqpToCompute(compute_json, ask=True):
     amqp_step["description"] = "Publish compute resource description to XSEDE"
     amqp_step["params"] = {}
     amqp_step["params"]["publish"] = ["ipf.glue2.compute.PublicOgfJson"]
-    amqp_step["params"]["services"] = ["info1.dyn.xsede.org","info2.dyn.xsede.org"]
+    amqp_step["params"]["services"] = ["infopub.xsede.org","infopub-alt.xsede.org"]
     amqp_step["params"]["vhost"] = "xsede"
     amqp_step["params"]["exchange"] = "glue2.compute"
     amqp_step["params"]["ssl_options"] = {}
