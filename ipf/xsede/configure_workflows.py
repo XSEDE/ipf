@@ -86,6 +86,7 @@ def configure():
     #writeModulesInit(resource_name,module_names,env_vars)
     writeExtModulesInit(resource_name,module_names,env_vars)
     writeAbstractServicesInit(resource_name,module_names,env_vars)
+    writeIPFInfoInit(resource_name,module_names,env_vars)
 
 #######################################################################################################################
 
@@ -577,6 +578,14 @@ def writeAbstractServicesInit(resource_name, module_names, env_vars):
     name = "%s_services_periodic\n" % res_name
     writeInit(resource_name,module_names,env_vars,name,path)
 
+def writeIPFInfoInit(resource_name, module_names, env_vars):
+    res_name = resource_name.split(".")[0]
+    path = os.path.join(getBaseDir(),"etc","ipf","init.d","ipfinfo")
+    if os.path.isfile(path):
+        os.rename(path, path+".backup-"+time.strftime('%Y-%M-%d-%X',time.localtime()))
+    name = "ipfinfo_publish_periodic\n"
+    writeInit(resource_name,module_names,env_vars,name,path)
+
 def writeInit(resource_name, module_names, env_vars, name, path):
     res_name = resource_name.split(".")[0]
 
@@ -585,6 +594,11 @@ def writeInit(resource_name, module_names, env_vars, name, path):
     for line in in_file:
         if line.startswith("NAME="):
             out_file.write("NAME=%s\n" % name)
+        elif line.startswith("WORKFLOW="):
+            if name eq "ipf_publish_periodic\n":
+                out_file.write("WORKFLOW=${NAME}.json\n"
+            else:
+                out_file.write(line)
         elif line.startswith("IPF_USER="):
             out_file.write("IPF_USER=%s\n" % getpass.getuser())
         elif line.startswith("export IPF_ETC_PATH="):
