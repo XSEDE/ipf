@@ -344,6 +344,21 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         else:
             self.debug("no SupportStatus in "+path)
 
+        m = re.search("\"SupportContact:([^\"]+)\"",text)
+        if m is not None:
+            supportcontact = m.group(1).strip()
+            env.Extension["SupportContact"] = m.group(1).strip()
+        else:
+            self.debug("no SupportContact in "+path)
+
+        m = re.search("\"Default:([^\"]+)\"",text)
+        if m is not None:
+            default = []
+            default.append(map(str.strip,m.group(1).split(",")))
+            env.Extension["Default"] = m.group(1).strip()
+        else:
+            self.debug("no whatis Default: in "+path)
+
         handle = application.ApplicationHandle()
         handle.Type = ApplicationHandle.MODULE
         handle.Value = env.AppName+"/"+env.AppVersion
