@@ -104,7 +104,7 @@ def getResourceName():
     return resource_name
 
 def getComputeJsonForScheduler(sched_name):
-    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"/templates/"+sched_name+"_compute.json"))
+    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"templates",sched_name+"_compute.json"))
 
 def getActivityJsonForScheduler(sched_name):
     parts = sched_name.split("_")
@@ -115,19 +115,19 @@ def getActivityJsonForScheduler(sched_name):
     else:
         print("Warning: expected one or two parts in scheduler name - may not find _activity workflow file")
         sched_name = sched_name
-    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"/templates/"+sched_name+"_activity.json"))
+    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"templates",sched_name+"_activity.json"))
 
 def getModulesJson():
-    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"/templates/"+"modules.json"))
+    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"templates","modules.json"))
 
 def getExtModulesJson():
-    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"/templates/"+"extmodules.json"))
+    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"templates","extmodules.json"))
 
 def getAbstractServicesJson():
-    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"/templates/"+"abstractservice.json"))
+    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"templates","abstractservice.json"))
 
 def getLModJson():
-    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"/templates/"+"lmod.json"))
+    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"templates","lmod.json"))
 
 def getSchedulerName():
     names = []

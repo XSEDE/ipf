@@ -99,6 +99,7 @@ if __name__ == "__main__":
               ("/etc/ipf/xsede",["ipf/etc/ipf/xsede/ca_certs.pem"]),
               ("/etc/ipf/workflow",workflow_paths("ipf/etc/ipf/workflow")),
               ("/etc/ipf/workflow/glue2",workflow_paths("ipf/etc/ipf/workflow/glue2")),
+              ("/etc/ipf/workflow/glue2/templates",workflow_paths("ipf/etc/ipf/workflow/glue2/templates")),
               ("/etc/ipf/init.d",["ipf/etc/ipf/init.d/ipf-WORKFLOW"]),
               ("/var/ipf",[])
           ],
