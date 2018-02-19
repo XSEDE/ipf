@@ -596,7 +596,7 @@ def writeInit(resource_name, module_names, env_vars, name, path):
             out_file.write("NAME=%s\n" % name)
         elif line.startswith("WORKFLOW="):
             if name == "ipf_publish_periodic\n":
-                out_file.write("WORKFLOW=${NAME}.json\n"
+                out_file.write("WORKFLOW=${NAME}.json\n")
             else:
                 out_file.write(line)
         elif line.startswith("IPF_USER="):
