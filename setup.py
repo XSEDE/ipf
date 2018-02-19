@@ -36,7 +36,7 @@ include ipf/bin/ipf_workflow
 include ipf/bin/ipf_configure_xsede
 include ipf/etc/ipf/logging.conf
 include ipf/etc/ipf/workflow/*.json
-include ipf/etc/ipf/workflow/glue2/*.json
+include ipf/etc/ipf/workflow/glue2/templates/*.json
 include ipf/etc/ipf/init.d/ipf-WORKFLOW
 include ipf/etc/ipf/xsede/ca_certs.pem
 include ipf/var/ipf/README.txt
