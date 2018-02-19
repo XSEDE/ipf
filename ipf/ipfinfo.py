@@ -178,23 +178,23 @@ class IPFWorkflowsStep(Step):
             #defined_workflows.append(workflow_files)
             workflow_info = {}
             for workflowfile in workflow_files:
-                with open(os.path.join(workflow_dir,workflowfile)) as json_data:
-                    d = json.load(json_data)
-                info_file = ""
-                for step in d["steps"]:
-                    if step["name"] == "ipf.publish.FileStep":
-                       info_file = step["params"]["path"] 
-                try:
-                    if info_file:
-                        timestamp = os.path.getmtime(os.path.join(IPF_VAR_PATH,info_file))
-                    else:
+                if os.path.isfile(workflowfile):
+                    with open(os.path.join(workflow_dir,workflowfile)) as json_data:
+                        d = json.load(json_data)
+                    info_file = ""
+                    for step in d["steps"]:
+                        if step["name"] == "ipf.publish.FileStep":
+                           info_file = step["params"]["path"]
+                    try:
+                        if info_file:
+                            timestamp = os.path.getmtime(os.path.join(IPF_VAR_PATH,info_file))
+                        else:
+                            timestamp = ""
+                    except OSError:
                         timestamp = ""
-                except OSError:
-                    timestamp = ""
-                workflow_info = json.dumps({"name": d["name"], "info_file": info_file, "timestamp": timestamp}) 
-                defined_workflows.append(workflow_info)
-                
-		
+                    workflow_info = json.dumps({"name": d["name"], "info_file": info_file, "timestamp": timestamp})
+                    defined_workflows.append(workflow_info)
+
         return defined_workflows
         #return IPF_WORKFLOW_PATHS
 

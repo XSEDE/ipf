@@ -19,14 +19,14 @@
     {
       "name": "ipf.publish.FileStep",
       "params": {
-        "publish": ["ipf.sysinfo.IPFInformationJson"],
+        "publish": ["ipf.ipfinfo.IPFInformationJson"],
         "path": "sysinfo.txt"
       }
     },
     {
       "name": "ipf.publish.AmqpStep",
       "params": {
-        "publish": ["ipf.sysinfo.IPFInformationJson"],
+        "publish": ["ipf.ipfinfo.IPFInformationJson"],
         "services": ["localhost"],
         "username": "guest",
         "password": "guest",
