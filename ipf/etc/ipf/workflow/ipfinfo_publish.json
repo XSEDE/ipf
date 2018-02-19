@@ -20,7 +20,7 @@
       "name": "ipf.publish.FileStep",
       "params": {
         "publish": ["ipf.ipfinfo.IPFInformationJson"],
-        "path": "sysinfo.txt"
+        "path": "ipfinfo.json"
       }
     },
     {
