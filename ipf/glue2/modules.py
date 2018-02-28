@@ -227,12 +227,16 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
 
         self._acceptParameter("exclude","a comma-separated list of modules to ignore (default is to ignore none)",
                               False)
+        self._acceptParameter("default_support_contact","default to publish as SupportContact if no value is present in module file",
+                              False)
 
     def _run(self):
         try:
             self.exclude = self.params["exclude"].split(",")
         except KeyError:
             self.exclude = []
+
+        self.support_contact = self.params.get("default_support_contact",False)
 
         apps = application.Applications(self.resource_name)
 
@@ -350,6 +354,8 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
             env.Extension["SupportContact"] = m.group(1).strip()
         else:
             self.debug("no SupportContact in "+path)
+            if self.support_contact:
+                env.Extension["SupportContact"] = self.support_contact
 
         m = re.search("\"Default:([^\"]+)\"",text)
         if m is not None:
