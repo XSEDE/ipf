@@ -67,6 +67,7 @@ def configure():
     #elif modules_type == "lmod":
     #    modules_json = getLModJson()
     extmodules_json = getExtModulesJson()
+    setSupportContact(extmodules_json)
     services_json = getAbstractServicesJson()
     #setResourceName(resource_name,modules_json)
     setResourceName(resource_name,extmodules_json)
@@ -122,6 +123,14 @@ def getModulesJson():
 
 def getExtModulesJson():
     return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"templates","extmodules.json"))
+
+def setSupportContact(extmodules_json):
+    for step_json in extmodules_json["steps"]:
+        if step_json["name"] == "ipf.glue2.modules.ExtendedModApplicationsStep":
+            step_json["params"] = {}
+            step_json["params"]["default_support_contact"] = getSupportContact()
+            return
+    raise Exception("didn't find an ExtendedModApplicationsStep to modify")
 
 def getAbstractServicesJson():
     return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"templates","abstractservice.json"))
@@ -624,6 +633,10 @@ def writeInit(resource_name, module_names, env_vars, name, path):
 def getModulesType():
     return options("What modules system is used on this resource?",
                    ["lmod","modules"])
+
+def getSupportContact():
+    support_contact = question("What is your default SupportContact URL?","https://software.xsede.org/xcsr-db/v1/support-contacts/1553")
+    return support_contact
 
 def getGlueWorkflowDir():
     return os.path.join(getWorkflowDir(),"glue2")
