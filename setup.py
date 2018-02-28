@@ -56,7 +56,8 @@ def _createSetupCfg():
     f = open(_getSetupCfgFileName(),"w")
     f.write("""
 [bdist_rpm]
-requires = python-amqp
+requires = python-amqp >= 1.4
+requires = python-amqp < 2
     """)
     f.close()
 
@@ -86,7 +87,7 @@ if __name__ == "__main__":
           author_email="wsmith@tacc.utexas.edu",
           license="Apache",
           packages=["ipf","ipf.glue2","ipf.xsede","ipf.xsede.test"],
-          install_requires=["amqp"],
+          install_requires=["amqp >=1.4,<2"],
           entry_points={
               "console_scripts": ["ipf_workflow=ipf.run_workflow:main",
                                   "ipf_configure_xsede=ipf.xsede.configure_workflows:configure"],
