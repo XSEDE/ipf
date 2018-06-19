@@ -3,11 +3,7 @@
   "timeout": 15,
   "description": "This workflow publishes information about the system to the screen",
   "steps": [
-    { "name": "ipf.sysinfo.ResourceNameStep",
-            "params": {
-                "resource_name": "test-ebb.test.xsede.org"
-            }
-    },
+    { "name": "ipf.sysinfo.ResourceNameStep" },
     { "name": "ipf.ipfinfo.IPFVersionStep" },
     { "name": "ipf.ipfinfo.IPFWorkflowsStep" },
     {
