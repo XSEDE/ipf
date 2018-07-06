@@ -297,7 +297,7 @@ def updateActivityLogFile(resource_name, activity_json):
                 default = "/usr/local/slurm/var/slurmctl.log"
             else:
                 default = None
-            log_file = question("Where is your slurmctl.log file?",default)
+            log_file = question("What is the full path (including filename) for your slurmctl.log file?",default)
             if not testReadFile(log_file):
                 return updateActivityLogFile(resource_name,activity_json)
             step["params"]["slurmctl_log_file"] = log_file
