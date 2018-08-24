@@ -87,6 +87,9 @@ def configure():
     #writeModulesInit(resource_name,module_names,env_vars)
     writeExtModulesInit(resource_name,module_names,env_vars)
     writeAbstractServicesInit(resource_name,module_names,env_vars)
+    ipfinfo_json = getIPFInfoJson()
+    addXsedeAmqpToIPFInfo(ipfinfo_json,compute_json)
+    writeIPFInfoWorkflow(ipfinfo_json)
     writeIPFInfoInit(resource_name,module_names,env_vars)
 
 #######################################################################################################################
@@ -137,6 +140,9 @@ def getAbstractServicesJson():
 
 def getLModJson():
     return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"templates","lmod.json"))
+
+def getIPFInfoJson():
+    return readWorkflowFile(os.path.join(getGlueWorkflowDir(),"templates","ipfinfo_publish.json"))
 
 def getSchedulerName():
     names = []
@@ -349,6 +355,17 @@ def addXsedeAmqpToAbstractServices(modules_json, compute_json):
             return
     raise Exception("didn't find AmqpStep in compute workflow")
 
+def addXsedeAmqpToIPFInfo(modules_json, compute_json):
+    for step in compute_json["steps"]:
+        if step["name"] == "ipf.publish.AmqpStep" and "xsede.org" in step["params"]["services"][0]:
+            amqp_step = copy.deepcopy(step)
+            amqp_step["description"] = "Publish IPFInfo to XSEDE"
+            amqp_step["params"]["publish"] = ["ipf.ipfinfo.IPFInformationJson"]
+            amqp_step["params"]["exchange"] = "glue2.compute"
+            modules_json["steps"].append(amqp_step)
+            return
+    raise Exception("didn't find AmqpStep in compute workflow")
+
 #######################################################################################################################
 
 def getModules():
@@ -470,6 +487,15 @@ def writeAbstractServicesWorkflow(resource_name, services_json):
         os.rename(path, path+".backup-"+time.strftime('%Y-%M-%d-%X', time.localtime()))
     f = open(path,"w")
     f.write(json.dumps(services_json,indent=4,sort_keys=True))
+    f.close()
+
+def writeIPFInfoWorkflow(ipfinfo_json):
+    path = os.path.join(getWorkflowDir(),"ipfinfo_publish.json")
+    print("  -> writing ipfinfo publish workflow to %s" % path)
+    if os.path.isfile(path):
+        os.rename(path, path+".backup-"+time.strftime('%Y-%M-%d-%X', time.localtime()))
+    f = open(path,"w")
+    f.write(json.dumps(ipfinfo_json,indent=4,sort_keys=True))
     f.close()
 
 def writePeriodicModulesWorkflow(resource_name):
