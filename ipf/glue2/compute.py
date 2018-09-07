@@ -54,8 +54,6 @@ class PublicStep(Step):
         public = Public()
         public.resource_name = self._getInput(ResourceName).resource_name
         public.ipfinfo = [self._getInput(IPFInformation)]
-        #print("WTFWTFWTFWTFWTF")
-        #print(IPFInformationJson(public.ipfinfo[0]).toJson())
         # the old TeraGridXML wants a site_name, so just derive it
         public.site_name = public.resource_name[public.resource_name.find(".")+1:]
         public.location = [self._getInput(Location)]
@@ -168,8 +166,7 @@ class PublicOgfJson(Representation):
         doc = {}
 
         if self.data.ipfinfo is not None:
-            #print(self.data.ipfinfo)
-            doc["IPFinfo"] = map(lambda ipfinfo: IPFInformationJson(ipfinfo).toJson(), self.data.ipfinfo)
+            doc["PublisherInfo"] = map(lambda ipfinfo: IPFInformationJson(ipfinfo).toJson(), self.data.ipfinfo)
         if len(self.data.location) > 0:
             doc["Location"] = map(lambda location: LocationOgfJson(location).toJson(),self.data.location)
         if self.data.service is not None:

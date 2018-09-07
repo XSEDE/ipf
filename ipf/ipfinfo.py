@@ -180,6 +180,7 @@ class IPFWorkflowsStep(Step):
             #defined_workflows.append(workflow_files)
             workflow_info = {}
             for workflowfile in workflow_files:
+             if workflowfile.endswith("json"):
                 if os.path.isfile(os.path.join(workflow_dir,workflowfile)):
                     with open(os.path.join(workflow_dir,workflowfile)) as json_data:
                         d = json.load(json_data)
@@ -195,8 +196,7 @@ class IPFWorkflowsStep(Step):
                     except OSError:
                         timestamp = ""
                     #workflow_info = json.dumps({"name": d["name"], "info_file": info_file, "timestamp": timestamp})
-                    workflow_info = {"name": d["name"], "info_file": info_file, "timestamp": timestamp}
-                    print("workflow_info is %s", workflow_info)
+                    workflow_info = {"name": d["name"], "info_file": info_file, "timestamp": timestamp, "workflow_file": workflowfile}
                     defined_workflows.append(workflow_info)
 
         return defined_workflows
@@ -264,6 +264,7 @@ class IPFInformation(Entity):
         self.ipf_version = None
         self.workflows = None
         self.resource_name = None
+        self.id = None
         #self.Address = None    # street address (string)
         #self.Place = None      # town/city (string)
         #self.Country = None    # (string)
@@ -279,6 +280,9 @@ class IPFInformation(Entity):
             self.CreationTime = datetime.datetime.now(tzoffset(0))
         self.Validity = doc.get("Validity",Location.DEFAULT_VALIDITY)
         self.ipf_version = doc.get("ipf_version","unknown")
+        self.type = "IPF"
+        self.ID = "urn:glue2:PublisherInfo:%s" % str.join('-',self.type,self.ipf_version)
+        self.id = self.ID
         self.workflows = doc.get("workflows","unknown")
         self.resource_name = doc.get("resource_name","unknown")
 
@@ -315,11 +319,14 @@ class IPFInformationJson(EntityOgfJson):
         doc["Location"] = IPF_PARENT_PATH
         if self.data.ipf_version is not None:
             #doc["IPFVersion"] = IPFVersionJson(self.data.ipf_version).get()
-            doc["IPFVersion"] = IPFVersionTxt(self.data.ipf_version).get()
+            doc["Version"] = IPFVersionTxt(self.data.ipf_version).get()
         if self.data.resource_name is not None:
             doc["Hostname"] = SiteNameTxt(self.data.resource_name).get()
         if self.data.workflows is not None:
             doc["Workflows"] = IPFWorkflowsTxt(self.data.workflows).get()
+        doc["Type"] = "IPF"
+        s = '-'
+        doc["ID"] = "urn:glue2:PublisherInfo:%s" % s.join((doc["Type"],doc["Version"]))
         return doc
 
 #######################################################################################################################
