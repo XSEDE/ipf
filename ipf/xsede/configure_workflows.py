@@ -38,7 +38,7 @@ def configure():
     setResourceName(resource_name,compute_json)
     setLocation(compute_json)
     updateFilePublishPaths(resource_name,compute_json)
-    addXsedeAmqpToCompute(compute_json)
+    publish_to_xsede = addXsedeAmqpToCompute(compute_json)
     writeComputeWorkflow(resource_name,compute_json)
     writePeriodicComputeWorkflow(resource_name)
 
@@ -57,7 +57,8 @@ def configure():
         setResourceName(resource_name,activity_json)
         updateActivityLogFile(resource_name,activity_json)
         updateFilePublishPaths(resource_name,activity_json)
-        addXsedeAmqpToActivity(activity_json,compute_json)
+        if (publish_to_xsede):
+            addXsedeAmqpToActivity(activity_json,compute_json)
         writeActivityWorkflow(resource_name,activity_json)
         writeActivityInit(resource_name,module_names,env_vars)
 
@@ -76,8 +77,9 @@ def configure():
     updateFilePublishPaths(resource_name,extmodules_json)
     updateFilePublishPaths(resource_name,services_json)
     #addXsedeAmqpToModules(modules_json,compute_json)
-    addXsedeAmqpToExtModules(extmodules_json,compute_json)
-    addXsedeAmqpToAbstractServices(services_json,compute_json)
+    if (publish_to_xsede):
+        addXsedeAmqpToExtModules(extmodules_json,compute_json)
+        addXsedeAmqpToAbstractServices(services_json,compute_json)
     #writeModulesWorkflow(resource_name,modules_json)
     writeExtModulesWorkflow(resource_name,extmodules_json)
     writeAbstractServicesWorkflow(resource_name,services_json)
@@ -87,8 +89,9 @@ def configure():
     #writeModulesInit(resource_name,module_names,env_vars)
     writeExtModulesInit(resource_name,module_names,env_vars)
     writeAbstractServicesInit(resource_name,module_names,env_vars)
-    ipfinfo_json = getIPFInfoJson()
-    addXsedeAmqpToIPFInfo(ipfinfo_json,compute_json)
+    ipfinfo_json = getIPFInfoJson()  
+    if (publish_to_xsede):
+        addXsedeAmqpToIPFInfo(ipfinfo_json,compute_json)
     writeIPFInfoWorkflow(ipfinfo_json)
     writeIPFInfoInit(resource_name,module_names,env_vars)
 
@@ -171,7 +174,7 @@ def setResourceName(resource_name, workflow_json):
 def setLocation(compute_json):
     for step_json in compute_json["steps"]:
         if step_json["name"] == "ipf.glue2.location.LocationStep":
-            updateLocationStep(step_json)
+            updateLocationStep(step_json["params"]["location"])
             return
     raise Exception("didn't find a LocationStep to modify")
 
@@ -228,7 +231,7 @@ def updateFilePublishPaths(resource_name, workflow_json):
 def addXsedeAmqpToCompute(compute_json, ask=True):
     answer = options("Do you wish to publish to the XSEDE AMQP service?",["yes","no"],"yes")
     if answer == "no":
-        return
+        return False
     answer = options("Will you authenticate using an X.509 certificate and key or a username and password?",
                      ["X.509","username/password"],"X.509")
     if answer == "X.509":
@@ -269,6 +272,7 @@ def addXsedeAmqpToCompute(compute_json, ask=True):
     amqp_step["params"]["publish"] = ["ipf.glue2.compute.PrivateOgfJson"]
     amqp_step["params"]["exchange"] = "glue2.computing_activities"
     compute_json["steps"].append(amqp_step)
+    return True
 
 def updateActivityLogFile(resource_name, activity_json):
     res_name = resource_name.split(".")[0]
