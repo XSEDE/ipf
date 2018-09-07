@@ -27,6 +27,8 @@ from ipf.step import Step
 from ipf.paths import IPF_PARENT_PATH, IPF_ETC_PATH, IPF_WORKFLOW_PATHS, IPF_VAR_PATH
 from ipf.sysinfo import ResourceName
 
+from glue2.entity import *
+
 #######################################################################################################################
 
 class IPFVersionStep(Step):
@@ -178,7 +180,7 @@ class IPFWorkflowsStep(Step):
             #defined_workflows.append(workflow_files)
             workflow_info = {}
             for workflowfile in workflow_files:
-                if os.path.isfile(workflowfile):
+                if os.path.isfile(os.path.join(workflow_dir,workflowfile)):
                     with open(os.path.join(workflow_dir,workflowfile)) as json_data:
                         d = json.load(json_data)
                     info_file = ""
@@ -187,12 +189,14 @@ class IPFWorkflowsStep(Step):
                            info_file = step["params"]["path"]
                     try:
                         if info_file:
-                            timestamp = os.path.getmtime(os.path.join(IPF_VAR_PATH,info_file))
+                            timestamp = datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(IPF_VAR_PATH,info_file))).isoformat()
                         else:
                             timestamp = ""
                     except OSError:
                         timestamp = ""
-                    workflow_info = json.dumps({"name": d["name"], "info_file": info_file, "timestamp": timestamp})
+                    #workflow_info = json.dumps({"name": d["name"], "info_file": info_file, "timestamp": timestamp})
+                    workflow_info = {"name": d["name"], "info_file": info_file, "timestamp": timestamp}
+                    print("workflow_info is %s", workflow_info)
                     defined_workflows.append(workflow_info)
 
         return defined_workflows
@@ -227,23 +231,56 @@ class IPFInformationStep(Step):
 
         self.description = "produces a document with basic information about a host"
         self.time_out = 5
-        self.requires = [IPFVersion,IPFWorkflows,ResourceName]
+        self.requires = [IPFVersion,IPFWorkflows,SiteName]
         self.produces = [IPFInformation]
 
     def run(self):
-        self._output(IPFInformation(self._getInput(IPFVersion).ipf_version,
-                                       self._getInput(IPFWorkflows).workflows,
-                                       self._getInput(ResourceName).resource_name))
+        ipfinfo = IPFInformation()
+        ipfinfo.ipf_version = self._getInput(IPFVersion)
+        ipfinfo.workflows = self._getInput(IPFWorkflows)
+        ipfinfo.resource_name = self._getInput(SiteName)
+        #self._output(IPFInformation(self._getInput(IPFVersion).ipf_version,
+        #                               self._getInput(IPFWorkflows).workflows,
+        #                               self._getInput(ResourceName).resource_name))
+        self._output(ipfinfo)
 
 
 #######################################################################################################################
 
-class IPFInformation(Data):
-    def __init__(self, ipf_version, workflows, resource_name):
-        Data.__init__(self,ipf_version)
-        self.ipf_version = ipf_version
-        self.workflows = workflows
-        self.resource_name = resource_name
+#class IPFInformation(Data):
+#    def __init__(self, ipf_version, workflows, resource_name):
+#        Data.__init__(self, ipf_version)
+#        self.ipf_version = ipf_version
+#        self.workflows = workflows
+#        self.resource_name = resource_name
+
+class IPFInformation(Entity):
+
+    DEFAULT_VALIDITY = 60*60*24 # seconds
+
+    def __init__(self):
+        Entity.__init__(self)
+
+        self.ipf_version = None
+        self.workflows = None
+        self.resource_name = None
+        #self.Address = None    # street address (string)
+        #self.Place = None      # town/city (string)
+        #self.Country = None    # (string)
+        #self.PostCode = None   # postal code (string)
+        #self.Latitude = None   # degrees
+        #self.Longitude = None  # degrees
+
+    def fromJson(self, doc):
+        # Entity
+        if "CreationTime" in doc:
+            self.CreationTime = textToDateTime(doc["CreationTime"])
+        else:
+            self.CreationTime = datetime.datetime.now(tzoffset(0))
+        self.Validity = doc.get("Validity",Location.DEFAULT_VALIDITY)
+        self.ipf_version = doc.get("ipf_version","unknown")
+        self.workflows = doc.get("workflows","unknown")
+        self.resource_name = doc.get("resource_name","unknown")
 
 #######################################################################################################################
 
@@ -258,14 +295,31 @@ class IPFInformationTxt(Representation):
 
 #######################################################################################################################
 
-class IPFInformationJson(Representation):
+class IPFInformationJson(EntityOgfJson):
     data_cls = IPFInformation
 
     def __init__(self, data):
-        Representation.__init__(self,Representation.MIME_TEXT_PLAIN,data)
+        EntityOgfJson.__init__(self,data)
 
     def get(self):
-        #return "IPF version %s installed at %s is running the workflows: %s\n" % (self.data.ipf_version,IPF_PARENT_PATH,self.data.workflows)
-        return json.dumps({"IPFVersion": self.data.ipf_version, "Location": IPF_PARENT_PATH, "hostname": self.data.resource_name, "workflows": self.data.workflows})
+        #return json.dumps(self.toJson(),sort_keys=True,indent=4)
+        return self.toJson()
+
+#    def get(self):
+#        #return "IPF version %s installed at %s is running the workflows: %s\n" % (self.data.ipf_version,IPF_PARENT_PATH,self.data.workflows)
+#        return json.loads({"IPFInfo": {"IPFVersion": self.data.ipf_version, "Location": IPF_PARENT_PATH, "hostname": self.data.resource_name, "workflows": self.data.workflows}})
+
+    def toJson(self):
+        doc = EntityOgfJson.toJson(self)
+
+        doc["Location"] = IPF_PARENT_PATH
+        if self.data.ipf_version is not None:
+            #doc["IPFVersion"] = IPFVersionJson(self.data.ipf_version).get()
+            doc["IPFVersion"] = IPFVersionTxt(self.data.ipf_version).get()
+        if self.data.resource_name is not None:
+            doc["Hostname"] = SiteNameTxt(self.data.resource_name).get()
+        if self.data.workflows is not None:
+            doc["Workflows"] = IPFWorkflowsTxt(self.data.workflows).get()
+        return doc
 
 #######################################################################################################################

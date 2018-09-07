@@ -25,6 +25,7 @@ from ipf.error import NoMoreInputsError, StepError
 from ipf.sysinfo import ResourceName
 from ipf.step import Step
 
+from  ipf.ipfinfo import IPFInformation, IPFInformationJson, IPFInformationTxt
 from computing_activity import ComputingActivities, ComputingActivityTeraGridXml, ComputingActivityOgfJson
 from computing_manager import ComputingManager, ComputingManagerTeraGridXml, ComputingManagerOgfJson
 from computing_manager_accel_info import ComputingManagerAcceleratorInfo, ComputingManagerAcceleratorInfoOgfJson
@@ -45,13 +46,16 @@ class PublicStep(Step):
 
         self.description = "creates a single data containing all nonsensitive compute-related information"
         self.time_out = 5
-        self.requires = [ResourceName,Location,
+        self.requires = [IPFInformation,ResourceName,Location,
                          ComputingService,ComputingShares,ComputingManager,ExecutionEnvironments,AcceleratorEnvironments,ComputingManagerAcceleratorInfo,ComputingShareAcceleratorInfo]
         self.produces = [Public]
 
     def run(self):
         public = Public()
         public.resource_name = self._getInput(ResourceName).resource_name
+        public.ipfinfo = [self._getInput(IPFInformation)]
+        #print("WTFWTFWTFWTFWTF")
+        #print(IPFInformationJson(public.ipfinfo[0]).toJson())
         # the old TeraGridXML wants a site_name, so just derive it
         public.site_name = public.resource_name[public.resource_name.find(".")+1:]
         public.location = [self._getInput(Location)]
@@ -72,6 +76,7 @@ class Public(Data):
     def __init__(self):
         Data.__init__(self)
 
+        self.ipfinfo = []
         self.location = []
         self.service = []
         self.share = []
@@ -80,6 +85,9 @@ class Public(Data):
         self.accelenvironment = []
 
     def fromJson(self, doc):
+        self.ipfinfo = []
+        for idoc in doc.get("Ipfinfo",[]):
+            self.ipfinfo.append(ipfinfo().fromJson(idoc))
         self.location = []
         for ldoc in doc.get("Location",[]):
             self.location.append(Location().fromJson(ldoc))
@@ -159,6 +167,9 @@ class PublicOgfJson(Representation):
     def toJson(self):
         doc = {}
 
+        if self.data.ipfinfo is not None:
+            #print(self.data.ipfinfo)
+            doc["IPFinfo"] = map(lambda ipfinfo: IPFInformationJson(ipfinfo).toJson(), self.data.ipfinfo)
         if len(self.data.location) > 0:
             doc["Location"] = map(lambda location: LocationOgfJson(location).toJson(),self.data.location)
         if self.data.service is not None:
