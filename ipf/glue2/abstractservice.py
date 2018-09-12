@@ -40,6 +40,8 @@ from .entity import *
 from .service import *
 from .endpoint import *
 from ipf.sysinfo import ResourceName
+from  ipf.ipfinfo import IPFInformation, IPFInformationJson, IPFInformationTxt
+
 
 #######################################################################################################################
 class AbstractService(Data):
@@ -55,12 +57,13 @@ class AbstractServiceStep(Step):
 
     def __init__(self):
         Step.__init__(self)
-        self.requires = [ResourceName]
+        self.requires = [IPFInformation,ResourceName]
         self.produces = [AbstractService]
         self.services = []
 
     def run(self):
         self.resource_name = self._getInput(ResourceName).resource_name
+        self.ipfinfo = [self._getInput(IPFInformation)]
         servlist = AbstractService(self.resource_name)
         service_paths = []
         try:
@@ -248,6 +251,7 @@ class ASOgfJson(Representation):
 
     def toJson(self):
         doc = {}
+        doc["PublisherInfo"] = map(lambda ipfinfo: IPFInformationJson(ipfinfo).toJson(), self.data.ipfinfo)
         doc["StorageService"] = []
         doc["ComputingService"] = []
         doc["LoginService"] = []

@@ -365,7 +365,7 @@ class ApplicationsStep(glue2.application.ApplicationsStep, Authentication):
                                                      auth_url=auth_url)
 
         # restrict this to public images only?
-        apps = glue2.application.Applications(self.resource_name)
+        apps = glue2.application.Applications(self.resource_name,self.ipfinfo)
         for image in nova.images.list():
             #print("  metadata: %s" % image.metadata)
             #print(dir(image))
