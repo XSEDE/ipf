@@ -769,7 +769,6 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
             accel_env.UsedInstances = sum(map(lambda node_name: node_map[node_name].UsedInstances,node_names))
             accel_env.UnavailableInstances = sum(map(lambda node_name: node_map[node_name].UnavailableInstances,
                                                     node_names))
-            self.debug("accel_env.PhysicalAccelerators "+accel_env.PhysicalAccelerators)
             # remove nodes that are part of a current reservation so that they aren't counted twice
             for node_name in node_names:
                 try:
