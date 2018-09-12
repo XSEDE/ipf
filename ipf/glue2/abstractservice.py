@@ -45,10 +45,11 @@ from  ipf.ipfinfo import IPFInformation, IPFInformationJson, IPFInformationTxt
 
 #######################################################################################################################
 class AbstractService(Data):
-    def __init__(self, id):
+    def __init__(self, id, ipfinfo):
         Data.__init__(self,id)
         self.services = []
         self.handles = []
+        self.ipfinfo = ipfinfo
 
     def add(self, serv):
         self.services.append(serv)
@@ -64,7 +65,7 @@ class AbstractServiceStep(Step):
     def run(self):
         self.resource_name = self._getInput(ResourceName).resource_name
         self.ipfinfo = [self._getInput(IPFInformation)]
-        servlist = AbstractService(self.resource_name)
+        servlist = AbstractService(self.resource_name,self.ipfinfo)
         service_paths = []
         try:
             paths = os.environ["SERVICEPATH"]
