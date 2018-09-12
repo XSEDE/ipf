@@ -822,9 +822,14 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
             if len(greslist) == 2:
                 node.UsedAcceleratorSlots = int(greslist[1])
                 node.Type = ""
-            elif len(greslist) == 3:
-                node.UsedAcceleratorSlots = int(greslist[2])
-                node.Type = greslist[1] 
+            elif len(greslist) >= 3:
+                endindex = greslist[2].find("(")
+                if endindex == -1:
+                    node.UsedAcceleratorSlots = int(greslist[2])
+                else:
+                    uas = greslist[2][:endindex]
+                    node.UsedAcceleratorSlots = int(uas)
+                node.Type = greslist[1]
                 
         m = re.search("State=(\S+)",node_str)
         if m is not None:
