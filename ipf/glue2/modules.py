@@ -238,7 +238,7 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
 
         self.support_contact = self.params.get("default_support_contact",False)
 
-        apps = application.Applications(self.resource_name)
+        apps = application.Applications(self.resource_name, self.ipfinfo)
 
         module_paths = []
         try:

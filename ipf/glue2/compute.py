@@ -205,11 +205,12 @@ class PrivateStep(Step):
 
         self.description = "creates a single data containing all sensitive compute-related information"
         self.time_out = 5
-        self.requires = [ResourceName,ComputingActivities]
+        self.requires = [IPFInformation,ResourceName,ComputingActivities]
         self.produces = [Private]
 
     def run(self):
         private = Private()
+        private.ipfinfo = [self._getInput(IPFInformation)]
         private.resource_name = self._getInput(ResourceName).resource_name
         # the old TeraGridXML wants a site_name, so just derive it
         private.site_name = private.resource_name[private.resource_name.find(".")+1:]
@@ -288,6 +289,7 @@ class PrivateOgfJson(Representation):
         if len(self.data.activity) > 0:
             doc["ComputingActivity"] = map(lambda activity: ComputingActivityOgfJson(activity).toJson(),
                                            self.data.activity)
+        doc["PublisherInfo"] = map(lambda ipfinfo: IPFInformationJson(ipfinfo).toJson(), self.data.ipfinfo)
         return doc
 
 #######################################################################################################################
