@@ -36,6 +36,8 @@ from execution_environment import ExecutionEnvironments, ExecutionEnvironmentTer
 from execution_environment import ExecutionEnvironmentTeraGridXml
 from execution_environment import ExecutionEnvironmentOgfJson
 from accelerator_environment import AcceleratorEnvironments
+from accelerator_environment import AcceleratorEnvironmentsOgfJson
+from accelerator_environment import AcceleratorEnvironment
 from accelerator_environment import AcceleratorEnvironmentOgfJson
 from location import Location, LocationOgfJson, LocationTeraGridXml
 #######################################################################################################################

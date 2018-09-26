@@ -107,11 +107,6 @@ class ComputingShareAcceleratorInfo(Entity):
             if self.TotalAcceleratorSlots == None:
                 self.TotalAcceleratorSlots = 0
             self.TotalAcceleratorSlots = self.TotalAcceleratorSlots + accel_env.TotalAcceleratorSlots
-            #self.TotalPhysicalAccelerators = self.TotalPhysicalAccelerators + accel_env.TotalInstances * accel_env.PhysicalAccelerators
-            #if self.TotalLogicalAccelerators == None:
-            #    self.TotalLogicalAccelerators = 0
-            #self.TotalLogicalAcclerators = self.TotalLogicalAccelerators + accel_env.TotalInstances * accel_env.LogicalAccelerators
-            #self.TotalSlots = self.TotalLogicalAccelerators
         if accel_env.UsedAcceleratorSlots is not None:
             if self.UsedAcceleratorSlots == None:
                 self.UsedAcceleratorSlots = 0

@@ -62,6 +62,7 @@ class AcceleratorEnvironmentsStep(GlueStep):
                 host_group.ID = "urn:glue2:AcceleratorEnvironment:%s.%s" % (host_group.Name,self.resource_name)
                 host_group.ManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
                 self.debug("host_group.id "+host_group.id)
+                self.debug("host_group.uas "+str(host_group.UsedAcceleratorSlots))
 
         self._output(AcceleratorEnvironments(self.resource_name,host_groups))
 
@@ -111,6 +112,10 @@ class AcceleratorEnvironmentsStep(GlueStep):
                     host_group.TotalInstances += host.TotalInstances
                     host_group.UsedInstances += host.UsedInstances
                     host_group.UnavailableInstances += host.UnavailableInstances
+                    #if host_group.UsedAcceleratorSlots is None:
+                    #    host_group.UsedAcceleratorSlots = 0
+                    #if host.UsedAcceleratorSlots is None:
+                    #    host.UsedAcceleratorSlots = 0
                     host_group.UsedAcceleratorSlots += host.UsedAcceleratorSlots
                     if host_group.TotalAcceleratorSlots is None:
                         host_group.TotalAcceleratorSlots = 0
@@ -138,6 +143,13 @@ class AcceleratorEnvironmentsStep(GlueStep):
         for share in host.ShareID:
             m = re.search("urn:glue2:ComputingShare:(\S+).%s" % self.resource_name,share)
             if self._includeQueue(m.group(1)):
+                return True
+        # if the host is associated with a partition, check that it is a good one
+        if len(host.Partitions) == 0:
+            return True
+        partition_list = host.Partitions.split(',')
+        for share in partition_list:
+            if self._includeQueue(share):
                 return True
         return False
 
@@ -456,37 +468,37 @@ class AcceleratorEnvironmentOgfJson(ResourceOgfJson):
 
 #######################################################################################################################
 
-class AcceleratorEnvironmentOgfJson(ResourceOgfJson):
-    data_cls = AcceleratorEnvironment
-
-    def __init__(self, data):
-        ResourceOgfJson.__init__(self,data)
-
-    def get(self):
-        return json.dumps(self.toJson(),sort_keys=True,indent=4)
-
-    def toJson(self):
-        doc = ResourceOgfJson.toJson(self)
-
-        doc["Platform"] = self.data.Platform
-        if self.data.PhysicalAccelerators is not None:
-            doc["PhysicalAccelerators"] = self.data.PhysicalAccelerators
-        if self.data.LogicalAccelerators is not None:
-            doc["LogicalAccelerators"] = self.data.LogicalAccelerators
-        if self.data.Vendor is not None:
-            doc["Vendor"] = self.data.Vendor
-        if self.data.Model is not None:
-            doc["Model"] = self.data.Model
-        if self.data.Version is not None:
-            doc["Version"] = self.data.Version
-        if self.data.ClockSpeed is not None:
-            doc["ClockSpeed"] = self.data.ClockSpeed
-        if self.data.Memory is not None:
-            doc["Memory"] = self.data.Memory
-        if self.data.ComputeCapability is not None:
-            doc["ComputeCapability"] = self.data.ComputeCapability
-
-        return doc
+#class AcceleratorEnvironmentOgfJson(ResourceOgfJson):
+#    data_cls = AcceleratorEnvironment
+#
+#    def __init__(self, data):
+#        ResourceOgfJson.__init__(self,data)
+#
+#    def get(self):
+#        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+#
+#    def toJson(self):
+#        doc = ResourceOgfJson.toJson(self)
+#
+#        doc["Platform"] = self.data.Platform
+#        if self.data.PhysicalAccelerators is not None:
+#            doc["PhysicalAccelerators"] = self.data.PhysicalAccelerators
+#        if self.data.LogicalAccelerators is not None:
+#            doc["LogicalAccelerators"] = self.data.LogicalAccelerators
+#        if self.data.Vendor is not None:
+#            doc["Vendor"] = self.data.Vendor
+#        if self.data.Model is not None:
+#            doc["Model"] = self.data.Model
+#        if self.data.Version is not None:
+#            doc["Version"] = self.data.Version
+#        if self.data.ClockSpeed is not None:
+#            doc["ClockSpeed"] = self.data.ClockSpeed
+#        if self.data.Memory is not None:
+#            doc["Memory"] = self.data.Memory
+#        if self.data.ComputeCapability is not None:
+#            doc["ComputeCapability"] = self.data.ComputeCapability
+#
+#        return doc
 
 #######################################################################################################################
 
@@ -514,10 +526,10 @@ class AcceleratorEnvironmentsOgfJson(Representation):
 
 #######################################################################################################################
 
-class AcceleratorEnvironments(Data):
-    def __init__(self, id, accel_envs=[]):
-        Data.__init__(self,id)
-        self.accel_envs = accel_envs
+#class AcceleratorEnvironments(Data):
+#    def __init__(self, id, accel_envs=[]):
+#        Data.__init__(self,id)
+#        self.accel_envs = accel_envs
 
         
         

@@ -127,21 +127,6 @@ class ComputingManager(Manager):
 
     def _addAcceleratorEnvironment(self, exec_env):
         self.ResourceID.append(exec_env.ID)
-        #self.ComputingManagerAcceleratorInfoID.append(exec_env.ID)
-        #if exec_env.PhysicalAccelerators is not None:
-        #    if self.TotalPhysicalAccelerators == None:
-        #        self.TotalPhysicalAccelerators = 0
-        #    self.TotalPhysicalAccelerators = self.TotalPhysicalAccelerators + exec_env.TotalInstances * exec_env.PhysicalAccelerators
-        #if exec_env.LogicalAccelerators is not None:
-        #    if self.TotalLogicalAccelerators == None:
-        #        self.TotalLogicalAccelerators = 0
-        #    self.TotalLogicalAcclerators = self.TotalLogicalAccelerators + exec_env.TotalInstances * exec_env.LogicalAccelerators
-        #    self.TotalSlots = self.TotalLogicalAccelerators
-
-        #if len(self.ResourceID) == 1:
-        #    self.Homogeneous = True
-        #else:
-        #    self.Homogeneous = False
 
     def _addComputingShare(self, share):
         if self.SlotsUsedByLocalJobs == None:
