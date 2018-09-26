@@ -48,6 +48,9 @@ class ExecutionEnvironmentsStep(GlueStep):
         self._acceptParameter("queues",
                               "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. The expression is processed in order and the value for a queue at the end determines if it is shown.",
                               False)
+        self._acceptParameter("partitions",
+                              "An expression describing the partitions to include (optional). The syntax is a series of +<partition> and -<partition> where <partition> is either a partition name or a '*'. '+' means include '-' means exclude. The expression is processed in order and the value for a partition at the end determines if it is shown.",
+                              False)
 
         self.resource_name = None
 
@@ -138,6 +141,14 @@ class ExecutionEnvironmentsStep(GlueStep):
             m = re.search("urn:glue2:ComputingShare:(\S+).%s" % self.resource_name,share)
             if self._includeQueue(m.group(1)):
                 return True
+
+        # if the host is associated with a partition, check that it is a good one
+        if len(host.Partitions) == 0:
+            return True
+	partition_list = host.Partitions.split(',')
+        for share in partition_list:
+            if self._includeQueue(share):
+                return True
         return False
 
 #######################################################################################################################
@@ -189,6 +200,9 @@ class ExecutionEnvironment(Resource):
         self.OSFamily = sysName.lower()
         self.OSName = sysName.lower()
         self.OSVersion = release
+
+        #for filtering nodes by partition:
+        self.Partitions = None             # string
 
     def __str__(self):
         return json.dumps(ExecutionEnvironmentOgfJson(self).toJson(),sort_keys=True,indent=4)
