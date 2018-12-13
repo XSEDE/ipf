@@ -157,7 +157,6 @@ class ComputingShareAcceleratorInfoOgfJson(EntityOgfJson):
         if self.data.UsedAcceleratorSlots is not None:
             doc["UsedAcceleratorSlots"] = self.data.UsedAcceleratorSlots
 
-        print self.data.ComputingShareID
         if len(self.data.ComputingShareID) > 0:
             doc["Associations"]={}
             doc["Associations"]["ComputingShareID"] = self.data.ComputingShareID
