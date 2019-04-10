@@ -214,9 +214,12 @@ class LogFile(object):
         self._seek()
         while line:
             line = self.file.readline()
-            if line:
+            if not line.endswith("\n"):
                 self.callback(self.path,line)
-        self._savePosition()
+                self._savePosition()
+            else
+                break
+            
 
 #######################################################################################################################
 
