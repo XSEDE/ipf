@@ -217,7 +217,7 @@ class LogFile(object):
             if not line.endswith("\n"):
                 self.callback(self.path,line)
                 self._savePosition()
-            else
+            else:
                 break
             
 
