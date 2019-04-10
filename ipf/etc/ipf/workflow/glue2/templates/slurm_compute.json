@@ -1,7 +1,7 @@
 {
   "name": "compute",
   "timeout": 55,
-  "description": "This workflow gathers GLUE2 compute information by interacting with Moab and PBS",
+  "description": "This workflow gathers GLUE2 compute information by interacting with SLURM",
   "steps": [
     { "name": "ipf.sysinfo.ResourceNameStep" },
     { "name": "ipf.sysinfo.PlatformStep" },
@@ -16,16 +16,14 @@
         }
       }
     },
-    { "name": "ipf.glue2.pbs.ComputingActivitiesStep",
-      "outputs": ["step-moab-activities"]
-    },
-    { "name": "ipf.glue2.moab.ComputingActivitiesStep",
-      "id": "step-moab-activities"
-    },
-    { "name": "ipf.glue2.pbs.ComputingSharesStep" },
-    { "name": "ipf.glue2.pbs.ComputingServiceStep" },
-    { "name": "ipf.glue2.pbs.ExecutionEnvironmentsStep" },
-    { "name": "ipf.glue2.pbs.ComputingManagerStep" },
+    { "name": "ipf.glue2.slurm.ComputingActivitiesStep" },
+    { "name": "ipf.glue2.slurm.ComputingSharesStep" },
+    { "name": "ipf.glue2.slurm.ComputingShareAcceleratorInfoStep" },
+    { "name": "ipf.glue2.slurm.ComputingServiceStep" },
+    { "name": "ipf.glue2.slurm.ExecutionEnvironmentsStep" },
+    { "name": "ipf.glue2.slurm.AcceleratorEnvironmentsStep" },
+    { "name": "ipf.glue2.slurm.ComputingManagerStep" },
+    { "name": "ipf.glue2.slurm.ComputingManagerAcceleratorInfoStep" },
     {
       "name": "ipf.publish.FileStep",
       "description": "Publish JSON version of compute resource description to a file for debugging",

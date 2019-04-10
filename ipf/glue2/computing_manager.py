@@ -26,6 +26,8 @@ from ipf.sysinfo import ResourceName
 
 from .computing_share import ComputingShares
 from .execution_environment import ExecutionEnvironments
+from .accelerator_environment import AcceleratorEnvironments
+from .computing_manager_accel_info import ComputingManagerAcceleratorInfo
 from .manager import *
 from .step import GlueStep
 
@@ -38,26 +40,35 @@ class ComputingManagerStep(GlueStep):
 
         self.description = "This step provides documents in the GLUE 2 ComputingManager schema. For a batch scheduled system, this is typically that scheduler."
         self.time_out = 10
-        self.requires = [ResourceName,ExecutionEnvironments,ComputingShares]
+        self.requires = [ResourceName,ExecutionEnvironments,AcceleratorEnvironments,ComputingShares,ComputingManagerAcceleratorInfo]
+        #self.requires = [ResourceName,ExecutionEnvironments,ComputingShares]
         self.produces = [ComputingManager]
 
         self.resource_name = None
         self.exec_envs = None
+        self.accel_envs = None
         self.shares = None
 
     def run(self):
         self.resource_name = self._getInput(ResourceName).resource_name
         self.exec_envs = self._getInput(ExecutionEnvironments).exec_envs
         self.shares = self._getInput(ComputingShares).shares
+        self.accel_envs = self._getInput(AcceleratorEnvironments).accel_envs
+        self.CMAccelInfo = self._getInput(ComputingManagerAcceleratorInfo)
 
         manager = self._run()
 
         manager.id = "%s" % (self.resource_name)
         manager.ID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
         manager.ServiceID = "urn:glue2:ComputingService:%s" % (self.resource_name)
+        if self.CMAccelInfo.TotalPhysicalAccelerators is not None:
+            manager.ComputingManagerAcceleratorInfoID=self.CMAccelInfo.ID
 
         for exec_env in self.exec_envs:
             manager._addExecutionEnvironment(exec_env)
+        if self.accel_envs:
+            for accel_env in self.accel_envs:
+                manager._addAcceleratorEnvironment(accel_env)
         for share in self.shares:
             manager._addComputingShare(share)
 
@@ -68,7 +79,7 @@ class ComputingManagerStep(GlueStep):
 class ComputingManager(Manager):
     def __init__(self):
         Manager.__init__(self)
-
+        
         self.Version = None                      # string
         self.Reservation = None                  # boolean (ExtendedBoolean)
         self.BulkSubmission = None               # boolean (ExtendedBoolean)
@@ -94,6 +105,7 @@ class ComputingManager(Manager):
         self.ApplicationDir = None               # string
         # use Service and Resource of Manager instead of ComputingService and ExecutionEnvironment
         self.ApplicationEnvironmentID = []       # list of string (LocalID)
+        self.ComputingManagerAcceleratorInfoID = []       # list of string (LocalID)
         self.BenchmarkID = []                    # list of string(LocalID)
 
     def _addExecutionEnvironment(self, exec_env):
@@ -112,6 +124,9 @@ class ComputingManager(Manager):
             self.Homogeneous = True
         else:
             self.Homogeneous = False
+
+    def _addAcceleratorEnvironment(self, exec_env):
+        self.ResourceID.append(exec_env.ID)
 
     def _addComputingShare(self, share):
         if self.SlotsUsedByLocalJobs == None:
@@ -257,6 +272,10 @@ class ComputingManagerTeraGridXml(ManagerTeraGridXml):
             e = doc.createElement("ApplicationEnvironment")
             e.appendChild(doc.createTextNode(id))
             element.appendChild(e)
+        for id in self.data.ComputingManagerAcceleratorInfoID:
+            e = doc.createElement("ComputingManagerAcceleratorInfo")
+            e.appendChild(doc.createTextNode(id))
+            element.appendChild(e)
         for benchmark in self.data.BenchmarkID:
             e = doc.createElement("Benchmark")
             e.appendChild(doc.createTextNode(benchmark))
@@ -325,6 +344,8 @@ class ComputingManagerOgfJson(ManagerOgfJson):
 
         if len(self.data.ApplicationEnvironmentID) > 0:
             doc["Associations"]["ApplicationEnvironmentID"] = self.data.ApplicationEnvironmentID
+        if len(self.data.ComputingManagerAcceleratorInfoID) > 0:
+            doc["Associations"]["ComputingManagerAcceleratorInfoID"] = self.data.ComputingManagerAcceleratorInfoID
         if len(self.data.BenchmarkID) > 0:
             doc["Associations"]["BenchmarkID"] = self.data.BenchmarkID
 

@@ -27,9 +27,13 @@ from ipf.log import LogFileWatcher
 
 from . import computing_activity
 from . import computing_manager
+from . import computing_manager_accel_info
 from . import computing_service
 from . import computing_share
+from . import computing_share_accel_info
 from . import execution_environment
+from . import accelerator_environment
+
 
 #######################################################################################################################
 
@@ -174,6 +178,9 @@ def _getJob(step, job_str):
     m = re.search("NumCPUs=(\d+)",job_str)
     if m is not None:
         job.RequestedSlots = int(m.group(1))
+    m = re.search("gres/gpu=(\d+)",job_str)
+    if m is not None:
+        job.RequestedAcceleratorSlots = int(m.group(1))
     m = re.search("TimeLimit=(\S+)",job_str)
     if m is not None:
         wall_time = _getDuration(m.group(1))
@@ -371,10 +378,11 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
             raise StepError("scontrol failed: "+output+"\n")
         reservation_strs = output.split("\n\n")
         try:
-            reservations = map(self._getReservation,reservation_strs)
+            reservations = map(lambda share: self.includeQueue(share.PartitionName),map(self._getReservation,reservation_strs))
         except:
             reservations = []
 
+        self.debug("returning "+ str(partitions + reservations))
         return partitions + reservations
 
     def _getShare(self, partition_str):
@@ -455,7 +463,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
     def _run(self):
         # get info on the nodes
         scontrol = self.params.get("scontrol","scontrol")
-        cmd = scontrol + " show node"
+        cmd = scontrol + " show node -d"
         self.debug("running "+cmd)
         status, output = commands.getstatusoutput(cmd)
         if status != 0:
@@ -474,7 +482,8 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
             raise StepError("scontrol failed: "+output+"\n")
         reservation_strs = output.split("\n\n")
         try:
-            reservations = map(self._getReservation,reservation_strs)
+            #reservations = map(self._getReservation,reservation_strs)
+            reservations = map(lambda share: self.includeQueue(share.PartitionName),map(self._getReservation,reservation_strs))
         except:
             reservations = []
 
@@ -541,6 +550,9 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         m = re.search("RealMemory=(\S+)",node_str)  # MB
         if m is not None:
             node.MainMemorySize = int(m.group(1))
+        m = re.search("Partitions=(\S+)",node_str)
+        if m is not None:
+            node.Partitions = m.group(1)
         m = re.search("State=(\S+)",node_str)
         if m is not None:
             node.TotalInstances = 1
@@ -591,6 +603,288 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
 
     def _getReservation(self, rsrv_str):
         rsrv = execution_environment.ExecutionEnvironment()
+        rsrv.Extension["Reservation"] = True
+
+        # ID set by ExecutionEnvironment
+        m = re.search("ReservationName=(\S+)",rsrv_str)
+        if m is None:
+            raise StepError("didn't find 'ReservationName'")
+        rsrv.Name = m.group(1)
+        rsrv.ShareID = ["urn:glue2:ComputingShare:%s.%s" % (rsrv.Name,self.resource_name)]
+
+        m = re.search("StartTime=(\S+)",rsrv_str)
+        if m is not None:
+            rsrv.Extension["StartTime"] = _getDateTime(m.group(1))
+        m = re.search("EndTime=(\S+)",rsrv_str)
+        if m is not None:
+            rsrv.Extension["EndTime"] = _getDateTime(m.group(1))
+
+        m = re.search("NodeCnt=(\S+)",rsrv_str)
+        if m is not None:
+            rsrv.Extension["RequestedInstances"] = int(m.group(1))
+
+        m = re.search("Nodes=(\S+)",rsrv_str)
+        if m is not None:
+            if m.group(1) != "(null)":
+                rsrv.Extension["Nodes"] = self._expandNames(m.group(1))
+
+        m = re.search("State=(\S+)",rsrv_str)
+        if m is not None:
+            if m.group(1) != "ACTIVE":
+                if "Nodes" in rsrv.Extension:
+                    del rsrv.Extension["Nodes"]   # not active, so no nodes at the current time
+
+        return rsrv
+
+    def _expandNames(self, expr):
+        exprs = self._splitCommas(expr)
+        if len(exprs) > 1:
+            return list(itertools.chain.from_iterable(map(self._expandNames,exprs)))
+        m = re.search("^(\S+)\[(\S+)\]$",expr)
+        if m is not None:
+            prefix = m.group(1)
+            suffixes = self._expandNames(m.group(2))
+            return map(lambda suffix: prefix+suffix,suffixes)
+        m = re.search("^(\d+)-(\d+)$",expr)
+        if m is not None:
+            # don't drop any leading 0s
+            pattern = "%%0%dd" % len(m.group(1))
+            return map(lambda num: pattern % num,range(int(m.group(1)),int(m.group(2))+1))
+        return [expr]
+
+    def _splitCommas(self, expr):
+        exprs = []
+        start_pos = 0
+        depth = 0
+        for pos in range(len(expr)):
+            if expr[pos] == "[":
+                depth += 1
+            elif expr[pos] == "]":
+                depth -= 1
+            elif expr[pos] == ",":
+                if depth == 0:
+                    exprs.append(expr[start_pos:pos])
+                    start_pos = pos + 1
+        exprs.append(expr[start_pos:])
+        return exprs
+
+#######################################################################################################################
+
+class ComputingManagerAcceleratorInfoStep(computing_manager_accel_info.ComputingManagerAcceleratorInfoStep):
+
+    def __init__(self):
+        computing_manager_accel_info.ComputingManagerAcceleratorInfoStep.__init__(self)
+
+    def _run(self):
+        manager_accel_info = computing_manager_accel_info.ComputingManagerAcceleratorInfo()
+        #manager.ProductName = "SLURM"
+        #manager.Name = "SLURM"
+        #manager.Reservation = True
+        #self.BulkSubmission = True
+
+        return manager_accel_info
+
+#######################################################################################################################
+
+class ComputingShareAcceleratorInfoStep(computing_share_accel_info.ComputingShareAcceleratorInfoStep):
+
+    def __init__(self):
+        computing_share_accel_info.ComputingShareAcceleratorInfoStep.__init__(self)
+
+    def _run(self):
+        share_accel_info = computing_share_accel_info.ComputingShareAcceleratorInfo()
+        #manager.ProductName = "SLURM"
+        #manager.Name = "SLURM"
+        #manager.Reservation = True
+        #self.BulkSubmission = True
+
+        return share_accel_info
+
+#######################################################################################################################
+
+class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironmentsStep):
+    def __init__(self):
+        accelerator_environment.AcceleratorEnvironmentsStep.__init__(self)
+
+        self._acceptParameter("scontrol","the path to the SLURM scontrol program (default 'scontrol')",False)
+
+    def _run(self):
+        # get info on the nodes
+        scontrol = self.params.get("scontrol","scontrol")
+        cmd = scontrol + " show node -d"
+        self.debug("running "+cmd)
+        status, output = commands.getstatusoutput(cmd)
+        if status != 0:
+            raise StepError("scontrol failed: "+output+"\n")
+        node_strs = output.split("\n\n")
+        nodes = filter(self._goodHost,map(self._getNode,node_strs))
+
+        # ignore partitions for now since a node can be part of more than one of them (plus a reservation)
+
+        # create environments for reservations
+        scontrol = self.params.get("scontrol","scontrol")
+        cmd = scontrol + " show reservation"
+        self.debug("running "+cmd)
+        status, output = commands.getstatusoutput(cmd)
+        if status != 0:
+            raise StepError("scontrol failed: "+output+"\n")
+        reservation_strs = output.split("\n\n")
+        try:
+            #reservations = map(self._getReservation,reservation_strs)
+            reservations = map(lambda share: self.includeQueue(share.PartitionName),map(self._getReservation,reservation_strs))
+        except:
+            reservations = []
+
+        self.debug("number of reservations "+str(len(reservations)))
+        node_map = {}
+        for node in nodes:
+            node_map[node.Name] = node
+        for accel_env in reservations:
+            try:
+                node_names = accel_env.Extension["Nodes"]
+            except KeyError:
+                continue
+            self.debug("size of node map before defining"+str(len(node_map)))
+            # in case a node is in multiple active reservations
+            node_names = filter(lambda node_name: node_name in node_map,node_names)
+
+            # in case all of the nodes in the reservation have already been counted
+            if len(node_names) == 0:
+                continue
+
+            example_node = node_map[node_names[0]]
+
+            accel_env.ConnectivityIn = example_node.ConnectivityIn
+            accel_env.ConnectivityOut = example_node.ConnectivityOut
+            accel_env.OSName = example_node.OSName
+            accel_env.OSVersion = example_node.OSVersion
+            accel_env.Platform = example_node.Platform
+
+            accel_env.PhysicalCPUs = sum(map(lambda node_name: node_map[node_name].PhysicalCPUs,
+                                            node_names)) / len(node_names)
+            accel_env.PhysicalAccelerators = sum(map(lambda node_name: node_map[node_name].PhysicalAccelerators,
+                                            node_names)) / len(node_names)
+            accel_env.UsedAcceleratorSlots = sum(map(lambda node_name: node_map[node_name].UsedAcceleratorSlots,
+                                            node_names)) / len(node_names)
+            #exec_env.LogicalAccelerators = sum(map(lambda node_name: node_map[node_name].LogicalAccelerators,
+                                           #node_names)) / len(node_names)
+            accel_env.MainMemorySize = sum(map(lambda node_name: node_map[node_name].MainMemorySize,
+                                              node_names)) / len(node_names)
+            accel_env.TotalInstances = len(node_names)
+            accel_env.UsedInstances = sum(map(lambda node_name: node_map[node_name].UsedInstances,node_names))
+            accel_env.UnavailableInstances = sum(map(lambda node_name: node_map[node_name].UnavailableInstances,
+                                                    node_names))
+            # remove nodes that are part of a current reservation so that they aren't counted twice
+            for node_name in node_names:
+                try:
+                    del node_map[node_name]
+                except KeyError:
+                    self.warning("didn't find %s in remaining nodes" % node_name)
+
+            # don't need to publish the node names
+            del accel_env.Extension["Nodes"]
+
+        # group up nodes that aren't part of a current reservation
+        self.debug("size of node map "+str(len(node_map)))
+ 
+        return reservations + self._groupHosts(node_map.values())
+
+    def _getNode(self, node_str):
+        node = accelerator_environment.AcceleratorEnvironment()
+
+        # ID set by AcceleratorEnvironment
+        m = re.search("NodeName=(\S+)",node_str)
+        if m is not None:
+            node.Name = m.group(1)
+        m = re.search("Sockets=(\S+)",node_str)
+        if m is not None:
+            node.PhysicalCPUs = int(m.group(1))
+        m = re.search("CPUTot=(\S+)",node_str)
+        if m is not None:
+            node.LogicalCPUs = int(m.group(1))
+        m = re.search("RealMemory=(\S+)",node_str)  # MB
+        if m is not None:
+            node.MainMemorySize = int(m.group(1))
+        #AcceleratorEnvironment:
+        m = re.search("Gres=(\S+)",node_str)
+        if m is not None:
+            greslist=[]
+            #greslist = split(":",m.group(1))
+            greslist = m.group(1).split(":")
+            if len(greslist) == 2:
+                node.PhysicalAccelerators = int(greslist[1])
+                print node.PhysicalAccelerators
+                node.Type = ""
+            elif len(greslist) == 3:
+                node.PhysicalAccelerators = int(greslist[2])
+                node.Type = greslist[1] 
+        m = re.search("GresUsed=(\S+)",node_str)
+        if m is not None:
+            greslist=[]
+            #greslist = split(":",m.group(1))
+            greslist = m.group(1).split(":")
+            if len(greslist) == 2:
+                node.UsedAcceleratorSlots = int(greslist[1])
+                node.Type = ""
+            elif len(greslist) >= 3:
+                endindex = greslist[2].find("(")
+                if endindex == -1:
+                    node.UsedAcceleratorSlots = int(greslist[2])
+                else:
+                    uas = greslist[2][:endindex]
+                    node.UsedAcceleratorSlots = int(uas)
+                node.Type = greslist[1]
+                
+        m = re.search("State=(\S+)",node_str)
+        if m is not None:
+            node.TotalInstances = 1
+            state = m.group(1)
+            if "IDLE" in state:
+                node.UsedInstances = 0
+                node.UnavailableInstances = 0
+            elif "ALLOCATED" in state:
+                node.UsedInstances = 1
+                node.UnavailableInstances = 0
+            elif "DOWN" in state:
+                node.UsedInstances = 0
+                node.UnavailableInstances = 1
+            elif "MAINT" in state:
+                node.UsedInstances = 0
+                node.UnavailableInstances = 1
+            elif "RESERVED" in state:
+                node.UsedInstances = 0
+                node.UnavailableInstances = 0
+            elif "MIXED" in state:
+                node.UsedInstances = 1
+                node.UnavailableInstances = 0
+            else:
+                self.warning("unknown node state: %s",state)
+                node.UsedInstances = 0
+                node.UnavailableInstances = 1
+
+        return node
+
+    # not being used right now
+    def _getPartition(self, partition_str):
+        partition = execution_environment.ExecutionEnvironment()
+
+        # ID set by ExecutionEnvironment
+        m = re.search("PartitionName=(\S+)",partition_str)
+        if m is not None:
+            partition.Name = m.group(1)
+
+        m = re.search("TotalNodes=(\S+)",partition_str)
+        if m is not None and m.group(1) != "(null)":
+            partition.TotalInstances = int(m.group(1))
+
+        m = re.search("\sNodes=(\S+)",partition_str)
+        if m is not None and m.group(1) != "(null)":
+            partition.Extension["Nodes"] = self._expandNames(m.group(1))
+
+        return partition
+
+    def _getReservation(self, rsrv_str):
+        rsrv = accelerator_environment.AcceleratorEnvironment()
         rsrv.Extension["Reservation"] = True
 
         # ID set by ExecutionEnvironment

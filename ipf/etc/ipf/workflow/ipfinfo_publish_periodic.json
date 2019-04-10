@@ -1,0 +1,12 @@
+{
+  "name": "ipfinfo_periodic",
+  "description": "this workflow publishes IPF information periodically",
+  "steps": [
+    { "name": "ipf.step.WorkflowStep",
+      "params": {
+          "workflow": "ipfinfo_publish.json",
+          "maximum_interval": 3600
+      }
+    }
+  ]
+}

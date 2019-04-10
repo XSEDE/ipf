@@ -25,15 +25,21 @@ from ipf.error import NoMoreInputsError, StepError
 from ipf.sysinfo import ResourceName
 from ipf.step import Step
 
+from  ipf.ipfinfo import IPFInformation, IPFInformationJson, IPFInformationTxt
 from computing_activity import ComputingActivities, ComputingActivityTeraGridXml, ComputingActivityOgfJson
 from computing_manager import ComputingManager, ComputingManagerTeraGridXml, ComputingManagerOgfJson
+from computing_manager_accel_info import ComputingManagerAcceleratorInfo, ComputingManagerAcceleratorInfoOgfJson
 from computing_service import ComputingService, ComputingServiceTeraGridXml, ComputingServiceOgfJson
 from computing_share import ComputingShares, ComputingShareTeraGridXml, ComputingShareOgfJson
+from computing_share_accel_info import ComputingShareAcceleratorInfo, ComputingShareAcceleratorInfoOgfJson
 from execution_environment import ExecutionEnvironments, ExecutionEnvironmentTeraGridXml
 from execution_environment import ExecutionEnvironmentTeraGridXml
 from execution_environment import ExecutionEnvironmentOgfJson
+from accelerator_environment import AcceleratorEnvironments
+from accelerator_environment import AcceleratorEnvironmentsOgfJson
+from accelerator_environment import AcceleratorEnvironment
+from accelerator_environment import AcceleratorEnvironmentOgfJson
 from location import Location, LocationOgfJson, LocationTeraGridXml
-
 #######################################################################################################################
 
 class PublicStep(Step):
@@ -42,20 +48,24 @@ class PublicStep(Step):
 
         self.description = "creates a single data containing all nonsensitive compute-related information"
         self.time_out = 5
-        self.requires = [ResourceName,Location,
-                         ComputingService,ComputingShares,ComputingManager,ExecutionEnvironments]
+        self.requires = [IPFInformation,ResourceName,Location,
+                         ComputingService,ComputingShares,ComputingManager,ExecutionEnvironments,AcceleratorEnvironments,ComputingManagerAcceleratorInfo,ComputingShareAcceleratorInfo]
         self.produces = [Public]
 
     def run(self):
         public = Public()
         public.resource_name = self._getInput(ResourceName).resource_name
+        public.ipfinfo = [self._getInput(IPFInformation)]
         # the old TeraGridXML wants a site_name, so just derive it
         public.site_name = public.resource_name[public.resource_name.find(".")+1:]
         public.location = [self._getInput(Location)]
         public.service = [self._getInput(ComputingService)]
         public.share = self._getInput(ComputingShares).shares
         public.manager = [self._getInput(ComputingManager)]
+        public.manager_accel_info = [self._getInput(ComputingManagerAcceleratorInfo)]
+        public.share_accel_info = [self._getInput(ComputingShareAcceleratorInfo)]
         public.environment = self._getInput(ExecutionEnvironments).exec_envs
+        public.accelenvironment = self._getInput(AcceleratorEnvironments).accel_envs
         public.id = public.resource_name
 
         self._output(public)
@@ -66,13 +76,18 @@ class Public(Data):
     def __init__(self):
         Data.__init__(self)
 
+        self.ipfinfo = []
         self.location = []
         self.service = []
         self.share = []
         self.manager = []
         self.environment = []
+        self.accelenvironment = []
 
     def fromJson(self, doc):
+        self.ipfinfo = []
+        for idoc in doc.get("Ipfinfo",[]):
+            self.ipfinfo.append(ipfinfo().fromJson(idoc))
         self.location = []
         for ldoc in doc.get("Location",[]):
             self.location.append(Location().fromJson(ldoc))
@@ -88,6 +103,9 @@ class Public(Data):
         self.environment = []
         for edoc in doc.get("ExecutionEnvironment",[]):
             self.environment.append(ExecutionEnvironment().fromJson(edoc))
+        self.accleenvironment = []
+        for edoc in doc.get("AcceleratorEnvironment",[]):
+            self.environment.append(AcceleratorEnvironment().fromJson(edoc))
 
 #######################################################################################################################
 
@@ -149,17 +167,35 @@ class PublicOgfJson(Representation):
     def toJson(self):
         doc = {}
 
+        if self.data.ipfinfo is not None:
+            doc["PublisherInfo"] = map(lambda ipfinfo: IPFInformationJson(ipfinfo).toJson(), self.data.ipfinfo)
         if len(self.data.location) > 0:
             doc["Location"] = map(lambda location: LocationOgfJson(location).toJson(),self.data.location)
         if self.data.service is not None:
             doc["ComputingService"] = map(lambda service: ComputingServiceOgfJson(service).toJson(),self.data.service)
         if len(self.data.share) > 0:
             doc["ComputingShare"] = map(lambda share: ComputingShareOgfJson(share).toJson(),self.data.share)
+        if len(self.data.share_accel_info) > 0:
+            csai = map(lambda exec_env: ComputingShareAcceleratorInfoOgfJson(exec_env).toJson(),
+                                              self.data.share_accel_info)
+	    csaii = list(filter(None, csai))
+            if len(csaii) > 0:
+                doc["ComputingShareAcceleratorInfo"] = csaii
         if len(self.data.manager) > 0:
             doc["ComputingManager"] = map(lambda manager: ComputingManagerOgfJson(manager).toJson(),self.data.manager)
         if len(self.data.environment) > 0:
             doc["ExecutionEnvironment"] = map(lambda exec_env: ExecutionEnvironmentOgfJson(exec_env).toJson(),
                                               self.data.environment)
+        if self.data.accelenvironment:
+            if len(self.data.accelenvironment) > 0:
+                doc["AcceleratorEnvironment"] = map(lambda exec_env: AcceleratorEnvironmentOgfJson(exec_env).toJson(),
+                                              self.data.accelenvironment)
+        if len(self.data.manager_accel_info) > 0:
+            cmai = map(lambda exec_env: ComputingManagerAcceleratorInfoOgfJson(exec_env).toJson(),
+                                              self.data.manager_accel_info)
+	    cmaii = list(filter(None, cmai))
+            if len(cmaii) > 0:
+                doc["ComputingManagerAcceleratorInfo"] = cmaii
         
         return doc
 
@@ -171,11 +207,12 @@ class PrivateStep(Step):
 
         self.description = "creates a single data containing all sensitive compute-related information"
         self.time_out = 5
-        self.requires = [ResourceName,ComputingActivities]
+        self.requires = [IPFInformation,ResourceName,ComputingActivities]
         self.produces = [Private]
 
     def run(self):
         private = Private()
+        private.ipfinfo = [self._getInput(IPFInformation)]
         private.resource_name = self._getInput(ResourceName).resource_name
         # the old TeraGridXML wants a site_name, so just derive it
         private.site_name = private.resource_name[private.resource_name.find(".")+1:]
@@ -254,6 +291,7 @@ class PrivateOgfJson(Representation):
         if len(self.data.activity) > 0:
             doc["ComputingActivity"] = map(lambda activity: ComputingActivityOgfJson(activity).toJson(),
                                            self.data.activity)
+        doc["PublisherInfo"] = map(lambda ipfinfo: IPFInformationJson(ipfinfo).toJson(), self.data.ipfinfo)
         return doc
 
 #######################################################################################################################

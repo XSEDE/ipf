@@ -1,0 +1,23 @@
+{
+  "name": "ipfinfo",
+  "timeout": 15,
+  "description": "This workflow publishes information about the system to the screen",
+  "steps": [
+    { "name": "ipf.sysinfo.ResourceNameStep" },
+    { "name": "ipf.ipfinfo.IPFVersionStep" },
+    { "name": "ipf.ipfinfo.IPFWorkflowsStep" },
+    {
+      "name": "ipf.publish.PrintStep",
+      "params": {
+        "publish": ["ipf.ipfinfo.IPFInformationJson"]
+      }
+    },
+    {
+      "name": "ipf.publish.FileStep",
+      "params": {
+        "publish": ["ipf.ipfinfo.IPFInformationJson"],
+        "path": "ipfinfo.json"
+      }
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "name": "compute",
   "timeout": 55,
-  "description": "This workflow gathers GLUE2 compute information by interacting with Catalina and PBS",
+  "description": "This workflow gathers GLUE2 compute information by interacting with PBS",
   "steps": [
     { "name": "ipf.sysinfo.ResourceNameStep" },
     { "name": "ipf.sysinfo.PlatformStep" },
@@ -16,16 +16,14 @@
         }
       }
     },
-    { "name": "ipf.glue2.pbs.ComputingActivitiesStep",
-      "outputs": ["step-catalina-activities"]
-    },
-    { "name": "ipf.glue2.catalina.ComputingActivitiesStep",
-      "id": "step-catalina-activities"
-    },
+    { "name": "ipf.glue2.pbs.ComputingActivitiesStep" },
     { "name": "ipf.glue2.pbs.ComputingSharesStep" },
+    { "name": "ipf.glue2.pbs.ComputingShareAcceleratorInfoStep" },
     { "name": "ipf.glue2.pbs.ComputingServiceStep" },
     { "name": "ipf.glue2.pbs.ExecutionEnvironmentsStep" },
+    { "name": "ipf.glue2.pbs.AcceleratorEnvironmentsStep" },
     { "name": "ipf.glue2.pbs.ComputingManagerStep" },
+    { "name": "ipf.glue2.pbs.ComputingManagerAcceleratorInfoStep" },
     {
       "name": "ipf.publish.FileStep",
       "description": "Publish JSON version of compute resource description to a file for debugging",

@@ -177,6 +177,7 @@ class ComputingActivity(Activity):
         self.RequestedTotalWallTime = None         # integer (seconds) - wall time * slots
         self.RequestedTotalCPUTime = None          # integer (seconds) - cpu time * slots
         self.RequestedSlots = None                 # integer
+        self.RequestedAcceleratorSlots = None                 # integer
         self.RequestedApplicationEnvironment = []  # list of strings
         self.StdIn = None                          # string
         self.StdOut = None                         # string

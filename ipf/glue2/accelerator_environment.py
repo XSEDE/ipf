@@ -31,25 +31,23 @@ from ipf.error import StepError
 from ipf.sysinfo import ResourceName
 from ipf.sysinfo import Platform
 
+
 from .resource import *
 from .step import GlueStep
 
 #######################################################################################################################
 
-class ExecutionEnvironmentsStep(GlueStep):
+class AcceleratorEnvironmentsStep(GlueStep):
 
     def __init__(self):
         GlueStep.__init__(self)
 
-        self.description = "Produces a document containing one or more GLUE 2 ExecutionEnvironment. For a batch scheduled system, an ExecutionEnivonment is typically a compute node."
+        self.description = "Produces a document containing one or more GLUE 2 AcceleratorEnvironment. For a batch scheduled system, an ExecutionEnivonment is typically a compute node."
         self.time_out = 30
         self.requires = [ResourceName,Platform]
-        self.produces = [ExecutionEnvironments]
+        self.produces = [AcceleratorEnvironments]
         self._acceptParameter("queues",
                               "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. The expression is processed in order and the value for a queue at the end determines if it is shown.",
-                              False)
-        self._acceptParameter("partitions",
-                              "An expression describing the partitions to include (optional). The syntax is a series of +<partition> and -<partition> where <partition> is either a partition name or a '*'. '+' means include '-' means exclude. The expression is processed in order and the value for a partition at the end determines if it is shown.",
                               False)
 
         self.resource_name = None
@@ -58,18 +56,15 @@ class ExecutionEnvironmentsStep(GlueStep):
         self.resource_name = self._getInput(ResourceName).resource_name
         
         host_groups = self._run()
-        for host_group in host_groups:
-            host_group.id = "%s.%s" % (host_group.Name,self.resource_name)
-            host_group.ID = "urn:glue2:ExecutionEnvironment:%s.%s" % (host_group.Name,self.resource_name)
-            host_group.ManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
-        #accel_groups = copy.deepcopy(host_groups)
-        #for accel_group in accel_groups:
-        #    accel_group.id = "%s.%s" % (host_group.Name,self.resource_name)
-        #    accel_group.ID = "urn:glue2:AcceleratorEnvironment:%s.%s" % (accel_group.Name,self.resource_name)
-        #    accel_group.ManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
-        
-        self._output(ExecutionEnvironments(self.resource_name,host_groups))
-        #self._output(AcceleratorEnvironments(self.resource_name,accel_groups))
+	if host_groups:
+            for host_group in host_groups:
+                host_group.id = "%s.%s" % (host_group.Name,self.resource_name)
+                host_group.ID = "urn:glue2:AcceleratorEnvironment:%s.%s" % (host_group.Name,self.resource_name)
+                host_group.ManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
+                self.debug("host_group.id "+host_group.id)
+                self.debug("host_group.uas "+str(host_group.UsedAcceleratorSlots))
+
+        self._output(AcceleratorEnvironments(self.resource_name,host_groups))
 
     def _shouldUseName(self, hosts):
         names = set()
@@ -117,6 +112,14 @@ class ExecutionEnvironmentsStep(GlueStep):
                     host_group.TotalInstances += host.TotalInstances
                     host_group.UsedInstances += host.UsedInstances
                     host_group.UnavailableInstances += host.UnavailableInstances
+                    #if host_group.UsedAcceleratorSlots is None:
+                    #    host_group.UsedAcceleratorSlots = 0
+                    #if host.UsedAcceleratorSlots is None:
+                    #    host.UsedAcceleratorSlots = 0
+                    host_group.UsedAcceleratorSlots += host.UsedAcceleratorSlots
+                    if host_group.TotalAcceleratorSlots is None:
+                        host_group.TotalAcceleratorSlots = 0
+                    host_group.TotalAcceleratorSlots += host.PhysicalAccelerators
                     host = None
                     break
             if host is not None:
@@ -127,11 +130,11 @@ class ExecutionEnvironmentsStep(GlueStep):
         return host_groups
 
     def _run(self):
-        raise StepError("ExecutionEnvironmentsStep._run not overriden")
+        raise StepError("AcceleratorEnvironmentsStep._run not overriden")
 
     def _goodHost(self, host):
-        # check that it has cpu information
-        if host.PhysicalCPUs == None:
+        # check that it has gpu information
+        if host.PhysicalAccelerators == None:
             return False
 
         # if the host is associated with a queue, check that it is a good one
@@ -141,11 +144,10 @@ class ExecutionEnvironmentsStep(GlueStep):
             m = re.search("urn:glue2:ComputingShare:(\S+).%s" % self.resource_name,share)
             if self._includeQueue(m.group(1)):
                 return True
-
         # if the host is associated with a partition, check that it is a good one
         if len(host.Partitions) == 0:
             return True
-	partition_list = host.Partitions.split(',')
+        partition_list = host.Partitions.split(',')
         for share in partition_list:
             if self._includeQueue(share):
                 return True
@@ -153,7 +155,7 @@ class ExecutionEnvironmentsStep(GlueStep):
 
 #######################################################################################################################
 
-class ExecutionEnvironment(Resource):
+class AcceleratorEnvironment(Resource):
     def __init__(self):
         Resource.__init__(self)
 
@@ -186,6 +188,7 @@ class ExecutionEnvironment(Resource):
         self.Type = "unknown"               # string (AccType_t)
         self.PhysicalAccelerators = None    # integer
         self.UsedAcceleratorSlots = None    # integer
+        self.TotalAcceleratorSlots = None    # integer
         self.LogicalAccelerators = None             # integer
         self.Vendor = None                  # string
         self.Model = None                   # string
@@ -201,52 +204,49 @@ class ExecutionEnvironment(Resource):
         self.OSName = sysName.lower()
         self.OSVersion = release
 
-        #for filtering nodes by partition:
-        self.Partitions = None             # string
-
     def __str__(self):
-        return json.dumps(ExecutionEnvironmentOgfJson(self).toJson(),sort_keys=True,indent=4)
+        return json.dumps(AcceleratorEnvironmentOgfJson(self).toJson(),sort_keys=True,indent=4)
 
-    def sameHostGroup(self, exec_env, useName):
-        if useName and self.Name != exec_env.Name:
+    def sameHostGroup(self, accel_env, useName):
+        if useName and self.Name != accel_env.Name:
             return False
-        if self.Platform != exec_env.Platform:
+        if self.Platform != accel_env.Platform:
             return False
-        if self.PhysicalCPUs != exec_env.PhysicalCPUs:
+        if self.PhysicalCPUs != accel_env.PhysicalCPUs:
             return False
-        if self.LogicalCPUs != exec_env.LogicalCPUs:
+        if self.LogicalCPUs != accel_env.LogicalCPUs:
             return False
-        if self.CPUVendor != exec_env.CPUVendor:
+        if self.CPUVendor != accel_env.CPUVendor:
             return False
-        if self.CPUModel != exec_env.CPUModel:
+        if self.CPUModel != accel_env.CPUModel:
             return False
-        if self.CPUVersion != exec_env.CPUVersion:
+        if self.CPUVersion != accel_env.CPUVersion:
             return False
-        if self.CPUClockSpeed != exec_env.CPUClockSpeed:
+        if self.CPUClockSpeed != accel_env.CPUClockSpeed:
             return False
-        if self.MainMemorySize != exec_env.MainMemorySize:
+        if self.MainMemorySize != accel_env.MainMemorySize:
             return False
-        #if self.VirtualMemorySize != exec_env.VirtualMemorySize:
+        #if self.VirtualMemorySize != accel_env.VirtualMemorySize:
         #    return False
-        if self.OSFamily != exec_env.OSFamily:
+        if self.OSFamily != accel_env.OSFamily:
             return False
-        if self.OSName != exec_env.OSName:
+        if self.OSName != accel_env.OSName:
             return False
-        if self.OSVersion != exec_env.OSVersion:
+        if self.OSVersion != accel_env.OSVersion:
             return False
 
-        if len(self.ShareID) != len(exec_env.ShareID):
+        if len(self.ShareID) != len(accel_env.ShareID):
             return False
         for share in self.ShareID:
-            if not share in exec_env.ShareID:
+            if not share in accel_env.ShareID:
                 return False
 
         return True
 
 #######################################################################################################################
 
-class ExecutionEnvironmentTeraGridXml(ResourceTeraGridXml):
-    data_cls = ExecutionEnvironment
+class AcceleratorEnvironmentTeraGridXml(ResourceTeraGridXml):
+    data_cls = AcceleratorEnvironment
 
     def __init__(self, data):
         ResourceTeraGridXml.__init__(self,data)
@@ -257,7 +257,7 @@ class ExecutionEnvironmentTeraGridXml(ResourceTeraGridXml):
     def toDom(self):
         doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
                                                     "Entities",None)
-        root = doc.createElement("ExecutionEnvironment")
+        root = doc.createElement("AcceleratorEnvironment")
         doc.documentElement.appendChild(root)
         self.addToDomElement(doc,root)
 
@@ -404,8 +404,8 @@ class ExecutionEnvironmentTeraGridXml(ResourceTeraGridXml):
 
 #######################################################################################################################
 
-class ExecutionEnvironmentOgfJson(ResourceOgfJson):
-    data_cls = ExecutionEnvironment
+class AcceleratorEnvironmentOgfJson(ResourceOgfJson):
+    data_cls = AcceleratorEnvironment
 
     def __init__(self, data):
         ResourceOgfJson.__init__(self,data)
@@ -468,17 +468,75 @@ class ExecutionEnvironmentOgfJson(ResourceOgfJson):
 
 #######################################################################################################################
 
-class ExecutionEnvironments(Data):
-    def __init__(self, id, exec_envs=[]):
+#class AcceleratorEnvironmentOgfJson(ResourceOgfJson):
+#    data_cls = AcceleratorEnvironment
+#
+#    def __init__(self, data):
+#        ResourceOgfJson.__init__(self,data)
+#
+#    def get(self):
+#        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+#
+#    def toJson(self):
+#        doc = ResourceOgfJson.toJson(self)
+#
+#        doc["Platform"] = self.data.Platform
+#        if self.data.PhysicalAccelerators is not None:
+#            doc["PhysicalAccelerators"] = self.data.PhysicalAccelerators
+#        if self.data.LogicalAccelerators is not None:
+#            doc["LogicalAccelerators"] = self.data.LogicalAccelerators
+#        if self.data.Vendor is not None:
+#            doc["Vendor"] = self.data.Vendor
+#        if self.data.Model is not None:
+#            doc["Model"] = self.data.Model
+#        if self.data.Version is not None:
+#            doc["Version"] = self.data.Version
+#        if self.data.ClockSpeed is not None:
+#            doc["ClockSpeed"] = self.data.ClockSpeed
+#        if self.data.Memory is not None:
+#            doc["Memory"] = self.data.Memory
+#        if self.data.ComputeCapability is not None:
+#            doc["ComputeCapability"] = self.data.ComputeCapability
+#
+#        return doc
+
+#######################################################################################################################
+
+class AcceleratorEnvironments(Data):
+    def __init__(self, id, accel_envs=[]):
         Data.__init__(self,id)
-        self.exec_envs = exec_envs
+        self.accel_envs = accel_envs
+
+#######################################################################################################################
+
+class AcceleratorEnvironmentsOgfJson(Representation):
+    data_cls = AcceleratorEnvironments
+
+    def __init__(self, data):
+        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+
+    def get(self):
+        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+
+    def toJson(self):
+        eedoc = []
+        for accel_env in self.data.accel_envs:
+            eedoc.append(AcceleratorEnvironmentOgfJson(accel_env).toJson())
+        return eedoc
+
+#######################################################################################################################
+
+#class AcceleratorEnvironments(Data):
+#    def __init__(self, id, accel_envs=[]):
+#        Data.__init__(self,id)
+#        self.accel_envs = accel_envs
 
         
         
 #######################################################################################################################
 
-class ExecutionEnvironmentsTeraGridXml(Representation):
-    data_cls = ExecutionEnvironments
+class AcceleratorEnvironmentsTeraGridXml(Representation):
+    data_cls = AcceleratorEnvironments
 
     def __init__(self, data):
         Representation.__init__(self,Representation.MIME_TEXT_XML,data)
@@ -489,15 +547,15 @@ class ExecutionEnvironmentsTeraGridXml(Representation):
     def toDom(self):
         doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
                                                     "Entities",None)
-        for exec_env in self.data.exec_envs:
-            eedoc = ExecutionEnvironmentTeraGridXml.toDom(exec_env)
+        for accel_env in self.data.accel_envs:
+            eedoc = AcceleratorEnvironmentTeraGridXml.toDom(accel_env)
             doc.documentElement.appendChild(eedoc.documentElement.firstChild)
         return doc
 
 #######################################################################################################################
 
-class ExecutionEnvironmentsOgfJson(Representation):
-    data_cls = ExecutionEnvironments
+class AcceleratorEnvironmentsOgfJson(Representation):
+    data_cls = AcceleratorEnvironments
 
     def __init__(self, data):
         Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
@@ -507,8 +565,8 @@ class ExecutionEnvironmentsOgfJson(Representation):
 
     def toJson(self):
         eedoc = []
-        for exec_env in self.data.exec_envs:
-            eedoc.append(ExecutionEnvironmentOgfJson(exec_env).toJson())
+        for accel_env in self.data.accel_envs:
+            eedoc.append(AcceleratorEnvironmentOgfJson(accel_env).toJson())
         return eedoc
 
 #######################################################################################################################

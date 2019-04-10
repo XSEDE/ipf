@@ -36,6 +36,9 @@ import glue2.computing_share
 import glue2.execution_environment
 import glue2.types
 
+from . import accelerator_environment
+from . import computing_manager_accel_info
+from . import computing_share_accel_info
 #######################################################################################################################
 
 class Authentication():
@@ -362,7 +365,7 @@ class ApplicationsStep(glue2.application.ApplicationsStep, Authentication):
                                                      auth_url=auth_url)
 
         # restrict this to public images only?
-        apps = glue2.application.Applications(self.resource_name)
+        apps = glue2.application.Applications(self.resource_name,self.ipfinfo)
         for image in nova.images.list():
             #print("  metadata: %s" % image.metadata)
             #print(dir(image))
@@ -401,5 +404,40 @@ def _getDateTime(dtStr):
     # Example: 2013-10-27T09:55:02Z
     d = datetime.datetime.strptime(dtStr,"%Y-%m-%dT%H:%M:%SZ")
     return datetime.datetime(d.year,d.month,d.day,d.hour,d.minute,d.second,d.microsecond,tzoffset(0))
+
+#######################################################################################################################
+
+class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironmentsStep):
+    def __init__(self):
+        accelerator_environment.AcceleratorEnvironmentsStep.__init__(self)
+
+        self._acceptParameter("scontrol","the path to the SLURM scontrol program (default 'scontrol')",False)
+
+    def _run(self):
+        # get info on the nodes
+	return
+
+#######################################################################################################################
+
+class ComputingManagerAcceleratorInfoStep(computing_manager_accel_info.ComputingManagerAcceleratorInfoStep):
+
+    def __init__(self):
+        computing_manager_accel_info.ComputingManagerAcceleratorInfoStep.__init__(self)
+
+    def _run(self):
+        manager_accel_info = computing_manager_accel_info.ComputingManagerAcceleratorInfo()
+
+        return manager_accel_info
+
+#######################################################################################################################
+
+class ComputingShareAcceleratorInfoStep(computing_share_accel_info.ComputingShareAcceleratorInfoStep):
+
+    def __init__(self):
+        computing_share_accel_info.ComputingShareAcceleratorInfoStep.__init__(self)
+
+    def _run(self):
+        share_accel_info = computing_share_accel_info.ComputingShareAcceleratorInfo()
+        return share_accel_info
 
 #######################################################################################################################

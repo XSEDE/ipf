@@ -22,6 +22,7 @@ from ipf.dt import *
 from ipf.error import StepError
 from ipf.step import Step
 from ipf.sysinfo import ResourceName
+from  ipf.ipfinfo import IPFInformation, IPFInformationJson, IPFInformationTxt
 
 from .entity import *
 
@@ -159,12 +160,13 @@ class ApplicationHandleOgfJson(EntityOgfJson):
 #######################################################################################################################
     
 class Applications(Data):
-    def __init__(self, resource_name):
+    def __init__(self, resource_name, ipfinfo):
         Data.__init__(self)
         self.id = resource_name
         self.environments = []
         self.handles = []
         self.resource_name = resource_name
+        self.ipfinfo = ipfinfo
 
     def add(self, env, handles):
         if env.AppVersion is None:
@@ -207,6 +209,7 @@ class ApplicationsOgfJson(Representation):
         doc["ApplicationHandle"] = []
         for handle in self.data.handles:
             doc["ApplicationHandle"].append(ApplicationHandleOgfJson(handle).toJson())
+        doc["PublisherInfo"] = map(lambda ipfinfo: IPFInformationJson(ipfinfo).toJson(), self.data.ipfinfo)
         return doc
 
 #######################################################################################################################
@@ -217,13 +220,14 @@ class ApplicationsStep(Step):
 
         self.description = "produces a document containing GLUE 2 ApplicationEnvironment and ApplicationHandle"
         self.time_out = 30
-        self.requires = [ResourceName]
+        self.requires = [IPFInformation,ResourceName]
         self.produces = [Applications]
 
         self.resource_name = None
 
     def run(self):
         self.resource_name = self._getInput(ResourceName).resource_name
+        self.ipfinfo = [self._getInput(IPFInformation)]
         self._output(self._run())
 
     def _run(self):

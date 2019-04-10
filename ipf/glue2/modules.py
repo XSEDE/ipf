@@ -227,6 +227,8 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
 
         self._acceptParameter("exclude","a comma-separated list of modules to ignore (default is to ignore none)",
                               False)
+        self._acceptParameter("default_support_contact","default to publish as SupportContact if no value is present in module file",
+                              False)
 
     def _run(self):
         try:
@@ -234,7 +236,9 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         except KeyError:
             self.exclude = []
 
-        apps = application.Applications(self.resource_name)
+        self.support_contact = self.params.get("default_support_contact",False)
+
+        apps = application.Applications(self.resource_name, self.ipfinfo)
 
         module_paths = []
         try:
@@ -343,6 +347,23 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
             env.Extension["SupportStatus"] = m.group(1).strip()
         else:
             self.debug("no SupportStatus in "+path)
+
+        m = re.search("\"SupportContact:([^\"]+)\"",text)
+        if m is not None:
+            supportcontact = m.group(1).strip()
+            env.Extension["SupportContact"] = m.group(1).strip()
+        else:
+            self.debug("no SupportContact in "+path)
+            if self.support_contact:
+                env.Extension["SupportContact"] = self.support_contact
+
+        m = re.search("\"Default:([^\"]+)\"",text)
+        if m is not None:
+            default = []
+            default.append(map(str.strip,m.group(1).split(",")))
+            env.Extension["Default"] = m.group(1).strip()
+        else:
+            self.debug("no whatis Default: in "+path)
 
         handle = application.ApplicationHandle()
         handle.Type = ApplicationHandle.MODULE

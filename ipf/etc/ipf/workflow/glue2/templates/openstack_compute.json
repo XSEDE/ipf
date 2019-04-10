@@ -1,11 +1,13 @@
 {
   "name": "compute",
   "timeout": 55,
-  "description": "This workflow gathers GLUE2 compute information by interacting with Condor",
+  "params": {
+    "openstack_version": "2013.2"
+  },
   "steps": [
     { "name": "ipf.sysinfo.ResourceNameStep" },
     { "name": "ipf.sysinfo.PlatformStep" },
-    { "name": "ipf.glue2.location.LocationStep",
+    { "name": "glue2.location.LocationStep",
       "params": {
         "location": {
           "Name": "Name of Center",
@@ -16,11 +18,14 @@
         }
       }
     },
-    { "name": "ipf.glue2.condor.ComputingActivitiesStep" },
-    { "name": "ipf.glue2.condor.ComputingSharesStep" },
-    { "name": "ipf.glue2.condor.ComputingServiceStep" },
-    { "name": "ipf.glue2.condor.ExecutionEnvironmentsStep" },
-    { "name": "ipf.glue2.condor.ComputingManagerStep" },
+    { "name": "ipf.glue2.openstack.ComputingActivitiesStep" },
+    { "name": "ipf.glue2.openstack.ComputingSharesStep" },
+    { "name": "ipf.glue2.openstack.ComputingShareAcceleratorInfoStep" },
+    { "name": "ipf.glue2.openstack.ComputingServiceStep" },
+    { "name": "ipf.glue2.openstack.ExecutionEnvironmentsStep" },
+    { "name": "ipf.glue2.openstack.AcceleratorEnvironmentsStep" },
+    { "name": "ipf.glue2.openstack.ComputingManagerStep" },
+    { "name": "ipf.glue2.openstack.ComputingManagerAcceleratorInfoStep" },
     {
       "name": "ipf.publish.FileStep",
       "description": "Publish JSON version of compute resource description to a file for debugging",
