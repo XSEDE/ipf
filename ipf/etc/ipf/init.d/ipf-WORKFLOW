@@ -61,7 +61,7 @@ stop() {
         pkill -9 -P $PID
         RETVAL=$?
         echo
-	[ $RETVAL -eq 0 ] && rm -f $PID_FILE
+	[ $RETVAL -eq 0 ] && su $IPF_USER rm -f $PID_FILE
         return $RETVAL
 }
 
