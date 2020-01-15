@@ -1,0 +1,17 @@
+#!/bin/sh
+VER=$(cat VERSION)
+REL=$(cat RELEASE)
+
+mkdir -p ./ipfcheckout
+
+cd ./ipfcheckout
+git clone --branch $VER.$REL https://github.com/ericblau/ipf-xsede.git
+
+# github ericblau git has different top level dir--we'll rename to make sure
+#paths are still consistant.
+mv ipf-xsede ipf
+cd ipf
+git checkout $VER.$REL
+
+mv ./ipf/etc/ipf/xsede/ca_certs.pem ./ipf/etc/ipf/xsede/ca_certs.old
+cp ../../patches/ca_certs.pem ./ipf/etc/ipf/xsede/ca_certs.pem

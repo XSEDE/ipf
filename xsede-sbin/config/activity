@@ -1,0 +1,18 @@
+#!/bin/bash
+
+[ -f /etc/sysconfig/glue2-ipf ] && . /etc/sysconfig/glue2-ipf
+
+. ${IPF_DIR}/libexec/env.sh
+cd ${IPF_DIR}
+
+case "$1" in
+    start)
+	${PYTHON} ${IPF_DIR}/libexec/run_workflow_daemon.py xsede/glue2/${ACTIVITY_WORKFLOW} >& /dev/null
+        ;;
+    stop)
+	#Don't see an option to stop.
+	${PYTHON} ${IPF_DIR}/libexec/run_workflow_daemon.py xsede/glue2/${ACTIVITY_WORKFLOW} >& /dev/null
+        ;;
+    *)
+        ;;
+esac

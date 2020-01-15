@@ -1,0 +1,22 @@
+#!/bin/bash
+
+[ -f /etc/sysconfig/glue2-ipf ] && . /etc/sysconfig/glue2-ipf
+
+. ${IPF_DIR}/libexec/env.sh
+cd ${IPF_DIR}
+
+case "$1" in
+    start)
+	${IPF_DIR}/etc/init.d/modules $@ >& /dev/null
+	${IPF_DIR}/etc/init.d/activity $@ >& /dev/null
+	${IPF_DIR}/etc/init.d/compute $@ >& /dev/null
+        ;;
+    stop)
+	#Don't see an option to stop.
+	${IPF_DIR}/etc/init.d/modules $@ >& /dev/null
+	${IPF_DIR}/etc/init.d/activity $@ >& /dev/null
+	${IPF_DIR}/etc/init.d/compute $@ >& /dev/null
+        ;;
+    *)
+        ;;
+esac

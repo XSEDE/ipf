@@ -1,0 +1,35 @@
+#!/bin/sh -x
+
+PKG=$1
+VER=$(cat VERSION$PKG)
+REL=$(cat RELEASE)
+
+if [ ! -e VERSION$PKG ]; then
+  echo "You may not be in the right place to run upload"
+  echo "Please run from the root of the package"
+  exit 1
+fi
+
+
+REPO=software.xsede.org
+#REPO=localhost
+
+REPO_SOFTWARE=/home/xsedesig/incoming/
+REPO_SUBDIR=$PKG-$VER-$REL
+
+OUTDIR=tmp/$PKG-$VER/
+if [ ! -d $OUTDIR ]; then
+  echo "Package directory '$OUTDIR' missing"
+  exit 1
+fi
+
+#ssh -l xsedesig $REPO mkdir -p $REPO_SOFTWARE/$REPO_SUBDIR
+
+scp -p dist/$PKG-$VER-$REL.noarch.rpm xsedesig@$REPO:$REPO_SOFTWARE/
+scp -p dist/$PKG-$VER-$REL.src.rpm xsedesig@$REPO:$REPO_SOFTWARE/
+
+ssh -l xsedesig $REPO "cd /home/xsedesig; ./repobin/rpm-sign.exp \`cat /home/xsedesig/pass\` ./incoming/$PKG-$VER-$REL.noarch.rpm"
+
+ssh -l xsedesig $REPO "\$HOME/repobin/copypy26.sh $PKG-$VER-$REL.noarch.rpm"
+ssh -l xsedesig $REPO "\$HOME/repobin/createrepos.sh development"
+

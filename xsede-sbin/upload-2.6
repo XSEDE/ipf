@@ -1,0 +1,11 @@
+#!/bin/bash
+PKG=ipf-xsede
+VER=$(cat VERSION$PKG)
+REL=$(cat RELEASE)
+
+# add this later: ipf-xsede-teragrid-kitssoftware
+#for i in ipf-xsede-glue2 ipf-xsede mtk
+for i in ipf-xsede
+do
+  ./sbin/rpmupload-2.6 $i
+done

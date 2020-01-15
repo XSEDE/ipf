@@ -1,0 +1,20 @@
+#!/bin/sh
+
+mkdir -p ./ipfcheckout
+
+cd ./ipfcheckout
+#git clone https://bitbucket.org/wwsmith/ipf.git
+git clone https://github.com/ericblau/ipf-xsede.git
+#sed -i 's/ipf_configure_xsede=ipf.xsede.configure_workflows/ipf_configure_xsede=ipf.xsede.configure_workflows:configure/' ipf/setup.py
+#git clone https://bitbucket.org/wwsmith/mtk.git
+#rm ipf/setup_xsede_glue2.py
+#rm ipf/setup_xsede_kits.py
+# github ericblau git has different top level dir--we'll rename to make sure
+#paths are still consistant.
+mv ipf-xsede ipf
+cd ipf
+#patch -p1 < /home/mtkdev/831.patch5
+# patch 831 is included in github ericblau git
+#patch -p1 < ../../patches/831.patch5
+mv ./ipf/etc/ipf/xsede/ca_certs.pem ./ipf/etc/ipf/xsede/ca_certs.old
+cp ../../patches/ca_certs.pem ./ipf/etc/ipf/xsede/ca_certs.pem

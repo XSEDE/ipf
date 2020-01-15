@@ -1,0 +1,5 @@
+export IPF_DIR=@install_dir@
+export IPF_USER=xdinfo
+export PYTHON=@python@
+export COMPUTE_WORKFLOW=
+export ACTIVITY_WORKFLOW=

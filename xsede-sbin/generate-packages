@@ -1,0 +1,19 @@
+#PKG=$1
+VER=$(cat VERSION)
+REL=$(cat RELEASE)
+
+HERE=`pwd`
+#rm -rf ./packages
+
+for PKG in ipfglue2 mtk
+do
+./sbin/package $PKG
+cd ./tmp/
+echo `pwd`
+./$PKG-$VER/sbin/buildrpm $PKG
+cd $HERE
+mkdir -p packages
+
+cp tmp/tmp/${PKG}rpmtopdir/RPMS/noarch/$PKG-$VER-$REL.noarch.rpm ./packages
+cp tmp/tmp/${PKG}rpmtopdir/SRPMS/$PKG-$VER-$REL.src.rpm ./packages
+done

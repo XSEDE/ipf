@@ -1,0 +1,21 @@
+#!/bin/bash
+PKG=ipf-xsede
+VER=$(cat VERSION$PKG)
+REL=$(cat RELEASE)
+
+# add this later: ipf-xsede-teragrid-kitssoftware
+#for i in ipf-xsede-glue2 ipf-xsede mtk
+for i in ipf-xsede
+do
+  ./sbin/upload $i
+  ./sbin/rpmupload $i
+done
+
+REPO=software.xsede.org
+REPO_SOFTWARE=/local/software.xsede.org/development/ipf/
+REPO_SUBDIR=$PKG-$VER-$REL
+
+OUTDIR=tmp/$PKG-$VER/
+scp -p $OUTDIR/INSTALL.md xsedesig@$REPO:$REPO_SOFTWARE/
+#scp -p $OUTDIR/docs/INSTALL-tgz xsedesig@$REPO:$REPO_SOFTWARE/
+

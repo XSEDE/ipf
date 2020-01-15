@@ -1,0 +1,18 @@
+Workflow:
+NOTE:  create_cacerts.sh is capable of creating the ca_certs.pem that gets put in patches.  If you run it, run it from inside patches.
+
+checkout-from-git
+gets the source from git
+
+build_ipf-xsede_rpm.sh
+creates tarball and rpm and put them in dist/
+
+The rest need a little work still--uploading and the like
+./sbin/upload
+uploads and signs the tarball
+./sbin/rpmupload
+uploads, signs, pushes rpm to all the repos, and updates all the repos
+
+following are obsolete:
+build_glue2_rpm.sh
+build_mtk_rpm.sh

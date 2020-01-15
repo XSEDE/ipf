@@ -1,0 +1,43 @@
+#!/bin/sh
+
+#echo "This script needs to be replaced with RPM generation and upload (JP 1/13/2014)"
+#exit 1
+PKG=$1
+
+if [ ! -e VERSION$PKG ]; then
+  echo "You may be in the wrong directory."
+  echo "Run tar from the package root."
+  exit 1
+fi
+
+VER=$(cat VERSION$PKG)
+REL=$(cat RELEASE)
+
+HERE=`pwd`
+OUTDIR="tmp/$PKG-$VER/"
+
+if [ -e $OUTDIR ]; then
+  echo "Previous '$OUTDIR/' directory found, delete it first"
+  exit 1
+fi
+
+mkdir -p $OUTDIR || exit 1
+
+cp -p RELEASE $OUTDIR
+cp  VERSION$PKG $OUTDIR/VERSION
+
+mkdir $OUTDIR/docs
+
+FILES=$(find docs -type f ! -path \*\.svn\*)
+echo $FILES
+for i in $FILES;do
+  iout=$(echo $i | sed 's/\.in$//')
+  sed -e "s,%VER%,$VER,g" \
+      -e "s,%REL%,$REL,g" \
+      $i \
+      >$OUTDIR/$iout
+done
+mv $OUTDIR/docs/INSTALL.md $OUTDIR/INSTALL.md
+markdown_py $OUTDIR/INSTALL.md -f $OUTDIR/INSTALL.html
+
+cp dist/$PKG-$VER.tar.gz tmp/$PKG-$VER-$REL.tgz
