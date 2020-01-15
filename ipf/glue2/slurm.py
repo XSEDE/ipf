@@ -256,6 +256,10 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
 
         self._acceptParameter("slurmctl_log_file","the path to the SLURM control log file (default '/usr/local/slurm/var/slurmctl.log')",False)
         self._acceptParameter("scontrol","the path to the SLURM squeue program (default 'scontrol')",False)
+        self._acceptParameter("submit_batch_job_regexp","regexp to match _slurm_rpc_submit_batch_job lines from slurmctl.log",False)
+        self._acceptParameter("job_step_create_regexp","regexp to match _slurm_rpc_job_step_create lines from slurmctl.log",False)
+        self._acceptParameter("job_cancelled_regexp","regexp to match cancelled from interactive user lines from slurmctl.log",False)
+        self._acceptParameter("step_complete_regexp","regexp to match _slurm_rpc_step_complete lines from slurmctl.log",False)
 
         self.activities = {}
 
@@ -265,9 +269,12 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
         watcher.run()
 
     def _logEntry(self, log_file_name, entry):
-
+        submit_re = self.params.get("submit_batch_job_regexp","\[(\S+)\] _slurm_rpc_submit_batch_job JobId=(\S+) usec=\d+")
+        stepcreate_re = self.params.get("job_step_create_regexp","\[(\S+)\] sched: _slurm_rpc_job_step_create: StepId=(\S+).0")
+        cancelled_re = self.params.get("job_cancelled_regexp","\[(\S+)\] job (\S+) cancelled from interactive user")
+        stepcomplete_re = self.params.get("step_complete_regexp","\[(\S+)\] sched: _slurm_rpc_step_complete StepId=(\S+).0")
         #[2013-04-21T16:14:47] _slurm_rpc_submit_batch_job JobId=618921 usec=12273
-        m = re.search("\[(\S+)\] _slurm_rpc_submit_batch_job JobId=(\S+) usec=\d+",entry)
+        m = re.search(submit_re,entry)
         if m is not None:
             dt = _getDateTime(m.group(1))
             job_id = m.group(2)
@@ -284,7 +291,7 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
             return
 
         #[2013-04-21T11:51:52] sched: _slurm_rpc_job_step_create: StepId=617701.0 c410-[603,701,803,904] usec=477
-        m = re.search("\[(\S+)\] sched: _slurm_rpc_job_step_create: StepId=(\S+).0",entry)
+        m = re.search(stepcreate_re,entry)
         if m is not None:
             dt = _getDateTime(m.group(1))
             job_id = m.group(2)
@@ -299,7 +306,7 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
             return
 
         #[2013-04-21T16:10:43] Job 618861 cancelled from interactive user
-        m = re.search("\[(\S+)\] job (\S+) cancelled from interactive user",entry)
+        m = re.search(cancelled_re,entry)
         if m is not None:
             dt = _getDateTime(m.group(1))
             job_id = m.group(2)
@@ -313,7 +320,7 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
             return
 
         #[2013-04-21T11:51:53] sched: _slurm_rpc_step_complete StepId=617701.0 usec=43
-        m = re.search("\[(\S+)\] sched: _slurm_rpc_step_complete StepId=(\S+).0",entry)
+        m = re.search(stepcomplete_re,entry)
         if m is not None:
             dt = _getDateTime(m.group(1))
             job_id = m.group(2)
