@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import os
 import re
 
@@ -89,7 +89,7 @@ class InstalledServiceStep(computing_service.ComputingServiceStep):
 
         try:
             file = open(path)
-        except IOError, e:
+        except IOError as e:
             self.warning("%s" % e)
             return
         text = file.read()
@@ -108,20 +108,20 @@ class InstalledServiceStep(computing_service.ComputingServiceStep):
             self.debug("no URL in "+path)
         m = re.search("\"Category:([^\"]+)\"",text)
         if m is not None:
-            env.Extension["Category"] = map(str.strip,m.group(1).split(","))
+            env.Extension["Category"] = list(map(str.strip,m.group(1).split(",")))
 	    print(" python is silly")
 		
         else:
             self.debug("no Category in "+path)
         m = re.search("\"Keywords:([^\"]+)\"",text)
         if m is not None:
-	    env.Keywords = map(str.strip,m.group(1).split(","))
+	    env.Keywords = list(map(str.strip,m.group(1).split(",")))
         else:
             self.debug("no Keywords in "+path)
         m = re.search("\"SupportStatus:([^\"]+)\"",text)
         if m is not None:
 	    supportstatus = []
-	    supportstatus.append(map(str.strip,m.group(1).split(",")))
+	    supportstatus.append(list(map(str.strip,m.group(1).split(","))))
             env.Extension["SupportStatus"] = m.group(1).strip()
         else:
             self.debug("no SupportStatus in "+path)

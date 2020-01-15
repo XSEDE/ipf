@@ -20,7 +20,7 @@ import logging
 import multiprocessing
 import time
 import pdb
-from Queue import Empty
+from queue import Empty
 
 from ipf.data import Data,Representation
 from ipf.error import NoMoreInputsError, StepError
@@ -74,7 +74,7 @@ class Step(multiprocessing.Process):
 
     def _setParameters(self, step_params, workflow_params):
         self._checkUnexpectedParameters(step_params)
-        self.params = dict(workflow_params.items()+step_params.items())
+        self.params = dict(list(workflow_params.items())+list(step_params.items()))
         self._checkExpectedParameters(self.params)
 
     def _acceptParameter(self, name, description, required):

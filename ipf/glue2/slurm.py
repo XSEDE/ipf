@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import datetime
 import itertools
 import os
@@ -87,7 +87,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
         cmd = scontrol + " show job"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("scontrol failed: "+output+"\n")
 
@@ -346,7 +346,7 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
             scontrol = self.params.get("scontrol","scontrol")
             cmd = scontrol + " show job "+job_id
             self.debug("running "+cmd)
-            status, output = commands.getstatusoutput(cmd)
+            status, output = subprocess.getstatusoutput(cmd)
             if status != 0:
                 self.warning("scontrol failed: "+output+"\n")
                 activity = computing_activity.ComputingActivity()
@@ -370,22 +370,22 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
         scontrol = self.params.get("scontrol","scontrol")
         cmd = scontrol + " show partition"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("scontrol failed: "+output+"\n")
         partition_strs = output.split("\n\n")
-        partitions = filter(lambda share: self._includeQueue(share.Name),map(self._getShare,partition_strs))
+        partitions = [share for share in map(self._getShare,partition_strs) if self._includeQueue(share.Name)]
 
         # create shares for reservations
         scontrol = self.params.get("scontrol","scontrol")
         cmd = scontrol + " show reservation"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("scontrol failed: "+output+"\n")
         reservation_strs = output.split("\n\n")
         try:
-            reservations = map(lambda share: self.includeQueue(share.PartitionName),map(self._getReservation,reservation_strs))
+            reservations = [self.includeQueue(share.PartitionName) for share in list(map(self._getReservation,reservation_strs))]
         except:
             reservations = []
 
@@ -472,11 +472,11 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         scontrol = self.params.get("scontrol","scontrol")
         cmd = scontrol + " show node -d"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("scontrol failed: "+output+"\n")
         node_strs = output.split("\n\n")
-        nodes = filter(self._goodHost,map(self._getNode,node_strs))
+        nodes = list(filter(self._goodHost,list(map(self._getNode,node_strs))))
 
         # ignore partitions for now since a node can be part of more than one of them (plus a reservation)
 
@@ -484,13 +484,13 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         scontrol = self.params.get("scontrol","scontrol")
         cmd = scontrol + " show reservation"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("scontrol failed: "+output+"\n")
         reservation_strs = output.split("\n\n")
         try:
             #reservations = map(self._getReservation,reservation_strs)
-            reservations = map(lambda share: self.includeQueue(share.PartitionName),map(self._getReservation,reservation_strs))
+            reservations = [self.includeQueue(share.PartitionName) for share in list(map(self._getReservation,reservation_strs))]
         except:
             reservations = []
 
@@ -504,7 +504,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
                 continue
 
             # in case a node is in multiple active reservations
-            node_names = filter(lambda node_name: node_name in node_map,node_names)
+            node_names = [node_name for node_name in node_names if node_name in node_map]
 
             # in case all of the nodes in the reservation have already been counted
             if len(node_names) == 0:
@@ -518,16 +518,12 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
             exec_env.OSVersion = example_node.OSVersion
             exec_env.Platform = example_node.Platform
 
-            exec_env.PhysicalCPUs = sum(map(lambda node_name: node_map[node_name].PhysicalCPUs,
-                                            node_names)) / len(node_names)
-            exec_env.LogicalCPUs = sum(map(lambda node_name: node_map[node_name].LogicalCPUs,
-                                           node_names)) / len(node_names)
-            exec_env.MainMemorySize = sum(map(lambda node_name: node_map[node_name].MainMemorySize,
-                                              node_names)) / len(node_names)
+            exec_env.PhysicalCPUs = sum([node_map[node_name].PhysicalCPUs for node_name in node_names]) / len(node_names)
+            exec_env.LogicalCPUs = sum([node_map[node_name].LogicalCPUs for node_name in node_names]) / len(node_names)
+            exec_env.MainMemorySize = sum([node_map[node_name].MainMemorySize for node_name in node_names]) / len(node_names)
             exec_env.TotalInstances = len(node_names)
-            exec_env.UsedInstances = sum(map(lambda node_name: node_map[node_name].UsedInstances,node_names))
-            exec_env.UnavailableInstances = sum(map(lambda node_name: node_map[node_name].UnavailableInstances,
-                                                    node_names))
+            exec_env.UsedInstances = sum([node_map[node_name].UsedInstances for node_name in node_names])
+            exec_env.UnavailableInstances = sum([node_map[node_name].UnavailableInstances for node_name in node_names])
             # remove nodes that are part of a current reservation so that they aren't counted twice
             for node_name in node_names:
                 try:
@@ -539,7 +535,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
             del exec_env.Extension["Nodes"]
 
         # group up nodes that aren't part of a current reservation
-        return reservations + self._groupHosts(node_map.values())
+        return reservations + self._groupHosts(list(node_map.values()))
 
     def _getNode(self, node_str):
         node = execution_environment.ExecutionEnvironment()
@@ -646,17 +642,17 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
     def _expandNames(self, expr):
         exprs = self._splitCommas(expr)
         if len(exprs) > 1:
-            return list(itertools.chain.from_iterable(map(self._expandNames,exprs)))
+            return list(itertools.chain.from_iterable(list(map(self._expandNames,exprs))))
         m = re.search("^(\S+)\[(\S+)\]$",expr)
         if m is not None:
             prefix = m.group(1)
             suffixes = self._expandNames(m.group(2))
-            return map(lambda suffix: prefix+suffix,suffixes)
+            return [prefix+suffix for suffix in suffixes]
         m = re.search("^(\d+)-(\d+)$",expr)
         if m is not None:
             # don't drop any leading 0s
             pattern = "%%0%dd" % len(m.group(1))
-            return map(lambda num: pattern % num,range(int(m.group(1)),int(m.group(2))+1))
+            return [pattern % num for num in range(int(m.group(1)),int(m.group(2))+1)]
         return [expr]
 
     def _splitCommas(self, expr):
@@ -720,11 +716,11 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
         scontrol = self.params.get("scontrol","scontrol")
         cmd = scontrol + " show node -d"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("scontrol failed: "+output+"\n")
         node_strs = output.split("\n\n")
-        nodes = filter(self._goodHost,map(self._getNode,node_strs))
+        nodes = list(filter(self._goodHost,list(map(self._getNode,node_strs))))
 
         # ignore partitions for now since a node can be part of more than one of them (plus a reservation)
 
@@ -732,13 +728,13 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
         scontrol = self.params.get("scontrol","scontrol")
         cmd = scontrol + " show reservation"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("scontrol failed: "+output+"\n")
         reservation_strs = output.split("\n\n")
         try:
             #reservations = map(self._getReservation,reservation_strs)
-            reservations = map(lambda share: self.includeQueue(share.PartitionName),map(self._getReservation,reservation_strs))
+            reservations = [self.includeQueue(share.PartitionName) for share in list(map(self._getReservation,reservation_strs))]
         except:
             reservations = []
 
@@ -753,7 +749,7 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
                 continue
             self.debug("size of node map before defining"+str(len(node_map)))
             # in case a node is in multiple active reservations
-            node_names = filter(lambda node_name: node_name in node_map,node_names)
+            node_names = [node_name for node_name in node_names if node_name in node_map]
 
             # in case all of the nodes in the reservation have already been counted
             if len(node_names) == 0:
@@ -767,20 +763,15 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
             accel_env.OSVersion = example_node.OSVersion
             accel_env.Platform = example_node.Platform
 
-            accel_env.PhysicalCPUs = sum(map(lambda node_name: node_map[node_name].PhysicalCPUs,
-                                            node_names)) / len(node_names)
-            accel_env.PhysicalAccelerators = sum(map(lambda node_name: node_map[node_name].PhysicalAccelerators,
-                                            node_names)) / len(node_names)
-            accel_env.UsedAcceleratorSlots = sum(map(lambda node_name: node_map[node_name].UsedAcceleratorSlots,
-                                            node_names)) / len(node_names)
+            accel_env.PhysicalCPUs = sum([node_map[node_name].PhysicalCPUs for node_name in node_names]) / len(node_names)
+            accel_env.PhysicalAccelerators = sum([node_map[node_name].PhysicalAccelerators for node_name in node_names]) / len(node_names)
+            accel_env.UsedAcceleratorSlots = sum([node_map[node_name].UsedAcceleratorSlots for node_name in node_names]) / len(node_names)
             #exec_env.LogicalAccelerators = sum(map(lambda node_name: node_map[node_name].LogicalAccelerators,
                                            #node_names)) / len(node_names)
-            accel_env.MainMemorySize = sum(map(lambda node_name: node_map[node_name].MainMemorySize,
-                                              node_names)) / len(node_names)
+            accel_env.MainMemorySize = sum([node_map[node_name].MainMemorySize for node_name in node_names]) / len(node_names)
             accel_env.TotalInstances = len(node_names)
-            accel_env.UsedInstances = sum(map(lambda node_name: node_map[node_name].UsedInstances,node_names))
-            accel_env.UnavailableInstances = sum(map(lambda node_name: node_map[node_name].UnavailableInstances,
-                                                    node_names))
+            accel_env.UsedInstances = sum([node_map[node_name].UsedInstances for node_name in node_names])
+            accel_env.UnavailableInstances = sum([node_map[node_name].UnavailableInstances for node_name in node_names])
             # remove nodes that are part of a current reservation so that they aren't counted twice
             for node_name in node_names:
                 try:
@@ -794,7 +785,7 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
         # group up nodes that aren't part of a current reservation
         self.debug("size of node map "+str(len(node_map)))
  
-        return reservations + self._groupHosts(node_map.values())
+        return reservations + self._groupHosts(list(node_map.values()))
 
     def _getNode(self, node_str):
         node = accelerator_environment.AcceleratorEnvironment()
@@ -820,7 +811,7 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
             greslist = m.group(1).split(":")
             if len(greslist) == 2:
                 node.PhysicalAccelerators = int(greslist[1])
-                print node.PhysicalAccelerators
+                print(node.PhysicalAccelerators)
                 node.Type = ""
             elif len(greslist) == 3:
                 node.PhysicalAccelerators = int(greslist[2])
@@ -928,17 +919,17 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
     def _expandNames(self, expr):
         exprs = self._splitCommas(expr)
         if len(exprs) > 1:
-            return list(itertools.chain.from_iterable(map(self._expandNames,exprs)))
+            return list(itertools.chain.from_iterable(list(map(self._expandNames,exprs))))
         m = re.search("^(\S+)\[(\S+)\]$",expr)
         if m is not None:
             prefix = m.group(1)
             suffixes = self._expandNames(m.group(2))
-            return map(lambda suffix: prefix+suffix,suffixes)
+            return [prefix+suffix for suffix in suffixes]
         m = re.search("^(\d+)-(\d+)$",expr)
         if m is not None:
             # don't drop any leading 0s
             pattern = "%%0%dd" % len(m.group(1))
-            return map(lambda num: pattern % num,range(int(m.group(1)),int(m.group(2))+1))
+            return [pattern % num for num in range(int(m.group(1)),int(m.group(2))+1)]
         return [expr]
 
     def _splitCommas(self, expr):

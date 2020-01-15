@@ -18,12 +18,13 @@
 import optparse
 import re
 import sys
+from functools import reduce
 
-min_version = (2,6)
-max_version = (2,9)
+min_version = (3,6)
+max_version = (3,9)
 
 if sys.version_info < min_version or sys.version_info > max_version:
-    print(stderr,"Python version 2.6 or 2.7 is required")
+    print(stderr,"Python version 3.6 or newer is required")
     sys.exit(1)
 
 from ipf.catalog import catalog
@@ -45,13 +46,11 @@ if __name__ == "__main__":
         if re.search(options.name_pattern,step.name) == None:
             continue
         if not reduce(lambda b1,b2: b1 or b2,
-                      map(lambda cls: re.search(options.input_pattern,cls.__module__+"."+cls.__name__) is not None,
-                          step.requires),
+                      [re.search(options.input_pattern,cls.__module__+"."+cls.__name__) is not None for cls in step.requires],
                       False):
             continue
         if not reduce(lambda b1,b2: b1 or b2,
-                      map(lambda cls: re.search(options.output_pattern,cls.__module__+"."+cls.__name__) is not None,
-                          step.produces),
+                      [re.search(options.output_pattern,cls.__module__+"."+cls.__name__) is not None for cls in step.produces],
                       False):
             continue
         print(step)

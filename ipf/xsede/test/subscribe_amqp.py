@@ -115,7 +115,7 @@ def connect(options):
 #######################################################################################################################
 
 def subscribe(channel, exchange, filter):
-    print("subscribing to exchange %s for messages matching '%s'" % (exchange,filter))
+    print("subscribing to exchange %s for messages matching '%s'" % (exchange,filter)))
     declare_ok = channel.queue_declare()
     queue = declare_ok.queue
     channel.queue_bind(queue,exchange,filter)

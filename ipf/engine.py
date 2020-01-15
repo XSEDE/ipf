@@ -27,6 +27,7 @@ from ipf.error import WorkflowError
 from ipf.paths import IPF_ETC_PATH, IPF_WORKFLOW_PATHS
 from ipf.step import Step
 from ipf.workflow import Workflow
+from functools import reduce
 
 #######################################################################################################################
 
@@ -59,7 +60,7 @@ class WorkflowEngine(object):
         for step in workflow.steps:
             try:
                 step.start()
-            except OSError, e:
+            except OSError as e:
                 logger.error("failed to start step: %d (%s)\n" % (e.errno, e.strerror))
                 logger.warn("aborting workflow")
                 for step in workflow.steps:
@@ -68,7 +69,7 @@ class WorkflowEngine(object):
                 return
 
         start_time = time.time()
-        steps_with_inputs = filter(self._sendNoMoreInputs,workflow.steps)
+        steps_with_inputs = list(filter(self._sendNoMoreInputs,workflow.steps))
         while self._anyAlive(workflow.steps):
             if workflow.timeout is not None and time.time() - start_time > workflow.timeout:
                 logger.warn("time out, terminating workflow")
@@ -77,12 +78,12 @@ class WorkflowEngine(object):
                         step.terminate()
                 break
             time.sleep(0.1)
-            steps_with_inputs = filter(self._sendNoMoreInputs,steps_with_inputs)
+            steps_with_inputs = list(filter(self._sendNoMoreInputs,steps_with_inputs))
 
         for step in workflow.steps:
             step.join()
 
-        if reduce(lambda b1,b2: b1 and b2, map(lambda step: step.exitcode == 0, workflow.steps)):
+        if reduce(lambda b1,b2: b1 and b2, [step.exitcode == 0 for step in workflow.steps]):
             logger.info("workflow succeeded")
         else:
             logger.error("workflow failed")
@@ -93,7 +94,7 @@ class WorkflowEngine(object):
                     logger.error(" %10s failed    (%s)",step.id,step.__class__.__name__)
                     
     def _anyAlive(self, steps):
-        return reduce(lambda b1,b2: b1 or b2, map(lambda step: step.is_alive(), steps), False)
+        return reduce(lambda b1,b2: b1 or b2, [step.is_alive() for step in steps], False)
 
     def _sendNoMoreInputs(self, step):
         if self._anyAlive(step.depends_on):

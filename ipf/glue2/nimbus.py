@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import datetime
 import os
 import socket
@@ -147,7 +147,7 @@ class ComputingEndpointStep(computing_endpoint.ComputingEndpointStep):
 
         cert_file = os.path.join(nimbus_dir,"var","hostcert.pem")
         cmd = openssl+" x509 -in "+cert_file+" -issuer -noout"
-        (status, output) = commands.getstatusoutput(cmd)
+        (status, output) = subprocess.getstatusoutput(cmd)
         if status == 0:
             try:
                 # remove the 'issuer= ' prefix
@@ -175,7 +175,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
         try:
             return self._fromNimbusAdmin()
-        except StepError, e:
+        except StepError as e:
             # probably an older Nimbus version without the nimbus-admin command
             # don't bother to pull node assignments out of services.log
             self.info("getting activities from current-reservations.txt instead of nimbus-admin: %s",str(e))
@@ -189,12 +189,12 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
         cmd = nimbus_admin + " -l"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("nimbus-admin failed: "+output+"\n")
 
         vm_strings = output.split("\n\n")
-        return map(self._activityFromAdmin,vm_strings)
+        return list(map(self._activityFromAdmin,vm_strings))
 
     def _activityFromAdmin(self, vm_string):
         activity = computing_activity.ComputingActivity()
@@ -462,12 +462,12 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
 
         cmd = nimbus_nodes + " -l"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("nimbus-nodes failed: "+output+"\n")
 
         nodeStrings = output.split("\n\n")
-        return self._groupHosts(map(self._getNode,nodeStrings))
+        return self._groupHosts(list(map(self._getNode,nodeStrings)))
 
     def _getNode(self, nodeString):
         lines = nodeString.split("\n")

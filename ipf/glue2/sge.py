@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import datetime
 import os
 import re
@@ -91,7 +91,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
         # the output of -u is in schedule order
         cmd = qstat + " -xml -pri -s prsz -u \\*"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             self.error("qstat failed: "+output+"\n")
             raise StepError("qstat failed: "+output+"\n")
@@ -105,7 +105,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
         cmd = qstat + " -xml -s prsz -j \\*"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             self.error("qstat failed: "+output+"\n")
             raise StepError("qstat failed: "+output+"\n")
@@ -421,7 +421,7 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
             qstat = "qstat"
         cmd = qstat + " -xml -s prsz -j " + job.LocalIDFromManager
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("qstat failed: "+output+"\n")
         parseJLines(output,{job.LocalIDFromManager: job},self)
@@ -442,7 +442,7 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
             qconf = "qconf"
         cmd = qconf + " -sq \**"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             self.error("qconf failed: "+output+"\n")
             raise StepError("qconf failed: "+output+"\n")
@@ -518,7 +518,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
 
         cmd = qhost + " -xml -q"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             self.error("qhost failed: "+output+"\n")
             raise StepError("qhost failed: "+output+"\n")

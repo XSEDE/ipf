@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import datetime
 import json
 import os

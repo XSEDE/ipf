@@ -15,14 +15,14 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import httplib
+import http.client
 import os
 import random
 import ssl
 import sys
 import threading
 import time
-from Queue import Empty
+from queue import Empty
 
 from ipf.error import NoMoreInputsError, StepError
 from ipf.paths import IPF_ETC_PATH, IPF_VAR_PATH
@@ -130,7 +130,7 @@ class AmqpStep(PublishStep):
             self.password = "guest"
         if "ssl_options" in self.params:
             self.ssl_options = {}
-            for (key,value) in self.params["ssl_options"].iteritems():
+            for (key,value) in self.params["ssl_options"].items():
                 self.ssl_options[key.encode("utf-8")] = value.encode("utf-8")
             try:
                 if not os.path.isabs(self.ssl_options["keyfile"]):
@@ -197,11 +197,11 @@ class AmqpStep(PublishStep):
         self.debug("  with routing key '%s' to exchange '%s'",representation.data.id.encode("utf-8"),self.exchange)
         try:
             self._publishOnce(representation)
-        except Exception, e:
+        except Exception as e:
             self.info("first publish failed: %s",e)
             try:
                 self._publishOnce(representation)
-            except Exception, e:
+            except Exception as e:
                 self.error("publishing failed twice - discarding data: %s",e)
 
     def _publishOnce(self, representation):
@@ -213,7 +213,7 @@ class AmqpStep(PublishStep):
             self.channel.basic_publish(amqp.Message(body=representation.get()),
                                        self.exchange,
                                        representation.data.id.encode("utf-8"))
-        except Exception, e:
+        except Exception as e:
             self._close()
             raise StepError("failed to publish %s: %s" % (representation.__class__,e))
 
@@ -225,7 +225,7 @@ class AmqpStep(PublishStep):
             try:
                 self._connect(service)
                 return
-            except Exception, e:
+            except Exception as e:
                 self.warning("failed to connect to service %s: %s",service,e)
         raise StepError("could not connect to any of the specified messaging services")
 
@@ -330,10 +330,10 @@ class HttpStep(PublishStep):
 
     def _publish(self, representation):
         self.info("publishing %s",representation)
-        connection = httplib.HTTPConnection(self.host+":"+str(self.port))
+        connection = http.client.HTTPConnection(self.host+":"+str(self.port))
         connection.request(self.method,self.path,representation.get(),{"Content-Type": representation.mime_type})
-        response = httplib.getresponse()
-        if not (response.status == httplib.OK or response.status == httplib.CREATED):
+        response = http.client.getresponse()
+        if not (response.status == http.client.OK or response.status == http.client.CREATED):
             self.error("failed to '"+self.method+"' to http://"+self.host+":"+self.port+self.path+" - "+
                        str(response.status)+" "+response.reason)
         connection.close()

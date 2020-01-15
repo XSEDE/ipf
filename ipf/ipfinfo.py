@@ -27,7 +27,7 @@ from ipf.step import Step
 from ipf.paths import IPF_PARENT_PATH, IPF_ETC_PATH, IPF_WORKFLOW_PATHS, IPF_VAR_PATH
 from ipf.sysinfo import ResourceName
 
-from glue2.entity import *
+from .glue2.entity import *
 
 #######################################################################################################################
 

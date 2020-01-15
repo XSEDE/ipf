@@ -45,7 +45,7 @@ class Workflow(object):
         file = open(file_name,"r")
         try:
             doc = json.load(file)
-        except ValueError, e:
+        except ValueError as e:
             raise WorkflowError("could not parse workflow file %s: %s" % (file_name,e))
         file.close()
 

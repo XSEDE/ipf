@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import datetime
 import os
 import re
@@ -85,7 +85,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
         # what flavors is -x (xml) available in?
         cmd = qstat + " -f"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("qstat failed: "+output+"\n")
 
@@ -222,7 +222,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
         m = re.search("exec_host = (\S+)",jobString)
         if m is not None:
             # exec_host = c013.cm.cluster/7+c013.cm.cluster/6+...
-            nodes = set(map(lambda s: s.split("/")[0], m.group(1).split("+")))
+            nodes = set([s.split("/")[0] for s in m.group(1).split("+")])
             job.ExecutionNode = list(nodes)
 
         return job
@@ -321,7 +321,7 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
         m = re.search(" \(nodelist=([^\)]+)\)",toks[5])
         if m is None:
             return
-        activity.ExecutionNode = list(set(map(lambda s: s.split("/")[0], m.group(1).split("+"))))
+        activity.ExecutionNode = list(set([s.split("/")[0] for s in m.group(1).split("+")]))
             
     def _handleJobEntry(self, toks):
         id = toks[4].split(".")[0]  # just the id part of id.host.name
@@ -396,7 +396,7 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
         qstat = self.params.get("qstat","qstat")
         cmd = qstat + " -f " + id
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             self.warning("qstat failed: "+output+"\n")
             activity = computing_activity.ComputingActivity()
@@ -439,7 +439,7 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
         qstat = self.params.get("qstat","qstat")
         cmd = qstat + " -Q -f -M"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             self.error("qstat failed: "+output)
             raise StepError("qstat failed: "+output+"\n")
@@ -573,15 +573,15 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
 
         cmd = pbsnodes + " -a"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             self.error("pbsnodes failed: "+output)
             raise StepError("pbsnodes failed: "+output+"\n")
 
         nodeStrings = output.split("\n\n")
-        hosts = map(self._getHost,nodeStrings)
-        hosts = filter(self._testProperties,hosts)
-        hosts = filter(self._goodHost,hosts)
+        hosts = list(map(self._getHost,nodeStrings))
+        hosts = list(filter(self._testProperties,hosts))
+        hosts = list(filter(self._goodHost,hosts))
         return self._groupHosts(hosts)
 
     def _getHost(self, nodeString):

@@ -19,7 +19,7 @@ import datetime
 import json
 import time
 from xml.dom.minidom import getDOMImplementation
-import ConfigParser
+import configparser
 
 from ipf.data import Data, Representation
 from ipf.dt import *

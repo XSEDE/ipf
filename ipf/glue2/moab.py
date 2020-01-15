@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import datetime
 import os
 import re
@@ -64,7 +64,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
             except KeyError:
                 pass
 
-        jobs = rm_jobs.values()
+        jobs = list(rm_jobs.values())
         jobs = sorted(jobs,key=self._jobPosition)
         jobs = sorted(jobs,key=self._jobStateKey)
 
@@ -75,7 +75,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
             return job.position
         except AttributeError:
             self.warning("didn't find queue position for job %s in state %s" % (job.LocalIDFromManager,job.State))
-            return sys.maxint
+            return sys.maxsize
 
 
     def _addJobs(self, flag, jobs):
@@ -86,7 +86,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
         cmd = showq + " "+flag+" --xml"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("showq failed: "+output+"\n")
 

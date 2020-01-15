@@ -44,7 +44,7 @@ class ComputingActivitiesStep(pbs.ComputingActivitiesStep):
             f = open(job_list_file,"r")
             lines = f.readlines()
             f.close()
-        except IOError, e:
+        except IOError as e:
             raise StepError("couldn't read job list from file "+job_list_file)
 
 	job_ids = []
@@ -63,7 +63,7 @@ class ComputingActivitiesStep(pbs.ComputingActivitiesStep):
                 del job_dict[job_id]
             except KeyError:
                 self.warning("didn't find job "+job_id+" in job list")
-        for job_id in job_dict.keys():
+        for job_id in list(job_dict.keys()):
             self.warning("didn't find an entry in job list for PBS job "+job_id)
         return jobs
 

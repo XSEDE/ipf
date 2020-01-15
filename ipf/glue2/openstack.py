@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import datetime
 import os
 import sys
@@ -268,7 +268,7 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep, 
         activity.UsedMainMemory = flavor.ram
 
         addresses = []
-        for adds in server.addresses.values():
+        for adds in list(server.addresses.values()):
             for add in adds:
                 addresses.append(add["addr"])
         activity.Extension["IpAddresses"] = addresses
@@ -334,7 +334,7 @@ class ExecutionEnvironmentsStep(glue2.execution_environment.ExecutionEnvironment
 
         try:
             entries = nova.hosts.get(host_name)
-        except novaclient.exceptions.NotFound, e:
+        except novaclient.exceptions.NotFound as e:
             return None   # this is ok - non-compute hosts don't have any info
         for entry in entries:
             if entry.project == "(total)":

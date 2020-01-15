@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import logging
 import os
 import sys
@@ -57,7 +57,7 @@ class UserPortalLoadStep(Step):
             raise StepError("source not specified")
 
         cmd = "%s %s %s %s load" % (script,self.resource_name,source,source)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError(cmd+" failed: "+output+"\n")
         self._output(UserPortalLoad(self.resource_name,output))
@@ -113,7 +113,7 @@ class UserPortalJobsStep(Step):
             raise StepError("source not specified")
 
         cmd = "%s %s %s %s jobs" % (script,self.resource_name,source,source)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError(cmd+" failed: "+output+"\n")
         self._output(UserPortalJobs(self.resource_name,output))

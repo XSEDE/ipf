@@ -59,11 +59,11 @@ class Catalog(object):
         self._addSubclasses(Data,self.data)
         self._addSubclasses(Representation,self.representations)
 
-        for rep in self.representations.values():
+        for rep in list(self.representations.values()):
             if rep.data_cls not in self.reps_for_data:
                 self.reps_for_data[rep.data_cls] = []
             self.reps_for_data[rep.data_cls].append(rep)
-        for step_class in self.steps.values():
+        for step_class in list(self.steps.values()):
             step = step_class()
             for data in step.produces:
                 # add Data to producers

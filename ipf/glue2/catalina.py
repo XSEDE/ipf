@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import re
 import sys
 
@@ -46,7 +46,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
             job_map[job.LocalIDFromManager] = job
 
         self.debug("running "+query_priority)
-        status, output = commands.getstatusoutput(query_priority)
+        status, output = subprocess.getstatusoutput(query_priority)
         if status != 0:
             raise StepError("'%s' failed: %s\n" % (query_priority,output))
 
@@ -65,7 +65,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
             if toks[1].endswith("*"):
                 # a job had this priority: 100000000000000000000000000010*
                 # and was the highest priority job, so:
-                priority = sys.maxint
+                priority = sys.maxsize
             else:
                 priority = int(toks[1])
             try:

@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import datetime
 
 from ipf.dt import *
@@ -79,7 +79,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
         cmd = llq + " -l"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("llq failed: "+output+"\n")
 
@@ -112,7 +112,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
         cmd = llstatus + " -l"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("llstatus failed: "+output)
 
@@ -136,7 +136,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
                         slotOccurances[minSlots] = slotOccurances[minSlots] + 1
         mostFrequentSlots = -1
         maxOccurances = -1
-        for slots in slotOccurances.keys():
+        for slots in list(slotOccurances.keys()):
             if slotOccurances[slots] > maxOccurances:
                mostFrequentSlots = slots 
         return mostFrequentSlots
@@ -270,7 +270,7 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
 
         cmd = llclass + " -l"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("llclass failed: "+output+"\n")
 
@@ -392,7 +392,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
 
         cmd = llstatus + " -l"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("llstatus failed: "+output+"\n")
 

@@ -1,5 +1,5 @@
 
-import ConfigParser
+import configparser
 
 from ipf.step import Step
 

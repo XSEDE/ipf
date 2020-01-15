@@ -71,7 +71,7 @@ class EntityTeraGridXml(Representation):
             e = doc.createElement("OtherInfo")
             e.appendChild(doc.createTextNode(info))
             element.appendChild(e)
-        for key in self.data.Extension.keys():
+        for key in list(self.data.Extension.keys()):
             e = doc.createElement("Extension")
             e.setAttribute("Key",key)
             e.appendChild(doc.createTextNode(str(self.data.Extension[key])))

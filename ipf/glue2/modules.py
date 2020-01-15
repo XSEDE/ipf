@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import os
 import re
 import hashlib
@@ -45,7 +45,7 @@ class LModApplicationsStep(application.ApplicationsStep):
         module_paths = []
         try:
             paths = os.environ["MODULEPATH"]
-            module_paths.extend(map(os.path.realpath,paths.split(":")))
+            module_paths.extend(list(map(os.path.realpath,paths.split(":"))))
         except KeyError:
             raise StepError("didn't find environment variable MODULEPATH")
 
@@ -79,7 +79,7 @@ class LModApplicationsStep(application.ApplicationsStep):
 
         try:
             file = open(path)
-        except IOError, e:
+        except IOError as e:
             self.warning("%s" % e)
             return
         text = file.read()
@@ -97,12 +97,12 @@ class LModApplicationsStep(application.ApplicationsStep):
             self.debug("no URL in "+path)
         m = re.search("\"Category:([^\"]+)\"",text)
         if m is not None:
-            env.Extension["Category"] = map(str.strip,m.group(1).split(","))
+            env.Extension["Category"] = list(map(str.strip,m.group(1).split(",")))
         else:
             self.debug("no Category in "+path)
         m = re.search("\"Keywords:([^\"]+)\"",text)
         if m is not None:
-            env.Extension["Keywords"] = map(str.strip,m.group(1).split(","))
+            env.Extension["Keywords"] = list(map(str.strip,m.group(1).split(",")))
         else:
             self.debug("no Keywords in "+path)
 
@@ -132,7 +132,7 @@ class ModulesApplicationsStep(application.ApplicationsStep):
         module_paths = []
         try:
             paths = os.environ["MODULEPATH"]
-            module_paths.extend(map(os.path.realpath,paths.split(":")))
+            module_paths.extend(list(map(os.path.realpath,paths.split(":"))))
         except KeyError:
             raise StepError("didn't find environment variable MODULEPATH")
 
@@ -205,7 +205,7 @@ class ModulesApplicationsStep(application.ApplicationsStep):
                     description += " "
                 description += m.group(1)
         if description != "":
-            for modvar in modvars.keys():
+            for modvar in list(modvars.keys()):
                 if modvar in description:
                     description = description.replace("$"+modvar,modvars[modvar])
             description = description.replace("$_module_name",handle.Value)
@@ -243,7 +243,7 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         module_paths = []
         try:
             paths = os.environ["MODULEPATH"]
-            module_paths.extend(map(os.path.realpath,paths.split(":")))
+            module_paths.extend(list(map(os.path.realpath,paths.split(":"))))
         except KeyError:
             raise StepError("didn't find environment variable MODULEPATH")
 
@@ -288,7 +288,7 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
 
         try:
             file = open(path)
-        except IOError, e:
+        except IOError as e:
             self.warning("%s" % e)
             return
         text = file.read()
@@ -331,19 +331,19 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
             self.debug("no URL in "+path)
         m = re.search("\"Category:([^\"]+)\"",text)
         if m is not None:
-            env.Extension["Category"] = map(str.strip,m.group(1).split(","))
+            env.Extension["Category"] = list(map(str.strip,m.group(1).split(",")))
 
         else:
             self.debug("no Category in "+path)
         m = re.search("\"Keywords:([^\"]+)\"",text)
         if m is not None:
-            env.Keywords = map(str.strip,m.group(1).split(","))
+            env.Keywords = list(map(str.strip,m.group(1).split(",")))
         else:
             self.debug("no Keywords in "+path)
         m = re.search("\"SupportStatus:([^\"]+)\"",text)
         if m is not None:
             supportstatus = []
-            supportstatus.append(map(str.strip,m.group(1).split(",")))
+            supportstatus.append(list(map(str.strip,m.group(1).split(","))))
             env.Extension["SupportStatus"] = m.group(1).strip()
         else:
             self.debug("no SupportStatus in "+path)
@@ -360,7 +360,7 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         m = re.search("\"Default:([^\"]+)\"",text)
         if m is not None:
             default = []
-            default.append(map(str.strip,m.group(1).split(",")))
+            default.append(list(map(str.strip,m.group(1).split(","))))
             env.Extension["Default"] = m.group(1).strip()
         else:
             self.debug("no whatis Default: in "+path)
@@ -398,7 +398,7 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
                     description += " "
                 description += m.group(1)
         if description != "":
-            for modvar in modvars.keys():
+            for modvar in list(modvars.keys()):
                 if modvar in description:
                     description = description.replace("$"+modvar,modvars[modvar])
             description = description.replace("$_module_name",handle.Value)

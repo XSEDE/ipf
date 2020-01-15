@@ -74,7 +74,7 @@ class LogDirectoryWatcher(object):
     def run(self):
         while True:
             self._updateFiles()
-            for file in self.files.values():
+            for file in list(self.files.values()):
                 try:
                     file.handle()
                 except IOError:
@@ -121,8 +121,8 @@ class LogDirectoryWatcher(object):
         self.files[file.id] = file
 
     def _handleDeletedFiles(self, cur_files):
-        cur_file_ids = set(map(lambda file: file.id,cur_files))
-        for id in filter(lambda id: id not in cur_file_ids,self.files.keys()):
+        cur_file_ids = set([file.id for file in cur_files])
+        for id in [id for id in list(self.files.keys()) if id not in cur_file_ids]:
             if self.files[id].file is not None:
                 self.files[id].file.close()
             del self.files[id]
@@ -242,7 +242,7 @@ class PositionDB(object):
         self._write()
 
     def ids(self):
-        return self.position.keys()
+        return list(self.position.keys())
 
     def _read(self):
         if self.path is None:
@@ -256,7 +256,7 @@ class PositionDB(object):
                 (id,pos_str) = line.split()
                 self.position[id] = int(pos_str)
             file.close()
-        except IOError, e:
+        except IOError as e:
             logger.error("failed to read position database %s: %s" % (self.path,e))
 
     def _write(self):
@@ -267,7 +267,7 @@ class PositionDB(object):
             for key in self.position:
                 file.write("%s %d\n" % (key,self.position[key]))
             file.close()
-        except IOError, e:
+        except IOError as e:
             logger.error("failed to write position database %s: %s" % (self.path,e))
 
 #######################################################################################################################

@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import os
 import sys
 import time
@@ -46,7 +46,7 @@ class KitsStep(Step):
             raise StepError("core_kit_directory not specified")
 
         cmd = os.path.join(corekit_dir,"bin","kits-reg.pl")
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("'%s' failed: %s" % (cmd,output))
 

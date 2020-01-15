@@ -129,7 +129,7 @@ class Daemon(OneProcessOnly):
             if pid > 0:
                 # exit first parent
                 sys.exit(0)
-        except OSError, e:
+        except OSError as e:
             logger.error("fork #1 failed: %d (%s)\n" % (e.errno, e.strerror))
             sys.exit(1)
 
@@ -144,7 +144,7 @@ class Daemon(OneProcessOnly):
             if pid > 0:
                 # exit from second parent
                 sys.exit(0)
-        except OSError, e:
+        except OSError as e:
             logger.error("fork #2 failed: %d (%s)\n" % (e.errno, e.strerror))
             sys.exit(1)
 

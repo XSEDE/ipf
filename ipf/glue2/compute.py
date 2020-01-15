@@ -26,20 +26,20 @@ from ipf.sysinfo import ResourceName
 from ipf.step import Step
 
 from  ipf.ipfinfo import IPFInformation, IPFInformationJson, IPFInformationTxt
-from computing_activity import ComputingActivities, ComputingActivityTeraGridXml, ComputingActivityOgfJson
-from computing_manager import ComputingManager, ComputingManagerTeraGridXml, ComputingManagerOgfJson
-from computing_manager_accel_info import ComputingManagerAcceleratorInfo, ComputingManagerAcceleratorInfoOgfJson
-from computing_service import ComputingService, ComputingServiceTeraGridXml, ComputingServiceOgfJson
-from computing_share import ComputingShares, ComputingShareTeraGridXml, ComputingShareOgfJson
-from computing_share_accel_info import ComputingShareAcceleratorInfo, ComputingShareAcceleratorInfoOgfJson
-from execution_environment import ExecutionEnvironments, ExecutionEnvironmentTeraGridXml
-from execution_environment import ExecutionEnvironmentTeraGridXml
-from execution_environment import ExecutionEnvironmentOgfJson
-from accelerator_environment import AcceleratorEnvironments
-from accelerator_environment import AcceleratorEnvironmentsOgfJson
-from accelerator_environment import AcceleratorEnvironment
-from accelerator_environment import AcceleratorEnvironmentOgfJson
-from location import Location, LocationOgfJson, LocationTeraGridXml
+from .computing_activity import ComputingActivities, ComputingActivityTeraGridXml, ComputingActivityOgfJson
+from .computing_manager import ComputingManager, ComputingManagerTeraGridXml, ComputingManagerOgfJson
+from .computing_manager_accel_info import ComputingManagerAcceleratorInfo, ComputingManagerAcceleratorInfoOgfJson
+from .computing_service import ComputingService, ComputingServiceTeraGridXml, ComputingServiceOgfJson
+from .computing_share import ComputingShares, ComputingShareTeraGridXml, ComputingShareOgfJson
+from .computing_share_accel_info import ComputingShareAcceleratorInfo, ComputingShareAcceleratorInfoOgfJson
+from .execution_environment import ExecutionEnvironments, ExecutionEnvironmentTeraGridXml
+from .execution_environment import ExecutionEnvironmentTeraGridXml
+from .execution_environment import ExecutionEnvironmentOgfJson
+from .accelerator_environment import AcceleratorEnvironments
+from .accelerator_environment import AcceleratorEnvironmentsOgfJson
+from .accelerator_environment import AcceleratorEnvironment
+from .accelerator_environment import AcceleratorEnvironmentOgfJson
+from .location import Location, LocationOgfJson, LocationTeraGridXml
 #######################################################################################################################
 
 class PublicStep(Step):
@@ -168,32 +168,28 @@ class PublicOgfJson(Representation):
         doc = {}
 
         if self.data.ipfinfo is not None:
-            doc["PublisherInfo"] = map(lambda ipfinfo: IPFInformationJson(ipfinfo).toJson(), self.data.ipfinfo)
+            doc["PublisherInfo"] = [IPFInformationJson(ipfinfo).toJson() for ipfinfo in self.data.ipfinfo]
         if len(self.data.location) > 0:
-            doc["Location"] = map(lambda location: LocationOgfJson(location).toJson(),self.data.location)
+            doc["Location"] = [LocationOgfJson(location).toJson() for location in self.data.location]
         if self.data.service is not None:
-            doc["ComputingService"] = map(lambda service: ComputingServiceOgfJson(service).toJson(),self.data.service)
+            doc["ComputingService"] = [ComputingServiceOgfJson(service).toJson() for service in self.data.service]
         if len(self.data.share) > 0:
-            doc["ComputingShare"] = map(lambda share: ComputingShareOgfJson(share).toJson(),self.data.share)
+            doc["ComputingShare"] = [ComputingShareOgfJson(share).toJson() for share in self.data.share]
         if len(self.data.share_accel_info) > 0:
-            csai = map(lambda exec_env: ComputingShareAcceleratorInfoOgfJson(exec_env).toJson(),
-                                              self.data.share_accel_info)
-	    csaii = list(filter(None, csai))
+            csai = [ComputingShareAcceleratorInfoOgfJson(exec_env).toJson() for exec_env in self.data.share_accel_info]
+	    csaii = list([_f for _f in csai if _f])
             if len(csaii) > 0:
                 doc["ComputingShareAcceleratorInfo"] = csaii
         if len(self.data.manager) > 0:
-            doc["ComputingManager"] = map(lambda manager: ComputingManagerOgfJson(manager).toJson(),self.data.manager)
+            doc["ComputingManager"] = [ComputingManagerOgfJson(manager).toJson() for manager in self.data.manager]
         if len(self.data.environment) > 0:
-            doc["ExecutionEnvironment"] = map(lambda exec_env: ExecutionEnvironmentOgfJson(exec_env).toJson(),
-                                              self.data.environment)
+            doc["ExecutionEnvironment"] = [ExecutionEnvironmentOgfJson(exec_env).toJson() for exec_env in self.data.environment]
         if self.data.accelenvironment:
             if len(self.data.accelenvironment) > 0:
-                doc["AcceleratorEnvironment"] = map(lambda exec_env: AcceleratorEnvironmentOgfJson(exec_env).toJson(),
-                                              self.data.accelenvironment)
+                doc["AcceleratorEnvironment"] = [AcceleratorEnvironmentOgfJson(exec_env).toJson() for exec_env in self.data.accelenvironment]
         if len(self.data.manager_accel_info) > 0:
-            cmai = map(lambda exec_env: ComputingManagerAcceleratorInfoOgfJson(exec_env).toJson(),
-                                              self.data.manager_accel_info)
-	    cmaii = list(filter(None, cmai))
+            cmai = [ComputingManagerAcceleratorInfoOgfJson(exec_env).toJson() for exec_env in self.data.manager_accel_info]
+	    cmaii = list([_f for _f in cmai if _f])
             if len(cmaii) > 0:
                 doc["ComputingManagerAcceleratorInfo"] = cmaii
         
@@ -289,9 +285,8 @@ class PrivateOgfJson(Representation):
     def toJson(self):
         doc = {}
         if len(self.data.activity) > 0:
-            doc["ComputingActivity"] = map(lambda activity: ComputingActivityOgfJson(activity).toJson(),
-                                           self.data.activity)
-        doc["PublisherInfo"] = map(lambda ipfinfo: IPFInformationJson(ipfinfo).toJson(), self.data.ipfinfo)
+            doc["ComputingActivity"] = [ComputingActivityOgfJson(activity).toJson() for activity in self.data.activity]
+        doc["PublisherInfo"] = [IPFInformationJson(ipfinfo).toJson() for ipfinfo in self.data.ipfinfo]
         return doc
 
 #######################################################################################################################

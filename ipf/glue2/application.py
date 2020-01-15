@@ -209,7 +209,7 @@ class ApplicationsOgfJson(Representation):
         doc["ApplicationHandle"] = []
         for handle in self.data.handles:
             doc["ApplicationHandle"].append(ApplicationHandleOgfJson(handle).toJson())
-        doc["PublisherInfo"] = map(lambda ipfinfo: IPFInformationJson(ipfinfo).toJson(), self.data.ipfinfo)
+        doc["PublisherInfo"] = [IPFInformationJson(ipfinfo).toJson() for ipfinfo in self.data.ipfinfo]
         return doc
 
 #######################################################################################################################

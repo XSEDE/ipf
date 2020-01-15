@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import socket
 import sys
 
@@ -35,7 +35,7 @@ class ResourceNameStep(ipf.sysinfo.ResourceNameStep):
             resource_name = self.params["resource_name"]
         except KeyError:
             tg_whereami = self.params.get("tgwhereami","tgwhereami")
-            (status, output) = commands.getstatusoutput(tg_whereami)
+            (status, output) = subprocess.getstatusoutput(tg_whereami)
             if status != 0:
                 raise StepError("failed to execute %s: %s" % (tg_whereami,output))
             resource_name = output
@@ -57,7 +57,7 @@ class SiteNameStep(ipf.sysinfo.SiteNameStep):
             site_name = self.params["site_name"]
         except KeyError:
             tg_whereami = self.params.get("tgwhereami","tgwhereami")
-            (status, output) = commands.getstatusoutput(tg_whereami+" -s")
+            (status, output) = subprocess.getstatusoutput(tg_whereami+" -s")
             if status != 0:
                 raise StepError("failed to execute %s: %s" % (tg_whereami,output))
             site_name = output
@@ -77,7 +77,7 @@ class PlatformStep(ipf.sysinfo.PlatformStep):
             tg_whatami = self.params["tgwhatami"]
         except KeyError:
             tg_whatami = "tgwhatami"
-        (status, output) = commands.getstatusoutput(tg_whatami)
+        (status, output) = subprocess.getstatusoutput(tg_whatami)
         if status != 0:
             raise StepError("failed to execute %s" % tg_whatami)
         return output

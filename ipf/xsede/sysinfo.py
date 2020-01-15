@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import socket
 import sys
 
@@ -35,7 +35,7 @@ class ResourceNameStep(ipf.sysinfo.ResourceNameStep):
             resource_name = self.params["resource_name"]
         except KeyError:
             xdresourceid = self.params.get("xdresourceid","xdresourceid")
-            (status, output) = commands.getstatusoutput(xdresourceid)
+            (status, output) = subprocess.getstatusoutput(xdresourceid)
             if status != 0:
                 raise StepError("failed to execute %s: %s" % (xdresourceid,output))
             resource_name = output
@@ -57,7 +57,7 @@ class SiteNameStep(ipf.sysinfo.SiteNameStep):
             site_name = self.params["site_name"]
         except KeyError:
             xdresourceid = self.params.get("xdresourceid","xdresourceid")
-            (status, output) = commands.getstatusoutput(xdresourceid+" -s")
+            (status, output) = subprocess.getstatusoutput(xdresourceid+" -s")
             if status != 0:
                 raise StepError("failed to execute %s: %s" % (xdresourceid,output))
             site_name = output

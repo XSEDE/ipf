@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import datetime
 
 from ipf.error import StepError
@@ -79,7 +79,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
         cmd = condor_q + " -long"
         logger.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("condor_q failed: "+output+"\n")
 
@@ -223,7 +223,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
 
         cmd = condor_status + " -long"
         info.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("condor_status failed: "+output+"\n")
 

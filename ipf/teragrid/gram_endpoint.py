@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import os
 import re
 import sys
@@ -188,7 +188,7 @@ class GramEndpointStep(ComputingEndpointStep):
             grid_cert_info = "grid-cert-info"
         
         cmd = grid_cert_info + " -issuer -file "+caFile
-        (status, output) = commands.getstatusoutput(cmd)
+        (status, output) = subprocess.getstatusoutput(cmd)
         if status == 0:
             return output
         else:
@@ -212,7 +212,7 @@ class GramEndpointStep(ComputingEndpointStep):
             grid_cert_info = "grid-cert-info"
 
         cmd = grid_cert_info + " -subject -file "+caFile
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status == 0:
             return output
         else:

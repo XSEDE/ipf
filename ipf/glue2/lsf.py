@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import datetime
 
 from ipf.dt import *
@@ -81,7 +81,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
         cmd = bjobs + " -a -l -u all"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("bjobs failed: "+output+"\n")
 
@@ -268,7 +268,7 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
 
         cmd = bqueues + " -l"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("bqueues failed: "+output+"\n")
 
@@ -418,7 +418,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
 
         cmd = lshosts + " -w"
         info.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("lshosts failed: "+output)
 
@@ -432,7 +432,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
 
         cmd = bhosts + " -w"
         self.debug("running "+cmd)
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("bhosts failed: "+output)
 
@@ -443,7 +443,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
             bhostsRecords[rec.hostName] = rec
 
         all_hosts = []
-        for host in lshostsRecords.keys():
+        for host in list(lshostsRecords.keys()):
             lshost = lshostsRecords.get(host)
             bhost = bhostsRecords.get(host)
             if bhost == None:

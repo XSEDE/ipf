@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import logging
 import os
 import sys
@@ -67,7 +67,7 @@ class LocalSoftwareStep(Step):
         except KeyError:
             raise StepError("script not specified")
 
-        status, output = commands.getstatusoutput(cmd)
+        status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError(cmd+" failed: "+output+"\n")
         self._output(LocalSoftware(self.resource_name,output))

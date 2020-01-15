@@ -26,8 +26,8 @@ from ipf.error import StepError
 from ipf.paths import IPF_VAR_PATH
 from ipf.sysinfo import ResourceName
 
-from activity import *
-from step import GlueStep
+from .activity import *
+from .step import GlueStep
 
 #######################################################################################################################
 

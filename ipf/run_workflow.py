@@ -21,11 +21,11 @@ import optparse
 import os
 import sys
 
-min_version = (2,6)
-max_version = (2,9)
+min_version = (3,6)
+max_version = (3,9)
 
 if sys.version_info < min_version or sys.version_info > max_version:
-    print(sys.stderr,"Python version 2.6 or 2.7 is required")
+    print(sys.stderr,"Python version 3.6 or newer is required")
     sys.exit(1)
 
 from ipf.daemon import OneProcessWithRedirect,Daemon

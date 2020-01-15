@@ -15,7 +15,7 @@
 #   limitations under the License.                                            #
 ###############################################################################
 
-import commands
+import subprocess
 import datetime
 import os
 import re
@@ -105,7 +105,7 @@ class StorageServiceStep(Step):
         ServiceType = ""
         try:
             file = open(path)
-        except IOError, e:
+        except IOError as e:
             self.warning("%s" % e)
             return
         text = file.read()
@@ -166,7 +166,7 @@ class StorageServiceStep(Step):
             print("no qualitylevel in "+path)
         m = re.search("Keywords = ([^\ ]+)\n",text)
         if m is not None:
-            serv.Extension["Keywords"] = map(str.strip,m.group(1).split(","))
+            serv.Extension["Keywords"] = list(map(str.strip,m.group(1).split(",")))
         else:
             self.debug("no keywords in "+path)
             print("no keywords in "+path)

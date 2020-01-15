@@ -65,8 +65,7 @@ def _deleteSetupCfg():
     os.remove(_getSetupCfgFileName())
 
 def workflow_paths(directory):
-    return filter(lambda path: os.path.isfile(path) and path.endswith(".json"),
-                  map(lambda file: os.path.join(directory,file),os.listdir(directory)))
+    return [path for path in [os.path.join(directory,file) for file in os.listdir(directory)] if os.path.isfile(path) and path.endswith(".json")]
 
 if __name__ == "__main__":
     _createManifest()

@@ -22,13 +22,13 @@ import os
 import socket
 import subprocess
 import threading
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import time
 
 #######################################################################################################################
 
 def configure():
-    print
+    print()
     print("This script asks you for information and configures your IPF installation.")
     print("  This script backs up your existing configuration, by renaming the existing configuration files with .backup-TIMESTAMP")
 
@@ -42,7 +42,7 @@ def configure():
     writeComputeWorkflow(resource_name,compute_json)
     writePeriodicComputeWorkflow(resource_name)
 
-    print
+    print()
     print("You may need to modify the default environment in your init scripts so that the information gathering works correctly. For example:")
     print("  * batch scheduler commands need to be in PATH")
     print("  * scheduler-related environment variables may need to be set")
@@ -102,7 +102,7 @@ def getResourceName():
     try:
         process = subprocess.Popen(["xdresourceid"], stdout=subprocess.PIPE)
         out, err = process.communicate()
-    except Exception, e:
+    except Exception as e:
         print("Failed to use xdresourceid to get resource name: %s" % e)
         xdresid_name = None
     else:
@@ -220,7 +220,7 @@ class FreeGeoIp(threading.Thread):
 
     def run(self):
         host_name = socket.getfqdn()
-        self.output = urllib2.urlopen("http://freegeoip.net/json/"+host_name).read()
+        self.output = urllib.request.urlopen("http://freegeoip.net/json/"+host_name).read()
 
 def updateFilePublishPaths(resource_name, workflow_json):
     res_name = resource_name.split(".")[0]
@@ -700,26 +700,26 @@ def readWorkflowFile(path):
 #######################################################################################################################
 
 def question(text, default=None):
-    print
+    print()
     if default is None:
-        answer = raw_input("%s: " % text)
+        answer = input("%s: " % text)
         if answer == "":
             raise Exception("no input provided")
     else:
-        answer = raw_input("%s (%s): " % (text,default))
+        answer = input("%s (%s): " % (text,default))
         if answer == "":
             return default
     return answer
 
 def options(text, opts, default=None):
-    print
+    print()
     if default is None:
         print("%s:" % text)
     else:
         print("%s (%s):" % (text,default))
     for i in range(len(opts)):
         print("  (%d) %s" % ((i+1),opts[i]))
-    answer = raw_input(": ")
+    answer = input(": ")
     if answer == "":
         if default is None:
             print("no options selected - pick a number")
