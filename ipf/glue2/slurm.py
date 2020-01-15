@@ -378,7 +378,7 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
             raise StepError("scontrol failed: "+output+"\n")
         reservation_strs = output.split("\n\n")
         try:
-            reservations = map(self._getReservation,reservation_strs)
+            reservations = map(lambda share: self.includeQueue(share.PartitionName),map(self._getReservation,reservation_strs))
         except:
             reservations = []
 
@@ -482,7 +482,8 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
             raise StepError("scontrol failed: "+output+"\n")
         reservation_strs = output.split("\n\n")
         try:
-            reservations = map(self._getReservation,reservation_strs)
+            #reservations = map(self._getReservation,reservation_strs)
+            reservations = map(lambda share: self.includeQueue(share.PartitionName),map(self._getReservation,reservation_strs))
         except:
             reservations = []
 
@@ -549,6 +550,9 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         m = re.search("RealMemory=(\S+)",node_str)  # MB
         if m is not None:
             node.MainMemorySize = int(m.group(1))
+        m = re.search("Partitions=(\S+)",node_str)
+        if m is not None:
+            node.Partitions = m.group(1)
         m = re.search("State=(\S+)",node_str)
         if m is not None:
             node.TotalInstances = 1
@@ -726,7 +730,8 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
             raise StepError("scontrol failed: "+output+"\n")
         reservation_strs = output.split("\n\n")
         try:
-            reservations = map(self._getReservation,reservation_strs)
+            #reservations = map(self._getReservation,reservation_strs)
+            reservations = map(lambda share: self.includeQueue(share.PartitionName),map(self._getReservation,reservation_strs))
         except:
             reservations = []
 

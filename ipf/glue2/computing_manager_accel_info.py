@@ -93,7 +93,7 @@ class ComputingManagerAcceleratorInfo(Entity):
         if accel_env.LogicalAccelerators is not None:
             if self.TotalLogicalAccelerators == None:
                 self.TotalLogicalAccelerators = 0
-            self.TotalLogicalAcclerators = self.TotalLogicalAccelerators + accel_env.TotalInstances * accel_env.LogicalAccelerators
+            self.TotalLogicalAccelerators = self.TotalLogicalAccelerators + accel_env.TotalInstances * accel_env.LogicalAccelerators
             self.TotalSlots = self.TotalLogicalAccelerators
         if accel_env.UsedAcceleratorSlots is not None:
             if self.UsedAcceleratorSlots == None:
