@@ -57,7 +57,7 @@ def _createSetupCfg():
     f.write("""
 [bdist_rpm]
 requires = python-amqp >= 1.4
-requires = python-amqp < 2
+#requires = python-amqp < 2
     """)
     f.close()
 
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     _createManifest()
     _createSetupCfg()
     setup(name="ipf",
-          version="1.4",
+          version="1.5",
           description="The Information Publishing Framework",
           long_description=readme(),
           classifiers=[
@@ -82,8 +82,8 @@ if __name__ == "__main__":
           ],
           keywords="monitoring information gathering publishing glue2",
           url="https://bitbucket.org/wwsmith/ipf",
-          author="Warren Smith",
-          author_email="wsmith@tacc.utexas.edu",
+          author="Eric Blau, Warren Smith",
+          author_email="blau@anl.gov",
           license="Apache",
           packages=["ipf","ipf.glue2","ipf.xsede","ipf.xsede.test"],
           install_requires=["amqp >=1.4,<2"],

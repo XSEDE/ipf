@@ -37,6 +37,7 @@ from .step import GlueStep
 
 #######################################################################################################################
 
+
 class AcceleratorEnvironmentsStep(GlueStep):
 
     def __init__(self):
@@ -44,7 +45,7 @@ class AcceleratorEnvironmentsStep(GlueStep):
 
         self.description = "Produces a document containing one or more GLUE 2 AcceleratorEnvironment. For a batch scheduled system, an ExecutionEnivonment is typically a compute node."
         self.time_out = 30
-        self.requires = [ResourceName,Platform]
+        self.requires = [ResourceName, Platform]
         self.produces = [AcceleratorEnvironments]
         self._acceptParameter("queues",
                               "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. The expression is processed in order and the value for a queue at the end determines if it is shown.",
@@ -54,17 +55,20 @@ class AcceleratorEnvironmentsStep(GlueStep):
 
     def run(self):
         self.resource_name = self._getInput(ResourceName).resource_name
-        
-        host_groups = self._run()
-	if host_groups:
-            for host_group in host_groups:
-                host_group.id = "%s.%s" % (host_group.Name,self.resource_name)
-                host_group.ID = "urn:glue2:AcceleratorEnvironment:%s.%s" % (host_group.Name,self.resource_name)
-                host_group.ManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
-                self.debug("host_group.id "+host_group.id)
-                self.debug("host_group.uas "+str(host_group.UsedAcceleratorSlots))
 
-        self._output(AcceleratorEnvironments(self.resource_name,host_groups))
+        host_groups = self._run()
+        if host_groups:
+            for host_group in host_groups:
+                host_group.id = "%s.%s" % (host_group.Name, self.resource_name)
+                host_group.ID = "urn:glue2:AcceleratorEnvironment:%s.%s" % (
+                    host_group.Name, self.resource_name)
+                host_group.ManagerID = "urn:glue2:ComputingManager:%s" % (
+                    self.resource_name)
+                self.debug("host_group.id "+host_group.id)
+                self.debug("host_group.uas " +
+                           str(host_group.UsedAcceleratorSlots))
+
+        self._output(AcceleratorEnvironments(self.resource_name, host_groups))
 
     def _shouldUseName(self, hosts):
         names = set()
@@ -80,7 +84,7 @@ class AcceleratorEnvironmentsStep(GlueStep):
         host_groups = []
         for host in hosts:
             for host_group in host_groups:
-                if host.sameHostGroup(host_group,use_name):
+                if host.sameHostGroup(host_group, use_name):
                     if "UsedAverageLoad" in host.Extension:
                         host_load = host.Extension["UsedAverageLoad"]
                         if "UsedAverageLoad" not in host_group.Extension:
@@ -89,7 +93,7 @@ class AcceleratorEnvironmentsStep(GlueStep):
                             host_group_load = host_group.Extension["UsedAverageLoad"]
                             host_group_load = (host_group_load * host_group.UsedInstances +
                                                host_load * host.UsedInstances) / \
-                                               (host_group.UsedInstances + host.UsedInstances)
+                                (host_group.UsedInstances + host.UsedInstances)
                             host_group.Extension["UsedAverageLoad"] = host_group_load
                     if "AvailableAverageLoad" in host.Extension:
                         host_load = host.Extension["AvailableAverageLoad"]
@@ -98,7 +102,7 @@ class AcceleratorEnvironmentsStep(GlueStep):
                         else:
                             host_group_load = host_group.Extension["AvailableAverageLoad"]
                             host_group_avail = host_group.TotalInstances - host_group.UsedInstances - \
-                                               host_group.UnavailableInstances
+                                host_group.UnavailableInstances
                             host_avail = host.TotalInstances - host.UsedInstances - host.UnavailableInstances
                             host_group_load = (host_group_load * host_group_avail + host_load * host_avail) / \
                                               (host_group_avail + host_group_avail)
@@ -108,13 +112,14 @@ class AcceleratorEnvironmentsStep(GlueStep):
                             host_group.Extension["PartiallyUsedInstances"] = host.Extension["PartiallyUsedInstances"]
                         else:
                             host_group.Extension["PartiallyUsedInstances"] = \
-                              host_group.Extension["PartiallyUsedInstances"] + host.Extension["PartiallyUsedInstances"]
+                                host_group.Extension["PartiallyUsedInstances"] + \
+                                host.Extension["PartiallyUsedInstances"]
                     host_group.TotalInstances += host.TotalInstances
                     host_group.UsedInstances += host.UsedInstances
                     host_group.UnavailableInstances += host.UnavailableInstances
-                    #if host_group.UsedAcceleratorSlots is None:
+                    # if host_group.UsedAcceleratorSlots is None:
                     #    host_group.UsedAcceleratorSlots = 0
-                    #if host.UsedAcceleratorSlots is None:
+                    # if host.UsedAcceleratorSlots is None:
                     #    host.UsedAcceleratorSlots = 0
                     host_group.UsedAcceleratorSlots += host.UsedAcceleratorSlots
                     if host_group.TotalAcceleratorSlots is None:
@@ -141,7 +146,8 @@ class AcceleratorEnvironmentsStep(GlueStep):
         if len(host.ShareID) == 0:
             return True
         for share in host.ShareID:
-            m = re.search("urn:glue2:ComputingShare:(\S+).%s" % self.resource_name,share)
+            m = re.search("urn:glue2:ComputingShare:(\S+).%s" %
+                          self.resource_name, share)
             if self._includeQueue(m.group(1)):
                 return True
         # if the host is associated with a partition, check that it is a good one
@@ -154,6 +160,7 @@ class AcceleratorEnvironmentsStep(GlueStep):
         return False
 
 #######################################################################################################################
+
 
 class AcceleratorEnvironment(Resource):
     def __init__(self):
@@ -184,7 +191,7 @@ class AcceleratorEnvironment(Resource):
         # use Manager, Share, Activity from Resource, not ComputingManager, ComputingShare, ComputingActivity
         self.ApplicationEnvironmentID = []  # list of string (ID)
         self.BenchmarkID = []               # list of string (ID)
-        #For AcceleratorEnvironment, but kludging here for node purposes
+        # For AcceleratorEnvironment, but kludging here for node purposes
         self.Type = "unknown"               # string (AccType_t)
         self.PhysicalAccelerators = None    # integer
         self.UsedAcceleratorSlots = None    # integer
@@ -198,14 +205,14 @@ class AcceleratorEnvironment(Resource):
         self.ComputeCapability = None       # string (describes CUDA features)
 
         # set defaults to be the same as the host where this runs
-        (sysName,nodeName,release,version,machine) = os.uname()
+        (sysName, nodeName, release, version, machine) = os.uname()
         self.Platform = machine
         self.OSFamily = sysName.lower()
         self.OSName = sysName.lower()
         self.OSVersion = release
 
     def __str__(self):
-        return json.dumps(AcceleratorEnvironmentOgfJson(self).toJson(),sort_keys=True,indent=4)
+        return json.dumps(AcceleratorEnvironmentOgfJson(self).toJson(), sort_keys=True, indent=4)
 
     def sameHostGroup(self, accel_env, useName):
         if useName and self.Name != accel_env.Name:
@@ -226,7 +233,7 @@ class AcceleratorEnvironment(Resource):
             return False
         if self.MainMemorySize != accel_env.MainMemorySize:
             return False
-        #if self.VirtualMemorySize != accel_env.VirtualMemorySize:
+        # if self.VirtualMemorySize != accel_env.VirtualMemorySize:
         #    return False
         if self.OSFamily != accel_env.OSFamily:
             return False
@@ -245,26 +252,27 @@ class AcceleratorEnvironment(Resource):
 
 #######################################################################################################################
 
+
 class AcceleratorEnvironmentTeraGridXml(ResourceTeraGridXml):
     data_cls = AcceleratorEnvironment
 
     def __init__(self, data):
-        ResourceTeraGridXml.__init__(self,data)
+        ResourceTeraGridXml.__init__(self, data)
 
     def get(self):
         return self.toDom().toxml()
 
     def toDom(self):
         doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
-                                                    "Entities",None)
+                                                    "Entities", None)
         root = doc.createElement("AcceleratorEnvironment")
         doc.documentElement.appendChild(root)
-        self.addToDomElement(doc,root)
+        self.addToDomElement(doc, root)
 
         return doc
 
     def addToDomElement(self, doc, element):
-        ResourceTeraGridXml.addToDomElement(self,doc,element)
+        ResourceTeraGridXml.addToDomElement(self, doc, element)
 
         if self.data.Platform is not None:
             e = doc.createElement("Platform")
@@ -287,7 +295,8 @@ class AcceleratorEnvironmentTeraGridXml(ResourceTeraGridXml):
             element.appendChild(e)
         if self.data.UnavailableInstances is not None:
             e = doc.createElement("UnavailableInstances")
-            e.appendChild(doc.createTextNode(str(self.data.UnavailableInstances)))
+            e.appendChild(doc.createTextNode(
+                str(self.data.UnavailableInstances)))
             element.appendChild(e)
         if self.data.PhysicalCPUs is not None:
             e = doc.createElement("PhysicalCPUs")
@@ -295,11 +304,13 @@ class AcceleratorEnvironmentTeraGridXml(ResourceTeraGridXml):
             element.appendChild(e)
         if self.data.PhysicalAccelerators is not None:
             e = doc.createElement("PhysicalAccelerators")
-            e.appendChild(doc.createTextNode(str(self.data.PhysicalAccelerators)))
+            e.appendChild(doc.createTextNode(
+                str(self.data.PhysicalAccelerators)))
             element.appendChild(e)
         if self.data.UsedAcceleratorSlots is not None:
             e = doc.createElement("UsedAcceleratorSlots")
-            e.appendChild(doc.createTextNode(str(self.data.UsedAcceleratorSlots)))
+            e.appendChild(doc.createTextNode(
+                str(self.data.UsedAcceleratorSlots)))
             element.appendChild(e)
         if self.data.LogicalCPUs is not None:
             e = doc.createElement("LogicalCPUs")
@@ -327,11 +338,13 @@ class AcceleratorEnvironmentTeraGridXml(ResourceTeraGridXml):
             element.appendChild(e)
         if self.data.CPUTimeScalingFactor is not None:
             e = doc.createElement("CPUTimeScalingFactor")
-            e.appendChild(doc.createTextNode(str(self.data.CPUTimeScalingFactor)))
+            e.appendChild(doc.createTextNode(
+                str(self.data.CPUTimeScalingFactor)))
             element.appendChild(e)
         if self.data.WallTimeScalingFactor is not None:
             e = doc.createElement("WallTimeScalingFactor")
-            e.appendChild(doc.createTextNode(str(self.data.WallTimeScalingFactor)))
+            e.appendChild(doc.createTextNode(
+                str(self.data.WallTimeScalingFactor)))
             element.appendChild(e)
         if self.data.MainMemorySize is not None:
             e = doc.createElement("MainMemorySize")
@@ -404,14 +417,15 @@ class AcceleratorEnvironmentTeraGridXml(ResourceTeraGridXml):
 
 #######################################################################################################################
 
+
 class AcceleratorEnvironmentOgfJson(ResourceOgfJson):
     data_cls = AcceleratorEnvironment
 
     def __init__(self, data):
-        ResourceOgfJson.__init__(self,data)
+        ResourceOgfJson.__init__(self, data)
 
     def get(self):
-        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+        return json.dumps(self.toJson(), sort_keys=True, indent=4)
 
     def toJson(self):
         doc = ResourceOgfJson.toJson(self)
@@ -463,12 +477,12 @@ class AcceleratorEnvironmentOgfJson(ResourceOgfJson):
             doc["ApplicationEnvironmentID"] = self.data.ApplicationEnvironmentID
         if len(self.data.BenchmarkID) > 0:
             doc["BenchmarkID"] = self.BenchmarkID
-            
+
         return doc
 
 #######################################################################################################################
 
-#class AcceleratorEnvironmentOgfJson(ResourceOgfJson):
+# class AcceleratorEnvironmentOgfJson(ResourceOgfJson):
 #    data_cls = AcceleratorEnvironment
 #
 #    def __init__(self, data):
@@ -502,21 +516,24 @@ class AcceleratorEnvironmentOgfJson(ResourceOgfJson):
 
 #######################################################################################################################
 
+
 class AcceleratorEnvironments(Data):
     def __init__(self, id, accel_envs=[]):
-        Data.__init__(self,id)
+        Data.__init__(self, id)
         self.accel_envs = accel_envs
 
 #######################################################################################################################
+
 
 class AcceleratorEnvironmentsOgfJson(Representation):
     data_cls = AcceleratorEnvironments
 
     def __init__(self, data):
-        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+        Representation.__init__(
+            self, Representation.MIME_APPLICATION_JSON, data)
 
     def get(self):
-        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+        return json.dumps(self.toJson(), sort_keys=True, indent=4)
 
     def toJson(self):
         eedoc = []
@@ -526,27 +543,26 @@ class AcceleratorEnvironmentsOgfJson(Representation):
 
 #######################################################################################################################
 
-#class AcceleratorEnvironments(Data):
+# class AcceleratorEnvironments(Data):
 #    def __init__(self, id, accel_envs=[]):
 #        Data.__init__(self,id)
 #        self.accel_envs = accel_envs
 
-        
-        
+
 #######################################################################################################################
 
 class AcceleratorEnvironmentsTeraGridXml(Representation):
     data_cls = AcceleratorEnvironments
 
     def __init__(self, data):
-        Representation.__init__(self,Representation.MIME_TEXT_XML,data)
+        Representation.__init__(self, Representation.MIME_TEXT_XML, data)
 
     def get(self):
         return self.toDom().toprettyxml()
 
     def toDom(self):
         doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
-                                                    "Entities",None)
+                                                    "Entities", None)
         for accel_env in self.data.accel_envs:
             eedoc = AcceleratorEnvironmentTeraGridXml.toDom(accel_env)
             doc.documentElement.appendChild(eedoc.documentElement.firstChild)
@@ -554,14 +570,16 @@ class AcceleratorEnvironmentsTeraGridXml(Representation):
 
 #######################################################################################################################
 
+
 class AcceleratorEnvironmentsOgfJson(Representation):
     data_cls = AcceleratorEnvironments
 
     def __init__(self, data):
-        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+        Representation.__init__(
+            self, Representation.MIME_APPLICATION_JSON, data)
 
     def get(self):
-        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+        return json.dumps(self.toJson(), sort_keys=True, indent=4)
 
     def toJson(self):
         eedoc = []

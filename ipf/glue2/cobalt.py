@@ -33,6 +33,7 @@ from . import computing_share_accel_info
 
 #######################################################################################################################
 
+
 class ComputingServiceStep(computing_service.ComputingServiceStep):
 
     def __init__(self):
@@ -54,6 +55,7 @@ class ComputingServiceStep(computing_service.ComputingServiceStep):
 
 #######################################################################################################################
 
+
 class ComputingManagerStep(computing_manager.ComputingManagerStep):
 
     def __init__(self):
@@ -70,14 +72,16 @@ class ComputingManagerStep(computing_manager.ComputingManagerStep):
 
 #######################################################################################################################
 
+
 class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
     def __init__(self):
         computing_activity.ComputingActivitiesStep.__init__(self)
 
-        self._acceptParameter("cqstat","the path to the Cobalt cqstat program (default 'cqstat')",False)
+        self._acceptParameter(
+            "cqstat", "the path to the Cobalt cqstat program (default 'cqstat')", False)
 
     def _run(self):
-        cqstat = self.params.get("cqstat","cqstat")
+        cqstat = self.params.get("cqstat", "cqstat")
 
         cmd = cqstat + " -lf"
         self.debug("running "+cmd)
@@ -89,7 +93,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
         curIndex = output.find("JobID: ")
         if curIndex != -1:
             while True:
-                nextIndex = output.find("JobID: ",curIndex+1)
+                nextIndex = output.find("JobID: ", curIndex+1)
                 if nextIndex == -1:
                     jobStrings.append(output[curIndex:])
                     break
@@ -100,7 +104,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
         jobs = []
         for jobString in jobStrings:
             job = self._getJob(jobString)
-            if includeQueue(self.config,job.Queue):
+            if includeQueue(self.config, job.Queue):
                 jobs.append(job)
 
         for job in jobs:
@@ -112,12 +116,12 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
         job = computing_activity.ComputingActivity()
 
         # put multi-lines on one line
-        #jobString.replace("\n\t","")
+        # jobString.replace("\n\t","")
 
         wallTime = None
         usedWallTime = None
-	lines = jobString.split("\n")
-	for line in lines:
+        lines = jobString.split("\n")
+        for line in lines:
             if line.startswith("JobID: "):
                 job.LocalIDFromManager = line[7:]
             if line.startswith("    JobName"):
@@ -126,27 +130,35 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
                     job.JobName = name
             if line.startswith("    User "):
                 job.LocalOwner = line.split()[2]
-            #if line.find("Account_Name =") >= 0:
+            # if line.find("Account_Name =") >= 0:
             #    job.Extension["LocalAccount"] = line.split()[2]
             if line.startswith("    Queue "):
                 job.Queue = line.split()[2]
             if line.startswith("    State "):
                 state = line.split()[2]
                 if state == "queued":
-                    job.State = [computing_activity.ComputingActivity.STATE_PENDING]
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_PENDING]
                 elif state == "starting":
-                    job.State = [computing_activity.ComputingActivity.STATE_RUNNING]
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_RUNNING]
                 elif state == "running":
-                    job.State = [computing_activity.ComputingActivity.STATE_RUNNING]
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_RUNNING]
                 elif state.find("hold") != -1:
-                    job.State = [computing_activity.ComputingActivity.STATE_HELD]
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_HELD]
                 elif state == "exiting":
-                    job.State = [computing_activity.ComputingActivity.STATE_FINISHED]
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_FINISHED]
                 elif state == "killing":
-                    job.State = [computing_activity.ComputingActivity.STATE_TERMINATED]
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_TERMINATED]
                 else:
-                    self.warning("found unknown Cobalt job state '" + state + "'")
-                    job.State = [computing_activity.ComputingActivity.STATE_UNKNOWN]
+                    self.warning(
+                        "found unknown Cobalt job state '" + state + "'")
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_UNKNOWN]
                 job.State.append("cobalt:"+state)
             if line.startswith("    WallTime "):
                 wallTime = self._getDuration(line.split()[2])
@@ -164,9 +176,10 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
                     usedWallTime = self._getDuration(duration)
                     if job.RequestedSlots != None:
                         job.UsedTotalWallTime = usedWallTime * job.RequestedSlots
-            #job.UsedTotalCPUTime = 
+            # job.UsedTotalCPUTime =
             if line.startswith("    SubmitTime "):
-                job.SubmissionTime = self._getSubmitDateTime(line[line.find(":")+2:])
+                job.SubmissionTime = self._getSubmitDateTime(
+                    line[line.find(":")+2:])
                 job.ComputingManagerSubmissionTime = job.SubmissionTime
             if line.startswith("    StartTime "):
                 startTime = line[line.find(":")+2:]
@@ -178,27 +191,26 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
         return job
 
     def _getDuration(self, dStr):
-        (hour,minute,second)=dStr.split(":")
+        (hour, minute, second) = dStr.split(":")
         return int(hour)*60*60 + int(minute)*60 + int(second)
 
-
-    monthDict = {"Jan":1, "Feb":2, "Mar":3, "Apr":4, "May":5, "Jun":6,
-                 "Jul":7, "Aug":8, "Sep":9, "Oct":10, "Nov":11, "Dec":12}
+    monthDict = {"Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
+                 "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12}
 
     def _getSubmitDateTime(self, aStr):
         # Example: Fri May 30 06:54:25 2008
         # Not quite sure how it handles a different year... guessing
         dayOfWeek = aStr[:3]
-        month     = aStr[4:7]
-        day       = int(aStr[8:10])
-        hour      = int(aStr[11:13])
-        minute    = int(aStr[14:16])
-        second    = int(aStr[17:19])
+        month = aStr[4:7]
+        day = int(aStr[8:10])
+        hour = int(aStr[11:13])
+        minute = int(aStr[14:16])
+        second = int(aStr[17:19])
         if aStr[19] == ' ':
             year = int(aStr[20:24])
         else:
             year = datetime.datetime.today().year
-        
+
         return datetime.datetime(year=year,
                                  month=self.monthDict[month],
                                  day=day,
@@ -209,10 +221,10 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
     def _getStartDateTime(self, aStr):
         # Example: 11/16/09 08:32:39
-        month =  int(aStr[0:2])
-        day =    int(aStr[3:5])
-        year =   int(aStr[6:8])
-        hour =   int(aStr[9:11])
+        month = int(aStr[0:2])
+        day = int(aStr[3:5])
+        year = int(aStr[6:8])
+        hour = int(aStr[9:11])
         minute = int(aStr[12:14])
         second = int(aStr[15:17])
 
@@ -227,19 +239,21 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
 #######################################################################################################################
 
+
 class ComputingSharesStep(computing_share.ComputingSharesStep):
 
     def __init__(self):
         computing_share.ComputingSharesStep.__init__(self)
 
-        self._acceptParameter("cqstat","the path to the Cobalt cqstat program (default 'cqstat')",False)
+        self._acceptParameter(
+            "cqstat", "the path to the Cobalt cqstat program (default 'cqstat')", False)
         self._acceptParameter("cores_per_node",
                               "the number of processing cores per node is not provided by the Cobalt partlist program (default 8)",
                               False)
 
     def _run(self):
 
-        cqstat = self.params.get("cqstat","cqstat")
+        cqstat = self.params.get("cqstat", "cqstat")
 
         cmd = cqstat + " -lq"
         self.debug("running "+cmd)
@@ -251,7 +265,7 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
         curIndex = output.find("Name: ")
         if curIndex != -1:
             while True:
-                nextIndex = output.find("Name: ",curIndex+1)
+                nextIndex = output.find("Name: ", curIndex+1)
                 if nextIndex == -1:
                     queueStrings.append(output[curIndex:])
                     break
@@ -262,17 +276,17 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
         queues = []
         for queueString in queueStrings:
             queue = self._getQueue(queueString)
-            if includeQueue(self.config,queue.Name):
+            if includeQueue(self.config, queue.Name):
                 queues.append(queue)
         return queues
 
     def _getQueue(self, queueString):
         queue = computing_share.ComputingShare()
 
-        procs_per_node = self.prams.get("cores_per_node",8)
+        procs_per_node = self.prams.get("cores_per_node", 8)
 
-	lines = queueString.split("\n")
-	for line in lines:
+        lines = queueString.split("\n")
+        for line in lines:
             if line.startswith("Name: "):
                 queue.Name = line[6:]
                 queue.MappingQueue = queue.Name
@@ -308,27 +322,31 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
             if line.startswith("    MaxUserNodes"):
                 maxUserNodes = line.split()[2]
                 if maxUserNodes != "None":
-                    queue.Extension["MaxSlotsPerUser"] = int(maxUserNodes) * procs_per_node
+                    queue.Extension["MaxSlotsPerUser"] = int(
+                        maxUserNodes) * procs_per_node
             if line.startswith("    TotalNodes"):
                 totalNodes = line.split()[2]
                 if totalNodes != "None":
-                    queue.Extension["MaxSlots"] = int(totalNodes) * procs_per_node
+                    queue.Extension["MaxSlots"] = int(
+                        totalNodes) * procs_per_node
             if line.startswith("    Priority"):
                 queue.Extension["Priority"] = float(line.split()[2])
         return queue
 
     def _getDuration(self, dStr):
-        (hour,minute,second)=dStr.split(":")
+        (hour, minute, second) = dStr.split(":")
         return int(hour)*60*60 + int(minute)*60 + int(second)
 
 #######################################################################################################################
+
 
 class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep):
 
     def __init__(self):
         execution_environment.ExecutionEnvironmentsStep.__init__(self)
 
-        self._acceptParameter("partlist","the path to the Cobalt partlist program (default 'partlist')",False)
+        self._acceptParameter(
+            "partlist", "the path to the Cobalt partlist program (default 'partlist')", False)
         self._acceptParameter("cores_per_node",
                               "the number of processing cores per node is not provided by the Cobalt partlist program (default 8)",
                               False)
@@ -337,7 +355,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
                               False)
 
     def _run(self):
-        partlist = self.params.get("partlist","partlist")
+        partlist = self.params.get("partlist", "partlist")
 
         cmd = partlist + " -a"
         selfr.debug("running "+cmd)
@@ -352,11 +370,11 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         used_nodes = 0
         blocking = []
         smallest_partsize = -1
-        largest_partsize = -1;
-        for index in range(len(lines)-1,2,-1):
-            #Name          Queue                             State                   Backfill
+        largest_partsize = -1
+        for index in range(len(lines)-1, 2, -1):
+            # Name          Queue                             State                   Backfill
             #          1         2         3         4         5         6         7         8
-            #012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
+            # 012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789
             toks = lines[index].split()
             toks2 = toks[0].split("_")
 
@@ -378,17 +396,17 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
                     used_nodes = used_nodes + partsize
                 elif state == "blocked":
                     if (lines[index].find("failed diags") != -1) or (lines[index].find("pending diags") != -1):
-                        #blocked by pending diags
-                        #failed diags
-                        #blocked by failed diags
+                        # blocked by pending diags
+                        # failed diags
+                        # blocked by failed diags
                         unavail_nodes = unavail_nodes + partsize
                     else:
                         blocked_by = toks2[1][1:len(toks2[1])-1]
                         if not blocked_by in blocking:
                             blocking.append(blocked_by)
                 elif state == "hardware":
-                    #hardware offline: nodecard <nodecard_id>
-                    #hardware offline: switch <switch_id>
+                    # hardware offline: nodecard <nodecard_id>
+                    # hardware offline: switch <switch_id>
                     unavail_nodes = unavail_nodes + partsize
                 else:
                     self.warning("found unknown partition state: "+toks[2])
@@ -396,40 +414,45 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         # assuming that all nodes are identical
 
         exec_env = execution_environment.ExecutionEnvironment()
-        exec_env.LogicalCPUs = self.params.get("cores_per_node",8)
+        exec_env.LogicalCPUs = self.params.get("cores_per_node", 8)
         exec_env.PhysicalCPUs = exec_env.LogicalCPUs
 
-        exec_env.MainMemorySize = self.params.get("memory_per_node",16384)
-        #exec_env.VirtualMemorySize = 
+        exec_env.MainMemorySize = self.params.get("memory_per_node", 16384)
+        # exec_env.VirtualMemorySize =
 
         # use the defaults set for Platform, OSVersion, etc in ExecutionEnvironment (same as the login node)
 
         exec_env.UsedInstances = used_nodes * exec_env.PhysicalCPUs
-        exec_env.TotalInstances = (used_nodes + avail_nodes + unavail_nodes) * exec_env.PhysicalCPUs
+        exec_env.TotalInstances = (
+            used_nodes + avail_nodes + unavail_nodes) * exec_env.PhysicalCPUs
         exec_env.UnavailableInstances = unavail_nodes * exec_env.PhysicalCPUs
 
         exec_env.Name = "NodeType1"
 
         return [exec_env]
-        
+
 #######################################################################################################################
+
 
 class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironmentsStep):
     def __init__(self):
         accelerator_environment.AcceleratorEnvironmentsStep.__init__(self)
 
-        self._acceptParameter("scontrol","the path to the SLURM scontrol program (default 'scontrol')",False)
+        self._acceptParameter(
+            "scontrol", "the path to the SLURM scontrol program (default 'scontrol')", False)
 
     def _run(self):
         # get info on the nodes
-	return
+        return
 
 #######################################################################################################################
+
 
 class ComputingManagerAcceleratorInfoStep(computing_manager_accel_info.ComputingManagerAcceleratorInfoStep):
 
     def __init__(self):
-        computing_manager_accel_info.ComputingManagerAcceleratorInfoStep.__init__(self)
+        computing_manager_accel_info.ComputingManagerAcceleratorInfoStep.__init__(
+            self)
 
     def _run(self):
         manager_accel_info = computing_manager_accel_info.ComputingManagerAcceleratorInfo()
@@ -438,10 +461,12 @@ class ComputingManagerAcceleratorInfoStep(computing_manager_accel_info.Computing
 
 #######################################################################################################################
 
+
 class ComputingShareAcceleratorInfoStep(computing_share_accel_info.ComputingShareAcceleratorInfoStep):
 
     def __init__(self):
-        computing_share_accel_info.ComputingShareAcceleratorInfoStep.__init__(self)
+        computing_share_accel_info.ComputingShareAcceleratorInfoStep.__init__(
+            self)
 
     def _run(self):
         share_accel_info = computing_share_accel_info.ComputingShareAcceleratorInfo()

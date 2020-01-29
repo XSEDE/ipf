@@ -29,6 +29,7 @@ from . import execution_environment
 
 #######################################################################################################################
 
+
 class ComputingServiceStep(computing_service.ComputingServiceStep):
 
     def __init__(self):
@@ -50,6 +51,7 @@ class ComputingServiceStep(computing_service.ComputingServiceStep):
 
 #######################################################################################################################
 
+
 class ComputingManagerStep(computing_manager.ComputingManagerStep):
 
     def __init__(self):
@@ -66,16 +68,19 @@ class ComputingManagerStep(computing_manager.ComputingManagerStep):
 
 #######################################################################################################################
 
+
 class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
     def __init__(self):
         computing_activity.ComputingActivitiesStep.__init__(self)
 
-        self._acceptParameter("llq","the path to the Load Leveler llq program (default 'llq')",False)
-        self._acceptParameter("llstatus","the path to the Load Leveler llstatus program (default 'llstatus')",False)
+        self._acceptParameter(
+            "llq", "the path to the Load Leveler llq program (default 'llq')", False)
+        self._acceptParameter(
+            "llstatus", "the path to the Load Leveler llstatus program (default 'llstatus')", False)
 
     def _run(self):
-        llq = self.params.get("llq","llq")
+        llq = self.params.get("llq", "llq")
 
         cmd = llq + " -l"
         self.debug("running "+cmd)
@@ -86,18 +91,18 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
         jobStrings = []
 
         curIndex = 0
-        nextIndex = output.find("=============== Job Step ",1)
+        nextIndex = output.find("=============== Job Step ", 1)
         while nextIndex != -1:
             jobStrings.append(output[curIndex:nextIndex])
             curIndex = nextIndex
-            nextIndex = output.find("=============== Job Step ",curIndex+1)
+            nextIndex = output.find("=============== Job Step ", curIndex+1)
         jobStrings.append(output[curIndex:])
 
         slotsPerNode = self._slotsPerNode()
 
         jobs = []
         for jobString in jobStrings:
-            job = self._getJob(jobString,slotsPerNode)
+            job = self._getJob(jobString, slotsPerNode)
             if includeQueue(job.Queue):
                 jobs.append(job)
 
@@ -108,7 +113,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
     def _slotsPerNode(self):
 
-        llstatus = self.params.get("llstatus","llstatus")
+        llstatus = self.params.get("llstatus", "llstatus")
 
         cmd = llstatus + " -l"
         self.debug("running "+cmd)
@@ -116,19 +121,19 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
         if status != 0:
             raise StepError("llstatus failed: "+output)
 
-	lines = output.split("\n")
+        lines = output.split("\n")
         slotOccurances = {}
         for line in lines:
             if line.find("ConfiguredClasses") >= 0:
                 minSlots = -1
                 start = line.find("(")  # slot numbers are between ()
-                end = line.find(")",start+1)
+                end = line.find(")", start+1)
                 while start != -1:
                     slots = int(line[start+1:end])
                     if minSlots < 0 or slots < minSlots:
                         minSlots = slots
-                    start = line.find("(",end+1)
-                    end = line.find(")",start+1)
+                    start = line.find("(", end+1)
+                    end = line.find(")", start+1)
                 if minSlots != -1:
                     if slotOccurances.get(minSlots) == None:
                         slotOccurances[minSlots] = 1
@@ -138,20 +143,20 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
         maxOccurances = -1
         for slots in list(slotOccurances.keys()):
             if slotOccurances[slots] > maxOccurances:
-               mostFrequentSlots = slots 
+                mostFrequentSlots = slots
         return mostFrequentSlots
 
     def _getJob(self, jobString):
         job = computing_activity.ComputingActivity()
 
-	lines = jobString.split("\n")
+        lines = jobString.split("\n")
 
-        requestedNodes = 1 # assume 1 node is requested if no info
+        requestedNodes = 1  # assume 1 node is requested if no info
 
         wallTime = None
         usedWallTime = None
-	for line in lines:
-            line = line.lstrip() # remove leading whitespace
+        for line in lines:
+            line = line.lstrip()  # remove leading whitespace
             if line.find("Job Step Id:") >= 0:
                 job.LocalIDFromManager = line[13:]
             if line.find("Job Name:") >= 0:
@@ -165,31 +170,44 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
             if line.find("Status:") >= 0:
                 state = line[8:]
                 if state == "Completed":
-                    job.State = [computing_activity.ComputingActivity.STATE_FINISHED]
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_FINISHED]
                 elif state == "Canceled":
-                    job.State = [computing_activity.ComputingActivity.STATE_TERMINATED]
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_TERMINATED]
                 elif state == "Removed":
-                    job.State = [computing_activity.ComputingActivity.STATE_TERMINATED]
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_TERMINATED]
                 elif state == "Terminated":
-                    job.State = [computing_activity.ComputingActivity.STATE_TERMINATED]
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_TERMINATED]
                 elif state == "Remove Pending":
-                    job.State = [computing_activity.ComputingActivity.STATE_TERMINATED]
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_TERMINATED]
                 elif state == "Pending":
-                    job.State = [computing_activity.ComputingActivity.STATE_PENDING]
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_PENDING]
                 elif state == "Idle":
-                    job.State = [computing_activity.ComputingActivity.STATE_PENDING]
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_PENDING]
                 elif state == "Starting":
-                    job.State = [computing_activity.ComputingActivity.STATE_RUNNING]
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_RUNNING]
                 elif state == "Running":
-                    job.State = [computing_activity.ComputingActivity.STATE_RUNNING]
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_RUNNING]
                 elif state == "User Hold":
-                    job.State = [computing_activity.ComputingActivity.STATE_HELD]
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_HELD]
                 elif state == "Not Queued":
-                    job.State = [computing_activity.ComputingActivity.STATE_PENDING]
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_PENDING]
                 else:
-                    self.warn("found unknown LoadLeveler job state '" + state + "'")
-                    job.State = [computing_activity.ComputingActivity.STATE_UNKNOWN]
-                job.State.append("loadleveler:"+state.replace(" ",""))
+                    self.warn(
+                        "found unknown LoadLeveler job state '" + state + "'")
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_UNKNOWN]
+                job.State.append("loadleveler:"+state.replace(" ", ""))
             if line.find("Wall Clk Hard Limit:") >= 0:
                 wallTime = job._getDuration(line[21:])
             if line.find("Cpu Hard Limit:") >= 0:
@@ -200,10 +218,11 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
                 requestedNodes = int(line[line.find(":")+2:])
 
             # don't see used CPU time anywhere
-            #job.UsedTotalCPUTime = 
+            # job.UsedTotalCPUTime =
 
             if line.find("Queue Date:") >= 0 and len(line) > 12:
-                job.ComputingManagerSubmissionTime = job._getDateTime(line[12:])
+                job.ComputingManagerSubmissionTime = job._getDateTime(
+                    line[12:])
                 job.SubmissionTime = job.ComputingManagerSubmissionTime
 
             if line.find("Dispatch Time:") >= 0 and len(line) > 15:
@@ -229,26 +248,25 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
         if start >= 0 and end > start:
             return int(line[start:end])
 
-
-    monthDict = {"Jan":1, "Feb":2, "Mar":3, "Apr":4, "May":5, "Jun":6,
-                 "Jul":7, "Aug":8, "Sep":9, "Oct":10, "Nov":11, "Dec":12}
+    monthDict = {"Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
+                 "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12}
 
     def _getDateTime(self, aStr):
         # Example: Thu 04 Dec 2008 10:27:23 AM EST
         dayOfWeek = aStr[:3]
-        day       = int(aStr[4:7])
-        month     = aStr[7:10]
-        year      = int(aStr[11:15])
-        hour      = int(aStr[16:18])
-        minute    = int(aStr[19:21])
-        second    = int(aStr[22:24])
-        ampm      = aStr[25:27]
+        day = int(aStr[4:7])
+        month = aStr[7:10]
+        year = int(aStr[11:15])
+        hour = int(aStr[16:18])
+        minute = int(aStr[19:21])
+        second = int(aStr[22:24])
+        ampm = aStr[25:27]
         if ampm == "PM" and hour < 12:
             hour = hour + 12
         if ampm == "AM" and hour == 12:
             hour = 0
         # assume current time zone
-        
+
         return datetime.datetime(year=year,
                                  month=self.monthDict[month],
                                  day=day,
@@ -259,14 +277,16 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
 #######################################################################################################################
 
+
 class ComputingSharesStep(computing_share.ComputingSharesStep):
     def __init__(self):
         computing_share.ComputingSharesStep.__init__(self)
 
-        self._acceptParameter("llclass","the path to the Load Leveler llclass program (default 'llclass')",False)
+        self._acceptParameter(
+            "llclass", "the path to the Load Leveler llclass program (default 'llclass')", False)
 
     def _run(self):
-        llclass = self.params.get("llclass","llclass")
+        llclass = self.params.get("llclass", "llclass")
 
         cmd = llclass + " -l"
         self.debug("running "+cmd)
@@ -277,28 +297,28 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
         queueStrings = []
 
         curIndex = 0
-        nextIndex = output.find("=============== Class ",1)
+        nextIndex = output.find("=============== Class ", 1)
         while nextIndex != -1:
             queueStrings.append(output[curIndex:nextIndex])
             curIndex = nextIndex
-            nextIndex = output.find("=============== Class ",curIndex+1)
+            nextIndex = output.find("=============== Class ", curIndex+1)
         queueStrings.append(output[curIndex:])
 
         queues = []
         for queueString in queueStrings:
             queue = self._getQueue(queueString)
-            if includeQueue(self.config,queue.Name):
+            if includeQueue(self.config, queue.Name):
                 queues.append(queue)
         return queues
 
     def _getQueue(self, queueString):
         queue = computing_share.ComputingShare()
 
-	lines = queueString.split("\n")
+        lines = queueString.split("\n")
 
         queueName = None
-	for line in lines:
-            line = line.lstrip() # remove leading whitespace
+        for line in lines:
+            line = line.lstrip()  # remove leading whitespace
             if line.find("Name:") >= 0:
                 queueName = line[6:]
                 break
@@ -307,8 +327,8 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
             raise StepError("didn't find queue name")
 
         maxSlots = None
-	for line in lines:
-            line = line.lstrip() # remove leading whitespace
+        for line in lines:
+            line = line.lstrip()  # remove leading whitespace
             if line.find("Name:") >= 0:
                 queue.Name = line[6:]
                 queue.MappingQueue = queue.Name
@@ -325,11 +345,14 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
             if line.find("Class_comment:") >= 0:
                 queue.Description = line[15:]
             if line.find("Wall_clock_limit:") >= 0 and len(line) > 18:
-                (queue.MinWallTime,queue.MaxWallTime) = self._getDurations(line[18:])
+                (queue.MinWallTime, queue.MaxWallTime) = self._getDurations(
+                    line[18:])
             if line.find("Cpu_limit:") >= 0 and len(line) > 11:
-                (queue.MinCPUTime,queue.MaxCPUTime) = self._getDurations(line[11:])
+                (queue.MinCPUTime, queue.MaxCPUTime) = self._getDurations(
+                    line[11:])
             if line.find("Job_cpu_limit:") >= 0 and len(line) > 15:
-                (queue.MinTotalCPUTime,queue.MaxTotalCPUTime) = self._getDurations(line[15:])
+                (queue.MinTotalCPUTime,
+                 queue.MaxTotalCPUTime) = self._getDurations(line[15:])
             if line.find("Free_slots:") >= 0 and len(line) > 12:
                 queue.FreeSlots = int(line[12:])
                 if maxSlots != None:
@@ -340,13 +363,13 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
                     queue.UsedSlots = maxSlots - queue.FreeSlots
 
             # lets not include this right now in case of privacy concerns
-            #if line.find("Include_Users:") >= 0 and len(line) > 15:
+            # if line.find("Include_Users:") >= 0 and len(line) > 15:
             #    queue.Extension["AuthorizedUsers"] = line[15:].rstrip()
-            #if line.find("Exclude_Users:") >= 0 and len(line) > 15:
+            # if line.find("Exclude_Users:") >= 0 and len(line) > 15:
             #    queue.Extension["UnauthorizedUsers"] = line[15:].rstrip()
-            #if line.find("Include_Groups:") >= 0 and len(line) > 16:
+            # if line.find("Include_Groups:") >= 0 and len(line) > 16:
             #    queue.Extension["AuthorizedGroups"] = line[16:].rstrip()
-            #if line.find("Exclude_Groups:") >= 0 and len(line) > 16:
+            # if line.find("Exclude_Groups:") >= 0 and len(line) > 16:
             #    queue.Extension["UnauthorizedGroups"] = line[16:].rstrip()
 
             # no info on queue status?
@@ -360,8 +383,8 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
         start = dStr.find("(")
         if start == -1:
             # no (..., ...) so must be unknown
-            return (None,None)
-        end = dStr.find(",",start)
+            return (None, None)
+        end = dStr.find(",", start)
         maxStr = dStr[start+1:end]
 
         maxDuration = None
@@ -369,26 +392,28 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
             maxDuration = int(maxStr[:len(maxStr)-8])
 
         start = end+2
-        end = dStr.find(")",start)
+        end = dStr.find(")", start)
         minStr = dStr[start:end]
 
         minDuration = None
         if minStr != "undefined":
             minDuration = int(minStr[:len(minStr)-8])
 
-        return (minDuration,maxDuration)
+        return (minDuration, maxDuration)
 
 #######################################################################################################################
+
 
 class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep):
 
     def __init__(self):
         execution_environment.ExecutionEnvironmentsStep.__init__(self)
 
-        self._acceptParameter("llstatus","the path to the Load Leveler llstatus program (default 'llstatus')",False)
+        self._acceptParameter(
+            "llstatus", "the path to the Load Leveler llstatus program (default 'llstatus')", False)
 
     def _run(self):
-        llstatus = self.params.get("llstatus","llstatus")
+        llstatus = self.params.get("llstatus", "llstatus")
 
         cmd = llstatus + " -l"
         self.debug("running "+cmd)
@@ -399,7 +424,8 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         nodeStrings = []
 
         curIndex = 0
-        nextIndex = output.find("===============================================================================",1)
+        nextIndex = output.find(
+            "===============================================================================", 1)
         while nextIndex != -1:
             nodeStrings.append(output[curIndex:nextIndex])
             curIndex = nextIndex
@@ -432,7 +458,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
                 if line.find("Busy") >= 0:
                     host.UsedInstances = 1
                     host.UnavailableInstances = 0
-                elif line.find("Running") >= 0: # ?
+                elif line.find("Running") >= 0:  # ?
                     host.UsedInstances = 1
                     host.UnavailableInstances = 0
                 elif line.find("Idle") >= 0:
@@ -441,11 +467,11 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
                 elif line.find("Down") >= 0:
                     host.UsedInstances = 0
                     host.UnavailableInstances = 1
-                elif line.find("None") >= 0: # central manager seems to have a state of None
-                    host.TotalInstances = 0 # don't include this host
+                elif line.find("None") >= 0:  # central manager seems to have a state of None
+                    host.TotalInstances = 0  # don't include this host
                     host.UsedInstances = 0
                     host.UnavailableInstances = 0
-                else: # guess starting and stopping
+                else:  # guess starting and stopping
                     host.UsedInstances = 1
                     host.UnavailableInstances = 0
                 host.TotalInstances = 1
@@ -466,18 +492,20 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
             if line.startswith("Arch "):
                 host.Platform = line[line.find("=")+2:]
             if line.startswith("Memory "):
-                host.MainMemorySize = self._getMB(line[line.find("=")+2:].split())
+                host.MainMemorySize = self._getMB(
+                    line[line.find("=")+2:].split())
             if line.startswith("VirtualMemory "):
-                host.VirtualMemorySize = self._getMB(line[line.find("=")+2:].split())
+                host.VirtualMemorySize = self._getMB(
+                    line[line.find("=")+2:].split())
         return host
 
     def _getMB(self, namevalue):
-        (value,units) = namevalue
+        (value, units) = namevalue
         if units == "kb":
             return int(value) / 1024
         if units == "mb":
             return int(value)
         if units == "gb":
             return int(value) * 1024
-        
+
 #######################################################################################################################

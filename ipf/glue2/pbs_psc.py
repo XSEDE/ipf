@@ -23,6 +23,7 @@ from . import pbs
 
 #######################################################################################################################
 
+
 class ComputingActivitiesStep(pbs.ComputingActivitiesStep):
     def __init__(self):
         pbs.ComputingActivitiesStep.__init__(self)
@@ -41,30 +42,31 @@ class ComputingActivitiesStep(pbs.ComputingActivitiesStep):
             raise StepError("job_list_file not specified")
 
         try:
-            f = open(job_list_file,"r")
+            f = open(job_list_file, "r")
             lines = f.readlines()
             f.close()
         except IOError as e:
             raise StepError("couldn't read job list from file "+job_list_file)
 
-	job_ids = []
-	for line in lines[1:]:
-	    toks = line.split()
-	    job_ids.append(toks[0])
+        job_ids = []
+        for line in lines[1:]:
+            toks = line.split()
+            job_ids.append(toks[0])
 
         job_dict = {}
         for job in jobs:
             job_dict[job.LocalIDFromManager] = job
 
         jobs = []
-	for job_id in job_ids:
+        for job_id in job_ids:
             try:
                 jobs.append(job_dict[job_id])
                 del job_dict[job_id]
             except KeyError:
                 self.warning("didn't find job "+job_id+" in job list")
         for job_id in list(job_dict.keys()):
-            self.warning("didn't find an entry in job list for PBS job "+job_id)
+            self.warning(
+                "didn't find an entry in job list for PBS job "+job_id)
         return jobs
 
 #######################################################################################################################

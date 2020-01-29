@@ -41,12 +41,16 @@ from . import computing_manager_accel_info
 from . import computing_share_accel_info
 #######################################################################################################################
 
+
 class Authentication():
     def __init__(self):
-        self._acceptParameter("username","the OpenStack user (default is value in the OS_USERNAME env)",False)
-        self._acceptParameter("password","the OpenStack password (default is value in the OS_PASSWORD env)",False)
-        self._acceptParameter("tenant","the OpenStack tenant name (default is value in the OS_TENANT_NAME env)",False)
-        self._acceptParameter("auth_url","the OpenStack authorization URL (default is value in the OS_AUTH_URL env)",
+        self._acceptParameter(
+            "username", "the OpenStack user (default is value in the OS_USERNAME env)", False)
+        self._acceptParameter(
+            "password", "the OpenStack password (default is value in the OS_PASSWORD env)", False)
+        self._acceptParameter(
+            "tenant", "the OpenStack tenant name (default is value in the OS_TENANT_NAME env)", False)
+        self._acceptParameter("auth_url", "the OpenStack authorization URL (default is value in the OS_AUTH_URL env)",
                               False)
 
     def _getAuthentication(step):
@@ -56,31 +60,36 @@ class Authentication():
             try:
                 username = os.environ["OS_USERNAME"]
             except KeyError:
-                raise StepError("username parameter not provided and OS_USERNAME not set in the environment")
+                raise StepError(
+                    "username parameter not provided and OS_USERNAME not set in the environment")
         try:
             password = step.params["password"]
         except KeyError:
             try:
                 password = os.environ["OS_PASSWORD"]
             except KeyError:
-                raise StepError("password parameter not provided and OS_PASSWORD not set in the environment")
+                raise StepError(
+                    "password parameter not provided and OS_PASSWORD not set in the environment")
         try:
             tenant = step.params["tenant"]
         except KeyError:
             try:
                 tenant = os.environ["OS_TENANT_NAME"]
             except KeyError:
-                raise StepError("tenant parameter not provided and OS_TENANT_NAME not set in the environment")
+                raise StepError(
+                    "tenant parameter not provided and OS_TENANT_NAME not set in the environment")
         try:
             auth_url = step.params["auth_url"]
         except KeyError:
             try:
                 auth_url = os.environ["OS_AUTH_URL"]
             except KeyError:
-                raise StepError("auth_url parameter not provided and OS_AUTH_URL not set in the environment")
-        return (username,password,tenant,auth_url)
+                raise StepError(
+                    "auth_url parameter not provided and OS_AUTH_URL not set in the environment")
+        return (username, password, tenant, auth_url)
 
 #######################################################################################################################
+
 
 class ComputingServiceStep(glue2.computing_service.ComputingServiceStep):
     def __init__(self):
@@ -100,11 +109,13 @@ class ComputingServiceStep(glue2.computing_service.ComputingServiceStep):
 
 #######################################################################################################################
 
+
 class ComputingManagerStep(glue2.computing_manager.ComputingManagerStep):
     def __init__(self):
         glue2.computing_manager.ComputingManagerStep.__init__(self)
 
-        self._acceptParameter("openstack_version","the OpenStack version",False)
+        self._acceptParameter("openstack_version",
+                              "the OpenStack version", False)
 
     def _run(self):
         manager = glue2.computing_manager.ComputingManager()
@@ -122,16 +133,18 @@ class ComputingManagerStep(glue2.computing_manager.ComputingManagerStep):
 
 #######################################################################################################################
 
+
 class ComputingEndpointStep(glue2.computing_endpoint.ComputingEndpointStep, Authentication):
     def __init__(self):
         glue2.computing_endpoint.ComputingEndpointStep.__init__(self)
         Authentication.__init__(self)
 
         self.description = "create ComputingEndpoints for OpenStack"
-        self._acceptParameter("openstack_version","the OpenStack version",False)
+        self._acceptParameter("openstack_version",
+                              "the OpenStack version", False)
 
     def _run(self):
-        (username,password,tenant,auth_url) = self._getAuthentication()
+        (username, password, tenant, auth_url) = self._getAuthentication()
         keystone = keystoneclient.v2_0.client.Client(username=username,
                                                      password=password,
                                                      tenant_name=tenant,
@@ -176,6 +189,7 @@ class ComputingEndpointStep(glue2.computing_endpoint.ComputingEndpointStep, Auth
 
 #######################################################################################################################
 
+
 class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep, Authentication):
     def __init__(self):
         glue2.computing_activity.ComputingActivitiesStep.__init__(self)
@@ -213,8 +227,9 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep, 
         return self.images[id]
 
     def _run(self):
-        (username,password,tenant,auth_url) = self._getAuthentication()
-        nova = novaclient.v1_1.client.Client(username,password,tenant,auth_url,no_cache=True)
+        (username, password, tenant, auth_url) = self._getAuthentication()
+        nova = novaclient.v1_1.client.Client(
+            username, password, tenant, auth_url, no_cache=True)
         keystone = keystoneclient.v2_0.client.Client(username=username,
                                                      password=password,
                                                      tenant_name=tenant,
@@ -222,48 +237,61 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep, 
 
         activities = []
         for server in nova.servers.list(search_opts={"all_tenants": 1}):
-            activities.append(self._fromService(server,nova,keystone))
+            activities.append(self._fromService(server, nova, keystone))
         return activities
 
     def _fromService(self, server, nova, keystone):
         activity = glue2.computing_activity.ComputingActivity()
         activity.LocalIDFromManager = server.id
         activity.Name = server.name
-        activity.LocalOwner = self._getUser(keystone,server.user_id).name
+        activity.LocalOwner = self._getUser(keystone, server.user_id).name
         #activity.Extension["UserId"] = server.user_id
-        activity.Extension["LocalAccount"] = self._getTenant(keystone,server.tenant_id).name
+        activity.Extension["LocalAccount"] = self._getTenant(
+            keystone, server.tenant_id).name
 
         if server.status == "BUILD":
-            activity.State = [glue2.computing_activity.ComputingActivity.STATE_STARTING]
+            activity.State = [
+                glue2.computing_activity.ComputingActivity.STATE_STARTING]
         elif server.status == "ACTIVE":
-            activity.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
+            activity.State = [
+                glue2.computing_activity.ComputingActivity.STATE_RUNNING]
         elif server.status == "PAUSED":
-            activity.State = [glue2.computing_activity.ComputingActivity.STATE_SUSPENDED]
+            activity.State = [
+                glue2.computing_activity.ComputingActivity.STATE_SUSPENDED]
         elif server.status == "SUSPENDED":
-            activity.State = [glue2.computing_activity.ComputingActivity.STATE_SUSPENDED]
+            activity.State = [
+                glue2.computing_activity.ComputingActivity.STATE_SUSPENDED]
         elif server.status == "STOPPED":
-            activity.State = [glue2.computing_activity.ComputingActivity.STATE_SUSPENDED]
+            activity.State = [
+                glue2.computing_activity.ComputingActivity.STATE_SUSPENDED]
         elif server.status == "SHUTOFF":
-            activity.State = [glue2.computing_activity.ComputingActivity.STATE_SUSPENDED]
+            activity.State = [
+                glue2.computing_activity.ComputingActivity.STATE_SUSPENDED]
         elif server.status == "RESCUED":
-            activity.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
+            activity.State = [
+                glue2.computing_activity.ComputingActivity.STATE_RUNNING]
         elif server.status == "RESIZED":
-            activity.State = [glue2.computing_activity.ComputingActivity.STATE_RUNNING]
+            activity.State = [
+                glue2.computing_activity.ComputingActivity.STATE_RUNNING]
         elif server.status == "SOFT_DELETED":
-            activity.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
+            activity.State = [
+                glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
         elif server.status == "DELETED":
-            activity.State = [glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
+            activity.State = [
+                glue2.computing_activity.ComputingActivity.STATE_TERMINATED]
         elif server.status == "ERROR":
-            activity.State = [glue2.computing_activity.ComputingActivity.STATE_FAILED]
+            activity.State = [
+                glue2.computing_activity.ComputingActivity.STATE_FAILED]
         else:
-            activity.State = [glue2.computing_activity.ComputingActivity.STATE_UNKNOWN]
+            activity.State = [
+                glue2.computing_activity.ComputingActivity.STATE_UNKNOWN]
             self.warning("couldn't handle server status '%s'" % server.status)
         activity.State.append("openstack:"+server.status)
 
         activity.SubmissionTime = _getDateTime(server.created)
         activity.ComputingManagerSubmissionTime = activity.SubmissionTime
 
-        flavor = self._getFlavor(nova,server.flavor["id"])
+        flavor = self._getFlavor(nova, server.flavor["id"])
         activity.RequestedSlots = flavor.vcpus
         activity.UsedMainMemory = flavor.ram
 
@@ -273,14 +301,15 @@ class ComputingActivitiesStep(glue2.computing_activity.ComputingActivitiesStep, 
                 addresses.append(add["addr"])
         activity.Extension["IpAddresses"] = addresses
 
-        image = self._getImage(nova,server.image["id"])
+        image = self._getImage(nova, server.image["id"])
         activity.RequestedApplicationEnvironment = [image.name]
 
-        activity.ExecutionNode = [getattr(server,"OS-EXT-SRV-ATTR:host")]
+        activity.ExecutionNode = [getattr(server, "OS-EXT-SRV-ATTR:host")]
 
         return activity
 
 #######################################################################################################################
+
 
 class ComputingActivityUpdateStep(glue2.computing_activity.ComputingActivityUpdateStep):
     def __init__(self):
@@ -303,14 +332,16 @@ class ComputingSharesStep(glue2.computing_share.ComputingSharesStep):
 
 #######################################################################################################################
 
+
 class ExecutionEnvironmentsStep(glue2.execution_environment.ExecutionEnvironmentsStep, Authentication):
     def __init__(self):
         glue2.execution_environment.ExecutionEnvironmentsStep.__init__(self)
         Authentication.__init__(self)
 
     def _run(self):
-        (username,password,tenant,auth_url) = self._getAuthentication()
-        nova = novaclient.v1_1.client.Client(username,password,tenant,auth_url,no_cache=True)
+        (username, password, tenant, auth_url) = self._getAuthentication()
+        nova = novaclient.v1_1.client.Client(
+            username, password, tenant, auth_url, no_cache=True)
         keystone = keystoneclient.v2_0.client.Client(username=username,
                                                      password=password,
                                                      tenant_name=tenant,
@@ -321,7 +352,7 @@ class ExecutionEnvironmentsStep(glue2.execution_environment.ExecutionEnvironment
         for host in nova.hosts.list_all():
             host_names.add(host.host_name)
         for host_name in host_names:
-            exec_env = self._getExecEnv(nova,host_name)
+            exec_env = self._getExecEnv(nova, host_name)
             if exec_env is not None:
                 exec_envs.append(exec_env)
         return self._groupHosts(exec_envs)
@@ -350,14 +381,16 @@ class ExecutionEnvironmentsStep(glue2.execution_environment.ExecutionEnvironment
 
 #######################################################################################################################
 
+
 class ApplicationsStep(glue2.application.ApplicationsStep, Authentication):
     def __init__(self):
         glue2.application.ApplicationsStep.__init__(self)
         Authentication.__init__(self)
 
     def _run(self):
-        (username,password,tenant,auth_url) = self._getAuthentication()
-        nova = novaclient.v1_1.client.Client(username,password,tenant,auth_url,no_cache=True)
+        (username, password, tenant, auth_url) = self._getAuthentication()
+        nova = novaclient.v1_1.client.Client(
+            username, password, tenant, auth_url, no_cache=True)
 
         keystone = keystoneclient.v2_0.client.Client(username=username,
                                                      password=password,
@@ -365,19 +398,19 @@ class ApplicationsStep(glue2.application.ApplicationsStep, Authentication):
                                                      auth_url=auth_url)
 
         # restrict this to public images only?
-        apps = glue2.application.Applications(self.resource_name,self.ipfinfo)
+        apps = glue2.application.Applications(self.resource_name, self.ipfinfo)
         for image in nova.images.list():
             #print("  metadata: %s" % image.metadata)
-            #print(dir(image))
-            self._addImage(image,apps)
+            # print(dir(image))
+            self._addImage(image, apps)
 
         return apps
-    
+
     def _addImage(self, image, apps):
         env = glue2.application.ApplicationEnvironment()
         env.AppName = image.name
-        #env.Description = ???
-        #env.Repository = 
+        # env.Description = ???
+        # env.Repository =
         if image.status == "ACTIVE":
             env.State = glue2.types.AppEnvState.INSTALLED_NOT_VERIFIED
         elif image.status == "SAVING":
@@ -396,33 +429,38 @@ class ApplicationsStep(glue2.application.ApplicationsStep, Authentication):
         handle.Type = "ImageIdentifier"
         handle.Value = image.id
 
-        apps.add(env,[handle])
+        apps.add(env, [handle])
 
 #######################################################################################################################
+
 
 def _getDateTime(dtStr):
     # Example: 2013-10-27T09:55:02Z
-    d = datetime.datetime.strptime(dtStr,"%Y-%m-%dT%H:%M:%SZ")
-    return datetime.datetime(d.year,d.month,d.day,d.hour,d.minute,d.second,d.microsecond,tzoffset(0))
+    d = datetime.datetime.strptime(dtStr, "%Y-%m-%dT%H:%M:%SZ")
+    return datetime.datetime(d.year, d.month, d.day, d.hour, d.minute, d.second, d.microsecond, tzoffset(0))
 
 #######################################################################################################################
+
 
 class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironmentsStep):
     def __init__(self):
         accelerator_environment.AcceleratorEnvironmentsStep.__init__(self)
 
-        self._acceptParameter("scontrol","the path to the SLURM scontrol program (default 'scontrol')",False)
+        self._acceptParameter(
+            "scontrol", "the path to the SLURM scontrol program (default 'scontrol')", False)
 
     def _run(self):
         # get info on the nodes
-	return
+        return
 
 #######################################################################################################################
+
 
 class ComputingManagerAcceleratorInfoStep(computing_manager_accel_info.ComputingManagerAcceleratorInfoStep):
 
     def __init__(self):
-        computing_manager_accel_info.ComputingManagerAcceleratorInfoStep.__init__(self)
+        computing_manager_accel_info.ComputingManagerAcceleratorInfoStep.__init__(
+            self)
 
     def _run(self):
         manager_accel_info = computing_manager_accel_info.ComputingManagerAcceleratorInfo()
@@ -431,10 +469,12 @@ class ComputingManagerAcceleratorInfoStep(computing_manager_accel_info.Computing
 
 #######################################################################################################################
 
+
 class ComputingShareAcceleratorInfoStep(computing_share_accel_info.ComputingShareAcceleratorInfoStep):
 
     def __init__(self):
-        computing_share_accel_info.ComputingShareAcceleratorInfoStep.__init__(self)
+        computing_share_accel_info.ComputingShareAcceleratorInfoStep.__init__(
+            self)
 
     def _run(self):
         share_accel_info = computing_share_accel_info.ComputingShareAcceleratorInfo()

@@ -1,14 +1,11 @@
 #!/bin/bash
-VERSION=`grep version ipfcheckout/ipf/setup.py |awk 'BEGIN { FS = "\"" } ; { print $2 }'`
-#sed -e "s/%VER%/$VERSION/" sbin/setup_xsede_ipf.py > ipfcheckout/ipf/setup_xsede_ipf.py
+VERSION=`grep version ../setup.py |awk 'BEGIN { FS = "\"" } ; { print $2 }'`
 echo "Version is $VERSION"\n
 echo $VERSION >./VERSIONipf-xsede
 RELEASE=`cat ./RELEASE`
 SDIDIR=`pwd`
-cd ipfcheckout/ipf
+cd ..
 
-#python ./setup_xsede_ipf.py bdist_rpm --spec-only
-#python setup_xsede_ipf.py sdist --formats=gztar
 python ./setup.py bdist_rpm --spec-only
 python setup.py sdist --formats=gztar
 mkdir -p build/bdist.linux_x86_64/rpm/SOURCES/
@@ -36,7 +33,7 @@ sed -i 's@%defattr(-,root,root)@%defattr(-,xdinfo,xdinfo)\n%attr(-,xdinfo,xdinfo
 sed -i "s@%post@%post\n\nsed -i \'s/IPF_USER=ipf/IPF_USER=xdinfo/\' /etc/ipf/init.d/ipf-WORKFLOW\n@" dist/ipf.spec
 CURRENTDIR=`pwd`
 echo $CURRENTDIR
-rpmbuild -ba --define _topdir$CURRENTDIR/build/bdist.linux-x86_64/rpm --clean dist/ipf.spec --verbose
+rpmbuild -ba --define "_topdir $CURRENTDIR/build/bdist.linux_x86_64/rpm" --clean dist/ipf.spec --verbose
 
 mkdir -p $SDIDIR/dist
 cp build/bdist.linux_x86_64/rpm/RPMS/noarch/ipf-xsede-$VERSION-$RELEASE.noarch.rpm $SDIDIR/dist/
@@ -44,4 +41,4 @@ cp build/bdist.linux_x86_64/rpm/SRPMS/ipf-xsede-$VERSION-$RELEASE.src.rpm $SDIDI
 cp dist/ipf-$VERSION.tar.gz $SDIDIR/dist/ipf-xsede-$VERSION.tar.gz
 
 cd $SDIDIR
-./sbin/package ipf-xsede
+#./sbin/package ipf-xsede

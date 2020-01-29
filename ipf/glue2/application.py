@@ -22,11 +22,12 @@ from ipf.dt import *
 from ipf.error import StepError
 from ipf.step import Step
 from ipf.sysinfo import ResourceName
-from  ipf.ipfinfo import IPFInformation, IPFInformationJson, IPFInformationTxt
+from ipf.ipfinfo import IPFInformation, IPFInformationJson, IPFInformationTxt
 
 from .entity import *
 
 #######################################################################################################################
+
 
 class ApplicationEnvironment(Entity):
 
@@ -49,30 +50,31 @@ class ApplicationEnvironment(Entity):
         self.FreeSlots = None            # integer
         self.FreeJobs = None             # integer
         self.FreeUserSeats = None        # integer
-        self.ExecutionEnvironmentID = [] # string (ID)
+        self.ExecutionEnvironmentID = []  # string (ID)
         self.ComputingManagerID = None   # string (ID)
         self.ApplicationHandleID = []    # string (ID)
-	self.Keywords = []	 #string (ID)
-	self.Extension = {}
-	self.SupportStatus = None
-        
+        self.Keywords = []  # string (ID)
+        self.Extension = {}
+        self.SupportStatus = None
+
     def __str__(self):
-        return json.dumps(ApplicationEnvironmentOgfJson(self).toJson(),sort_keys=True,indent=4)
+        return json.dumps(ApplicationEnvironmentOgfJson(self).toJson(), sort_keys=True, indent=4)
 
 #######################################################################################################################
+
 
 class ApplicationEnvironmentOgfJson(EntityOgfJson):
     data_cls = ApplicationEnvironment
 
     def __init__(self, data):
-        EntityOgfJson.__init__(self,data)
+        EntityOgfJson.__init__(self, data)
 
     def get(self):
-        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+        return json.dumps(self.toJson(), sort_keys=True, indent=4)
 
     def toJson(self):
         doc = EntityOgfJson.toJson(self)
-	#Specified name is descriptive Name: field from inside module file
+        # Specified name is descriptive Name: field from inside module file
         if self.data.SpecifiedName is not None:
             doc["Name"] = self.data.SpecifiedName
         if self.data.AppName is not None:
@@ -105,15 +107,15 @@ class ApplicationEnvironmentOgfJson(EntityOgfJson):
             doc["FreeJobs"] = self.data.FreeJobs
         if self.data.FreeUserSeats is not None:
             doc["FreeUserSeats"] = self.data.FreeUserSeats
-	if len(self.data.Keywords) > 0:
-	    doc["Keywords"] = self.data.Keywords
-	if len(self.data.Extension) > 0:
-	    extensions = [] 
-	    for  ext in self.data.Extension:
-		extensions.append(ext)
-	    #doc["Extensions"] = list(extensions)
-	if self.data.SupportStatus is not None:
-	   doc["SupportStatus"] = self.data.SupportStatus	    
+        if len(self.data.Keywords) > 0:
+            doc["Keywords"] = self.data.Keywords
+        if len(self.data.Extension) > 0:
+            extensions = []
+            for ext in self.data.Extension:
+                extensions.append(ext)
+            #doc["Extensions"] = list(extensions)
+        if self.data.SupportStatus is not None:
+            doc["SupportStatus"] = self.data.SupportStatus
 
         associations = {}
         associations["ExecutionEnvironmentID"] = self.data.ExecutionEnvironmentID
@@ -126,28 +128,33 @@ class ApplicationEnvironmentOgfJson(EntityOgfJson):
 
 #######################################################################################################################
 
+
 class ApplicationHandle(Entity):
     def __init__(self):
         Entity.__init__(self)
 
-        self.Type = "unknown"                                                       # string (ApplicationHandle_t)
-        self.Value = "unknown"                                                      # string
-        self.ApplicationEnvironmentID = "urn:glue2:ApplicationEnvironment:unknown"  # string (ID)
+        # string (ApplicationHandle_t)
+        self.Type = "unknown"
+        # string
+        self.Value = "unknown"
+        # string (ID)
+        self.ApplicationEnvironmentID = "urn:glue2:ApplicationEnvironment:unknown"
 
 #######################################################################################################################
+
 
 class ApplicationHandleOgfJson(EntityOgfJson):
     data_cls = ApplicationHandle
 
     def __init__(self, data):
-        EntityOgfJson.__init__(self,data)
+        EntityOgfJson.__init__(self, data)
 
     def get(self):
-        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+        return json.dumps(self.toJson(), sort_keys=True, indent=4)
 
     def toJson(self):
         doc = EntityOgfJson.toJson(self)
-        
+
         doc["Type"] = self.data.Type
         doc["Value"] = self.data.Value
 
@@ -156,9 +163,10 @@ class ApplicationHandleOgfJson(EntityOgfJson):
         doc["Associations"] = associations
 
         return doc
-    
+
 #######################################################################################################################
-    
+
+
 class Applications(Data):
     def __init__(self, resource_name, ipfinfo):
         Data.__init__(self)
@@ -173,46 +181,56 @@ class Applications(Data):
             app_version = "unknown"
         else:
             app_version = env.AppVersion
-        env.Name = "%s-%s" % (env.AppName,app_version)
-        env.id =  "%s.%s.%s" % (app_version,env.AppName,self.resource_name)
-        env.ID = "urn:glue2:ApplicationEnvironment:%s.%s.%s.%s" % (app_version,env.AppName,self.resource_name,env.path_hash)
-        env.ComputingManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
+        env.Name = "%s-%s" % (env.AppName, app_version)
+        env.id = "%s.%s.%s" % (app_version, env.AppName, self.resource_name)
+        env.ID = "urn:glue2:ApplicationEnvironment:%s.%s.%s.%s" % (
+            app_version, env.AppName, self.resource_name, env.path_hash)
+        env.ComputingManagerID = "urn:glue2:ComputingManager:%s" % (
+            self.resource_name)
 
         env.ApplicationHandleID = []
         for handle in handles:
             handle.ApplicationEnvironmentID = env.ID
-            handle.Name = "%s-%s" % (env.AppName,app_version)
-            handle.id =  "%s.%s.%s.%s" % (handle.Type,app_version,env.AppName,self.resource_name)
+            handle.Name = "%s-%s" % (env.AppName, app_version)
+            handle.id = "%s.%s.%s.%s" % (
+                handle.Type, app_version, env.AppName, self.resource_name)
             handle.ID = "urn:glue2:ApplicationHandle:%s:%s.%s.%s.%s" % \
-                        (handle.Type,app_version,env.AppName,self.resource_name,env.path_hash)
+                        (handle.Type, app_version, env.AppName,
+                         self.resource_name, env.path_hash)
             env.ApplicationHandleID.append(handle.ID)
 
         self.environments.append(env)
         self.handles.extend(handles)
-    
+
 #######################################################################################################################
+
 
 class ApplicationsOgfJson(Representation):
     data_cls = Applications
 
     def __init__(self, data):
-        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+        Representation.__init__(
+            self, Representation.MIME_APPLICATION_JSON, data)
 
     def get(self):
-        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+        return json.dumps(self.toJson(), sort_keys=True, indent=4)
 
     def toJson(self):
         doc = {}
         doc["ApplicationEnvironment"] = []
         for env in self.data.environments:
-            doc["ApplicationEnvironment"].append(ApplicationEnvironmentOgfJson(env).toJson())
+            doc["ApplicationEnvironment"].append(
+                ApplicationEnvironmentOgfJson(env).toJson())
         doc["ApplicationHandle"] = []
         for handle in self.data.handles:
-            doc["ApplicationHandle"].append(ApplicationHandleOgfJson(handle).toJson())
-        doc["PublisherInfo"] = [IPFInformationJson(ipfinfo).toJson() for ipfinfo in self.data.ipfinfo]
+            doc["ApplicationHandle"].append(
+                ApplicationHandleOgfJson(handle).toJson())
+        doc["PublisherInfo"] = [IPFInformationJson(
+            ipfinfo).toJson() for ipfinfo in self.data.ipfinfo]
         return doc
 
 #######################################################################################################################
+
 
 class ApplicationsStep(Step):
     def __init__(self):
@@ -220,7 +238,7 @@ class ApplicationsStep(Step):
 
         self.description = "produces a document containing GLUE 2 ApplicationEnvironment and ApplicationHandle"
         self.time_out = 30
-        self.requires = [IPFInformation,ResourceName]
+        self.requires = [IPFInformation, ResourceName]
         self.produces = [Applications]
 
         self.resource_name = None

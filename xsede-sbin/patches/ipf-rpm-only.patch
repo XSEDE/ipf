@@ -1,0 +1,29 @@
+diff --git a/ipf/paths.py b/ipf/paths.py
+index fe2a550..757920a 100644
+--- a/ipf/paths.py
++++ b/ipf/paths.py
+@@ -22,7 +22,8 @@ import sys
+
+ path = os.path.abspath(__file__)
+ path = os.path.split(path)[0]    # drop file name
+-IPF_PARENT_PATH = path
++###For RPM purposes, we set IPF_PARENT_PATH to /.  ######
++IPF_PARENT_PATH = "/"
+
+ if "IPF_ETC_PATH" in os.environ:
+     IPF_ETC_PATH = os.environ["IPF_ETC_PATH"]
+diff --git a/ipf/xsede/configure_workflows.py b/ipf/xsede/configure_workflows.py
+index 1cf6412..f518ba0 100644
+--- a/ipf/xsede/configure_workflows.py
++++ b/ipf/xsede/configure_workflows.py
+@@ -742,8 +742,8 @@
+                 out_file.write("WORKFLOW=${NAME}.json\n")
+             else:
+                 out_file.write(line)
+-        elif line.startswith("IPF_USER="):
+-            out_file.write("IPF_USER=%s\n" % getpass.getuser())
++    #    elif line.startswith("IPF_USER="):
++    #        out_file.write("IPF_USER=%s\n" % getpass.getuser())
+         elif line.startswith("export IPF_ETC_PATH="):
+             out_file.write("export IPF_ETC_PATH=%s\n" %
+                            os.path.join(getBaseDir(), "etc/ipf"))

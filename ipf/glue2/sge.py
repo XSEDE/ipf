@@ -38,6 +38,7 @@ from . import computing_share_accel_info
 
 #######################################################################################################################
 
+
 class ComputingServiceStep(computing_service.ComputingServiceStep):
 
     def __init__(self):
@@ -59,6 +60,7 @@ class ComputingServiceStep(computing_service.ComputingServiceStep):
 
 #######################################################################################################################
 
+
 class ComputingManagerStep(computing_manager.ComputingManagerStep):
 
     def __init__(self):
@@ -75,12 +77,14 @@ class ComputingManagerStep(computing_manager.ComputingManagerStep):
 
 #######################################################################################################################
 
+
 class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
     def __init__(self):
         computing_activity.ComputingActivitiesStep.__init__(self)
 
-        self._acceptParameter("qstat","the path to the SGE qstat program (default 'qstat')",False)
+        self._acceptParameter(
+            "qstat", "the path to the SGE qstat program (default 'qstat')", False)
 
     def _run(self):
         try:
@@ -97,7 +101,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
             raise StepError("qstat failed: "+output+"\n")
 
         uhandler = JobsUHandler(self)
-        xml.sax.parseString(output,uhandler)
+        xml.sax.parseString(output, uhandler)
 
         jobs = {}
         for job in uhandler.jobs:
@@ -111,7 +115,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
             raise StepError("qstat failed: "+output+"\n")
         # dom parsing was slow
         # sax parsing failed sometimes
-        parseJLines(output,jobs,self)
+        parseJLines(output, jobs, self)
 
         jobList = []
         for job in uhandler.jobs:
@@ -121,6 +125,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
         return jobList
 
 #######################################################################################################################
+
 
 class JobsUHandler(xml.sax.handler.ContentHandler):
 
@@ -160,32 +165,42 @@ class JobsUHandler(xml.sax.handler.ContentHandler):
             self.cur_job.LocalIDFromManager = self.text
         if name == "state":
             if self.text.find("r") >= 0:
-                self.cur_job.State = [computing_activity.ComputingActivity.STATE_RUNNING]
-            elif self.text.find("R") >= 0: # restarted
-                self.cur_job.State = [computing_activity.ComputingActivity.STATE_RUNNING]
-            elif self.text.find("d") >= 0: # deleted
-                self.cur_job.State = [computing_activity.ComputingActivity.STATE_TERMINATED]
-            elif self.text.find("E") >= 0: # error - Eqw
-                self.cur_job.State = [computing_activity.ComputingActivity.STATE_FAILED]
-            elif self.text.find("h") >= 0: # held - hqw, hr
-                self.cur_job.State = [computing_activity.ComputingActivity.STATE_HELD]
-            elif self.text.find("w") >= 0: # waiting - qw
-                self.cur_job.State = [computing_activity.ComputingActivity.STATE_PENDING]
-            elif self.text.find("t") >= 0: # transfering
-                self.cur_job.State = [computing_activity.ComputingActivity.STATE_PENDING]
+                self.cur_job.State = [
+                    computing_activity.ComputingActivity.STATE_RUNNING]
+            elif self.text.find("R") >= 0:  # restarted
+                self.cur_job.State = [
+                    computing_activity.ComputingActivity.STATE_RUNNING]
+            elif self.text.find("d") >= 0:  # deleted
+                self.cur_job.State = [
+                    computing_activity.ComputingActivity.STATE_TERMINATED]
+            elif self.text.find("E") >= 0:  # error - Eqw
+                self.cur_job.State = [
+                    computing_activity.ComputingActivity.STATE_FAILED]
+            elif self.text.find("h") >= 0:  # held - hqw, hr
+                self.cur_job.State = [
+                    computing_activity.ComputingActivity.STATE_HELD]
+            elif self.text.find("w") >= 0:  # waiting - qw
+                self.cur_job.State = [
+                    computing_activity.ComputingActivity.STATE_PENDING]
+            elif self.text.find("t") >= 0:  # transfering
+                self.cur_job.State = [
+                    computing_activity.ComputingActivity.STATE_PENDING]
             else:
-                self.step.warning("found unknown SGE job state '" + self.text + "'")
-                self.cur_job.State = [computing_activity.ComputingActivity.STATE_UNKNOWN]
+                self.step.warning(
+                    "found unknown SGE job state '" + self.text + "'")
+                self.cur_job.State = [
+                    computing_activity.ComputingActivity.STATE_UNKNOWN]
             self.cur_job.State.append("sge:"+self.job_state)
         if name == "JAT_start_time":
-            self.cur_job.StartTime = _getDateTime(self.text)         
+            self.cur_job.StartTime = _getDateTime(self.text)
         # JAT_submission_time isn't provided for running jobs, so just get it from -j
 
     def characters(self, ch):
         # all of the text for an element may not come at once
         self.text = self.text + ch
-        
+
 #######################################################################################################################
+
 
 def parseJLines(output, jobs, step):
     cur_time = time.time()
@@ -193,7 +208,7 @@ def parseJLines(output, jobs, step):
     job_strings = []
     index = output.find("<JB_job_number>")
     while index >= 0:
-        next_index = output.find("<JB_job_number>",index+1)
+        next_index = output.find("<JB_job_number>", index+1)
         if next_index == -1:
             job_strings.append(output[index:])
         else:
@@ -202,7 +217,7 @@ def parseJLines(output, jobs, step):
 
     cur_job = None
     for job_string in job_strings:
-        m = re.search("<JB_job_number>(\S+)</JB_job_number>",job_string)
+        m = re.search("<JB_job_number>(\S+)</JB_job_number>", job_string)
         if m is not None:
             try:
                 cur_job = jobs[m.group(1)]
@@ -210,57 +225,64 @@ def parseJLines(output, jobs, step):
                 continue
         else:
             continue
-        m = re.search("<JB_job_name>(\S+)</JB_job_name>",job_string)
+        m = re.search("<JB_job_name>(\S+)</JB_job_name>", job_string)
         if m is not None:
             cur_job.Name = m.group(1)
-        m = re.search("<JB_owner>(\S+)</JB_owner>",job_string)
+        m = re.search("<JB_owner>(\S+)</JB_owner>", job_string)
         if m is not None:
             cur_job.LocalOwner = m.group(1)
-        m = re.search("<JB_account>(\S+)</JB_account>",job_string)
+        m = re.search("<JB_account>(\S+)</JB_account>", job_string)
         if m is not None:
             cur_job.Extension["LocalAccount"] = m.group(1)
-        m = re.search("<QR_name>(\S+)</QR_name>",job_string)
+        m = re.search("<QR_name>(\S+)</QR_name>", job_string)
         if m is not None:
             cur_job.Queue = m.group(1)
-        m = re.search("<JB_submission_time>(\S+)</JB_submission_time>",job_string)
+        m = re.search(
+            "<JB_submission_time>(\S+)</JB_submission_time>", job_string)
         if m is not None:
-            cur_job.SubmissionTime = epochToDateTime(int(m.group(1)),localtzoffset())
+            cur_job.SubmissionTime = epochToDateTime(
+                int(m.group(1)), localtzoffset())
             cur_job.ComputingManagerSubmissionTime = cur_job.SubmissionTime
         else:
-            step.warning("didn't find submission time in %s",job_string)
-        m = re.search("<JB_pe_range>([\s\S]+)</JB_pe_range>",job_string)
+            step.warning("didn't find submission time in %s", job_string)
+        m = re.search("<JB_pe_range>([\s\S]+)</JB_pe_range>", job_string)
         if m is not None:
-            m = re.search("<RN_min>(\S+)</RN_min>",m.group(1))
+            m = re.search("<RN_min>(\S+)</RN_min>", m.group(1))
             if m is not None:
                 cur_job.RequestedSlots = int(m.group(1))
-        lstrings = re.findall("<qstat_l_requests>[\s\S]+?</qstat_l_requests>",job_string)
+        lstrings = re.findall(
+            "<qstat_l_requests>[\s\S]+?</qstat_l_requests>", job_string)
         for str in lstrings:
             if "h_rt" in str:
-                m = re.search("<CE_doubleval>(\S+)</CE_doubleval>",str)
+                m = re.search("<CE_doubleval>(\S+)</CE_doubleval>", str)
                 if m is not None:
-                    cur_job.RequestedTotalWallTime = cur_job.RequestedSlots * int(float(m.group(1)))
+                    cur_job.RequestedTotalWallTime = cur_job.RequestedSlots * \
+                        int(float(m.group(1)))
         # start time isn't often in the -j output, so get it from -u
         if cur_job.StartTime is not None:
-            usedWallTime = int(cur_time - time.mktime(cur_job.StartTime.timetuple()))
+            usedWallTime = int(
+                cur_time - time.mktime(cur_job.StartTime.timetuple()))
             cur_job.UsedTotalWallTime = usedWallTime * cur_job.RequestedSlots
 
         # looks like PET_end_time isn't ever valid
-        sstrings = re.findall("<scaled>[\s\S]+?</scaled>",job_string)
+        sstrings = re.findall("<scaled>[\s\S]+?</scaled>", job_string)
         for str in sstrings:
-            m = re.search("<UA_value>(\S+)</UA_value>",str)
+            m = re.search("<UA_value>(\S+)</UA_value>", str)
             if m is None:
                 continue
             if "<UA_name>end_time</UA_name>" in str:
                 if int(float(m.group(1))) > 0:
-                    cur_job.ComputingManagerEndTime = epochToDateTime(float(m.group(1)),localtzoffset())
+                    cur_job.ComputingManagerEndTime = epochToDateTime(
+                        float(m.group(1)), localtzoffset())
             if "<UA_name>exit_status</UA_name>" in str:
                 cur_job.ComputingManagerExitCode = m.group(1)
 
 #######################################################################################################################
 
+
 def _getDateTime(dtStr):
     # Example: 2010-08-04T14:01:54
-    
+
     year = int(dtStr[0:4])
     month = int(dtStr[5:7])
     day = int(dtStr[8:10])
@@ -278,13 +300,16 @@ def _getDateTime(dtStr):
 
 #######################################################################################################################
 
+
 class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep):
 
     def __init__(self):
         computing_activity.ComputingActivityUpdateStep.__init__(self)
 
-        self._acceptParameter("reporting_file","the path to the SGE reporting file (optional)",False)
-        self._acceptParameter("qstat","the path to the SGE qstat program (default 'qstat')",False)
+        self._acceptParameter(
+            "reporting_file", "the path to the SGE reporting file (optional)", False)
+        self._acceptParameter(
+            "qstat", "the path to the SGE qstat program (default 'qstat')", False)
 
         self.activities = {}
 
@@ -297,12 +322,14 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
             reporting_file = self.params["reporting_file"]
         except KeyError:
             try:
-                reporting_file = os.path.join(os.environ["SGE_ROOT"],"default","common","reporting")
+                reporting_file = os.path.join(
+                    os.environ["SGE_ROOT"], "default", "common", "reporting")
             except KeyError:
                 msg = "no reporting_file specified and the SGE_ROOT environment variable is not set"
                 self.error(msg)
                 raise StepError(msg)
-        watcher = LogFileWatcher(self._logEntry,reporting_file,self.position_file)
+        watcher = LogFileWatcher(
+            self._logEntry, reporting_file, self.position_file)
         watcher.run()
 
     def _logEntry(self, log_file_name, line):
@@ -312,11 +339,11 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
         toks = line.split(":")
 
         if toks[1] == "new_job":
-            pass # there is a job_log for every new job, so ignore these
+            pass  # there is a job_log for every new job, so ignore these
         elif toks[1] == "job_log":
             self.handleJobLog(toks)
         elif toks[1] == "queue":
-            pass # ignore
+            pass  # ignore
         elif toks[1] == "acct":
             # accounting records have job configuration information, but are generated when the job completes
             pass
@@ -346,7 +373,8 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
         # comment
 
         if len(toks) != 20:
-            logger.warning("Expected 20 tokens in log entry, but found %d. Ignoring." % len(toks))
+            logger.warning(
+                "Expected 20 tokens in log entry, but found %d. Ignoring." % len(toks))
             return
 
         if toks[8] == "execution daemon":
@@ -360,7 +388,7 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
         else:
             activity = computing_activity.ComputingActivity()
 
-        event_dt = datetime.datetime.fromtimestamp(float(toks[2]),tzoffset(0))
+        event_dt = datetime.datetime.fromtimestamp(float(toks[2]), tzoffset(0))
         activity.LocalIDFromManager = toks[4]
         activity.Name = toks[13]
         activity.LocalOwner = toks[14]
@@ -369,7 +397,8 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
         activity.Extension["LocalAccount"] = toks[18]
 
         if toks[3] == "pending":
-            activity.State = [computing_activity.ComputingActivity.STATE_PENDING]
+            activity.State = [
+                computing_activity.ComputingActivity.STATE_PENDING]
             activity.SubmissionTime = event_dt
             activity.ComputingManagerSubmissionTime = event_dt
             self.activities[activity.LocalIDFromManager] = activity
@@ -378,13 +407,15 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
             return
         elif toks[3] == "delivered":
             # job received by execd - job started
-            activity.State = [computing_activity.ComputingActivity.STATE_RUNNING]
+            activity.State = [
+                computing_activity.ComputingActivity.STATE_RUNNING]
             activity.StartTime = event_dt
         elif toks[3] == "finished":
             if activity.ComputingManagerEndTime is not None:
                 # could be a finished message after an error - ignore it
                 return
-            activity.State = [computing_activity.ComputingActivity.STATE_FINISHED]
+            activity.State = [
+                computing_activity.ComputingActivity.STATE_FINISHED]
             activity.ComputingManagerEndTime = event_dt
             if activity.LocalIDFromManager in self.activities:
                 del self.activities[activity.LocalIDFromManager]
@@ -392,7 +423,8 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
             # scheduler deleting the job and a finished appears first, so ignore
             return
         elif toks[3] == "error":
-            activity.State = [computing_activity.ComputingActivity.STATE_FAILED]
+            activity.State = [
+                computing_activity.ComputingActivity.STATE_FAILED]
             activity.ComputingManagerEndTime = event_dt
             if activity.LocalIDFromManager in self.activities:
                 del self.activities[activity.LocalIDFromManager]
@@ -410,7 +442,7 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
         # these records are missing a few things, like the # nodes
         if activity.RequestedSlots is None:
             self.addInfo(activity)
-        
+
         if self._includeQueue(activity.Queue):
             self.output(activity)
 
@@ -424,16 +456,18 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
         status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("qstat failed: "+output+"\n")
-        parseJLines(output,{job.LocalIDFromManager: job},self)
+        parseJLines(output, {job.LocalIDFromManager: job}, self)
 
 #######################################################################################################################
+
 
 class ComputingSharesStep(computing_share.ComputingSharesStep):
 
     def __init__(self):
         computing_share.ComputingSharesStep.__init__(self)
 
-        self._acceptParameter("qconf","the path to the SGE qconf program (default 'qconf')",False)
+        self._acceptParameter(
+            "qconf", "the path to the SGE qconf program (default 'qconf')", False)
 
     def _run(self):
         try:
@@ -496,19 +530,21 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
                         except ValueError:
                             pass
         return queue
-    
+
     def _getDuration(self, dStr):
-        (hour,minute,second)=dStr.split(":")
+        (hour, minute, second) = dStr.split(":")
         return int(hour)*60*60 + int(minute)*60 + int(second)
 
 #######################################################################################################################
+
 
 class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep):
 
     def __init__(self):
         execution_environment.ExecutionEnvironmentsStep.__init__(self)
 
-        self._acceptParameter("qhost","the path to the SGE qhost program (default 'qhost')",False)
+        self._acceptParameter(
+            "qhost", "the path to the SGE qhost program (default 'qhost')", False)
 
     def _run(self):
         try:
@@ -524,7 +560,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
             raise StepError("qhost failed: "+output+"\n")
 
         handler = HostsHandler(self)
-        xml.sax.parseString(output,handler)
+        xml.sax.parseString(output, handler)
 
         hosts = []
         for host in handler.hosts:
@@ -534,6 +570,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         return self._groupHosts(hosts)
 
 #######################################################################################################################
+
 
 class HostsHandler(xml.sax.handler.ContentHandler):
 
@@ -559,10 +596,11 @@ class HostsHandler(xml.sax.handler.ContentHandler):
             self.cur_host.TotalInstances = 1
         elif name == "queue":
             queue = attrs.getValue("name")
-            self.cur_host.ShareID.append("urn:glue2:ComputingShare:%s.%s" % (queue,self.step.resource_name))
+            self.cur_host.ShareID.append(
+                "urn:glue2:ComputingShare:%s.%s" % (queue, self.step.resource_name))
         elif name == "hostvalue":
             self.hostvalue_name = attrs.getValue("name")
-        
+
     def endElement(self, name):
         if name == "host":
             if self.cur_host.PhysicalCPUs is not None:
@@ -577,7 +615,8 @@ class HostsHandler(xml.sax.handler.ContentHandler):
             elif self.hostvalue_name == "num_proc":
                 if self.text != "-":
                     self.cur_host.PhysicalCPUs = int(self.text)
-                    self.cur_host.LogicalCPUs = self.cur_host.PhysicalCPUs  # don't have enough info for something else
+                    # don't have enough info for something else
+                    self.cur_host.LogicalCPUs = self.cur_host.PhysicalCPUs
             elif self.hostvalue_name == "load_avg":
                 if self.text == "-":
                     self.cur_host.UsedInstances = 0
@@ -605,7 +644,8 @@ class HostsHandler(xml.sax.handler.ContentHandler):
                     elif units == "M":
                         self.cur_host.MainMemorySize = int(memSize)
                     else:
-                        self.step.warning("couldn't handle memory units of '"+units+"'")
+                        self.step.warning(
+                            "couldn't handle memory units of '"+units+"'")
             elif self.hostvalue_name == "mem_used":
                 pass
             elif self.hostvalue_name == "swap_total":
@@ -618,25 +658,29 @@ class HostsHandler(xml.sax.handler.ContentHandler):
     def characters(self, ch):
         # all of the text for an element may not come at once
         self.text = self.text + ch
-        
+
 #######################################################################################################################
+
 
 class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironmentsStep):
     def __init__(self):
         accelerator_environment.AcceleratorEnvironmentsStep.__init__(self)
 
-        self._acceptParameter("scontrol","the path to the SLURM scontrol program (default 'scontrol')",False)
+        self._acceptParameter(
+            "scontrol", "the path to the SLURM scontrol program (default 'scontrol')", False)
 
     def _run(self):
         # get info on the nodes
-	return
+        return
 
 #######################################################################################################################
+
 
 class ComputingManagerAcceleratorInfoStep(computing_manager_accel_info.ComputingManagerAcceleratorInfoStep):
 
     def __init__(self):
-        computing_manager_accel_info.ComputingManagerAcceleratorInfoStep.__init__(self)
+        computing_manager_accel_info.ComputingManagerAcceleratorInfoStep.__init__(
+            self)
 
     def _run(self):
         manager_accel_info = computing_manager_accel_info.ComputingManagerAcceleratorInfo()
@@ -645,10 +689,12 @@ class ComputingManagerAcceleratorInfoStep(computing_manager_accel_info.Computing
 
 #######################################################################################################################
 
+
 class ComputingShareAcceleratorInfoStep(computing_share_accel_info.ComputingShareAcceleratorInfoStep):
 
     def __init__(self):
-        computing_share_accel_info.ComputingShareAcceleratorInfoStep.__init__(self)
+        computing_share_accel_info.ComputingShareAcceleratorInfoStep.__init__(
+            self)
 
     def _run(self):
         share_accel_info = computing_share_accel_info.ComputingShareAcceleratorInfo()

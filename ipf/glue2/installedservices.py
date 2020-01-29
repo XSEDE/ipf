@@ -25,7 +25,7 @@ from . import service
 #from . import endpoint
 from .step import GlueStep
 #from .step import computing_service
-from .types import AppEnvState,ApplicationHandle
+from .types import AppEnvState, ApplicationHandle
 from . import computing_activity
 from . import computing_manager
 from . import computing_service
@@ -33,6 +33,8 @@ from . import computing_share
 from . import execution_environment
 
 #######################################################################################################################
+
+
 class InstalledServiceStep(computing_service.ComputingServiceStep):
     def __init__(self):
         computing_service.ComputingServiceStep.__init__(self)
@@ -40,7 +42,7 @@ class InstalledServiceStep(computing_service.ComputingServiceStep):
     def _run(self):
         service = computing_service.ComputingService()
         #service.Name = "PBS"
-        #service.Capability = ["executionmanagement.jobexecution",
+        # service.Capability = ["executionmanagement.jobexecution",
         #                      "executionmanagement.jobdescription",
         #                      "executionmanagement.jobmanager",
         #                      "executionmanagement.executionandplanning",
@@ -62,26 +64,27 @@ class InstalledServiceStep(computing_service.ComputingServiceStep):
             except OSError:
                 continue
             for name in packages:
-                print("name of package is" +name)
+                print("name of package is" + name)
                 if name.startswith("."):
                     continue
-                if not os.path.isdir(os.path.join(path,name)):
+                if not os.path.isdir(os.path.join(path, name)):
                     # assume these are modules that just import other modules
                     continue
-                for file_name in os.listdir(os.path.join(path,name)):
+                for file_name in os.listdir(os.path.join(path, name)):
                     if file_name.startswith("."):
                         continue
                     if file_name.endswith("~"):
                         continue
                     if file_name.endswith(".lua"):
-                        self._addModule(os.path.join(path,name,file_name),name,file_name[:len(file_name)-4],apps)
+                        self._addModule(os.path.join(
+                            path, name, file_name), name, file_name[:len(file_name)-4], apps)
                     else:
                         self.info("calling addmodule w/ version")
-                        self._addModule(os.path.join(path,name,file_name),name,file_name,service)
+                        self._addModule(os.path.join(
+                            path, name, file_name), name, file_name, service)
 
         return service
 
-    
     def _addModule(self, path, name, version, service):
         env = application.ApplicationEnvironment()
         #env.AppName = name
@@ -94,34 +97,35 @@ class InstalledServiceStep(computing_service.ComputingServiceStep):
             return
         text = file.read()
         file.close()
-	print("in correct _addModule")
-        m = re.search("\"Description:([^\"]+)\"",text)
+        print("in correct _addModule")
+        m = re.search("\"Description:([^\"]+)\"", text)
         if m is not None:
             env.Description = m.group(1).strip()
         else:
             self.debug("no description in "+path)
             print("no description in "+path)
-        m = re.search("\"URL:([^\"]+)\"",text)
+        m = re.search("\"URL:([^\"]+)\"", text)
         if m is not None:
             env.Repository = m.group(1).strip()
         else:
             self.debug("no URL in "+path)
-        m = re.search("\"Category:([^\"]+)\"",text)
+        m = re.search("\"Category:([^\"]+)\"", text)
         if m is not None:
-            env.Extension["Category"] = list(map(str.strip,m.group(1).split(",")))
-	    print(" python is silly")
-		
+            env.Extension["Category"] = list(
+                map(str.strip, m.group(1).split(",")))
+            print(" python is silly")
+
         else:
             self.debug("no Category in "+path)
-        m = re.search("\"Keywords:([^\"]+)\"",text)
+        m = re.search("\"Keywords:([^\"]+)\"", text)
         if m is not None:
-	    env.Keywords = list(map(str.strip,m.group(1).split(",")))
+            env.Keywords = list(map(str.strip, m.group(1).split(",")))
         else:
             self.debug("no Keywords in "+path)
-        m = re.search("\"SupportStatus:([^\"]+)\"",text)
+        m = re.search("\"SupportStatus:([^\"]+)\"", text)
         if m is not None:
-	    supportstatus = []
-	    supportstatus.append(list(map(str.strip,m.group(1).split(","))))
+            supportstatus = []
+            supportstatus.append(list(map(str.strip, m.group(1).split(","))))
             env.Extension["SupportStatus"] = m.group(1).strip()
         else:
             self.debug("no SupportStatus in "+path)
@@ -130,18 +134,19 @@ class InstalledServiceStep(computing_service.ComputingServiceStep):
         handle.Type = ApplicationHandle.MODULE
         handle.Value = name+"/"+version
 
-        apps.add(env,[handle])
+        apps.add(env, [handle])
 
 #######################################################################################################################
+
 
 class ComputingServiceXsedeJson(ServiceOgfJson):
     data_cls = ComputingService
 
     def __init__(self, data):
-        ServiceOgfJson.__init__(self,data)
+        ServiceOgfJson.__init__(self, data)
 
     def get(self):
-        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+        return json.dumps(self.toJson(), sort_keys=True, indent=4)
 
     def toJson(self):
         doc = ServiceOgfJson.toJson(self)

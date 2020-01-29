@@ -31,6 +31,7 @@ from . import computing_share_accel_info
 
 #######################################################################################################################
 
+
 class ComputingServiceStep(computing_service.ComputingServiceStep):
 
     def __init__(self):
@@ -52,6 +53,7 @@ class ComputingServiceStep(computing_service.ComputingServiceStep):
 
 #######################################################################################################################
 
+
 class ComputingManagerStep(computing_manager.ComputingManagerStep):
 
     def __init__(self):
@@ -68,14 +70,16 @@ class ComputingManagerStep(computing_manager.ComputingManagerStep):
 
 #######################################################################################################################
 
+
 class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
     def __init__(self):
         computing_activity.ComputingActivitiesStep.__init__(self)
 
-        self._acceptParameter("condor_q","the path to the Condor condor_q program (default 'condor_q')",False)
+        self._acceptParameter(
+            "condor_q", "the path to the Condor condor_q program (default 'condor_q')", False)
 
     def _run(self):
-        condor_q = self.params.get("condor_q","condor_q")
+        condor_q = self.params.get("condor_q", "condor_q")
 
         cmd = condor_q + " -long"
         logger.debug("running "+cmd)
@@ -88,7 +92,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
         jobs = []
         for jobString in jobStrings:
             job = self._getJob(jobString)
-            if job != None and includeQueue(self.config,job.Queue,True):
+            if job != None and includeQueue(self.config, job.Queue, True):
                 jobs.append(job)
 
         for job in jobs:
@@ -105,8 +109,8 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
         procId = None
         usedWallTime = None
         usedCpuTime = None
-	lines = jobString.split("\n")
-	for line in lines:
+        lines = jobString.split("\n")
+        for line in lines:
             if line.startswith("ClusterId = "):
                 clusterId = line.split()[2]
             if line.startswith("ProcId = "):
@@ -114,7 +118,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
             # don't think there are any job.Name...
             if line.startswith("Owner = "):
                 owner = line.split()[2]
-                job.LocalOwner =  owner[1:len(owner)-1]
+                job.LocalOwner = owner[1:len(owner)-1]
             if line.startswith("TGProject = "):
                 project = line.split()[2]
                 job.Extension["LocalAccount"] = project[1:len(project)-1]
@@ -146,8 +150,10 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
                     job.State = [computing_activity.ComputingActivity.SUSPENDED,
                                  "htcondor:Suspended"]
                 else:
-                    self.warning("found unknown Condor job status '" + status + "'")
-                    job.State = [computing_activity.ComputingActivity.STATE_UNKNOWN]
+                    self.warning(
+                        "found unknown Condor job status '" + status + "'")
+                    job.State = [
+                        computing_activity.ComputingActivity.STATE_UNKNOWN]
 
             # not sure if this is right - don't see any mpi jobs for comparison
             if line.startswith("MinHosts = "):
@@ -188,26 +194,29 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
         return job
 
-    monthDict = {"Jan":1, "Feb":2, "Mar":3, "Apr":4, "May":5, "Jun":6,
-                 "Jul":7, "Aug":8, "Sep":9, "Oct":10, "Nov":11, "Dec":12}
+    monthDict = {"Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
+                 "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12}
 
     def _getDateTime(self, aStr):
         # string containing the epoch time
-        return datetime.datetime.fromtimestamp(float(aStr),localtzoffset())
+        return datetime.datetime.fromtimestamp(float(aStr), localtzoffset())
 
 #######################################################################################################################
+
 
 class ComputingSharesStep(computing_share.ComputingSharesStep):
 
     def __init__(self):
         computing_share.ComputingSharesStep.__init__(self)
 
-        self._acceptParameter("qstat","the path to the PBS qstat program (default 'qstat')",False)
+        self._acceptParameter(
+            "qstat", "the path to the PBS qstat program (default 'qstat')", False)
 
     def _run(self):
         return []
 
 #######################################################################################################################
+
 
 class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep):
 
@@ -219,7 +228,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
                               False)
 
     def _run(self):
-        condor_status = self.params.get("condor_status","condor_status")
+        condor_status = self.params.get("condor_status", "condor_status")
 
         cmd = condor_status + " -long"
         info.debug("running "+cmd)
@@ -286,11 +295,11 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
                 host.PhysicalCPUs = int(line.split()[2])
                 host.LogicalCPUs = host.PhysicalCPUs
             if line.startswith("Memory = "):
-                host.MainMemorySize = int(line.split()[2]) # assuming MB
+                host.MainMemorySize = int(line.split()[2])  # assuming MB
             if line.startswith("VirtualMemory = "):
                 memSize = line.split()[2]
                 if memSize != "0":
-                    host.VirtualMemorySize = int(memSize) # assuming MB
+                    host.VirtualMemorySize = int(memSize)  # assuming MB
             if line.startswith("OpSys = "):
                 host.OSFamily = line.split()[2].lower()
                 host.OSFamily = host.OSFamily[1:len(host.OSFamily)-1]
@@ -301,25 +310,29 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
                 host.OSVersion = line.split()[4]
 
         return host
-        
+
 #######################################################################################################################
+
 
 class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironmentsStep):
     def __init__(self):
         accelerator_environment.AcceleratorEnvironmentsStep.__init__(self)
 
-        self._acceptParameter("scontrol","the path to the SLURM scontrol program (default 'scontrol')",False)
+        self._acceptParameter(
+            "scontrol", "the path to the SLURM scontrol program (default 'scontrol')", False)
 
     def _run(self):
         # get info on the nodes
-	return
+        return
 
 #######################################################################################################################
+
 
 class ComputingManagerAcceleratorInfoStep(computing_manager_accel_info.ComputingManagerAcceleratorInfoStep):
 
     def __init__(self):
-        computing_manager_accel_info.ComputingManagerAcceleratorInfoStep.__init__(self)
+        computing_manager_accel_info.ComputingManagerAcceleratorInfoStep.__init__(
+            self)
 
     def _run(self):
         manager_accel_info = computing_manager_accel_info.ComputingManagerAcceleratorInfo()
@@ -328,10 +341,12 @@ class ComputingManagerAcceleratorInfoStep(computing_manager_accel_info.Computing
 
 #######################################################################################################################
 
+
 class ComputingShareAcceleratorInfoStep(computing_share_accel_info.ComputingShareAcceleratorInfoStep):
 
     def __init__(self):
-        computing_share_accel_info.ComputingShareAcceleratorInfoStep.__init__(self)
+        computing_share_accel_info.ComputingShareAcceleratorInfoStep.__init__(
+            self)
 
     def _run(self):
         share_accel_info = computing_share_accel_info.ComputingShareAcceleratorInfo()

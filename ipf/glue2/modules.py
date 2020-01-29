@@ -23,15 +23,16 @@ import hashlib
 from ipf.error import StepError
 from . import application
 from . import service
-from .types import AppEnvState,ApplicationHandle
+from .types import AppEnvState, ApplicationHandle
 
 #######################################################################################################################
+
 
 class LModApplicationsStep(application.ApplicationsStep):
     def __init__(self):
         application.ApplicationsStep.__init__(self)
 
-        self._acceptParameter("exclude","a comma-separated list of modules to ignore (default is to ignore none)",
+        self._acceptParameter("exclude", "a comma-separated list of modules to ignore (default is to ignore none)",
                               False)
 
     def _run(self):
@@ -45,7 +46,7 @@ class LModApplicationsStep(application.ApplicationsStep):
         module_paths = []
         try:
             paths = os.environ["MODULEPATH"]
-            module_paths.extend(list(map(os.path.realpath,paths.split(":"))))
+            module_paths.extend(list(map(os.path.realpath, paths.split(":"))))
         except KeyError:
             raise StepError("didn't find environment variable MODULEPATH")
 
@@ -58,20 +59,22 @@ class LModApplicationsStep(application.ApplicationsStep):
             for name in packages:
                 if name.startswith("."):
                     continue
-                if not os.path.isdir(os.path.join(path,name)):
+                if not os.path.isdir(os.path.join(path, name)):
                     # assume these are modules that just import other modules
                     continue
-                for file_name in os.listdir(os.path.join(path,name)):
+                for file_name in os.listdir(os.path.join(path, name)):
                     if file_name.startswith("."):
                         continue
                     if file_name.endswith("~"):
                         continue
                     if file_name.endswith(".lua"):
-                        self._addModule(os.path.join(path,name,file_name),name,file_name[:len(file_name)-4],apps)
+                        self._addModule(os.path.join(
+                            path, name, file_name), name, file_name[:len(file_name)-4], apps)
                     else:
-                        self._addModule(os.path.join(path,name,file_name),name,file_name,apps)
+                        self._addModule(os.path.join(
+                            path, name, file_name), name, file_name, apps)
         return apps
-    
+
     def _addModule(self, path, name, version, apps):
         env = application.ApplicationEnvironment()
         env.AppName = name
@@ -85,24 +88,26 @@ class LModApplicationsStep(application.ApplicationsStep):
         text = file.read()
         file.close()
 
-        m = re.search("\"Description:([^\"]+)\"",text)
+        m = re.search("\"Description:([^\"]+)\"", text)
         if m is not None:
             env.Description = m.group(1).strip()
         else:
             self.debug("no description in "+path)
-        m = re.search("\"URL:([^\"]+)\"",text)
+        m = re.search("\"URL:([^\"]+)\"", text)
         if m is not None:
             env.Repository = m.group(1).strip()
         else:
             self.debug("no URL in "+path)
-        m = re.search("\"Category:([^\"]+)\"",text)
+        m = re.search("\"Category:([^\"]+)\"", text)
         if m is not None:
-            env.Extension["Category"] = list(map(str.strip,m.group(1).split(",")))
+            env.Extension["Category"] = list(
+                map(str.strip, m.group(1).split(",")))
         else:
             self.debug("no Category in "+path)
-        m = re.search("\"Keywords:([^\"]+)\"",text)
+        m = re.search("\"Keywords:([^\"]+)\"", text)
         if m is not None:
-            env.Extension["Keywords"] = list(map(str.strip,m.group(1).split(",")))
+            env.Extension["Keywords"] = list(
+                map(str.strip, m.group(1).split(",")))
         else:
             self.debug("no Keywords in "+path)
 
@@ -110,15 +115,16 @@ class LModApplicationsStep(application.ApplicationsStep):
         handle.Type = ApplicationHandle.MODULE
         handle.Value = name+"/"+version
 
-        apps.add(env,[handle])
+        apps.add(env, [handle])
 
 #######################################################################################################################
+
 
 class ModulesApplicationsStep(application.ApplicationsStep):
     def __init__(self):
         application.ApplicationsStep.__init__(self)
 
-        self._acceptParameter("exclude","a comma-separated list of modules to ignore (default is to ignore none)",
+        self._acceptParameter("exclude", "a comma-separated list of modules to ignore (default is to ignore none)",
                               False)
 
     def _run(self):
@@ -132,12 +138,12 @@ class ModulesApplicationsStep(application.ApplicationsStep):
         module_paths = []
         try:
             paths = os.environ["MODULEPATH"]
-            module_paths.extend(list(map(os.path.realpath,paths.split(":"))))
+            module_paths.extend(list(map(os.path.realpath, paths.split(":"))))
         except KeyError:
             raise StepError("didn't find environment variable MODULEPATH")
 
         for path in module_paths:
-            self._addPath(path,path,module_paths,apps)
+            self._addPath(path, path, module_paths, apps)
 
         return apps
 
@@ -147,21 +153,22 @@ class ModulesApplicationsStep(application.ApplicationsStep):
         except OSError:
             return
         for name in file_names:
-            if os.path.join(path,name) in module_paths:
+            if os.path.join(path, name) in module_paths:
                 # don't visit other module paths
                 continue
-            if os.path.isdir(os.path.join(path,name)):
-                self._addPath(os.path.join(path,name),module_path,module_paths,apps)
+            if os.path.isdir(os.path.join(path, name)):
+                self._addPath(os.path.join(path, name),
+                              module_path, module_paths, apps)
             else:
-                self._addModule(os.path.join(path,name),module_path,apps)
-    
+                self._addModule(os.path.join(path, name), module_path, apps)
+
     def _addModule(self, path, module_path, apps):
         if os.path.split(path)[1].startswith("."):
             return
         if path.endswith("~"):
             return
 
-        #print(path)
+        # print(path)
 
         file = open(path)
         lines = file.readlines()
@@ -190,16 +197,16 @@ class ModulesApplicationsStep(application.ApplicationsStep):
 
         description = ""
         modvars = {}
-	modfile = ' '.join(lines)
-        for m in re.finditer("set (\S*)\s*\"([^\"]*)\"",modfile):
+        modfile = ' '.join(lines)
+        for m in re.finditer("set (\S*)\s*\"([^\"]*)\"", modfile):
             if m is not None:
-                #Replace \\n followed by whitespace in descriptions:
+                # Replace \\n followed by whitespace in descriptions:
                 sanitize = re.sub(r'\\\s+', ' ', m.group(2))
                 modvars[m.group(1)] = sanitize
-                #print(m.group(1)+"="+sanitize)
-	#print("modvars keys, %s",modvars.keys())
+                # print(m.group(1)+"="+sanitize)
+        #print("modvars keys, %s",modvars.keys())
         for line in lines:
-            m = re.search("puts stderr \"([^\"]+)\"",line)
+            m = re.search("puts stderr \"([^\"]+)\"", line)
             if m is not None:
                 if description != "":
                     description += " "
@@ -207,16 +214,17 @@ class ModulesApplicationsStep(application.ApplicationsStep):
         if description != "":
             for modvar in list(modvars.keys()):
                 if modvar in description:
-                    description = description.replace("$"+modvar,modvars[modvar])
-            description = description.replace("$_module_name",handle.Value)
+                    description = description.replace(
+                        "$"+modvar, modvars[modvar])
+            description = description.replace("$_module_name", handle.Value)
             if env.AppVersion is not None:
-                description = description.replace("$version",env.AppVersion)
-            description = description.replace("\\t"," ")
-            description = description.replace("\\n","")
-            description = re.sub(" +"," ",description)
+                description = description.replace("$version", env.AppVersion)
+            description = description.replace("\\t", " ")
+            description = description.replace("\\n", "")
+            description = re.sub(" +", " ", description)
             env.Description = description
 
-        apps.add(env,[handle])
+        apps.add(env, [handle])
 
 #######################################################################################################################
 
@@ -225,9 +233,9 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
     def __init__(self):
         application.ApplicationsStep.__init__(self)
 
-        self._acceptParameter("exclude","a comma-separated list of modules to ignore (default is to ignore none)",
+        self._acceptParameter("exclude", "a comma-separated list of modules to ignore (default is to ignore none)",
                               False)
-        self._acceptParameter("default_support_contact","default to publish as SupportContact if no value is present in module file",
+        self._acceptParameter("default_support_contact", "default to publish as SupportContact if no value is present in module file",
                               False)
 
     def _run(self):
@@ -236,19 +244,20 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         except KeyError:
             self.exclude = []
 
-        self.support_contact = self.params.get("default_support_contact",False)
+        self.support_contact = self.params.get(
+            "default_support_contact", False)
 
         apps = application.Applications(self.resource_name, self.ipfinfo)
 
         module_paths = []
         try:
             paths = os.environ["MODULEPATH"]
-            module_paths.extend(list(map(os.path.realpath,paths.split(":"))))
+            module_paths.extend(list(map(os.path.realpath, paths.split(":"))))
         except KeyError:
             raise StepError("didn't find environment variable MODULEPATH")
 
         for path in module_paths:
-            self._addPath(path,path,module_paths,apps)
+            self._addPath(path, path, module_paths, apps)
         return apps
 
     def _addPath(self, path, module_path, module_paths, apps):
@@ -257,34 +266,33 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         except OSError:
             return
         for file in file_names:
-            if os.path.join(path,file) in module_paths:
+            if os.path.join(path, file) in module_paths:
                 # don't visit other module paths
                 continue
-            if os.path.isdir(os.path.join(path,file)):
-                self._addPath(os.path.join(path,file),module_path,module_paths,apps)
+            if os.path.isdir(os.path.join(path, file)):
+                self._addPath(os.path.join(path, file),
+                              module_path, module_paths, apps)
             else:
                 if path == module_path:
-                   #if true, all files are top-level within a modulepath
-                   #which we assume only load modules, and don't represent
-                   #software
-                   continue
+                    # if true, all files are top-level within a modulepath
+                    # which we assume only load modules, and don't represent
+                    # software
+                    continue
                 if file.startswith("."):
                     continue
                 if file.endswith("~"):
                     continue
                 name = os.path.basename(path)
-                #ignore files in the top level of a "modulefiles" dir
-                #if name != "modulefiles":
-                self._addModule(os.path.join(path,file),name,file,apps)
-
+                # ignore files in the top level of a "modulefiles" dir
+                # if name != "modulefiles":
+                self._addModule(os.path.join(path, file), name, file, apps)
 
     def _addModule(self, path, name, version, apps):
-        DEFAULT_VALIDITY = 60*60*24*7 # seconds in a week
+        DEFAULT_VALIDITY = 60*60*24*7  # seconds in a week
         env = application.ApplicationEnvironment()
         env.AppName = name
         env.Validity = DEFAULT_VALIDITY
-        #env.AppVersion set below, after massaging and/or reading from file
-
+        # env.AppVersion set below, after massaging and/or reading from file
 
         try:
             file = open(path)
@@ -294,61 +302,61 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         text = file.read()
         file.close()
 
-	#Take hash of path to uniquify the AppEnv and AppHandle IDs
+        # Take hash of path to uniquify the AppEnv and AppHandle IDs
         pathhashobject = hashlib.md5(path)
         env.path_hash = pathhashobject.hexdigest()
 
         if not version.endswith(".lua"):
-            #Weed out files that are not Module files
-            m = re.search("#%Module",text)
+            # Weed out files that are not Module files
+            m = re.search("#%Module", text)
             if m is None:
                 return
         else:
-            #correct version string to remove ".lua"
+            # correct version string to remove ".lua"
             version = version[:len(version)-4]
         env.AppVersion = version
 
-        #Allow key: value Name to override filename value
-        m = re.search("\"Name:([^\"]+)\"",text)
+        # Allow key: value Name to override filename value
+        m = re.search("\"Name:([^\"]+)\"", text)
         if m is not None:
             name = m.group(1).strip()
             env.SpecifiedName = name
         else:
             self.debug("no Name in "+path)
 
-
-        m = re.search("\"Description:([^\"]+)\"",text)
+        m = re.search("\"Description:([^\"]+)\"", text)
         if m is not None:
             env.Description = m.group(1).strip()
         else:
             self.debug("no description in "+path)
             env.Description = self._InferDescription(text, env)
             #print("no description in "+path)
-        m = re.search("\"URL:([^\"]+)\"",text)
+        m = re.search("\"URL:([^\"]+)\"", text)
         if m is not None:
             env.Repository = m.group(1).strip()
         else:
             self.debug("no URL in "+path)
-        m = re.search("\"Category:([^\"]+)\"",text)
+        m = re.search("\"Category:([^\"]+)\"", text)
         if m is not None:
-            env.Extension["Category"] = list(map(str.strip,m.group(1).split(",")))
+            env.Extension["Category"] = list(
+                map(str.strip, m.group(1).split(",")))
 
         else:
             self.debug("no Category in "+path)
-        m = re.search("\"Keywords:([^\"]+)\"",text)
+        m = re.search("\"Keywords:([^\"]+)\"", text)
         if m is not None:
-            env.Keywords = list(map(str.strip,m.group(1).split(",")))
+            env.Keywords = list(map(str.strip, m.group(1).split(",")))
         else:
             self.debug("no Keywords in "+path)
-        m = re.search("\"SupportStatus:([^\"]+)\"",text)
+        m = re.search("\"SupportStatus:([^\"]+)\"", text)
         if m is not None:
             supportstatus = []
-            supportstatus.append(list(map(str.strip,m.group(1).split(","))))
+            supportstatus.append(list(map(str.strip, m.group(1).split(","))))
             env.Extension["SupportStatus"] = m.group(1).strip()
         else:
             self.debug("no SupportStatus in "+path)
 
-        m = re.search("\"SupportContact:([^\"]+)\"",text)
+        m = re.search("\"SupportContact:([^\"]+)\"", text)
         if m is not None:
             supportcontact = m.group(1).strip()
             env.Extension["SupportContact"] = m.group(1).strip()
@@ -357,10 +365,10 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
             if self.support_contact:
                 env.Extension["SupportContact"] = self.support_contact
 
-        m = re.search("\"Default:([^\"]+)\"",text)
+        m = re.search("\"Default:([^\"]+)\"", text)
         if m is not None:
             default = []
-            default.append(list(map(str.strip,m.group(1).split(","))))
+            default.append(list(map(str.strip, m.group(1).split(","))))
             env.Extension["Default"] = m.group(1).strip()
         else:
             self.debug("no whatis Default: in "+path)
@@ -368,10 +376,10 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         handle = application.ApplicationHandle()
         handle.Type = ApplicationHandle.MODULE
         handle.Value = env.AppName+"/"+env.AppVersion
-        env.ExecutionEnvironmentID = "urn:glue2:ExecutionEnvironment:%s" % (self.resource_name)
+        env.ExecutionEnvironmentID = "urn:glue2:ExecutionEnvironment:%s" % (
+            self.resource_name)
 
-        apps.add(env,[handle])
-
+        apps.add(env, [handle])
 
     def _InferDescription(self, text, env):
         handle = application.ApplicationHandle()
@@ -384,15 +392,15 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         description = ""
         modvars = {}
         modfile = text
-        for m in re.finditer("set (\S*)\s*\"([^\"]*)\"",modfile):
+        for m in re.finditer("set (\S*)\s*\"([^\"]*)\"", modfile):
             if m is not None:
-                #Replace \\n followed by whitespace in descriptions:
+                # Replace \\n followed by whitespace in descriptions:
                 sanitize = re.sub(r'\\\s+', ' ', m.group(2))
                 modvars[m.group(1)] = sanitize
-                #print(m.group(1)+"="+sanitize)
+                # print(m.group(1)+"="+sanitize)
     #print("modvars keys, %s",modvars.keys())
         for line in text:
-            m = re.search("puts stderr \"([^\"]+)\"",line)
+            m = re.search("puts stderr \"([^\"]+)\"", line)
             if m is not None:
                 if description != "":
                     description += " "
@@ -400,11 +408,12 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         if description != "":
             for modvar in list(modvars.keys()):
                 if modvar in description:
-                    description = description.replace("$"+modvar,modvars[modvar])
-            description = description.replace("$_module_name",handle.Value)
+                    description = description.replace(
+                        "$"+modvar, modvars[modvar])
+            description = description.replace("$_module_name", handle.Value)
         if env.AppVersion is not None:
-            description = description.replace("$version",env.AppVersion)
-            description = description.replace("\\t"," ")
-            description = description.replace("\\n","")
-            description = re.sub(" +"," ",description)
+            description = description.replace("$version", env.AppVersion)
+            description = description.replace("\\t", " ")
+            description = description.replace("\\n", "")
+            description = re.sub(" +", " ", description)
         return description

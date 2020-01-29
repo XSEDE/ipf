@@ -36,6 +36,7 @@ from .step import GlueStep
 
 #######################################################################################################################
 
+
 class ExecutionEnvironmentsStep(GlueStep):
 
     def __init__(self):
@@ -43,7 +44,7 @@ class ExecutionEnvironmentsStep(GlueStep):
 
         self.description = "Produces a document containing one or more GLUE 2 ExecutionEnvironment. For a batch scheduled system, an ExecutionEnivonment is typically a compute node."
         self.time_out = 30
-        self.requires = [ResourceName,Platform]
+        self.requires = [ResourceName, Platform]
         self.produces = [ExecutionEnvironments]
         self._acceptParameter("queues",
                               "An expression describing the queues to include (optional). The syntax is a series of +<queue> and -<queue> where <queue> is either a queue name or a '*'. '+' means include '-' means exclude. The expression is processed in order and the value for a queue at the end determines if it is shown.",
@@ -56,20 +57,22 @@ class ExecutionEnvironmentsStep(GlueStep):
 
     def run(self):
         self.resource_name = self._getInput(ResourceName).resource_name
-        
+
         host_groups = self._run()
         for host_group in host_groups:
-            host_group.id = "%s.%s" % (host_group.Name,self.resource_name)
-            host_group.ID = "urn:glue2:ExecutionEnvironment:%s.%s" % (host_group.Name,self.resource_name)
-            host_group.ManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
+            host_group.id = "%s.%s" % (host_group.Name, self.resource_name)
+            host_group.ID = "urn:glue2:ExecutionEnvironment:%s.%s" % (
+                host_group.Name, self.resource_name)
+            host_group.ManagerID = "urn:glue2:ComputingManager:%s" % (
+                self.resource_name)
         #accel_groups = copy.deepcopy(host_groups)
-        #for accel_group in accel_groups:
+        # for accel_group in accel_groups:
         #    accel_group.id = "%s.%s" % (host_group.Name,self.resource_name)
         #    accel_group.ID = "urn:glue2:AcceleratorEnvironment:%s.%s" % (accel_group.Name,self.resource_name)
         #    accel_group.ManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
-        
-        self._output(ExecutionEnvironments(self.resource_name,host_groups))
-        #self._output(AcceleratorEnvironments(self.resource_name,accel_groups))
+
+        self._output(ExecutionEnvironments(self.resource_name, host_groups))
+        # self._output(AcceleratorEnvironments(self.resource_name,accel_groups))
 
     def _shouldUseName(self, hosts):
         names = set()
@@ -85,7 +88,7 @@ class ExecutionEnvironmentsStep(GlueStep):
         host_groups = []
         for host in hosts:
             for host_group in host_groups:
-                if host.sameHostGroup(host_group,use_name):
+                if host.sameHostGroup(host_group, use_name):
                     if "UsedAverageLoad" in host.Extension:
                         host_load = host.Extension["UsedAverageLoad"]
                         if "UsedAverageLoad" not in host_group.Extension:
@@ -94,7 +97,7 @@ class ExecutionEnvironmentsStep(GlueStep):
                             host_group_load = host_group.Extension["UsedAverageLoad"]
                             host_group_load = (host_group_load * host_group.UsedInstances +
                                                host_load * host.UsedInstances) / \
-                                               (host_group.UsedInstances + host.UsedInstances)
+                                (host_group.UsedInstances + host.UsedInstances)
                             host_group.Extension["UsedAverageLoad"] = host_group_load
                     if "AvailableAverageLoad" in host.Extension:
                         host_load = host.Extension["AvailableAverageLoad"]
@@ -103,7 +106,7 @@ class ExecutionEnvironmentsStep(GlueStep):
                         else:
                             host_group_load = host_group.Extension["AvailableAverageLoad"]
                             host_group_avail = host_group.TotalInstances - host_group.UsedInstances - \
-                                               host_group.UnavailableInstances
+                                host_group.UnavailableInstances
                             host_avail = host.TotalInstances - host.UsedInstances - host.UnavailableInstances
                             host_group_load = (host_group_load * host_group_avail + host_load * host_avail) / \
                                               (host_group_avail + host_group_avail)
@@ -113,7 +116,8 @@ class ExecutionEnvironmentsStep(GlueStep):
                             host_group.Extension["PartiallyUsedInstances"] = host.Extension["PartiallyUsedInstances"]
                         else:
                             host_group.Extension["PartiallyUsedInstances"] = \
-                              host_group.Extension["PartiallyUsedInstances"] + host.Extension["PartiallyUsedInstances"]
+                                host_group.Extension["PartiallyUsedInstances"] + \
+                                host.Extension["PartiallyUsedInstances"]
                     host_group.TotalInstances += host.TotalInstances
                     host_group.UsedInstances += host.UsedInstances
                     host_group.UnavailableInstances += host.UnavailableInstances
@@ -138,20 +142,22 @@ class ExecutionEnvironmentsStep(GlueStep):
         if len(host.ShareID) == 0:
             return True
         for share in host.ShareID:
-            m = re.search("urn:glue2:ComputingShare:(\S+).%s" % self.resource_name,share)
+            m = re.search("urn:glue2:ComputingShare:(\S+).%s" %
+                          self.resource_name, share)
             if self._includeQueue(m.group(1)):
                 return True
 
         # if the host is associated with a partition, check that it is a good one
         if len(host.Partitions) == 0:
             return True
-	partition_list = host.Partitions.split(',')
+        partition_list = host.Partitions.split(',')
         for share in partition_list:
             if self._includeQueue(share):
                 return True
         return False
 
 #######################################################################################################################
+
 
 class ExecutionEnvironment(Resource):
     def __init__(self):
@@ -182,7 +188,7 @@ class ExecutionEnvironment(Resource):
         # use Manager, Share, Activity from Resource, not ComputingManager, ComputingShare, ComputingActivity
         self.ApplicationEnvironmentID = []  # list of string (ID)
         self.BenchmarkID = []               # list of string (ID)
-        #For AcceleratorEnvironment, but kludging here for node purposes
+        # For AcceleratorEnvironment, but kludging here for node purposes
         self.Type = "unknown"               # string (AccType_t)
         self.PhysicalAccelerators = None    # integer
         self.UsedAcceleratorSlots = None    # integer
@@ -195,17 +201,17 @@ class ExecutionEnvironment(Resource):
         self.ComputeCapability = None       # string (describes CUDA features)
 
         # set defaults to be the same as the host where this runs
-        (sysName,nodeName,release,version,machine) = os.uname()
+        (sysName, nodeName, release, version, machine) = os.uname()
         self.Platform = machine
         self.OSFamily = sysName.lower()
         self.OSName = sysName.lower()
         self.OSVersion = release
 
-        #for filtering nodes by partition:
+        # for filtering nodes by partition:
         self.Partitions = None             # string
 
     def __str__(self):
-        return json.dumps(ExecutionEnvironmentOgfJson(self).toJson(),sort_keys=True,indent=4)
+        return json.dumps(ExecutionEnvironmentOgfJson(self).toJson(), sort_keys=True, indent=4)
 
     def sameHostGroup(self, exec_env, useName):
         if useName and self.Name != exec_env.Name:
@@ -226,7 +232,7 @@ class ExecutionEnvironment(Resource):
             return False
         if self.MainMemorySize != exec_env.MainMemorySize:
             return False
-        #if self.VirtualMemorySize != exec_env.VirtualMemorySize:
+        # if self.VirtualMemorySize != exec_env.VirtualMemorySize:
         #    return False
         if self.OSFamily != exec_env.OSFamily:
             return False
@@ -245,26 +251,27 @@ class ExecutionEnvironment(Resource):
 
 #######################################################################################################################
 
+
 class ExecutionEnvironmentTeraGridXml(ResourceTeraGridXml):
     data_cls = ExecutionEnvironment
 
     def __init__(self, data):
-        ResourceTeraGridXml.__init__(self,data)
+        ResourceTeraGridXml.__init__(self, data)
 
     def get(self):
         return self.toDom().toxml()
 
     def toDom(self):
         doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
-                                                    "Entities",None)
+                                                    "Entities", None)
         root = doc.createElement("ExecutionEnvironment")
         doc.documentElement.appendChild(root)
-        self.addToDomElement(doc,root)
+        self.addToDomElement(doc, root)
 
         return doc
 
     def addToDomElement(self, doc, element):
-        ResourceTeraGridXml.addToDomElement(self,doc,element)
+        ResourceTeraGridXml.addToDomElement(self, doc, element)
 
         if self.data.Platform is not None:
             e = doc.createElement("Platform")
@@ -287,7 +294,8 @@ class ExecutionEnvironmentTeraGridXml(ResourceTeraGridXml):
             element.appendChild(e)
         if self.data.UnavailableInstances is not None:
             e = doc.createElement("UnavailableInstances")
-            e.appendChild(doc.createTextNode(str(self.data.UnavailableInstances)))
+            e.appendChild(doc.createTextNode(
+                str(self.data.UnavailableInstances)))
             element.appendChild(e)
         if self.data.PhysicalCPUs is not None:
             e = doc.createElement("PhysicalCPUs")
@@ -295,11 +303,13 @@ class ExecutionEnvironmentTeraGridXml(ResourceTeraGridXml):
             element.appendChild(e)
         if self.data.PhysicalAccelerators is not None:
             e = doc.createElement("PhysicalAccelerators")
-            e.appendChild(doc.createTextNode(str(self.data.PhysicalAccelerators)))
+            e.appendChild(doc.createTextNode(
+                str(self.data.PhysicalAccelerators)))
             element.appendChild(e)
         if self.data.UsedAcceleratorSlots is not None:
             e = doc.createElement("UsedAcceleratorSlots")
-            e.appendChild(doc.createTextNode(str(self.data.UsedAcceleratorSlots)))
+            e.appendChild(doc.createTextNode(
+                str(self.data.UsedAcceleratorSlots)))
             element.appendChild(e)
         if self.data.LogicalCPUs is not None:
             e = doc.createElement("LogicalCPUs")
@@ -327,11 +337,13 @@ class ExecutionEnvironmentTeraGridXml(ResourceTeraGridXml):
             element.appendChild(e)
         if self.data.CPUTimeScalingFactor is not None:
             e = doc.createElement("CPUTimeScalingFactor")
-            e.appendChild(doc.createTextNode(str(self.data.CPUTimeScalingFactor)))
+            e.appendChild(doc.createTextNode(
+                str(self.data.CPUTimeScalingFactor)))
             element.appendChild(e)
         if self.data.WallTimeScalingFactor is not None:
             e = doc.createElement("WallTimeScalingFactor")
-            e.appendChild(doc.createTextNode(str(self.data.WallTimeScalingFactor)))
+            e.appendChild(doc.createTextNode(
+                str(self.data.WallTimeScalingFactor)))
             element.appendChild(e)
         if self.data.MainMemorySize is not None:
             e = doc.createElement("MainMemorySize")
@@ -404,14 +416,15 @@ class ExecutionEnvironmentTeraGridXml(ResourceTeraGridXml):
 
 #######################################################################################################################
 
+
 class ExecutionEnvironmentOgfJson(ResourceOgfJson):
     data_cls = ExecutionEnvironment
 
     def __init__(self, data):
-        ResourceOgfJson.__init__(self,data)
+        ResourceOgfJson.__init__(self, data)
 
     def get(self):
-        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+        return json.dumps(self.toJson(), sort_keys=True, indent=4)
 
     def toJson(self):
         doc = ResourceOgfJson.toJson(self)
@@ -463,32 +476,32 @@ class ExecutionEnvironmentOgfJson(ResourceOgfJson):
             doc["ApplicationEnvironmentID"] = self.data.ApplicationEnvironmentID
         if len(self.data.BenchmarkID) > 0:
             doc["BenchmarkID"] = self.BenchmarkID
-            
+
         return doc
 
 #######################################################################################################################
 
+
 class ExecutionEnvironments(Data):
     def __init__(self, id, exec_envs=[]):
-        Data.__init__(self,id)
+        Data.__init__(self, id)
         self.exec_envs = exec_envs
 
-        
-        
+
 #######################################################################################################################
 
 class ExecutionEnvironmentsTeraGridXml(Representation):
     data_cls = ExecutionEnvironments
 
     def __init__(self, data):
-        Representation.__init__(self,Representation.MIME_TEXT_XML,data)
+        Representation.__init__(self, Representation.MIME_TEXT_XML, data)
 
     def get(self):
         return self.toDom().toprettyxml()
 
     def toDom(self):
         doc = getDOMImplementation().createDocument("http://info.teragrid.org/glue/2009/02/spec_2.0_r02",
-                                                    "Entities",None)
+                                                    "Entities", None)
         for exec_env in self.data.exec_envs:
             eedoc = ExecutionEnvironmentTeraGridXml.toDom(exec_env)
             doc.documentElement.appendChild(eedoc.documentElement.firstChild)
@@ -496,14 +509,16 @@ class ExecutionEnvironmentsTeraGridXml(Representation):
 
 #######################################################################################################################
 
+
 class ExecutionEnvironmentsOgfJson(Representation):
     data_cls = ExecutionEnvironments
 
     def __init__(self, data):
-        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+        Representation.__init__(
+            self, Representation.MIME_APPLICATION_JSON, data)
 
     def get(self):
-        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+        return json.dumps(self.toJson(), sort_keys=True, indent=4)
 
     def toJson(self):
         eedoc = []

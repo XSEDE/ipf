@@ -40,13 +40,13 @@ from .entity import *
 from .service import *
 from .endpoint import *
 from ipf.sysinfo import ResourceName
-from  ipf.ipfinfo import IPFInformation, IPFInformationJson, IPFInformationTxt
+from ipf.ipfinfo import IPFInformation, IPFInformationJson, IPFInformationTxt
 
 
 #######################################################################################################################
 class AbstractService(Data):
     def __init__(self, id, ipfinfo):
-        Data.__init__(self,id)
+        Data.__init__(self, id)
         self.services = []
         self.handles = []
         self.ipfinfo = ipfinfo
@@ -54,18 +54,19 @@ class AbstractService(Data):
     def add(self, serv):
         self.services.append(serv)
 
+
 class AbstractServiceStep(Step):
 
     def __init__(self):
         Step.__init__(self)
-        self.requires = [IPFInformation,ResourceName]
+        self.requires = [IPFInformation, ResourceName]
         self.produces = [AbstractService]
         self.services = []
 
     def run(self):
         self.resource_name = self._getInput(ResourceName).resource_name
         self.ipfinfo = [self._getInput(IPFInformation)]
-        servlist = AbstractService(self.resource_name,self.ipfinfo)
+        servlist = AbstractService(self.resource_name, self.ipfinfo)
         service_paths = []
         try:
             paths = os.environ["SERVICEPATH"]
@@ -86,15 +87,14 @@ class AbstractServiceStep(Step):
                 if name.endswith("~"):
                     continue
                 if name.endswith(".lua"):
-                    self._addService(os.path.join(path,name),path,serv)
+                    self._addService(os.path.join(path, name), path, serv)
                 else:
                     self.info("calling addmodule w/ version")
                     #print("calling addmodule w/ version")
                     serv = service.Service()
-                    self._addService(os.path.join(path,name),path,servlist)
+                    self._addService(os.path.join(path, name), path, servlist)
 
         self._output(servlist)
-
 
     def _addService(self, path, name, servlist):
 
@@ -108,28 +108,28 @@ class AbstractServiceStep(Step):
         text = file.read()
         file.close()
         #print("in correct _addService")
-        m = re.search("Name = ([^\ ]+)\n",text)
+        m = re.search("Name = ([^\ ]+)\n", text)
         if m is not None:
             serv.Name = m.group(1).strip()
-            #print(serv.Name)
+            # print(serv.Name)
         else:
             self.debug("no name in "+path)
             #print("no name in "+path)
-        m = re.search("Name = ([^\ ]+)\n",text)
+        m = re.search("Name = ([^\ ]+)\n", text)
         if m is not None:
             serv.Type = m.group(1).strip()
-            #print(serv.Type)
+            # print(serv.Type)
         else:
             self.debug("no type in "+path)
             #print("no type in "+path)
-        m = re.search("Version = ([^\ ]+)\n",text)
+        m = re.search("Version = ([^\ ]+)\n", text)
         if m is not None:
             serv.Version = m.group(1).strip()
-            #print(serv.Version)
+            # print(serv.Version)
         else:
             self.debug("no Version in "+path)
             #print("no Version in "+path)
-        m = re.search("Endpoint = ([^\ ]+)\ *\n",text)
+        m = re.search("Endpoint = ([^\ ]+)\ *\n", text)
         if m is not None:
             serv.Endpoint = m.group(1).strip()
             #print("SERV ENDPOINT IS " +serv.Endpoint)
@@ -137,38 +137,39 @@ class AbstractServiceStep(Step):
             self.debug("no endpoint in "+path)
             serv.Endpoint = ""
             #print("no endpoint in "+path)
-        m = re.findall("Capability = ([^\ ]+)\n",text)
+        m = re.findall("Capability = ([^\ ]+)\n", text)
         if m is not None:
             if serv.Capability is not None:
                 serv.Capability.append(m.group(1).lower().strip())
             else:
-		mlower = []
-		for cap in m:
+                mlower = []
+                for cap in m:
                     mlower.append(cap.lower())
                 serv.Capability = mlower
         else:
             self.debug("no Capability in "+path)
             #print("no capability in "+path)
-        m = re.search("SupportStatus = ([^\ ]+)\n",text)
+        m = re.search("SupportStatus = ([^\ ]+)\n", text)
         if m is not None:
             serv.QualityLevel = m.group(1).strip()
         else:
             self.debug("no support status in "+path)
             #print("no support status in "+path)
-        m = re.search("QualityLevel = ([^\ ]+)\n",text)
+        m = re.search("QualityLevel = ([^\ ]+)\n", text)
         if m is not None:
             serv.QualityLevel = m.group(1).strip()
         else:
             self.debug("no qualitylevel in "+path)
             #print("no qualitylevel in "+path)
-        m = re.search("Keywords = ([^\ ]+)\n",text)
+        m = re.search("Keywords = ([^\ ]+)\n", text)
         if m is not None:
-            serv.Extension["Keywords"] = list(map(str.strip,m.group(1).split(",")))
+            serv.Extension["Keywords"] = list(
+                map(str.strip, m.group(1).split(",")))
         else:
             self.debug("no keywords in "+path)
             #print("no keywords in "+path)
         #n = re.finditer("Extensions.(.*?) = ([^\ ]+)\n",text)
-        n = re.finditer("Extensions.(.*?) = (.*?)\n",text)
+        n = re.finditer("Extensions.(.*?) = (.*?)\n", text)
         for match in n:
             serv.Extension[match.group(1).strip()] = match.group(2).strip()
 
@@ -195,21 +196,22 @@ class AbstractServiceStep(Step):
         if (serv.Endpoint != ''):
             endpointhashobject = hashlib.md5(serv.Endpoint)
             endpointhash = "-"+endpointhashobject.hexdigest()
-        serv.ID = "urn:glue2:%s:%s-%s%s" % (ServiceType,serv.Name,self.resource_name,endpointhash)
+        serv.ID = "urn:glue2:%s:%s-%s%s" % (ServiceType,
+                                            serv.Name, self.resource_name, endpointhash)
         serv.ServiceType = ServiceType
         servlist.add(serv)
-        
+
 #######################################################################################################################
+
 
 class AbstractServiceOgfJson(EntityOgfJson):
     data_cls = Service
 
     def __init__(self, data):
-        EntityOgfJson.__init__(self,data)
+        EntityOgfJson.__init__(self, data)
 
     def get(self):
-        return json.dumps(self.toJson(),sort_keys=True,indent=4)
-
+        return json.dumps(self.toJson(), sort_keys=True, indent=4)
 
     def toJson(self):
         doc = {}
@@ -241,18 +243,21 @@ class AbstractServiceOgfJson(EntityOgfJson):
 
         return doc
 
+
 class ASOgfJson(Representation):
     data_cls = AbstractService
 
     def __init__(self, data):
-        Representation.__init__(self,Representation.MIME_APPLICATION_JSON,data)
+        Representation.__init__(
+            self, Representation.MIME_APPLICATION_JSON, data)
 
     def get(self):
-        return json.dumps(self.toJson(),sort_keys=True,indent=4)
+        return json.dumps(self.toJson(), sort_keys=True, indent=4)
 
     def toJson(self):
         doc = {}
-        doc["PublisherInfo"] = [IPFInformationJson(ipfinfo).toJson() for ipfinfo in self.data.ipfinfo]
+        doc["PublisherInfo"] = [IPFInformationJson(
+            ipfinfo).toJson() for ipfinfo in self.data.ipfinfo]
         doc["StorageService"] = []
         doc["ComputingService"] = []
         doc["LoginService"] = []
@@ -269,12 +274,14 @@ class ASOgfJson(Representation):
                 if (serv.Endpoint != ''):
                     endpointhashobject = hashlib.md5(serv.Endpoint)
                     endpointhash = "-"+endpointhashobject.hexdigest()
-                endpoint.ID = "urn:glue2:Endpoint:%s-%s-%s%s" % (serv.Version, serv.Name, serv.resource_name,endpointhash)
+                endpoint.ID = "urn:glue2:Endpoint:%s-%s-%s%s" % (
+                    serv.Version, serv.Name, serv.resource_name, endpointhash)
                 endpoint.ServiceID = serv.ID
                 endpoint.QualityLevel = serv.QualityLevel
                 serv.EndpointID = endpoint.ID
                 if serv.ServiceType not in doc:
                     doc[serv.ServiceType] = []
-                doc[serv.ServiceType].append(AbstractServiceOgfJson(serv).toJson())
+                doc[serv.ServiceType].append(
+                    AbstractServiceOgfJson(serv).toJson())
                 doc["Endpoint"].append(EndpointOgfJson(endpoint).toJson())
         return doc
