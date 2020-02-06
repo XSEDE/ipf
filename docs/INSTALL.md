@@ -10,6 +10,8 @@ The *Information Publishing Framework* "IPF" is an tool used to publish dynamic 
 
 XSEDE requires Level 1, 2, and 3 operators to publish this dynamic resource information using IPF. It may also be used by campuses and other resource operators who wish publish dynamic HPC information for use by local services. IPF complements XSEDE's Resource Description Repository (RDR) which is used to maintain static resource information. 
 
+The canonical source code repository for IPF can be found at https://github.com/XSEDE/ipf
+
 This document describes how to install and configure IPF.
 ## Overview
 ### What is an IPF workflow?
@@ -70,7 +72,7 @@ Batch Scheduler Job Event workflow (activity workflow): all Level 1 and 2*SPs th
 $ tar -cf ipf-etc-yyyymmdd.tar /etc/ipf
 
 ### Software Dependencies
-- Python 2.6 or 2.7.
+- Python 3.6 or newer
 - The python-amqp package, version between 1.4.0 and 1.4.9
 - The python-setuptools package IF installing by RPM.
 - (Optional) The xdresourceid tool. If not available a resourceid will need to be configured by hand.
@@ -78,9 +80,20 @@ $ tar -cf ipf-etc-yyyymmdd.tar /etc/ipf
 *These dependencies are encoded in the RPM.*
 
 ## Installation
-The default and recommended way to install IPF is from RPM to the directories /usr/lib/python-`<VERSION>`/site-packages/ipf, /etc/ipf, /var/ipf).
+There are two recommended ways to install IPF: you can use pip install, or you can install from the XSEDE RPMs on software.xsede.org.
 
-To install to an alternate location install from the tar.gz.
+
+Installing IPF from RPMs will put it in the directories /usr/lib/python-`<VERSION>`/site-packages/ipf, /etc/ipf, /var/ipf).
+
+To install to an alternate location install we recommend using pip.
+
+### Pip installation
+
+To install using pip, you need to have the pip package installed in an appropriate version of Python (3.6+).  We recommend using venv to manage python installations.  More information on venv can be found at https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/
+
+Once you have a python 3.6 environment (whether venv or not), installation is as simple as:
+
+$ pip install ipf
 
 ### RPM Installation
 
@@ -97,6 +110,8 @@ For a development/testing version use [Development Repo Trust Instructions](http
 $ yum install ipf-xsede
 
 ### tar.gz Installation
+
+Installing from the tar.gz is no longer recommended.  It will still work, but we recommend using venv and pip to install to alternate locations, and/or development versions.
 
 Note(s):
 - If you need to install development versions, replace the URL prefixes 'http://software.xsede.org/production' with 'http://software.xsede.org/development' in the instructions below.
