@@ -27,8 +27,8 @@ cp -p RELEASE $OUTDIR
 cp  VERSION$PKG $OUTDIR/VERSION
 
 mkdir $OUTDIR/docs
-
-FILES=$(find docs -type f ! -path \*\.svn\*)
+cd ..
+FILES=$(find ../docs -type f ! -path \*\.svn\*)
 echo $FILES
 for i in $FILES;do
   iout=$(echo $i | sed 's/\.in$//')
@@ -37,6 +37,7 @@ for i in $FILES;do
       $i \
       >$OUTDIR/$iout
 done
+cd $HERE
 mv $OUTDIR/docs/INSTALL.md $OUTDIR/INSTALL.md
 markdown_py $OUTDIR/INSTALL.md -f $OUTDIR/INSTALL.html
 
