@@ -1,25 +1,26 @@
 # ipf-xsede %VER%-%REL%
 # Installation and Configuration Instructions  
-## Introduction
+## What is IPF?
 
-The *Information Publishing Framework* "IPF" is a tool used to publish dynamic HPC, HTC,
-Visualization, Storage, or Cloud resource information to XSEDE's Information Services in a
-[standard format](https://www.ogf.org/documents/GFD.147.pdf).
-Using IPF resource operators publish information about:
+The *Information Publishing Framework* "IPF" is a tool used by resource operators to publish dynamic
+HPC, HTC, Visualization, Storage, or Cloud resource information to XSEDE's Information Services in a
+[GLUE2 standard format](https://www.ogf.org/documents/GFD.147.pdf).
+IPF can publish four types of resource information:
  1. Command line software modules 
  2. Batch system configuration and queue contents
  3. Batch scheduler job events
  4. Remotely accessible network services
 
 XSEDE requires Level 1, 2, and 3 operators to publish this dynamic resource information using IPF.
-It may also be used by campuses and other resource operators who wish to publish dynamic HPC
-information for use by local services. IPF complements XSEDE's Resource Description Repository
-"RDR" which is used to maintain static resource information. 
+It is also avaialble to campuses and other resource operators who would like to publish dynamic
+information to XSEDE information services for use by local services, portals, or gateways. 
+IPF complements XSEDE's Resource Description Repository "RDR" which is used to maintain
+static resource information. 
 
 The canonical source code repository for IPF can be found at [https://github.com/XSEDE/ipf](https://github.com/XSEDE/ipf.).
 
 This document describes how to install and configure IPF.
-## Overview
+## How does IPF Work?
 ### What is an IPF workflow?
 
 IPF is a Python program that gathers information from a resource, formats it, and publishes it to
@@ -41,7 +42,7 @@ $IPF_ETC/ipf/workflow/glue2.
 An workflow can be invoked by running the ipf_workflow program with a workflow definition file
 argument, like this:
 
-  `$INSTALL_DIR/ipf-VERSION/ipf/bin/ipf_workflow <workflow.json>`
+    $INSTALL_DIR/ipf-VERSION/ipf/bin/ipf_workflow <workflow.json>
 
 Workflow json files are specified relative to $IPF_ETC, so `ipf_workflow sysinfo.json`
 and `ipf_workflow glue2/<resource>_services.json` are both valid invokations.
@@ -67,7 +68,7 @@ Batch System workflow (compute workflow): all Level 1, 2, and 3*SPs that offer *
 
 Batch Scheduler Job Event workflow (activity workflow): all Level 1 and 2 *SPs that offer *XSEDE allocated batch computing
 
-## Requirements
+## Pre-requisites
 
 ### Software Modules workflow requirements
 - The module files must be readable.
@@ -83,7 +84,7 @@ See section:  Configuring Service Files
 - The batch scheduler log file or directory must be readable on the server where IPF is running and by the user running IPF.
 - The batch scheduler must be logging at the right level of detail for the IPF code to be able to parse the events.  See the section: Configuring Torque Logging.
 
-## Preparing for Installation
+## Preparing for Install IPF
 
 - Before installing IPF operators should register their resource in RDR.
 - Install and run IPF on a single server for each resource.
@@ -91,7 +92,7 @@ See section:  Configuring Service Files
 - To install IPF on machines that are part of multiple XSEDE resources please first review [XSEDE's Advanced Integration Options](https://www.ideals.illinois.edu/bitstream/handle/2142/99081/XSEDE_SP_Advanced_Integration_Options.pdf) documentation.
 - If you already have an older IPF create a backup of the /etc/ipf working configurations:
 
-$ tar -cf ipf-etc-yyyymmdd.tar /etc/ipf
+    $ tar -cf ipf-etc-yyyymmdd.tar /etc/ipf
 
 ### Software Dependencies
 - Python 3.6 or newer
@@ -101,7 +102,7 @@ $ tar -cf ipf-etc-yyyymmdd.tar /etc/ipf
 
 *These dependencies are encoded in the RPM.*
 
-## Installation
+## Installing IPF
 There are two recommended ways to install IPF: you can use pip install, or you can install from the XSEDE RPMs on software.xsede.org.
 
 Installing IPF from RPMs will put it in the directories /usr/lib/python-`<VERSION>`/site-packages/ipf, /etc/ipf, /var/ipf).
@@ -115,7 +116,7 @@ We recommend using venv to manage python installations.  More information on ven
 
 Once you have a python 3.6 environment (whether venv or not), installation is as simple as:
 
-$ pip install ipf
+    $ pip install ipf
 
 ### RPM Installation
 
@@ -129,7 +130,7 @@ For a development/testing version use [Development Repo Trust Instructions](http
 
 2) Install ipf-xsede
 
-$ yum install ipf-xsede
+    $ yum install ipf-xsede
 
 ### tar.gz Installation
 
@@ -162,7 +163,7 @@ https://files.pythonhosted.org/packages/ed/09/314d2788aba0aa91f2578071a6484f87a6
    b) If you installed Python amqp into a non-default location, set AMQP_PATH to be the path where you installed it and uncomment this line and the following line that sets PYTHONPATH
    d) Run '$INSTALL_DIR/ipf-VERSION/ipf/bin/ipf_workflow sysinfo.json'. The workflow steps should run, but you may see failures related to host and/or site names.
 
-## Updating an ipf-xsede installation
+## Updating a previous IPF installation
 
 The json files that have been written by previous runs of ipf_configure_xsede would, in some previous versions of IPF get overwritten by subsequent runs of ipf_configure_xsede.  This is no longer the case--previous versions get backed up, not overwritten.  They will _not_ be erased by removing OR updating the package (nor will the service files copied to /etc/init.d be erased). 
 
@@ -173,7 +174,7 @@ To perform the update to the latest RPM distribution of ipf-xsede:
 
 If you are updating an installation that was performed using the tar.gz distribution, it is recommended that you simply install the new version into a new directory.  Since everything (aside from the service files copied to /etc/init.d) is contained within a single directory, the new installation should not interfere with previous installations.  Note that if you do not make any changes to the service files copied to /etc/init.d, they will continue to use the older version.  Update the IPF_ETC_PATH, IPF_VAR_PATH, and PROGRAM (with full path to ipf_workflow program) to the values corresponding to your updated installation to utilize the updated version of ipf-xsede.
 
-## Configuration
+## Configuring IPF
 
 If you are upgrading to IPF 1.4 from IPF 1.3, you MUST re-run the ipf_configure_xsede script to re-generate your workflow definition files.  If you do not, you will run into errors where IPF can't infer which step to use.
 
@@ -245,35 +246,36 @@ default, which is the support status of your service as published in RDR.
 _________________________________________________________________________
 A table of valid Name, version and capability values:
 
-    Name			Version			Capability
-    org.globus.gridftp 	{5,6}.y.z 	data.transfer.striped
-	        						data.transfer.nonstriped
+    Name                Version        Capability
+    org.globus.gridftp  {5,6}.y.z      data.transfer.striped
+                                       data.transfer.nonstriped
         
-    org.globus.gram		{5,6}.y.z	executionmanagement.jobdescription
-		    						executionmanagement.jobexecution
-		    						executionmanagement.jobmanager
+    org.globus.gram     {5,6}.y.z      executionmanagement.jobdescription
+                                       executionmanagement.jobexecution
+                                       executionmanagement.jobmanager
     
-    org.globus.openssh 	5.y.z 		login.remoteshell
-		    						login.remoteshell.gsi
-    eu.unicore.tsf 		{6,7}.y.z 	executionmanagement.jobdescription
-		    						executionmanagement.jobexecution
-		    						executionmanagement.jobmanager
+    org.globus.openssh  5.y.z          login.remoteshell
+                                       login.remoteshell.gsi
+    eu.unicore.tsf      {6,7}.y.z      executionmanagement.jobdescription
+                                       executionmanagement.jobexecution
+                                       executionmanagement.jobmanager
     
-    eu.unicore.bes 		{6,7}.y.z 	executionmanagement.jobdescription
-		    						executionmanagement.jobexecution
-		    						executionmanagement.jobmanager
+    eu.unicore.bes      {6,7}.y.z      executionmanagement.jobdescription
+                                       executionmanagement.jobexecution
+                                       executionmanagement.jobmanager
     
-    eu.unicore.reg 		{6,7}.y.z 	Information.publication
+    eu.unicore.reg      {6,7}.y.z      Information.publication
     
-    org.xsede.gpfs 		3.5 		data.access.flatfiles
+    org.xsede.gpfs      3.5            data.access.flatfiles
     
-    org.xsede.genesisII	2.y.z 		data.access.flatfiles
-		    						data.naming.resolver
+    org.xsede.genesisII 2.y.z          data.access.flatfiles
+                                       data.naming.resolver
  
 
 Sample Service publishing file:
 
-    #%Service1.0################################################################### ##
+    #%Service1.0###################################################################
+    ##
     ## serviceinfofiles/org.globus.gridftp-6.0.1.conf
     ##
     
@@ -288,7 +290,7 @@ Sample Service publishing file:
 
 ## Best Practices for Software publishing  (Modules Files)
 
-XSEDE has two levels of software information that are published:  the software
+XSEDE has two levels of software information that are published: the software
 catalog at the Portal (which is used for global, static software information),
 and the dynamic software information published to Information Services using
 the IPF pub/sub publishing framework.
@@ -356,14 +358,11 @@ However, IPF would read these just as well if they were:
     module-whatis "SupportStatus: testing"
     module-whatis "SupportContact: https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/globalid/helpdesk.xsede.org/"
 
-To this end, XSEDE recommends that you add these fields to relevant module
-files.  The decision on whether to include them as module-whatis lines (and
-therefore visible as such to local users) or to include them as comments is
-left to the site admins.
+With this in mind, XSEDE recommends that you add these fields to relevant module files.
+The decision on whether to include them as module-whatis lines (and therefore visible as
+such to local users) or to include them as comments is left to the site admins.
 
 ## Testing
-In IPF 1.3 and higher, lmod/modules workflows are deprecated, and extmodules
-should be used for all software publishing.
 
 1) To test the extended attribute modules workflow, execute:
 
