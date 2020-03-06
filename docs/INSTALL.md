@@ -2,39 +2,60 @@
 # Installation and Configuration Instructions  
 ## Introduction
 
-The *Information Publishing Framework* "IPF" is an tool used to publish dynamic HPC, HTC, Visualization, Storage, or Cloud resource information into XSEDE's Information Services in a [standard format](https://www.ogf.org/documents/GFD.147.pdf). Using IPF resource operators publish information about:
+The *Information Publishing Framework* "IPF" is a tool used to publish dynamic HPC, HTC,
+Visualization, Storage, or Cloud resource information to XSEDE's Information Services in a
+[standard format](https://www.ogf.org/documents/GFD.147.pdf).
+Using IPF resource operators publish information about:
  1. Command line software modules 
- 2. Remotely accessible network services
- 3. Batch system configuration and queue contents
- 4. Batch scheduler job events
+ 2. Batch system configuration and queue contents
+ 3. Batch scheduler job events
+ 4. Remotely accessible network services
 
-XSEDE requires Level 1, 2, and 3 operators to publish this dynamic resource information using IPF. It may also be used by campuses and other resource operators who wish publish dynamic HPC information for use by local services. IPF complements XSEDE's Resource Description Repository (RDR) which is used to maintain static resource information. 
+XSEDE requires Level 1, 2, and 3 operators to publish this dynamic resource information using IPF.
+It may also be used by campuses and other resource operators who wish to publish dynamic HPC
+information for use by local services. IPF complements XSEDE's Resource Description Repository
+"RDR" which is used to maintain static resource information. 
 
-The canonical source code repository for IPF can be found at https://github.com/XSEDE/ipf
+The canonical source code repository for IPF can be found at [https://github.com/XSEDE/ipf](https://github.com/XSEDE/ipf.).
 
 This document describes how to install and configure IPF.
 ## Overview
 ### What is an IPF workflow?
 
-The *Information Publishing Framework*, henceforth "IPF" is a package implemented in python that gathers information from a resource, formats it, and publishes it to XSEDE's Information Services.  Each type of information published, or format in which it is published, has its own "workflow" that defines the steps that IPF should take to discover, format, and publish the information.
+IPF is a Python program that gathers information from a resource, formats it, and publishes it to
+XSEDE's Information Services. Each type of information published, or format in which it is published,
+has a "workflow" that defines the steps that IPF uses to discover, format, and publish the information.
+
 ### How is an IPF workflow defined?
-Each IPF workflow consists of a series of "steps" that can have inputs, outputs, and dependencies.  IPF will automatically pull in a step's dependencies--they need not all be explicitly listed.  
+Each IPF workflow consists of a series of "steps" that can have inputs, outputs, and dependencies.
+IPF will automatically pull in a step's dependencies--they need not all be explicitly listed.  
 
-The steps for each workflow are defined in one or more JSON formatted files.  Workflow JSON files can incorporate other workflow JSON files: for example, the `<resource>_services_periodic.json` workflow contains one step, which is the `<resource>_services.json` workflow.
+The steps for each workflow are defined in one or more JSON formatted files.  Workflow JSON files
+can incorporate other workflow JSON files: for example, the `<resource>_services_periodic.json`
+workflow contains one step, which is the `<resource>_services.json` workflow.
 
-IPF workflows are typically defined by JSON files under $IPF_ETC/ipf/workflow/, particularly in $IPF_ETC/ipf/workflow/glue2.  
+IPF workflows are typically defined by JSON files under $IPF_ETC/ipf/workflow/, particularly in
+$IPF_ETC/ipf/workflow/glue2.  
 
 ### How is an IPF workflow invoked?
-A workflow can be invoked by using the `ipf_workflow` script that is found in $INSTALL_DIR/ipf-VERSION/ipf/bin/.  Syntax is `$INSTALL_DIR/ipf-VERSION/ipf/bin/ipf_workflow <workflow.json>`.
+An workflow can be invoked by running the ipf_workflow program with a workflow definition file
+argument, like this:
 
-Workflow json files are specified relative to $IPF_ETC, so `ipf_workflow sysinfo.json` and `ipf_workflow glue2/<resource>_services.json` are both valid invokations.
+  `$INSTALL_DIR/ipf-VERSION/ipf/bin/ipf_workflow <workflow.json>`
 
-Scripts for init.d are provided by ipf_configure_xsede for each workflow it configures.  The init.d scripts can be found in $IPF_ETC/ipf/init.d.  Each script runs one workflow, on a periodic basis, and are typically copied into the system /etc/init.d directory as part of the installation process.
+Workflow json files are specified relative to $IPF_ETC, so `ipf_workflow sysinfo.json`
+and `ipf_workflow glue2/<resource>_services.json` are both valid invokations.
+
+Scripts for init.d are provided by ipf_configure_xsede for each workflow it configures.
+The init.d scripts can be found in $IPF_ETC/ipf/init.d.  Each script runs one workflow,
+on a periodic basis, and are typically copied into the system /etc/init.d directory as part of the
+installation process.
+
 ### Detailed IPF design documentation
-The detailed IPF design documentation can be found at https://info.xsede.org/info/IPF-design
+The detailed IPF design documentation can be found at [https://info.xsede.org/info/restful-api-design](https://info.xsede.org/info/restful-api-design).
+
 
 ### Which workflows should I configure and run?
-
 The following workflows are recommended for the listed scenarios.
 These recommendations are under review and may be revised in the future.
 
@@ -44,7 +65,7 @@ Network Accessible Services workflow: all Level 1, 2, and 3*SPs that operate *lo
 
 Batch System workflow (compute workflow): all Level 1, 2, and 3*SPs that offer *batch computing
 
-Batch Scheduler Job Event workflow (activity workflow): all Level 1 and 2*SPs that offer *XSEDEallocated batch computing
+Batch Scheduler Job Event workflow (activity workflow): all Level 1 and 2 *SPs that offer *XSEDE allocated batch computing
 
 ## Requirements
 
@@ -52,7 +73,8 @@ Batch Scheduler Job Event workflow (activity workflow): all Level 1 and 2*SPs th
 - The module files must be readable.
 
 ### Network Accessible Services workflow requirements
-- The service definition files must be readable, and in a (flat) services directory.  See section:  Configuring Service Files
+- The service definition files must be readable, and in a (flat) services directory.
+See section:  Configuring Service Files
 
 ### Batch System workflow requirements 
 - The command line programs of your batch scheduler must be executable.
@@ -82,14 +104,14 @@ $ tar -cf ipf-etc-yyyymmdd.tar /etc/ipf
 ## Installation
 There are two recommended ways to install IPF: you can use pip install, or you can install from the XSEDE RPMs on software.xsede.org.
 
-
 Installing IPF from RPMs will put it in the directories /usr/lib/python-`<VERSION>`/site-packages/ipf, /etc/ipf, /var/ipf).
 
 To install to an alternate location install we recommend using pip.
 
 ### Pip installation
 
-To install using pip, you need to have the pip package installed in an appropriate version of Python (3.6+).  We recommend using venv to manage python installations.  More information on venv can be found at https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/
+To install using pip, you need to have the pip package installed in an appropriate version of Python (3.6+).
+We recommend using venv to manage python installations.  More information on venv can be found at https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/
 
 Once you have a python 3.6 environment (whether venv or not), installation is as simple as:
 
@@ -116,10 +138,10 @@ Installing from the tar.gz is no longer recommended.  It will still work, but we
 Note(s):
 - If you need to install development versions, replace the URL prefixes 'http://software.xsede.org/production' with 'http://software.xsede.org/development' in the instructions below.
 
-1) Create a normal user to run this software
+1. Create a normal user to run this software
    The recommended username 'xdinfo', but you can use a different one
 
-2) Install the Python amqp package. It MUST be at least version 1.4.0, and must have major version of 1 (2.0 and above will not work).  At this time, 1.4.9 is the recommended version of amqp.
+2. Install the Python amqp package. It MUST be at least version 1.4.0, and must have major version of 1 (2.0 and above will not work).  At this time, 1.4.9 is the recommended version of amqp.
     You can 'yum install python-amqp', 'pip install amqp' (into the default location or into a Python virtualenv) or you can install from a "wheel" download from pypi. You may need to do this as root, depending on the install directory (e.g. /opt/). These files need to be readable by the user you created in step 1).
    a) Look at the files from https://pypi.org/project/amqp/1.4.9/#files/
 	specifically, download:
@@ -129,13 +151,13 @@ https://files.pythonhosted.org/packages/ed/09/314d2788aba0aa91f2578071a6484f87a6
      (where $PREFIX_PATH is your AMQP_PATH, i.e. the place you want to install the amqp lib)
 
 
-3) Install the XSEDE version of the Information Publishing Framework (ipf-xsede):
+3. Install the XSEDE version of the Information Publishing Framework (ipf-xsede):
    a) Download the .tgz file from http://software.xsede.org/production/ipf/ipf-xsede/latest/
    b) Untar this file into your install directory. The result will be a directory hierarchy under
 
     $ INSTALL_DIR/ipf-VERSION.
 
-4) As the user created in step 1), configure the ipf_workflow script in $ INSTALL_DIR/ipf-VERSION/ipf/bin
+4. As the user created in step 1), configure the ipf_workflow script in $ INSTALL_DIR/ipf-VERSION/ipf/bin
    a) Set PYTHON to be name of (or the full path to) the python interpreter you wish to use
    b) If you installed Python amqp into a non-default location, set AMQP_PATH to be the path where you installed it and uncomment this line and the following line that sets PYTHONPATH
    d) Run '$INSTALL_DIR/ipf-VERSION/ipf/bin/ipf_workflow sysinfo.json'. The workflow steps should run, but you may see failures related to host and/or site names.
@@ -175,25 +197,35 @@ Execute:
 
     $ ipf_configure_xsede
 
-Follow the instructions and enter the requested information. If you encounter any errors or the script does not cover your situation, please submit an XSEDE ticket.
+Follow the instructions and enter the requested information. If you encounter any errors or the script does not
+cover your situation, please submit an XSEDE ticket.
 
-When the script exits, the etc/ipf/workflow/glue2/ directory will contain a set of files RESOURCE_NAME_*.json that describe the information gathering workflows you have configured and etc/ipf/init.d will contain ipf-RESOURCE_NAME_* files which are the init scripts you have configured.
+When the script exits, the etc/ipf/workflow/glue2/ directory will contain a set of files RESOURCE_NAME_*.json
+that describe the information gathering workflows you have configured and etc/ipf/init.d will contain ipf-RESOURCE_NAME_*
+files which are the init scripts you have configured.
 
-As root, copy the etc/ipf/init.d/ipf-RESOURCE_NAME-* files into /etc/init.d. Your information gathering workflows can then be enabled, started, and stopped in the usual ways.  You may need to perform a 'chkconfig --add' or equivalent for each service.
+As root, copy the etc/ipf/init.d/ipf-RESOURCE_NAME-* files into /etc/init.d. Your information gathering workflows
+can then be enabled, started, and stopped in the usual ways.  You may need to perform a 'chkconfig --add' or
+equivalent for each service.
 
 ## Configuring Scheduler Logging for Activity Workflow
+
 ### Torque
-It is necessary for Torque to log at the correct level in order for IPF to be able to parse the messages that it uses in determining state.  Furthermore, the logging level of Torque can be confusing, as it has both a log_level and a log_events (which is a bitmask).  The most important setting is that log_events should be set to 255.  This ensures that all types of events are logged.  You can check the setting on your Torque installation by using "qmgr".
+It is necessary for Torque to log at the correct level in order for IPF to be able to parse the messages that it uses in
+determining state.  Furthermore, the logging level of Torque can be confusing, as it has both a log_level and a log_events
+(which is a bitmask).  The most important setting is that log_events should be set to 255.  This ensures that all types
+of events are logged.  You can check the setting on your Torque installation by using "qmgr".
+
 ### SLURM
-The SLURM logs must be in a directory that is local to and accessible to the IPF installation.  `ipf_configure_xsede` allows one to set this location for the workflow.
+The SLURM logs must be in a directory that is local to and accessible to the IPF installation.
+`ipf_configure_xsede` allows one to set this location for the workflow.
 
 
-##Configuring Service Files
-The information in the this section is applicable both to those editing
-existing service.conf files, and those creating them from scratch.
+## Configuring Service Files
+The information in the this section is applicable both to those editing existing service.conf files, and those creating the
+from scratch.
 
-Each service.conf file needs to have a Name, Version, Endpoint, and
-Capability.
+Each service.conf file needs to have a Name, Version, Endpoint, and Capability.
 
 The Name field refers to the GLUE2 Primary protocol name supported by the service endpoint, as seen in the table below.
 
@@ -413,19 +445,4 @@ This workflow describes your modules as a JSON document containing GLUE v2.0 App
 
 ## Log File Management
 
-The log files described above will grow over time. The logs are only needed for debugging, so they can be deleted whenever you wish. logrotate is a convenient tool for creating archival log files and limiting the amount of files kept. One note is that the ipf workflows keep the log files open while they run, so you should either use the copytruncate option or have a post-rotate statement to restart the corresponding ipf service. 
-
-
-
-
-
-
-
-
-
-
-
-
-<!--stackedit_data:
-eyJoaXN0b3J5IjpbMTIyMDg3NTMyM119
--->
+The log files described above will grow over time. The logs are only needed for debugging, so they can be deleted whenever you wish. logrotate is a convenient tool for creating archival log files and limiting the amount of files kept. One note is that the ipf workflows keep the log files open while they run, so you should either use the copytruncate option or have a post-rotate statement to restart the corresponding ipf service.
