@@ -2,8 +2,24 @@
 # Community Software Publishing Instructions  
 ## What is Community Software?
 
+Software on XSEDE resources can be clasified into three categories based on who installs/maintains it and who the target
+users of that software are:
+1. XSEDE Service Providers "SPs" installed software made available to **all users** on a resource
+2. XSEDE allocated project installed software, most often applications, that is for **personal project use**
+3. XSEDE allocated project installed software made available to **other users** of a resource
+
+XSEDE SPs use the *Information Publishing Framework* (IPF) tool to publishing descriptive information about the first
+category of software. All XSEDE SPs, including allocated and unallocated/campus Level 1, 2, and 3 SPs, can use IPF.
+The published descriptive information is aggregated by XSEDE's Information Services and used by the User Portal, the
+Research Software Portal, and Science Gateways to enable users to discover where software is available.
+
+This documentation explains how an XSEDE allocated project that installs and maintains software on XSEDE resources,
+as described in the third category above, can also use the IPF tool to publish information about their software and
+thus make their software more discoverable by XSEDE users.
 
 ## Why Publish Community Software?
+
+
 
 ## How to Publish Community Software
 
