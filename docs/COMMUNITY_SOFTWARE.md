@@ -32,7 +32,7 @@ XSEDE uses will be able to more easily discover and use that software.
 
 ## How to Publish Community Software
 
-Community software providers that want to publish information about their software on XSEDE resources will need to:
+To publish information about community software on XSEDE resources the software provider will need to:
  1. Obtain a Community Software Area  "CSA" (i.e. directory) on the XSEDE resources where they can install their software
  2. Register the organization support the community software
  3. Install their software into the Community Software Area
@@ -41,18 +41,23 @@ Community software providers that want to publish information about their softwa
 
 ### Obtain a Community Software Area
 
-To request a Community Software Area follow [these instructions](https://www.xsede.org/ecosystem/software).
+First you need to find out which resources support Community Software Areas
+[here](http://localhost:8000/warehouse-views/v1/resources-csa/).
+
+To request a Community Software Area follow [these instructions](https://www.xsede.org/ecosystem/software). Using a
+Community Software Area provides a space outside of any single users home directory where everyone that is authorized
+to update the CSA can together maintain the contents. By placing software outside a single users home directory we avoid
+a dependency on a single user where there is a group of people in a project that together maintain the software.
 
 ### Register the organization support the community software
 
-Browse already registered support organizations in the [Research Software Portal](https://software.xsede.org/support-organizations),
-and if needed follow the instructions on that page to register a new organization.
+Look at the list of registered support organizations [here](https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/).
+If your software support contact isn't listed request one by sending an email to help@xsede.org with the subject
+"Register new RSP Support Organization" and provide the project or name of the support organization and the methods
+that users can use to contact the organization (web page, email address, and/or phone number).
 
-Once you have a registered organization copy the URL to the support organization metadata which should
-have the form:
-- https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/globalid/<standard_name>
-
-This URL will be used in softwre modules below so that each module contains upport organizatio informatiaon.
+When you have a registered support organization copy the URL that the "Detail" column points to so that you can use it 
+in software modules below.
 
 ### Install their software into the Community Software Area
 
