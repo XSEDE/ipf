@@ -17,6 +17,7 @@
 
 import subprocess
 import datetime
+import dateutil.parser
 import itertools
 import os
 import re
@@ -274,9 +275,11 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
         cancelled_re = self.params.get("job_cancelled_regexp","\[(\S+)\] job (\S+) cancelled from interactive user")
         stepcomplete_re = self.params.get("step_complete_regexp","\[(\S+)\] sched: _slurm_rpc_step_complete StepId=(\S+).0")
         #[2013-04-21T16:14:47] _slurm_rpc_submit_batch_job JobId=618921 usec=12273
+
         m = re.search(submit_re,entry)
         if m is not None:
-            dt = _getDateTime(m.group(1))
+            #dt = _getDateTime(m.group(1))
+            dt = _getDateTime(dateutil.parser.parse(m.group(1),default=datetime.now()))
             job_id = m.group(2)
             activity = self._getActivity(job_id)
             activity.State = [computing_activity.ComputingActivity.STATE_PENDING]
