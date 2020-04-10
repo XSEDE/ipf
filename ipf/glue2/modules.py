@@ -295,15 +295,15 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         # env.AppVersion set below, after massaging and/or reading from file
 
         try:
-            file = open(path)
+            file = open(path, "rb")
         except IOError as e:
             self.warning("%s" % e)
             return
-        text = file.read()
+        text = file.read().decode(errors='replace')
         file.close()
 
         # Take hash of path to uniquify the AppEnv and AppHandle IDs
-        pathhashobject = hashlib.md5(path)
+        pathhashobject = hashlib.md5(str(path).encode('utf-8'))
         env.path_hash = pathhashobject.hexdigest()
 
         if not version.endswith(".lua"):
