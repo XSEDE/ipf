@@ -231,22 +231,11 @@ def _getDuration(dstr):
     raise StepError("failed to parse duration: %s" % dstr)
 
 def _getDateTime(dtStr):
-    # Example: 2010-08-04T14:01:54
-    
-    year = int(dtStr[0:4])
-    month = int(dtStr[5:7])
-    day = int(dtStr[8:10])
-    hour = int(dtStr[11:13])
-    minute = int(dtStr[14:16])
-    second = int(dtStr[17:19])
 
-    return datetime.datetime(year=year,
-                             month=month,
-                             day=day,
-                             hour=hour,
-                             minute=minute,
-                             second=second,
-                             tzinfo=ipf.dt.localtzoffset())
+    DEFAULTYEAR=datetime.datetime.now(tz=ipf.dt.localtzoffset())
+    dt = dateutil.parser.parse(dtStr,default=DEFAULTYEAR)
+
+    return dt
 
 #######################################################################################################################
 
@@ -278,8 +267,10 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
 
         m = re.search(submit_re,entry)
         if m is not None:
-            #dt = _getDateTime(m.group(1))
-            dt = _getDateTime(dateutil.parser.parse(m.group(1),default=datetime.now()))
+            dt = _getDateTime(m.group(1))
+            #DEFAULTYEAR=datetime.datetime.now(tz=ipf.dt.localtzoffset())
+            #dt = dateutil.parser.parse(m.group(1),default=DEFAULTYEAR)
+
             job_id = m.group(2)
             activity = self._getActivity(job_id)
             activity.State = [computing_activity.ComputingActivity.STATE_PENDING]
