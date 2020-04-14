@@ -1,4 +1,3 @@
-
 import os
 from setuptools import setup
 from setuptools import find_packages
@@ -18,7 +17,7 @@ from setuptools import find_packages
 # $ python setup.py sdist upload
 
 def readme():
-    with open("README.rst") as f:
+    with open("README.md") as f:
         return f.read()
 
 def _getManifestFileName():
@@ -30,7 +29,7 @@ def _getManifestFileName():
 def _createManifest():
     f = open(_getManifestFileName(),"w")
     f.write("""
-include README.rst
+include README.md
 include LICENSE-2.0.txt
 include ipf/bin/ipf_workflow
 include ipf/bin/ipf_configure_xsede
