@@ -214,7 +214,7 @@ class LogFile(object):
         self._seek()
         while line:
             line = self.file.readline()
-            if not line.endswith("\n"):
+            if line.endswith("\n"):
                 self.callback(self.path,line)
                 self._savePosition()
             else:

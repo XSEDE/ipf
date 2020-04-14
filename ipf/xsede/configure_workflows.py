@@ -26,6 +26,7 @@ import urllib.request
 import urllib.error
 import urllib.parse
 import time
+import sysconfig
 
 #######################################################################################################################
 
@@ -799,9 +800,11 @@ def getBaseDir():
         base_dir_opts.append("/")
     base_dir_opts.append(os.path.dirname(
         os.path.dirname(os.path.abspath(__file__))))
+    base_dir_opts.append(sysconfig.get_paths()["purelib"])
     base_dir_opts.append("other")
     _base_dir = options("Select base directory (files will be read/written to $BASE/etc/ipf, $BASE/var/ipf - " +
-                        "  RPM install should use '/')",
+                        "  RPM install should use '/')" +
+                        "  pip install should use '("+(str(len(base_dir_opts)-1))+")'",
                         base_dir_opts)
     if _base_dir == "other":
         _base_dir = question("Enter base directory")
