@@ -109,5 +109,5 @@ you copied above. SPs will configure IPF to ensure that all your software module
 After the SP tells you that they are publishing your software module information you should be able to discover your software
 in the Research Software Portal [here](https://software.xsede.org/search-resources).
 
-## Additionl Resources
+## Additional Resources
 The IPF source is available at [https://github.com/XSEDE/ipf](https://github.com/XSEDE/ipf.).
