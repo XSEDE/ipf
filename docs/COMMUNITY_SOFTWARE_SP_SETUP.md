@@ -34,23 +34,23 @@ this file should contain a matching MODULEPATH setting.
 The steps to defining additional software publishing workflows:
 
 ## Create a new workflow config, with default Support Contact
-* make a copy of $IPF_ETC_PATH/workflow/glue2/RESOURCE_extmodules.json, in the same directory.  You can name it whatever
+* Make a copy of $IPF_ETC_PATH/workflow/glue2/RESOURCE_extmodules.json, in the same directory.  You can name it whatever
 you'd like, but we will stick with RESOURCE_extmodules_sc1.json for this document.
 
-* edit RESOURCE_extmodules_sc1.json, changing the "default_support_contact": field to the new value for this set of software
+* Edit RESOURCE_extmodules_sc1.json, changing the "default_support_contact": field to the new value for this set of software
 
 ## Create a new matching periodic workflow config
-*make a copy of $IPF_ETC_PATH/workflow/glue2/RESOURCE_extmodules_periodic.json, in the same directory.  Name it by the
+* Make a copy of $IPF_ETC_PATH/workflow/glue2/RESOURCE_extmodules_periodic.json, in the same directory.  Name it by the
 same convention as above, RESOURCE_extmodules_sc1_periodic.json
 
-*edit the RESOURCE_extmodules_sc1_periodic.json file, changing the "workflow" field from "glue2/RESOURCE_extmodules.json"
+* Edit the RESOURCE_extmodules_sc1_periodic.json file, changing the "workflow" field from "glue2/RESOURCE_extmodules.json"
 to "glue2/RESOURCE_extmodules_sc1.json
 
 ## Create a new workflow init.d entry, with the proper MODULEPATH
-*make a copy of $IPF_ETC_PATH/init.d/ipf-RESOURCE-glue2-extmodules, calling it ipf-RESOURCE-glue2-extmodules-sc1
+* Make a copy of $IPF_ETC_PATH/init.d/ipf-RESOURCE-glue2-extmodules, calling it ipf-RESOURCE-glue2-extmodules-sc1
 
-*edit the ipf-RESOURCE-glue2-extmodules-sc1 file, changing the MODULEPATH variable to the correct MODULEPATH for the set
+* Edit the ipf-RESOURCE-glue2-extmodules-sc1 file, changing the MODULEPATH variable to the correct MODULEPATH for the set
 of modules that have this Support Contact.
 
 The last step is to copy the ipf-RESOURCE-glue2-extmodules-sc1 file to the appropriate system directory
-(typically /etc/init.d).  You may need to perform a 'chkconfig --add' or equivalent.
+(typically /etc/init.d). You may need to perform a 'chkconfig --add' or equivalent.
