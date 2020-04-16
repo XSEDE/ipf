@@ -118,7 +118,7 @@ Once you have a python 3.6 environment (whether venv or not), installation is as
 
     $ pip install ipf
 
-One thing to note when installing via pip:  unlike in an RPM install, the files get installed relative to your python installation (whether in a virtualenv or system python).  For instance, the location IPF expects to find as its IPF_ETC_PATH (/etc/ipf in an RPM install) is relative to the python site-packages directory.
+One thing to note when installing via pip:  unlike in an RPM install, the files get installed relative to your python installation (whether in a virtualenv or system python).  Notably, ipf_configure_xsede and ipf_workflow end up in the virtualenv's bin directory, and the location IPF expects to find as its IPF_ETC_PATH (/etc/ipf in an RPM install) is relative to the python site-packages directory.
 
 You can find your site-packages path for the python you used for the pip install with: 
 $ python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'
