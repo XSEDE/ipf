@@ -56,7 +56,7 @@ def _createSetupCfg():
     f.write("""
 [bdist_rpm]
 requires = python-amqp >= 1.4
-#requires = python-amqp < 2
+    python-dateutil
     """)
     f.close()
 
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     _createManifest()
     _createSetupCfg()
     setup(name="ipf",
-          version="1.5.b1",
+          version="1.5.b2",
           description="The Information Publishing Framework",
           long_description=readme(),
           classifiers=[
