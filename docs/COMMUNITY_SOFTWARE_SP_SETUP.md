@@ -52,5 +52,5 @@ to "glue2/RESOURCE_extmodules_sc1.json
 * Edit the ipf-RESOURCE-glue2-extmodules-sc1 file, changing the MODULEPATH variable to the correct MODULEPATH for the set
 of modules that have this Support Contact.
 
-The last step is to copy the ipf-RESOURCE-glue2-extmodules-sc1 file to the appropriate system directory
-(typically /etc/init.d). You may need to perform a 'chkconfig --add' or equivalent.
+* Finally copy the ipf-RESOURCE-glue2-extmodules-sc1 file to the appropriate system directory (typically /etc/init.d).
+You may need to perform a 'chkconfig --add' or equivalent.
