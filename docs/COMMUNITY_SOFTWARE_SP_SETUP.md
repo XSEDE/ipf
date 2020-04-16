@@ -33,20 +33,20 @@ this file should contain a matching MODULEPATH setting.
 
 The steps to defining additional software publishing workflows:
 
-## Create a new workflow config, with default Support Contact
+## 1) Create a new workflow config, with default Support Contact
 * Make a copy of $IPF_ETC_PATH/workflow/glue2/RESOURCE_extmodules.json, in the same directory.  You can name it whatever
 you'd like, but we will stick with RESOURCE_extmodules_sc1.json for this document.
 
 * Edit RESOURCE_extmodules_sc1.json, changing the "default_support_contact": field to the new value for this set of software
 
-## Create a new matching periodic workflow config
+## 2) Create a new matching periodic workflow config
 * Make a copy of $IPF_ETC_PATH/workflow/glue2/RESOURCE_extmodules_periodic.json, in the same directory.  Name it by the
 same convention as above, RESOURCE_extmodules_sc1_periodic.json
 
 * Edit the RESOURCE_extmodules_sc1_periodic.json file, changing the "workflow" field from "glue2/RESOURCE_extmodules.json"
 to "glue2/RESOURCE_extmodules_sc1.json
 
-## Create a new workflow init.d entry, with the proper MODULEPATH
+## 3) Create a new workflow init.d entry, with the proper MODULEPATH
 * Make a copy of $IPF_ETC_PATH/init.d/ipf-RESOURCE-glue2-extmodules, calling it ipf-RESOURCE-glue2-extmodules-sc1
 
 * Edit the ipf-RESOURCE-glue2-extmodules-sc1 file, changing the MODULEPATH variable to the correct MODULEPATH for the set
