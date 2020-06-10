@@ -131,7 +131,7 @@ class AmqpStep(PublishStep):
         if "ssl_options" in self.params:
             self.ssl_options = {}
             for (key,value) in self.params["ssl_options"].items():
-                self.ssl_options[key.encode("utf-8")] = value.encode("utf-8")
+                self.ssl_options[key] = value
             try:
                 if not os.path.isabs(self.ssl_options["keyfile"]):
                     self.ssl_options["keyfile"] = os.path.join(IPF_ETC_PATH,self.ssl_options["keyfile"])
@@ -194,7 +194,7 @@ class AmqpStep(PublishStep):
 
     def _publish(self, representation):
         self.info("publishing %s",representation)
-        self.debug("  with routing key '%s' to exchange '%s'",representation.data.id.encode("utf-8"),self.exchange)
+        self.debug("  with routing key '%s' to exchange '%s'",representation.data.id,self.exchange)
         try:
             self._publishOnce(representation)
         except Exception as e:
