@@ -85,7 +85,7 @@ if __name__ == "__main__":
           author_email="blau@anl.gov",
           license="Apache",
           packages=["ipf","ipf.glue2","ipf.xsede","ipf.xsede.test"],
-          install_requires=["amqp >=1.4,<2,python-dateutil"],
+          install_requires=["amqp >=1.4,<2","python-dateutil"],
           entry_points={
               "console_scripts": ["ipf_workflow=ipf.run_workflow:main",
                                   "ipf_configure_xsede=ipf.xsede.configure_workflows:configure"],
