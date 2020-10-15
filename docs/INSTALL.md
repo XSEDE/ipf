@@ -2,36 +2,31 @@
 # Installation and Configuration Instructions  
 ## What is IPF?
 
-The *Information Publishing Framework* "IPF" is a tool used by resource operators to publish dynamic
-HPC, HTC, Visualization, Storage, or Cloud resource information to XSEDE's Information Services in a
-[GLUE2 standard format](https://www.ogf.org/documents/GFD.147.pdf).
-IPF can publish four types of resource information:
- 1. Command line software modules 
- 2. Batch system configuration and queue contents
- 3. Batch scheduler job events
- 4. Remotely accessible network services
-
-XSEDE requires Level 1, 2, and 3 operators to publish this dynamic resource information using IPF.
-It is also avaialble to campuses and other resource operators who would like to publish dynamic
-information to XSEDE information services for use by local services, portals, or gateways. 
-IPF complements XSEDE's Resource Description Repository "RDR" which is used to maintain
+The *Information Publishing Framework* "IPF" is a tool (1) used by resource operators to publish dynamic
+resource information to XSEDE's Information Services (2). IPF can publish four types of resource information:
+ 1. Software Modules available from the command line
+ 2. Network services information
+ 3. Batch system configuration and queue contents
+ 4. Batch scheduler job events
+ 
+XSEDE requires Level 1, 2, and 3 operators (3) to publish this dynamic resource information using IPF.
+IPF is also available to campuses and other resource operators who would like to publish 
+information to XSEDE Information Services for use by local services, portals, or gateways. 
+IPF complements XSEDE's Resource Description Repository "RDR" (4) which is used to maintain
 static resource information. 
 
-The canonical source code repository for IPF can be found at [https://github.com/XSEDE/ipf](https://github.com/XSEDE/ipf.).
-
 This document describes how to install and configure IPF.
+
 ## How does IPF Work?
 ### What is an IPF workflow?
 
-IPF is a Python program that gathers information from a resource, formats it, and publishes it to
-XSEDE's Information Services. Each type of information published, or format in which it is published,
-has a "workflow" that defines the steps that IPF uses to discover, format, and publish the information.
+IPF is a Python program that gathers resource information, formats it in a GLUE2 standard format (5),
+and publishes it to XSEDE's Information Services. Each type of information that is published has a
+"workflow" that defines the steps that IPF executes to discover, format, and publish the information.
 
 ### How is an IPF workflow defined?
 Each IPF workflow consists of a series of "steps" that can have inputs, outputs, and dependencies.
-IPF will automatically pull in a step's dependencies--they need not all be explicitly listed.  
-
-The steps for each workflow are defined in one or more JSON formatted files.  Workflow JSON files
+The steps for each workflow are defined in one or more JSON formatted files. Workflow JSON files
 can incorporate other workflow JSON files: for example, the `<resource>_services_periodic.json`
 workflow contains one step, which is the `<resource>_services.json` workflow.
 
@@ -39,12 +34,12 @@ IPF workflows are typically defined by JSON files under $IPF_ETC/ipf/workflow/, 
 $IPF_ETC/ipf/workflow/glue2.  
 
 ### How is an IPF workflow invoked?
-An workflow can be invoked by running the ipf_workflow program with a workflow definition file
+To run a workflow execute the ipf_workflow program passing it a workflow definition file
 argument, like this:
 
     $INSTALL_DIR/ipf-VERSION/ipf/bin/ipf_workflow <workflow.json>
 
-Workflow json files are specified relative to $IPF_ETC, so `ipf_workflow sysinfo.json`
+Workflow JSON files are specified relative to $IPF_ETC, so `ipf_workflow sysinfo.json`
 and `ipf_workflow glue2/<resource>_services.json` are both valid invokations.
 
 Scripts for init.d are provided by ipf_configure_xsede for each workflow it configures.
@@ -52,33 +47,27 @@ The init.d scripts can be found in $IPF_ETC/ipf/init.d.  Each script runs one wo
 on a periodic basis, and are typically copied into the system /etc/init.d directory as part of the
 installation process.
 
-### Detailed IPF design documentation
-The detailed IPF design documentation can be found at [https://info.xsede.org/info/restful-api-design](https://info.xsede.org/info/restful-api-design).
-
-
 ### Which workflows should I configure and run?
 The following workflows are recommended for the listed scenarios.
-These recommendations are under review and may be revised in the future.
 
-Software Module workflow: all Level 1, 2 and 3*SPs that offer *login and batch computing
+Software Module workflow: all Level 1, 2 and 3 *SPs that offer login and batch computing*
 
-Network Accessible Services workflow: all Level 1, 2, and 3*SPs that operate *login or GridFTP services
+Network Accessible Services workflow: all Level 1, 2, and 3 *SPs that operate OpenSSH or GridFTP services*
 
-Batch System workflow (compute workflow): all Level 1, 2, and 3*SPs that offer *batch computing
+Batch System workflow (compute workflow): all Level 1, 2, and 3 *SPs that offer batch computing*
 
-Batch Scheduler Job Event workflow (activity workflow): all Level 1 and 2 *SPs that offer *XSEDE allocated batch computing
+Batch Scheduler Job Event workflow (activity workflow): all Level 1 and 2 *SPs that offer XSEDE allocated batch computing*
 
 ## Pre-requisites
 
 ### Software Modules workflow requirements
-- The module files must be readable.
+- The module or Lmod files must be readable.
 
-### Network Accessible Services workflow requirements
-- The service definition files must be readable, and in a (flat) services directory.
-See section:  Configuring Service Files
+### Network Services workflow requirements
+- The service definition files must be readable, and in a single directory.
 
 ### Batch System workflow requirements 
-- The command line programs of your batch scheduler must be executable.
+- The command line programs for your batch scheduler must be executable.
 
 ### Batch Scheduler Job Events workflow requirements
 - The batch scheduler log file or directory must be readable on the server where IPF is running and by the user running IPF.
@@ -86,7 +75,7 @@ See section:  Configuring Service Files
 
 ## Preparing for Install IPF
 
-- Before installing IPF operators should register their resource in RDR.
+- Before installing IPF operators should register their resource in RDR (4).
 - Install and run IPF on a single server for each resource.
 - If IPF will authenticate to Information Services using a X.509 host key/certificate, the public and private keys must be readable by the user running IPF.
 - To install IPF on machines that are part of multiple XSEDE resources please first review [XSEDE's Advanced Integration Options](https://www.ideals.illinois.edu/bitstream/handle/2142/99081/XSEDE_SP_Advanced_Integration_Options.pdf) documentation.
@@ -107,14 +96,14 @@ There are two recommended ways to install IPF: you can use pip install, or you c
 
 Installing IPF from RPMs will put it in the directories /usr/lib/python-`<VERSION>`/site-packages/ipf, /etc/ipf, /var/ipf).
 
-To install to an alternate location install we recommend using pip.
+To install to an alternate location we recommend using pip.
 
 ### Pip installation
 
 To install using pip, you need to have the pip package installed in an appropriate version of Python (3.6+).
 We recommend using venv to manage python installations.  More information on venv can be found at https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/
 
-Once you have a python 3.6 environment (whether venv or not), installation is as simple as:
+Once you have a python 3.6 environment (whether venv or not), to install execute:
 
     $ pip install ipf
 
@@ -142,7 +131,7 @@ Note(s):
 1. Create a normal user to run this software
    The recommended username 'xdinfo', but you can use a different one
 
-2. Install the Python amqp package. It MUST be at least version 1.4.0, and must have major version of 1 (2.0 and above will not work).  At this time, 1.4.9 is the recommended version of amqp.
+2. Install the Python amqp package. It MUST be at least version 1.4.0, and must have major version of 1 (2.0 and above will not work).  We recommend amqp 1.4.9.
     You can 'yum install python-amqp', 'pip install amqp' (into the default location or into a Python virtualenv) or you can install from a "wheel" download from pypi. You may need to do this as root, depending on the install directory (e.g. /opt/). These files need to be readable by the user you created in step 1).
    a) Look at the files from https://pypi.org/project/amqp/1.4.9/#files/
 	specifically, download:
@@ -165,7 +154,7 @@ https://files.pythonhosted.org/packages/ed/09/314d2788aba0aa91f2578071a6484f87a6
 
 ## Updating a previous IPF installation
 
-The json files that have been written by previous runs of ipf_configure_xsede would, in some previous versions of IPF get overwritten by subsequent runs of ipf_configure_xsede.  This is no longer the case--previous versions get backed up, not overwritten.  They will _not_ be erased by removing OR updating the package (nor will the service files copied to /etc/init.d be erased). 
+The JSON files that have been written by previous runs of ipf_configure_xsede would, in some previous versions of IPF get overwritten by subsequent runs of ipf_configure_xsede.  This is no longer the case--previous versions get backed up, not overwritten.  They will _not_ be erased by removing OR updating the package (nor will the service files copied to /etc/init.d be erased). 
 
 To perform the update to the latest RPM distribution of ipf-xsede:
 
@@ -178,7 +167,10 @@ If you are updating an installation that was performed using the tar.gz distribu
 
 If you are upgrading to IPF 1.4 from IPF 1.3, you MUST re-run the ipf_configure_xsede script to re-generate your workflow definition files.  If you do not, you will run into errors where IPF can't infer which step to use.
 
-To make configuration easier, an `ipf_configure_xsede` script is provided in the bin directory (in /usr/bin if you installed RPMs, otherwise in $INSTALL_DIR/ipf-VERSION/ipf/bin). This script will ask you questions and generate workflow definition files and example init files.  If you intend to publish module (or extended attribute module) information, you are advised to set the environment variable MODULEPATH to point to the location of the module files before running ipf_configure_xsede.  If you intend to publish the service workflow, you are advised to set SERVICEPATH to point to the location of the service definition files before running ipf_configure_xsede (more on this below).
+To make configuration easier, an `ipf_configure_xsede` script is provided in the bin directory (in /usr/bin if you installed RPMs, otherwise in $INSTALL_DIR/ipf-VERSION/ipf/bin).
+This script will ask you questions and generate workflow definition files and example init files.  If you intend to publish module (or extended attribute module) information,
+you are advised to set the environment variable MODULEPATH to point to the location of the module files before running ipf_configure_xsede.  If you intend to publish the service workflow,
+you are advised to set SERVICEPATH to point to the location of the service definition files before running ipf_configure_xsede (more on this below).
 
 * `ipf_configure_xsede` should be run as the user that will run the information gathering workflows
 
@@ -186,7 +178,7 @@ To make configuration easier, an `ipf_configure_xsede` script is provided in the
 
 * The preferred way to authenticate is via an X.509 host certificate and key. You can place these files wherever you like (the configuration program will ask you for their location), but the default locations are /etc/grid-security/xdinfo-hostcert.pem and /etc/grid-security/xdinfo-hostkey.pem. These files must be readable by the user that runs the information gathering workflows.
 
-* Submit an XSEDE ticket to authenticate your server to the XSEDE RabbitMQ services. If you will authenticate via X.509, include the output of 'openssl x509 -in path/to/cert.pem -nameopt RFC2253 -subject -noout' in your ticket. If you will authenticate via username and password, state that and someone will contact you.
+* Submit an XSEDE ticket to authoritze your server to publish XSEDE's RabbitMQ services. If you will authenticate via X.509, include the output of 'openssl x509 -in path/to/cert.pem -nameopt RFC2253 -subject -noout' in your ticket. If you will authenticate via username and password, state that and someone will contact you.
 
 Note: The xdinfo user as created by the ipf-xsede rpm installation has /bin/nologin set as its shell by default. This is because for most purposes, the xdinfo user doesn’t need an interactive shell. However, for some of the initial setup, it is easiest to use the xdinfo user with an interactive shell (so that certain environment variables like MODULEPATH can be discovered.)  Thus, it is recommended that the configuration steps are run after something like the following:
 
@@ -209,7 +201,7 @@ As root, copy the etc/ipf/init.d/ipf-RESOURCE_NAME-* files into /etc/init.d. You
 can then be enabled, started, and stopped in the usual ways.  You may need to perform a 'chkconfig --add' or
 equivalent for each service.
 
-## Configuring Scheduler Logging for Activity Workflow
+## Configuring the Batch Scheduler Job Events Workflow
 
 ### Torque
 It is necessary for Torque to log at the correct level in order for IPF to be able to parse the messages that it uses in
@@ -222,29 +214,22 @@ The SLURM logs must be in a directory that is local to and accessible to the IPF
 `ipf_configure_xsede` allows one to set this location for the workflow.
 
 
-## Configuring Service Files
-The information in the this section is applicable both to those editing existing service.conf files, and those creating the
-from scratch.
-
-Each service.conf file needs to have a Name, Version, Endpoint, and Capability.
+## Configuring Network Service Files
+Each service.conf file needs to define the fields Name, Version, Endpoint, and Capability.
 
 The Name field refers to the GLUE2 Primary protocol name supported by the service endpoint, as seen in the table below.
 
-Each service can have multiple capabilities, but each line is a key/value
-pair, so to publish multiple capabilities for a service, have a line that
-starts "Capability = " for each value.  (see example below).  Note:  in MDS
-publishing, separate services were published for striped/non-striped GridFTP
-servers, even if the endpoint URL was the same.  In IPF publishing, the
-Capability fields describe what the service at the endpoint URL supports.
+Each service can have multiple capabilities, but each line is a key/value pair, so to publish multiple capabilities for a service,
+have a line that starts "Capability = " for each value.  (see example below).  The Capability fields describe what the service at
+the endpoint URL supports.
 
-Valid capability values can be seen in the table below.  Please edit your
-service.conf files to include appropriate Capability values.
+Valid Capability values are listed in the table below.  Please edit your service.conf files to include appropriate Capability values.
 
-A key/value pair for SupportStatus in your service.conf file will override the
-default, which is the support status of your service as published in RDR.
+A key/value pair for SupportStatus in your service.conf file will override the default, which is the support status of your service
+as published in RDR.
 
 _________________________________________________________________________
-A table of valid Name, version and capability values:
+A table of valid Name, Version and Capability values:
 
     Name                Version        Capability
     org.globus.gridftp  {5,6}.y.z      data.transfer.striped
@@ -288,28 +273,17 @@ Sample Service publishing file:
     SupportStatus = testing
 
 
-## Best Practices for Software publishing  (Modules Files)
+## Software Module Publishing Best Practices
 
-XSEDE has two levels of software information that are published: the software
-catalog at the Portal (which is used for global, static software information),
-and the dynamic software information published to Information Services using
-the IPF pub/sub publishing framework.
+Using IPF a service provider publishes information about locally installed software available to users using a module.
+IPF tries to make intelligent inferences from the system installed modules files when it publishes software information.
+There are some easy ways, however, to add information to your module files that will enhance/override the information
+otherwise published.
 
-The information published via the IPF pub/sub publishing framework is meant to
-be information that is local to the installation--if there is global
-information it should be published at the XSEDE Portal.
-
-The XSEDE IPF pub/sub publishing framework attempts to make intelligent
-inferences from the system installed modules files when it publishes software
-information.  There are some easy ways, however, to add information to your
-module files that will enhance/override the information otherwise published.
-
-The Modules workflows for IPF search your MODULEPATH, and infer fields such as
-name and version from the directory structure/naming conventions of the module
-file layout.  Depending on the exact workflow steps, fields such as
-Description may be blank, or inferred from the stdout/stderr text of the
-module.  However, the following fields can always be added to a module file to
-be published:
+The Modules workflows traverses your MODULEPATH and infers fields such as Name and Version from the directory
+structure/naming conventions of the module file layout. Depending on the exact workflow steps, fields such as Description
+may be blank, or inferred from the stdout/stderr text of the module.  However, the following fields can always
+be added to a module file to be published:
 
     Description:
     URL:
@@ -318,14 +292,22 @@ be published:
     SupportStatus:
     SupportContact:
 
-Each field is a key: value pair.  The IPF workflows are searching the whole
-text of each module file for these fields--they may be placed in a
-module-whatis line, or in a comment, and IPF will still read them.
+Each field is a key: value pair.  The IPF workflows are searching the whole text of each module file for these fields.
+They may be placed in a module-whatis line, or in a comment, and IPF will still read them.
 
-Note: the value for SupportContact takes the form of either a URL that returns the expected json, normally from the xcsr-db API, for example: `https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/globalid/helpdesk.xsede.org/`
-or directly a one-liner json blob of the form:
+The SupportContact field must contain either:
+* the exact URL:
+`https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/globalid/helpdesk.xsede.org/`
 
+* another URL that returns a JSON document formatted exactly like the one shown above (but with different values)
+
+* or a one-liner JSON blob of the form:
 `[{"GlobalID":"helpdesk.xsede.org","Name":"XSEDE Help Desk","Description":"XSEDE 24/7 support help desk","ShortName":"XSEDE","ContactEmail":"help@xsede.org","ContactURL":"https://www.xsede.org/get-help","ContactPhone":"1-866-907-2383"}]`
+
+IMPORTANT:
+* The XSEDE user portal only displays software with a SupportContact containing the exact URL above.
+* Modules that do not have a SupportContact can have a default value assigned by the Workflow
+
 
 All XSEDE registered support contact organizations are found at: `https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/`.
 To register a new support contact e-mail help@xsede.org using the Subject: Please register a new Support Contact Organization in the CSR.
@@ -445,3 +427,11 @@ This workflow describes your modules as a JSON document containing GLUE v2.0 App
 ## Log File Management
 
 The log files described above will grow over time. The logs are only needed for debugging, so they can be deleted whenever you wish. logrotate is a convenient tool for creating archival log files and limiting the amount of files kept. One note is that the ipf workflows keep the log files open while they run, so you should either use the copytruncate option or have a post-rotate statement to restart the corresponding ipf service.
+
+# References
+
+(1) IPF is open source and maintained at [https://github.com/XSEDE/ipf](https://github.com/XSEDE/ipf.).
+(2) [XSEDE Information Services](https://info.xsede.org/).
+(3) [XSEDE Software and Services Table for Service Providers](https://www.ideals.illinois.edu/handle/2142/85886).
+(4) [Resource Description Repository "RDR"](https://rdr.xsede.org/).
+(5) [GLUE2 Standard Format](https://www.ogf.org/documents/GFD.147.pdf).
