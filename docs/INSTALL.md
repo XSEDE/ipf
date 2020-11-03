@@ -295,6 +295,8 @@ be added to a module file to be published:
 Each field is a key: value pair.  The IPF workflows are searching the whole text of each module file for these fields.
 They may be placed in a module-whatis line, or in a comment, and IPF will still read them.
 
+The Category field contents are discoverable in the Research Software Portal software search Topics field.
+
 The SupportContact field must contain either:
 * the exact URL:
 `https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/globalid/helpdesk.xsede.org/`
