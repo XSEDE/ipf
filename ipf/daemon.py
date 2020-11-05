@@ -77,9 +77,9 @@ class OneProcessOnly:
     def _redirect(self, stdin_file_name, stdout_file_name, stderr_file_name):
         sys.stdout.flush()
         sys.stderr.flush()
-        si = file(stdin_file_name, 'r')
-        so = file(stdout_file_name, 'a+')
-        se = file(stderr_file_name, 'a+')
+        si = open(stdin_file_name, 'r')
+        so = open(stdout_file_name, 'a+')
+        se = open(stderr_file_name, 'a+')
         os.dup2(si.fileno(), sys.stdin.fileno())
         os.dup2(so.fileno(), sys.stdout.fileno())
         os.dup2(se.fileno(), sys.stderr.fileno())

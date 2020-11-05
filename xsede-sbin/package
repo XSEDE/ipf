@@ -28,14 +28,14 @@ cp  VERSION$PKG $OUTDIR/VERSION
 
 mkdir $OUTDIR/docs
 cd ..
-FILES=$(find ../docs -type f ! -path \*\.svn\*)
+FILES=$(find ./docs -type f ! -path \*\.svn\*)
 echo $FILES
 for i in $FILES;do
   iout=$(echo $i | sed 's/\.in$//')
   sed -e "s,%VER%,$VER,g" \
       -e "s,%REL%,$REL,g" \
       $i \
-      >$OUTDIR/$iout
+      >xsede-sbin/$OUTDIR/$iout
 done
 cd $HERE
 mv $OUTDIR/docs/INSTALL.md $OUTDIR/INSTALL.md

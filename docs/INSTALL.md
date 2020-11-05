@@ -107,6 +107,14 @@ Once you have a python 3.6 environment (whether venv or not), to install execute
 
     $ pip install ipf
 
+One thing to note when installing via pip:  unlike in an RPM install, the files get installed relative to your python installation (whether in a virtualenv or system python).  Notably, ipf_configure_xsede and ipf_workflow end up in the virtualenv's bin directory, and the location IPF expects to find as its IPF_ETC_PATH (/etc/ipf in an RPM install) is relative to the python site-packages directory.
+
+You can find your site-packages path for the python you used for the pip install with: 
+$ python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'
+
+When running any IPF commands by hand in a pip install, you will need to set the environment variable IPF_ETC_PATH.  Its value should be the site-packages directory referenced above, plus "/etc/ipf".  For a system python, this might look something like "/usr/lib/python3.6/site-packages/etc/ipf".
+If you have run ipf_configure_xsede to set up your workflows, and chosen the recommended base directory, your workflow definitions will have the appropriate IPF_ETC_PATH defined in them.
+
 ### RPM Installation
 
 Note(s):
@@ -200,6 +208,33 @@ files which are the init scripts you have configured.
 As root, copy the etc/ipf/init.d/ipf-RESOURCE_NAME-* files into /etc/init.d. Your information gathering workflows
 can then be enabled, started, and stopped in the usual ways.  You may need to perform a 'chkconfig --add' or
 equivalent for each service.
+
+
+## Configuring Compute workflow to filter by queue or partition
+
+IPF 1.5 includes the ability to filter the Compute workflow by queue or partition, if you are using SLURM.  This is primarily intended for sites that need to consider GPU nodes as separate resources for the purposes of computing utilization, etc.  
+
+To set parameters of Queues and/or Partitions for filtering, one must manually edit the workflow configuration files.
+
+For example, on can set a params: partitions: inside the compute workflow in the ExectutionEnvironmentsStep as below:
+
+{
+           "name": "ipf.glue2.slurm.ExecutionEnvironmentsStep",
+           "params": {
+               "partitions": "+GPU -RM -LM -XLM -DBMI"
+           }
+       }
+
+This will filter such that only the nodes in the GPU partition are considered for the Execution Environment.
+A similar parameter, “queues” will filter by queue:
+{
+           "name": "ipf.glue2.slurm.ExecutionEnvironmentsStep",
+           "params": {
+               "queues": "+DBMI-GPU -DBMI -RM -RM-shared -RM-small -LM -XLM -GPU -GPU-shared"
+           }
+       }
+
+These parameters can be mixed and matched, and can be applied at other steps as well (ComputingSharesStep, etc.) though I believe that when they are applied at the ExecutionEnvironmentsStep, that constrains the set of nodes considered for all other stats (as they are all computed as parts of ExecutionEnvironments).
 
 ## Configuring the Batch Scheduler Job Events Workflow
 

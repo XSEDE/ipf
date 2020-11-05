@@ -1,6 +1,12 @@
 Workflow:
 NOTE:  create_cacerts.sh is capable of creating the ca_certs.pem that gets put in patches.  If you run it, run it from inside patches.
 
+Current workflow as of 1.5:
+build_ipf-xsede_rpm.sh
+package ipf-xsede
+upload ipf-xsede
+
+
 checkout-from-git
 gets the source from git
 

@@ -17,6 +17,7 @@
 
 import subprocess
 import datetime
+import dateutil.parser
 import itertools
 import os
 import re
@@ -230,22 +231,11 @@ def _getDuration(dstr):
     raise StepError("failed to parse duration: %s" % dstr)
 
 def _getDateTime(dtStr):
-    # Example: 2010-08-04T14:01:54
-    
-    year = int(dtStr[0:4])
-    month = int(dtStr[5:7])
-    day = int(dtStr[8:10])
-    hour = int(dtStr[11:13])
-    minute = int(dtStr[14:16])
-    second = int(dtStr[17:19])
 
-    return datetime.datetime(year=year,
-                             month=month,
-                             day=day,
-                             hour=hour,
-                             minute=minute,
-                             second=second,
-                             tzinfo=ipf.dt.localtzoffset())
+    DEFAULTYEAR=datetime.datetime.now(tz=ipf.dt.localtzoffset())
+    dt = dateutil.parser.parse(dtStr,default=DEFAULTYEAR)
+
+    return dt
 
 #######################################################################################################################
 
@@ -274,9 +264,13 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
         cancelled_re = self.params.get("job_cancelled_regexp","\[(\S+)\] job (\S+) cancelled from interactive user")
         stepcomplete_re = self.params.get("step_complete_regexp","\[(\S+)\] sched: _slurm_rpc_step_complete StepId=(\S+).0")
         #[2013-04-21T16:14:47] _slurm_rpc_submit_batch_job JobId=618921 usec=12273
+
         m = re.search(submit_re,entry)
         if m is not None:
             dt = _getDateTime(m.group(1))
+            #DEFAULTYEAR=datetime.datetime.now(tz=ipf.dt.localtzoffset())
+            #dt = dateutil.parser.parse(m.group(1),default=DEFAULTYEAR)
+
             job_id = m.group(2)
             activity = self._getActivity(job_id)
             activity.State = [computing_activity.ComputingActivity.STATE_PENDING]

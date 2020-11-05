@@ -194,7 +194,7 @@ class AbstractServiceStep(Step):
         serv.resource_name = self.resource_name
         endpointhash = ''
         if (serv.Endpoint != ''):
-            endpointhashobject = hashlib.md5(serv.Endpoint)
+            endpointhashobject = hashlib.md5(str(serv.Endpoint).encode('utf-8'))
             endpointhash = "-"+endpointhashobject.hexdigest()
         serv.ID = "urn:glue2:%s:%s-%s%s" % (ServiceType,
                                             serv.Name, self.resource_name, endpointhash)
@@ -272,7 +272,7 @@ class ASOgfJson(Representation):
                 endpoint.Name = serv.Name
                 endpointhash = ''
                 if (serv.Endpoint != ''):
-                    endpointhashobject = hashlib.md5(serv.Endpoint)
+                    endpointhashobject = hashlib.md5(str(serv.Endpoint).encode('utf-8'))
                     endpointhash = "-"+endpointhashobject.hexdigest()
                 endpoint.ID = "urn:glue2:Endpoint:%s-%s-%s%s" % (
                     serv.Version, serv.Name, serv.resource_name, endpointhash)

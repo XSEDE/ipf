@@ -56,7 +56,7 @@ def _createSetupCfg():
     f.write("""
 [bdist_rpm]
 requires = python-amqp >= 1.4
-#requires = python-amqp < 2
+    python-dateutil
     """)
     f.close()
 
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     _createManifest()
     _createSetupCfg()
     setup(name="ipf",
-          version="1.5.b1",
+          version="1.5",
           description="The Information Publishing Framework",
           long_description=readme(),
           classifiers=[
@@ -85,7 +85,7 @@ if __name__ == "__main__":
           author_email="blau@anl.gov",
           license="Apache",
           packages=["ipf","ipf.glue2","ipf.xsede","ipf.xsede.test"],
-          install_requires=["amqp >=1.4,<2"],
+          install_requires=["amqp >=1.4,<2","python-dateutil"],
           entry_points={
               "console_scripts": ["ipf_workflow=ipf.run_workflow:main",
                                   "ipf_configure_xsede=ipf.xsede.configure_workflows:configure"],

@@ -2,7 +2,7 @@
 VERSION=`grep version ../setup.py |awk 'BEGIN { FS = "\"" } ; { print $2 }'`
 echo "Version is $VERSION"\n
 echo $VERSION >./VERSIONipf-xsede
-VERSION=1.5b1
+VERSION=1.5
 RELEASE=`cat ./RELEASE`
 SDIDIR=`pwd`
 cd ..
@@ -24,7 +24,8 @@ ls -al build/bdist.linux_x86_64/rpm/SOURCES/ipf-xsede-$VERSION.tar.gz
 #sed -i 's/--record=INSTALLED_FILES/--record=INSTALLED_FILES --prefix=\/etc/' dist/ipf-xsede-ipf.spec
 #sed -i 's/Prefix: %{_prefix}/Prefix: %{_prefix}\nPrefix: \/etc/' dist/ipf.spec
 #sed -i 's/Name: %{name}/Name: ipf-xsede/' dist/ipf.spec
-sed -i 's/Requires: python-amqp/AutoReq: no\nRequires: python-amqp >= 1.4, python-amqp < 2, python3,  python-setuptools/' dist/ipf.spec
+sed -i 's/Requires: python-amqp >= 1.4/AutoReq: no\nRequires: python3-amqp >= 1.4, python3-amqp < 2, python3,  python3-setuptools/' dist/ipf.spec
+sed -i 's/python-dateutil/python3-dateutil/' dist/ipf.spec
 sed -i 's/%define name ipf/%define name ipf-xsede/' dist/ipf.spec
 sed -i "s/%define release 1/%define release $RELEASE/" dist/ipf.spec
 sed -i "s/License: Apache/Patch0: ipf-rpm-only-mods.patch\nLicense: Apache/" dist/ipf.spec

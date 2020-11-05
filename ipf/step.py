@@ -19,7 +19,6 @@ import copy
 import logging
 import multiprocessing
 import time
-import pdb
 from queue import Empty
 
 from ipf.data import Data,Representation
