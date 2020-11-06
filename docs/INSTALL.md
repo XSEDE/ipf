@@ -10,15 +10,19 @@ resource information to XSEDE's Information Services (2). IPF can publish four t
  4. Batch scheduler job events
  
 XSEDE requires Level 1, 2, and 3 operators (3) to publish this dynamic resource information using IPF.
-IPF is also available to campuses and other resource operators who would like to publish 
-information to XSEDE Information Services for use by local services, portals, or gateways. 
+
 IPF complements XSEDE's Resource Description Repository "RDR" (4) which is used to maintain
 static resource information. 
+
+Campuses and other research resource operators that are not affiliated with XSEDE are welcome to use IPF
+and to publish their resource information to XSEDE Information Service. By doing so, local services, portals,
+and gateways can use XSEDE Information Services APIs to access both local resource information and
+XSEDE resource information. 
 
 This document describes how to install and configure IPF.
 
 ## How does IPF Work?
-### What is an IPF workflow?
+### What is IPF?
 
 IPF is a Python program that gathers resource information, formats it in a GLUE2 standard format (5),
 and publishes it to XSEDE's Information Services. Each type of information that is published has a
@@ -34,8 +38,8 @@ IPF workflows are typically defined by JSON files under $IPF_ETC/ipf/workflow/, 
 $IPF_ETC/ipf/workflow/glue2.  
 
 ### How is an IPF workflow invoked?
-To run a workflow execute the ipf_workflow program passing it a workflow definition file
-argument, like this:
+To run a workflow execute the ipf_workflow program passing it a workflow definition file argument,
+like this:
 
     $INSTALL_DIR/ipf-VERSION/ipf/bin/ipf_workflow <workflow.json>
 
@@ -50,24 +54,24 @@ installation process.
 ### Which workflows should I configure and run?
 The following workflows are recommended for the listed scenarios.
 
-Software Module workflow: all Level 1, 2 and 3 *SPs that offer login and batch computing*
+Software Module workflow: required for all Level 1, 2 and 3 *SPs that offer login and batch computing*
 
-Network Accessible Services workflow: all Level 1, 2, and 3 *SPs that operate OpenSSH or GridFTP services*
+Batch System workflow (compute workflow): required for all Level 1, 2, and 3 *SPs that offer batch computing*
 
-Batch System workflow (compute workflow): all Level 1, 2, and 3 *SPs that offer batch computing*
+Network Accessible Services workflow: recommended for all Level 1, 2, and 3 *SPs that operate OpenSSH or GridFTP services*
 
-Batch Scheduler Job Event workflow (activity workflow): all Level 1 and 2 *SPs that offer XSEDE allocated batch computing*
+Batch Scheduler Job Event workflow (activity workflow): recommended for all Level 1 and 2 *SPs that offer XSEDE allocated batch computing*
 
 ## Pre-requisites
 
 ### Software Modules workflow requirements
 - The module or Lmod files must be readable.
 
-### Network Services workflow requirements
-- The service definition files must be readable, and in a single directory.
-
 ### Batch System workflow requirements 
 - The command line programs for your batch scheduler must be executable.
+
+### Network Services workflow requirements
+- The service definition files must be readable, and in a single directory.
 
 ### Batch Scheduler Job Events workflow requirements
 - The batch scheduler log file or directory must be readable on the server where IPF is running and by the user running IPF.
@@ -84,6 +88,7 @@ Batch Scheduler Job Event workflow (activity workflow): all Level 1 and 2 *SPs t
     $ tar -cf ipf-etc-yyyymmdd.tar /etc/ipf
 
 ### Software Dependencies
+
 - Python 3.6 or newer
 - The python-amqp package, version between 1.4.0 and 1.4.9
 - The python-setuptools package IF installing by RPM.
@@ -101,19 +106,24 @@ To install to an alternate location we recommend using pip.
 ### Pip installation
 
 To install using pip, you need to have the pip package installed in an appropriate version of Python (3.6+).
-We recommend using venv to manage python installations.  More information on venv can be found at https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/
+We recommend using venv to manage Python installations.  More information on venv is available at 
+[https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/)
 
-Once you have a python 3.6 environment (whether venv or not), to install execute:
+Once you have a Python 3.6 environment (whether venv or not), to install execute:
 
     $ pip install ipf
 
-One thing to note when installing via pip:  unlike in an RPM install, the files get installed relative to your python installation (whether in a virtualenv or system python).  Notably, ipf_configure_xsede and ipf_workflow end up in the virtualenv's bin directory, and the location IPF expects to find as its IPF_ETC_PATH (/etc/ipf in an RPM install) is relative to the python site-packages directory.
+When installing via pip:  unlike in an RPM install, the files get installed relative to your Python installation (whether in a virtualenv or system Python).
+Notably, ipf_configure_xsede and ipf_workflow end up in the virtualenv's bin directory,
+and the location IPF expects to find as its IPF_ETC_PATH (/etc/ipf in an RPM install) is relative to the Python site-packages directory.
 
-You can find your site-packages path for the python you used for the pip install with: 
+You can find your site-packages path for the Python you used for the pip install with: 
 $ python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'
 
-When running any IPF commands by hand in a pip install, you will need to set the environment variable IPF_ETC_PATH.  Its value should be the site-packages directory referenced above, plus "/etc/ipf".  For a system python, this might look something like "/usr/lib/python3.6/site-packages/etc/ipf".
-If you have run ipf_configure_xsede to set up your workflows, and chosen the recommended base directory, your workflow definitions will have the appropriate IPF_ETC_PATH defined in them.
+When running any IPF commands by hand in a pip install, you will need to set the environment variable IPF_ETC_PATH.
+Its value should be the site-packages directory referenced above, plus "/etc/ipf".  For a system Python, this might look something
+like "/usr/lib/python3.6/site-packages/etc/ipf". If you have run ipf_configure_xsede to set up your workflows, and chosen the recommended
+base directory, your workflow definitions will have the appropriate IPF_ETC_PATH defined in them.
 
 ### RPM Installation
 
@@ -136,10 +146,11 @@ Installing from the tar.gz is no longer recommended.  It will still work, but we
 Note(s):
 - If you need to install development versions, replace the URL prefixes 'http://software.xsede.org/production' with 'http://software.xsede.org/development' in the instructions below.
 
-1. Create a normal user to run this software
+Steps:
+1) Create a normal user to run this software
    The recommended username 'xdinfo', but you can use a different one
 
-2. Install the Python amqp package. It MUST be at least version 1.4.0, and must have major version of 1 (2.0 and above will not work).  We recommend amqp 1.4.9.
+2) Install the Python amqp package. It MUST be at least version 1.4.0, and must have major version of 1 (2.0 and above will not work).  We recommend amqp 1.4.9.
     You can 'yum install python-amqp', 'pip install amqp' (into the default location or into a Python virtualenv) or you can install from a "wheel" download from pypi. You may need to do this as root, depending on the install directory (e.g. /opt/). These files need to be readable by the user you created in step 1).
    a) Look at the files from https://pypi.org/project/amqp/1.4.9/#files/
 	specifically, download:
@@ -148,17 +159,16 @@ https://files.pythonhosted.org/packages/ed/09/314d2788aba0aa91f2578071a6484f87a6
    b) pip install -install-option="-prefix=$PREFIX_PATH" amqp-1.4.9-py2.py3-none-any.whl
      (where $PREFIX_PATH is your AMQP_PATH, i.e. the place you want to install the amqp lib)
 
-
-3. Install the XSEDE version of the Information Publishing Framework (ipf-xsede):
+3) Install the XSEDE version of the Information Publishing Framework (ipf-xsede):
    a) Download the .tgz file from http://software.xsede.org/production/ipf/ipf-xsede/latest/
    b) Untar this file into your install directory. The result will be a directory hierarchy under
 
     $ INSTALL_DIR/ipf-VERSION.
 
-4. As the user created in step 1), configure the ipf_workflow script in $ INSTALL_DIR/ipf-VERSION/ipf/bin
-   a) Set PYTHON to be name of (or the full path to) the python interpreter you wish to use
+4) As the user created in step 1), configure the ipf_workflow script in $ INSTALL_DIR/ipf-VERSION/ipf/bin
+   a) Set PYTHON to be name of (or the full path to) the Python interpreter you wish to use
    b) If you installed Python amqp into a non-default location, set AMQP_PATH to be the path where you installed it and uncomment this line and the following line that sets PYTHONPATH
-   d) Run '$INSTALL_DIR/ipf-VERSION/ipf/bin/ipf_workflow sysinfo.json'. The workflow steps should run, but you may see failures related to host and/or site names.
+   c) Run '$INSTALL_DIR/ipf-VERSION/ipf/bin/ipf_workflow sysinfo.json'. The workflow steps should run, but you may see failures related to host and/or site names.
 
 ## Updating a previous IPF installation
 
@@ -284,13 +294,7 @@ A table of valid Name, Version and Capability values:
                                        executionmanagement.jobexecution
                                        executionmanagement.jobmanager
     
-    eu.unicore.reg      {6,7}.y.z      Information.publication
-    
-    org.xsede.gpfs      3.5            data.access.flatfiles
-    
-    org.xsede.genesisII 2.y.z          data.access.flatfiles
-                                       data.naming.resolver
- 
+    eu.unicore.reg      {6,7}.y.z      Information.publication    
 
 Sample Service publishing file:
 
@@ -310,7 +314,7 @@ Sample Service publishing file:
 
 ## Software Module Publishing Best Practices
 
-Using IPF a service provider publishes information about locally installed software available to users using a module.
+The IPF Software Module workflow publishes information about locally installed software available through modules or Lmod.
 IPF tries to make intelligent inferences from the system installed modules files when it publishes software information.
 There are some easy ways, however, to add information to your module files that will enhance/override the information
 otherwise published.
@@ -318,7 +322,7 @@ otherwise published.
 The Modules workflows traverses your MODULEPATH and infers fields such as Name and Version from the directory
 structure/naming conventions of the module file layout. Depending on the exact workflow steps, fields such as Description
 may be blank, or inferred from the stdout/stderr text of the module.  However, the following fields can always
-be added to a module file to be published:
+be explicitly added to a module file:
 
     Description:
     URL:
@@ -330,7 +334,16 @@ be added to a module file to be published:
 Each field is a key: value pair.  The IPF workflows are searching the whole text of each module file for these fields.
 They may be placed in a module-whatis line, or in a comment, and IPF will still read them.
 
-The Category field contents are discoverable in the Research Software Portal software search Topics field.
+The URL field should point to local user documentation.
+
+The Category field may contain one or more comma separated fields of science or software categories. XSEDE's
+official fields of science are listed at `https://info.xsede.org/wh1/xdcdb/v1/fos/?hierarchy=true`. Some
+recommended software categories are: data, compiler,  language, debugger, profiler, optimization, system, utilities.
+Category values are discoverable in the Research Software Portal in the software *Topics* field.
+
+The Keywords field may contain any other desired keywords.
+
+The SupportStatus field should be: development, testing, or production.
 
 The SupportContact field must contain either:
 * the exact URL:
