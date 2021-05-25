@@ -82,7 +82,7 @@ class VALETApplicationsStep(application.ApplicationsStep):
                                     env.Extension["SupportContact"] = self.support_contact
 
                                 env.AppName = str(versId.packageId())
-                                env.AppVersion = str(versId.versionId())
+                                env.AppVersion = str(versId.versionAndFeatureString())
                                 features = versId.features()
                                 if len(features) > 0:
                                     env.Keywords = [x.stringValue() for x in features]
