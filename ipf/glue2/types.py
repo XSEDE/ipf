@@ -21,6 +21,7 @@ class ApplicationHandle(object):
     MODULE = "module"
     PATH = "Path"
     SOFTENV = "softenv"
+    VALET = "valet"
 
 class Benchmark(object):
     BOGOMIPS = "bogomips"
