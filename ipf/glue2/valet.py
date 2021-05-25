@@ -96,7 +96,7 @@ class VALETApplicationsStep(application.ApplicationsStep):
                                 env.path_hash = pathhashobject.hexdigest()
 
                                 handle = application.ApplicationHandle()
-                                handle.Type = ApplicationHandle.MODULE
+                                handle.Type = ApplicationHandle.VALET
                                 handle.Value = str(versId)
 
                                 # env.ExecutionEnvironmentID = 'urn:glue2:ExecutionEnvironment:{:s}'.format(self.resource_name)
