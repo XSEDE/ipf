@@ -81,16 +81,36 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
         computing_activity.ComputingActivitiesStep.__init__(self)
 
         self._acceptParameter("scontrol","the path to the SLURM scontrol program (default 'scontrol')",False)
+        self._acceptParameter("showjob","the path to the SLURM scontrol program (default 'show job')",False)
+        self._acceptParameter("JobId","Regular Expression to parse JobId (default JobId=(\S+)')",False)
+        self._acceptParameter(" Name","Regular Expression to parse  Name (default  Name=(\S+)')",False)
+        self._acceptParameter(" JobName","Regular Expression to parse  JobName (default ' JobName=(\S+)')",False)
+        self._acceptParameter("UserId","Regular Expression to parse UserId (default 'UserId=(\S+)\(')",False)
+        self._acceptParameter("Account","Regular Expression to parse Account (default 'Account=(\S+)')",False)
+        self._acceptParameter("Partition","Regular Expression to parse Partition (default 'Partition=(\S+)')",False)
+        self._acceptParameter("Reservation","Regular Expression to parse Reservation (default 'Reservation=(\S+)')",False)
+        self._acceptParameter("JobState","Regular Expression to parse JobState (default 'JobState=(\S+)')",False)
+        self._acceptParameter("JobHeld","Regular Expression to parse whether Job is HELD (default 'Reason=Dependency')",False)
+        self._acceptParameter("NumCPUs","Regular Expression to parse NumCPUs (default 'NumCPUs=(\d+)')",False)
+        self._acceptParameter("gresgpu","Regular Expression to parse gres/gpu (default 'gres/gpu=(\d+)')",False)
+        self._acceptParameter("TimeLimit","Regular Expression to parse TimeLimit (default 'TimeLimit=(\S+)')",False)
+        self._acceptParameter("RunTime","Regular Expression to parse RunTime (default 'RunTime=(\S+)')",False)
+        self._acceptParameter("SubmitTime","Regular Expression to parse SubmitTime (default 'SubmitTime=(\S+)')",False)
+        self._acceptParameter("StartTime","Regular Expression to parse StartTime (default 'StartTime=(\S+)')",False)
+        self._acceptParameter("EndTime","Regular Expression to parse EndTime (default 'EndTime=(\S+)')",False)
+        self._acceptParameter("exec_host ","Regular Expression to parse exec_host (default 'exec_host = (\S+)')",False)
+        self._acceptParameter("Priority","Regular Expression to parse Priority (default 'Priority=(\S+)')",False)
 
     def _run(self):
         # squeue command doesn't provide submit time
         scontrol = self.params.get("scontrol","scontrol")
+        showjob = self.params.get("showjob","show job")
 
-        cmd = scontrol + " show job"
+        cmd = scontrol + " " + showjob
         self.debug("running "+cmd)
         status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
-            raise StepError("scontrol failed: "+output+"\n")
+            raise StepError(scontrol+" failed: "+output+"\n")
 
         jobs = []
         for job_str in output.split("\n\n"):
@@ -114,32 +134,51 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
         return jobs
 
 def _getJob(step, job_str):
+    showjob = self.params.get("showjob","show job")
     job = computing_activity.ComputingActivity()
+    JobId = self.params.get("JobId","JobId")
+    Name = self.params.get(" Name"," Name")
+    JobName = self.params.get(" JobName"," JobName")
+    UserId = self.params.get("UserId","UserId")
+    Account = self.params.get("Account","Account")
+    Partition = self.params.get("Partition","Partition")
+    Reservation = self.params.get("Reservation","Reservation")
+    JobState = self.params.get("JobState","JobState")
+    JobHeld = self.params.get("JobHeld","Reason=Dependency")
+    NumCPUs = self.params.get("NumCPUs","NumCPUs")
+    gresgpu = self.params.get("gresgpu","gres/gpu")
+    TimeLimit = self.params.get("TimeLimit","TimeLimit")
+    RunTime = self.params.get("RunTime","RunTime")
+    SubmitTime = self.params.get("SubmitTime","SubmitTime")
+    StartTime = self.params.get("StartTime","StartTime")
+    EndTime = self.params.get("EndTime","EndTime")
+    exec_host  = self.params.get("exec_host ","exec_host ")
+    Priority = self.params.get("Priority","Priority")
 
-    m = re.search("JobId=(\S+)",job_str)
+    m = re.search(JobId,job_str)
     if m is not None:
         job.LocalIDFromManager = m.group(1)
-    m = re.search(" Name=(\S+)",job_str)
+    m = re.search(Name,job_str)
     if m is not None:
         job.Name = m.group(1)
     else:
-        m = re.search(" JobName=(\S+)",job_str)
+        m = re.search(JobName,job_str)
         if m is not None:
             job.Name = m.group(1)
-    m = re.search("UserId=(\S+)\(",job_str)
+    m = re.search(UserId,job_str)
     if m is not None:
         job.LocalOwner = m.group(1)
-    m = re.search("Account=(\S+)",job_str)
+    m = re.search(Account,job_str)
     if m is not None:
         job.Extension["LocalAccount"] = m.group(1)
-    m = re.search("Partition=(\S+)",job_str)
+    m = re.search(Partition,job_str)
     if m is not None:
         job.Queue = m.group(1)
-    m = re.search("Reservation=(\S+)",job_str)
+    m = re.search(Reservation,job_str)
     if m is not None and m.group(1) != "(null)":
         job.Extension["ReservationName"] = m.group(1)
         job.ResourceID = "urn:glue2:ExecutionEnvironment:%s.%s" % (m.group(1),step.resource_name)
-    m = re.search("JobState=(\S+)",job_str)
+    m = re.search(JobState,job_str)
     if m is not None:
         state = m.group(1)  # see squeue man page for state descriptions
         if state == "CANCELLED":
@@ -155,7 +194,7 @@ def _getJob(step, job_str):
         elif state == "NODE_FAIL":
             job.State = [computing_activity.ComputingActivity.STATE_FAILED]
         elif state == "PENDING":
-            m = re.search("Reason=Dependency",job_str)
+            m = re.search(JobHeld,job_str)
             if m is None:
                 job.State = [computing_activity.ComputingActivity.STATE_PENDING]
             else:
@@ -176,46 +215,46 @@ def _getJob(step, job_str):
             job.State = [computing_activity.ComputingActivity.STATE_UNKNOWN]
         job.State.append("slurm:"+state)
 
-    m = re.search("NumCPUs=(\d+)",job_str)
+    m = re.search(NumCPUs,job_str)
     if m is not None:
         job.RequestedSlots = int(m.group(1))
-    m = re.search("gres/gpu=(\d+)",job_str)
+    m = re.search(gresgpu,job_str)
     if m is not None:
         job.RequestedAcceleratorSlots = int(m.group(1))
-    m = re.search("TimeLimit=(\S+)",job_str)
+    m = re.search(TimeLimit,job_str)
     if m is not None:
         wall_time = _getDuration(m.group(1))
         if job.RequestedSlots is not None:
             job.RequestedTotalWallTime = wall_time * job.RequestedSlots
-    m = re.search("RunTime=(\S+)",job_str)
+    m = re.search(RunTime,job_str)
     if m is not None and m.group(1) != "INVALID":
         used_wall_time = _getDuration(m.group(1))
         if used_wall_time > 0 and job.RequestedSlots is not None:
             job.UsedTotalWallTime = used_wall_time * job.RequestedSlots
-    m = re.search("SubmitTime=(\S+)",job_str)
+    m = re.search(SubmitTime,job_str)
     if m is not None:
         job.SubmissionTime = _getDateTime(m.group(1))
         job.ComputingManagerSubmissionTime = job.SubmissionTime
-    m = re.search("StartTime=(\S+)",job_str)
+    m = re.search(StartTime,job_str)
     if m is not None and m.group(1) != "Unknown":
         # ignore if job hasn't started (it is an estimated start time used for backfill scheduling)
         if job.State[0] != computing_activity.ComputingActivity.STATE_PENDING:
             job.StartTime = _getDateTime(m.group(1))
     # SLURM sets EndTime to StartTime+TimeLimit while the job is running, so ignore it then
     if job.State != computing_activity.ComputingActivity.STATE_RUNNING:
-        m = re.search("EndTime=(\S+)",job_str)
+        m = re.search(EndTime,job_str)
         if m is not None and m.group(1) != "Unknown":
             job.EndTime = _getDateTime(m.group(1))
             job.ComputingManagerEndTime = job.EndTime
 
     # not sure how to interpret NodeList yet
-    #m = re.search("exec_host = (\S+)",job_str)
+    #m = re.search(exec_host",job_str)
     #if m is not None:
     #    # exec_host = c013.cm.cluster/7+c013.cm.cluster/6+...
     #    nodes = set(map(lambda s: s.split("/")[0], m.group(1).split("+")))
     #    job.ExecutionNode = list(nodes)
 
-    m = re.search("Priority=(\S+)",job_str)
+    m = re.search(Priority,job_str)
     if m is not None:
         job.Extension["Priority"] = int(m.group(1))
 
@@ -338,7 +377,8 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
             activity.CreationTime = datetime.datetime.now(ipf.dt.tzoffset(0))
         except KeyError:
             scontrol = self.params.get("scontrol","scontrol")
-            cmd = scontrol + " show job "+job_id
+            showjob = self.params.get("showjob","show job")
+            cmd = scontrol + " " +showjob+" "+job_id
             self.debug("running "+cmd)
             status, output = subprocess.getstatusoutput(cmd)
             if status != 0:
@@ -358,10 +398,31 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
         computing_share.ComputingSharesStep.__init__(self)
 
         self._acceptParameter("scontrol","the path to the SLURM scontrol program (default 'scontrol')",False)
+        self._acceptParameter("PartitionName","Regular Expression to parse PartitionName (default 'PartitionName=(\S+)')",False)
+        self._acceptParameter("MaxNodes","Regular Expression to parse MaxNodes (default 'MaxNodes=(\S+)')",False)
+        self._acceptParameter("MaxMemPerNode","Regular Expression to parse MaxMemPerNode (default 'MaxMemPerNode=(\S+)')",False)
+        self._acceptParameter("DefaultTime","Regular Expression to parse DefaultTime (default 'DefaultTime=(\S+)')",False)
+        self._acceptParameter("MaxTime","Regular Expression to parse MaxTime (default 'MaxTime=(\S+)')",False)
+        self._acceptParameter("PreemptMode","Regular Expression to parse PreemptMode (default 'PreemptMode=(\S+)')",False)
+        self._acceptParameter("State","Regular Expression to parse State (default 'State=(\S+)')",False)
+        self._acceptParameter("ReservationName","Regular Expression to parse ReservationName (default 'ReservationName=(\S+)')",False)
+        self._acceptParameter("NodCnt","Regular Expression to parse NodCnt (default 'NodCnt=(\S+)')",False)
+        self._acceptParameter("State","Regular Expression to parse State (default 'State=(\S+)')",False)
 
     def _run(self):
         # create shares for partitions
         scontrol = self.params.get("scontrol","scontrol")
+        PartitionName = self.params.get("PartitionName","PartitionName=(\S+)')")
+        MaxNodes = self.params.get("MaxNodes","MaxNodes=(\S+)')")
+        MaxMemPerNode = self.params.get("MaxMemPerNode","MaxMemPerNode=(\S+)')")
+        DefaultTime = self.params.get("DefaultTime","DefaultTime=(\S+)')")
+        MaxTime = self.params.get("MaxTime","MaxTime=(\S+)')")
+        State = self.params.get("State","State=(\S+)')")
+        ReservationName = self.params.get("ReservationName","ReservationName=(\S+)')")
+        PartitionName = self.params.get("PartitionName","PartitionName=(\S+)')")
+        NodCnt = self.params.get("NodCnt","NodCnt=(\S+)')")
+        State = self.params.get("State","State=(\S+)')")
+
         cmd = scontrol + " show partition"
         self.debug("running "+cmd)
         status, output = subprocess.getstatusoutput(cmd)
@@ -389,31 +450,31 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
     def _getShare(self, partition_str):
         share = computing_share.ComputingShare()
 
-        m = re.search("PartitionName=(\S+)",partition_str)
+        m = re.search("PartitionName",partition_str)
         if m is not None:
             share.Name = m.group(1)
             share.MappingQueue = share.Name
-        m = re.search("MaxNodes=(\S+)",partition_str)
+        m = re.search("MaxNodes",partition_str)
         if m is not None and m.group(1) != "UNLIMITED":
             share.MaxSlotsPerJob = int(m.group(1))
-        m = re.search("MaxMemPerNode=(\S+)",partition_str)
+        m = re.search("MaxMemPerNode",partition_str)
         if m is not None and m.group(1) != "UNLIMITED":
             share.MaxMainMemory = int(m.group(1))
-        m = re.search("DefaultTime=(\S+)",partition_str)
+        m = re.search("DefaultTime",partition_str)
         if m is not None and m.group(1) != "NONE":
             share.DefaultWallTime = _getDuration(m.group(1))
-        m = re.search("MaxTime=(\S+)",partition_str)
+        m = re.search("MaxTime",partition_str)
         if m is not None and m.group(1) != "UNLIMITED":
             share.MaxWallTime = _getDuration(m.group(1))
 
-        m = re.search("PreemptMode=(\S+)",partition_str)
+        m = re.search("PreemptMode",partition_str)
         if m is not None:
             if m.group(1) == "OFF":
                 self.Preemption = False
             else:
                 self.Preemption = True
 
-        m = re.search("State=(\S+)",partition_str)
+        m = re.search("State",partition_str)
         if m is not None:
             if m.group(1) == "UP":
                 share.ServingState = "production"
@@ -426,24 +487,24 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
         share = computing_share.ComputingShare()
         share.Extension["Reservation"] = True
 
-        m = re.search("ReservationName=(\S+)",rsrv_str)
+        m = re.search(ReservationName,rsrv_str)
         if m is None:
             raise StepError("didn't find 'ReservationName'")
         share.Name = m.group(1)
         share.ResourceID = ["urn:glue2:ExecutionEnvironment:%s.%s" % (share.Name,self.resource_name)]
-        m = re.search("PartitionName=(\S+)",rsrv_str)
+        m = re.search(PartitionName,rsrv_str)
         if m is not None:                                                                                              
             share.MappingQueue = m.group(1)
-        m = re.search("NodCnt=(\S+)",rsrv_str)
+        m = re.search(NodCnt,rsrv_str)
         if m is not None:
             share.MaxSlotsPerJob = int(m.group(1))
 
-        m = re.search("State=(\S+)",rsrv_str)
+        m = re.search(State,rsrv_str)
         if m is not None:
             if m.group(1) == "ACTIVE":
                 share.ServingState = "production"
             elif m.group(1) == "INACTIVE":
-                m = re.search("StartTime=(\S+)",rsrv_str)
+                m = re.search(StartTime,rsrv_str)
                 if m is not None:
                     start_time = _getDateTime(m.group(1))
                     now = datetime.datetime.now(ipf.dt.localtzoffset())
@@ -460,6 +521,15 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         execution_environment.ExecutionEnvironmentsStep.__init__(self)
 
         self._acceptParameter("scontrol","the path to the SLURM scontrol program (default 'scontrol')",False)
+        self._acceptParameter("PartitionName","Regular Expression to parse PartitionName (default 'PartitionName=(\S+)')",False)
+        self._acceptParameter("TotalNodes","Regular Expression to parse TotalNodes (default 'TotalNodes=(\S+)')",False)
+        self._acceptParameter("sNodes","Regular Expression to parse sNodes (default '\sNodes=(\S+)')",False)
+        self._acceptParameter("ReservationName","Regular Expression to parse ReservationName (default 'ReservationName=(\S+)')",False)
+        self._acceptParameter("StartTime","Regular Expression to parse StartTime (default 'StartTime=(\S+)')",False)
+        self._acceptParameter("EndTime","Regular Expression to parse EndTime (default 'EndTime=(\S+)')",False)
+        self._acceptParameter("NodeCnt","Regular Expression to parse NodeCnt (default 'NodeCnt=(\S+)')",False)
+        self._acceptParameter("Nodes","Regular Expression to parse Nodes (default 'Nodes=(\S+)')",False)
+        self._acceptParameter("State","Regular Expression to parse State (default 'State=(\S+)')",False)
 
     def _run(self):
         # get info on the nodes
@@ -533,24 +603,30 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
 
     def _getNode(self, node_str):
         node = execution_environment.ExecutionEnvironment()
+        NodeName = self.params.get("NodeName","NodeName=(\S+)")
+        Sockets = self.params.get("Sockets","Sockets=(\S+)")
+        CPUTot = self.params.get("CPUTot","CPUTot=(\S+)")
+        RealMemory = self.params.get("RealMemory","RealMemory=(\S+)")
+        Partitions = self.params.get("Partitions","Partitions=(\S+)")
+        State = self.params.get("State","State=(\S+)")
 
         # ID set by ExecutionEnvironment
-        m = re.search("NodeName=(\S+)",node_str)
+        m = re.search(NodeName,node_str)
         if m is not None:
             node.Name = m.group(1)
-        m = re.search("Sockets=(\S+)",node_str)
+        m = re.search(Sockets,node_str)
         if m is not None:
             node.PhysicalCPUs = int(m.group(1))
-        m = re.search("CPUTot=(\S+)",node_str)
+        m = re.search(CPUTot,node_str)
         if m is not None:
             node.LogicalCPUs = int(m.group(1))
-        m = re.search("RealMemory=(\S+)",node_str)  # MB
+        m = re.search(RealMemory,node_str)  # MB
         if m is not None:
             node.MainMemorySize = int(m.group(1))
-        m = re.search("Partitions=(\S+)",node_str)
+        m = re.search(Partitions,node_str)
         if m is not None:
             node.Partitions = m.group(1)
-        m = re.search("State=(\S+)",node_str)
+        m = re.search(State,node_str)
         if m is not None:
             node.TotalInstances = 1
             state = m.group(1)
@@ -582,17 +658,20 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
     # not being used right now
     def _getPartition(self, partition_str):
         partition = execution_environment.ExecutionEnvironment()
+        PartitionName = self.params.get("PartitionName","PartitionName=(\S+)")
+        TotalNodes = self.params.get("TotalNodes","TotalNodes=(\S+)")
+        sNodes = self.params.get("sNodes","\sNodes=(\S+)")
 
         # ID set by ExecutionEnvironment
-        m = re.search("PartitionName=(\S+)",partition_str)
+        m = re.search(PartitionName,partition_str)
         if m is not None:
             partition.Name = m.group(1)
 
-        m = re.search("TotalNodes=(\S+)",partition_str)
+        m = re.search(TotalNodes,partition_str)
         if m is not None and m.group(1) != "(null)":
             partition.TotalInstances = int(m.group(1))
 
-        m = re.search("\sNodes=(\S+)",partition_str)
+        m = re.search(sNodes,partition_str)
         if m is not None and m.group(1) != "(null)":
             partition.Extension["Nodes"] = self._expandNames(m.group(1))
 
@@ -600,32 +679,39 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
 
     def _getReservation(self, rsrv_str):
         rsrv = execution_environment.ExecutionEnvironment()
+        ReservationName = self.params.get("ReservationName","ReservationName=(\S+)")
+        StartTime = self.params.get("StartTime","StartTime=(\S+)")
+        EndTime = self.params.get("EndTime","EndTime=(\S+)")
+        NodeCnt = self.params.get("NodeCnt","NodeCnt=(\S+)")
+        Nodes = self.params.get("Nodes","Nodes=(\S+)")
+        State = self.params.get("State","State=(\S+)")
+
         rsrv.Extension["Reservation"] = True
 
         # ID set by ExecutionEnvironment
-        m = re.search("ReservationName=(\S+)",rsrv_str)
+        m = re.search(ReservationName,rsrv_str)
         if m is None:
             raise StepError("didn't find 'ReservationName'")
         rsrv.Name = m.group(1)
         rsrv.ShareID = ["urn:glue2:ComputingShare:%s.%s" % (rsrv.Name,self.resource_name)]
 
-        m = re.search("StartTime=(\S+)",rsrv_str)
+        m = re.search(StartTime,rsrv_str)
         if m is not None:
             rsrv.Extension["StartTime"] = _getDateTime(m.group(1))
-        m = re.search("EndTime=(\S+)",rsrv_str)
+        m = re.search(EndTime,rsrv_str)
         if m is not None:
             rsrv.Extension["EndTime"] = _getDateTime(m.group(1))
 
-        m = re.search("NodeCnt=(\S+)",rsrv_str)
+        m = re.search(NodeCnt,rsrv_str)
         if m is not None:
             rsrv.Extension["RequestedInstances"] = int(m.group(1))
 
-        m = re.search("Nodes=(\S+)",rsrv_str)
+        m = re.search(Nodes,rsrv_str)
         if m is not None:
             if m.group(1) != "(null)":
                 rsrv.Extension["Nodes"] = self._expandNames(m.group(1))
 
-        m = re.search("State=(\S+)",rsrv_str)
+        m = re.search(State,rsrv_str)
         if m is not None:
             if m.group(1) != "ACTIVE":
                 if "Nodes" in rsrv.Extension:

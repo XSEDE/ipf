@@ -159,6 +159,6 @@ class ComputingShareAcceleratorInfoOgfJson(EntityOgfJson):
         if self.data.FreeAcceleratorSlots is not None:
             return doc
         else:
-            return
+            return {}
 
 #######################################################################################################################
