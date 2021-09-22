@@ -82,7 +82,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
         condor_q = self.params.get("condor_q", "condor_q")
 
         cmd = condor_q + " -long"
-        logger.debug("running "+cmd)
+        self.debug("running "+cmd)
         status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("condor_q failed: "+output+"\n")
@@ -231,7 +231,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         condor_status = self.params.get("condor_status", "condor_status")
 
         cmd = condor_status + " -long"
-        info.debug("running "+cmd)
+        self.info("running "+cmd)
         status, output = subprocess.getstatusoutput(cmd)
         if status != 0:
             raise StepError("condor_status failed: "+output+"\n")
@@ -275,7 +275,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
                     host.UsedInstances = 1
                     host.UnavailableInstances = 0
                 else:
-                    logger.warn("unknown state: "+state)
+                    self.warning("unknown state: "+state)
                     host.UsedInstances = 0
                     host.UnavailableInstances = 1
                 host.TotalInstances = 1
@@ -349,7 +349,8 @@ class ComputingShareAcceleratorInfoStep(computing_share_accel_info.ComputingShar
             self)
 
     def _run(self):
-        share_accel_info = computing_share_accel_info.ComputingShareAcceleratorInfo()
-        return share_accel_info
+       # share_accel_info = computing_share_accel_info.ComputingShareAcceleratorInfo()
+       # return share_accel_info
+        return 
 
 #######################################################################################################################
