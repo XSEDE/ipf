@@ -79,6 +79,7 @@ class LModApplicationsStep(application.ApplicationsStep):
         env = application.ApplicationEnvironment()
         env.AppName = name
         env.AppVersion = version
+        publishflag = True
 
         try:
             file = open(path)
@@ -110,12 +111,23 @@ class LModApplicationsStep(application.ApplicationsStep):
                 map(str.strip, m.group(1).split(",")))
         else:
             self.debug("no Keywords in "+path)
+        m = re.search("\"IPF_FLAGS:([^\"]+)\"", text)
+        if m is not None:
+            #Currently only supporting NOPUBLISH
+            flagslist = list(
+                map(str.strip, m.group(1).split(",")))
+            if "NOPUBLISH" in flagslist:
+                publishflag = False
+                self.debug("NOPUBLISH set for "+path)
+     
+                
 
         handle = application.ApplicationHandle()
         handle.Type = ApplicationHandle.MODULE
         handle.Value = name+"/"+version
 
-        apps.add(env, [handle])
+        if publishflag == True:
+            apps.add(env, [handle])
 
 #######################################################################################################################
 
