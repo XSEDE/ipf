@@ -261,6 +261,7 @@ class AmqpStep(PublishStep):
                                           ssl=ssl,
                                           heartbeat=60,
                                           confirm_publish=True)
+        self.connection.connect()
         self.channel = self.connection.channel()
 
     def _selectService(self):
