@@ -1,0 +1,29 @@
+{
+  "name": "generic_json_print",
+  "timeout": 5,
+  "description": "This workflow publishes a generic json file to stdout",
+  "steps": [
+    { "name": "ipf.sysinfo.ResourceNameStep",
+      "params": {
+        "resource_name": "<RESOURCE_ID>"
+      }
+    },
+    { "name": "ipf.fileread.ReadFileStep",
+      "params": {
+        "path": "<FULL_QUALIFIED_JSON_FILE_PATH>",
+        "format": "json"
+      }
+    },
+    { "name": "ipf.publish.PrintStep",
+      "params": {
+        "publish": ["ipf.fileread.FileContentsID"]
+      }
+    },
+    {
+      "name": "ipf.publish.PrintStep",
+      "params": {
+        "publish": ["ipf.fileread.FileContentsRaw"]
+      }
+    }
+  ]
+}
