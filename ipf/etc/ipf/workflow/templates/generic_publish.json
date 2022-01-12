@@ -1,0 +1,37 @@
+{
+  "name": "generic_json_publish",
+  "timeout": 5,
+  "description": "This workflow publishes a generic json file to Amqp",
+  "steps": [
+    { "name": "ipf.sysinfo.ResourceNameStep",
+      "params": {
+        "resource_name": "<RESOURCE_ID>"
+      }
+    },
+    {
+      "name": "ipf.fileread.ReadFileStep",
+      "params": {
+        "path": "<FULL_QUALIFIED_JSON_FILE_PATH>",
+        "format": "json"
+      }
+    },
+    {
+      "description": "Publish document to XSEDE",
+      "name": "ipf.publish.AmqpStep",
+      "params": {
+        "publish": ["ipf.fileread.FileContentsRaw"],
+        "vhost": "xsede",
+        "exchange": "<EXCHANGE>",
+        "username": "<USERNAME>",
+        "password": "<PASSWORD>",
+        "services": [
+          "infopub.xsede.org",
+          "infopub-alt.xsede.org"
+        ],
+        "ssl_options": {
+          "ca_certs": "xsede/ca_certs.pem"
+        }
+      }
+    }
+  ]
+}

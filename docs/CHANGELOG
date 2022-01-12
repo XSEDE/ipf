@@ -1,3 +1,6 @@
+for 1.7-1
+* fileread.py reads and parses generic json files, sample etc/ipf/workflow/templates/{generic_print,generic_publish}.json
+
 from 1.4-2 to 1.4.3
 * fixed publishing of IPF information, formatted as a PublisherInfo glue2 entity (not defined by glue2 spec), and added it to the modules, compute, activities and services workflows
 * fixed parsing of GPU resources on Bridges from scontrol output
