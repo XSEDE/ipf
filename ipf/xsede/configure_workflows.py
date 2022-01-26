@@ -27,101 +27,230 @@ import urllib.error
 import urllib.parse
 import time
 import sysconfig
+import argparse
 
 #######################################################################################################################
 
+def parseargs():
+    # Parse arguments
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--resource_name', \
+                        help='Set the resource name')
+    parser.add_argument('--organization_name', \
+                        help='Set the organization name')
+    parser.add_argument('--city', \
+                        help='Set the city')
+    parser.add_argument('--country', \
+                        help='Set the country')
+    parser.add_argument('--latitude', \
+                        help='Set the latitude')
+    parser.add_argument('--longitude', \
+                        help='Set the longitude')
+    parser.add_argument('--rpm', action='store_true', \
+                        help='IPF was installed from RPM')
+    parser.add_argument('--pip', action='store_true', \
+                        help='IPF was installed using pip')
+    parser.add_argument('--base_dir', \
+                        help='Set the base directory')
+    parser.add_argument('--scheduler', \
+                        help='set the scheduler name')
+    parser.add_argument('-scheduler_params', action='store', \
+                        help='comma delimited key:value pairs for parameters for your scheduler')
+    parser.add_argument('--amqp_username', \
+                        #action='store_const',const='username', dest='mode',\
+                        help='Username for publishing to XSEDE AMQP. Not needed if using certificate')
+    parser.add_argument('--amqp_certificate', \
+                        #action='store_const',const='certificate', dest='mode',\
+                        help='Location of certificate for publishing to XSEDE AMQP. Not needed if using username')
+    parser.add_argument('--amqp_password', \
+                        help='Password for publishing to XSEDE AMQP. Not needed if using certificate')
+    parser.add_argument('--amqp_certificate_key', \
+                        help='Location of certificate key for publishing to XSEDE AMQP. Not needed if using username')
+    parser.add_argument('--modulepath', action='store_true', \
+                        help='MODULEPATH for software publishing workflow')
+    parser.add_argument('--servicepath', action='store_true', \
+                        help='SERVICEPATH for service publishing workflow')
+    parser.add_argument('--workflows', \
+                        help='Comma delimited list of workflows to configure')
+    parser.add_argument('--software', action='store_true', \
+                        help='Configure the software publishing service')
+    parser.add_argument('--services', action='store_true', \
+                        help='Configure the services publishing service')
+    parser.add_argument('--e', action='store_true', \
+                        help='Configure the software publishing service')
+    parser.add_argument('--workflowtemplate', \
+                        help='Path to configured workflow to use as template for new workflow')
+    parser.add_argument('--publish_to_xsede', action='store_true', \
+                        help='Configure the services to publish to XSEDE')
+    parser.add_argument('--compute_interval', \
+                        help='Interval in seconds for the compute workflow to wait before rerunning')
+    parser.add_argument('--modules', \
+                        help='Any modules that need to be loaded in the init scripts for workflows')
+    parser.add_argument('--environment', \
+                        help='Any environment variables that needs to be loaded in the init scripts for workflows, such as \n * batch scheduler commands that need to be in PATH \n * scheduler-related environment variables may need to be set')
+    parser.add_argument('--pbs_log_dir', \
+                        help='The full path PBS log dir')
+    parser.add_argument('--sge_reporting_log', \
+                        help='The full path (including filename) for your SGE reporting log')
+    parser.add_argument('--slurmctl_log', \
+                        help='The full path (including filename) for your slurmctl.log file')
+
+    return parser.parse_args()
+
 
 def configure():
+    args = parseargs()
     print()
     print("This script asks you for information and configures your IPF installation.")
     print("  This script backs up your existing configuration, by renaming the existing configuration files with .backup-TIMESTAMP")
 
-    resource_name = getResourceName()
-    sched_name = getSchedulerName()
-    compute_json = getComputeJsonForScheduler(sched_name)
-    setResourceName(resource_name, compute_json)
-    setLocation(compute_json)
-    updateFilePublishPaths(resource_name, compute_json)
-    publish_to_xsede = addXsedeAmqpToCompute(compute_json)
-    writeComputeWorkflow(resource_name, compute_json)
-    writePeriodicComputeWorkflow(resource_name)
+    template_json = getTemplateJson(args.workflowtemplate)
 
-    print()
-    print("You may need to modify the default environment in your init scripts so that the information gathering works correctly. For example:")
-    print("  * batch scheduler commands need to be in PATH")
-    print("  * scheduler-related environment variables may need to be set")
-    module_names = getModules()
-    env_vars = getEnvironmentVariables()
-    writeComputeInit(resource_name, module_names, env_vars)
+    if args.resource_name:
+        resource_name = args.resource_name
+    else:
+        resource_name = getResourceName(template_json)
 
-    answer = options("Do you want to publish job updates? Your scheduler log files must be readable. Condor users should answer 'no'.",
-                     ["yes", "no"], "yes")
-    if answer == "yes":
-        activity_json = getActivityJsonForScheduler(sched_name)
-        setResourceName(resource_name, activity_json)
-        updateActivityLogFile(resource_name, activity_json)
-        updateFilePublishPaths(resource_name, activity_json)
-        if (publish_to_xsede):
-            addXsedeAmqpToActivity(activity_json, compute_json)
-        writeActivityWorkflow(resource_name, activity_json)
-        writeActivityInit(resource_name, module_names, env_vars)
+    setBaseDir(args)
+    
+    for workflow in args.workflows.split(","):
+        print("workflow is %s" % workflow)
+        if workflow == "compute":
+           configure_compute_workflow(resource_name,args,template_json)
+        if workflow == "activity":
+           configure_activity_workflow(resource_name,args,template_json)
+        if workflow == "extmodules":
+           configure_extmodules_workflow(resource_name,args,template_json)
+        if workflow == "services":
+           configure_services_workflow(resource_name,args,template_json)
+        if workflow == "ipfinfo":
+           configure_ipfinfo_workflow(resource_name,args,template_json)
 
-    #modules_type = getModulesType()
-    # if modules_type == "modules":
-    #    modules_json = getModulesJson()
-    # elif modules_type == "lmod":
-    #    modules_json = getLModJson()
-    extmodules_json = getExtModulesJson()
-    setSupportContact(extmodules_json)
-    services_json = getAbstractServicesJson()
-    # setResourceName(resource_name,modules_json)
-    setResourceName(resource_name, extmodules_json)
-    setResourceName(resource_name, services_json)
-    # updateFilePublishPaths(resource_name,modules_json)
-    updateFilePublishPaths(resource_name, extmodules_json)
-    updateFilePublishPaths(resource_name, services_json)
-    # addXsedeAmqpToModules(modules_json,compute_json)
-    if (publish_to_xsede):
-        addXsedeAmqpToExtModules(extmodules_json, compute_json)
-        addXsedeAmqpToAbstractServices(services_json, compute_json)
-    # writeModulesWorkflow(resource_name,modules_json)
-    writeExtModulesWorkflow(resource_name, extmodules_json)
-    writeAbstractServicesWorkflow(resource_name, services_json)
-    # writePeriodicModulesWorkflow(resource_name)
-    writePeriodicExtModulesWorkflow(resource_name)
-    writePeriodicAbstractServicesWorkflow(resource_name)
-    # writeModulesInit(resource_name,module_names,env_vars)
-    writeExtModulesInit(resource_name, module_names, env_vars)
-    writeAbstractServicesInit(resource_name, module_names, env_vars)
-    ipfinfo_json = getIPFInfoJson()
-    if (publish_to_xsede):
-        addXsedeAmqpToIPFInfo(ipfinfo_json, compute_json)
-    writeIPFInfoWorkflow(ipfinfo_json)
-    writeIPFInfoInit(resource_name, module_names, env_vars)
+    return
+
 
 #######################################################################################################################
 
 # need to test this with an xdresourceid program
 
-
-def getResourceName():
-    try:
-        process = subprocess.Popen(["xdresourceid"], stdout=subprocess.PIPE)
-        out, err = process.communicate()
-    except Exception as e:
-        print("Failed to use xdresourceid to get resource name: %s" % e)
-        xdresid_name = None
+def configure_compute_workflow(resource_name,args,template_json):
+    if args.scheduler:
+        sched_name = args.scheduler
     else:
-        xdresid_name = out.rstrip().encode('utf-8')
-    resource_name = question("Enter the XSEDE resource name", xdresid_name)
+        sched_name = getSchedulerName()
+    #if template_json is a compute workflow, then compute_json should be template_json
+    compute_json = getComputeJsonForScheduler(sched_name,template_json)
+    setResourceName(resource_name, compute_json)
+    setLocation(compute_json,args,template_json)
+    updateFilePublishPaths(resource_name, compute_json)
+    if (args.publish_to_xsede):
+        addXsedeAmqpToWorkflow("compute",compute_json, template_json, args)
+    writeComputeWorkflow(resource_name, compute_json)
+    writePeriodicComputeWorkflow(resource_name,args)
+
+    module_names = getModules(args)
+    env_vars = getEnvironmentVariables(args)
+    writeComputeInit(resource_name, module_names, env_vars)
+
+def configure_activity_workflow(resource_name,args,template_json):
+    if args.scheduler:
+        sched_name = args.scheduler
+    else:
+        sched_name = getSchedulerName()
+
+    activity_json = getActivityJsonForScheduler(sched_name,template_json)
+    setResourceName(resource_name, activity_json)
+    updateActivityLogFile(resource_name, activity_json, args)
+    updateFilePublishPaths(resource_name, activity_json)
+    if (args.publish_to_xsede):
+        addXsedeAmqpToWorkflow("activity",activity_json, template_json, args)
+    writeActivityWorkflow(resource_name, activity_json)
+
+    module_names = getModules(args)
+    env_vars = getEnvironmentVariables(args)
+    writeActivityInit(resource_name, module_names, env_vars)
+
+
+def configure_extmodules_workflow(resource_name,args,template_json):
+    extmodules_json = getExtModulesJson()
+    setSupportContact(extmodules_json,args)
+    setResourceName(resource_name, extmodules_json)
+    updateFilePublishPaths(resource_name, extmodules_json)
+    if (args.publish_to_xsede):
+        addXsedeAmqpToWorkflow("extmodules",activity_json, template_json, args)
+    writeExtModulesWorkflow(resource_name, extmodules_json)
+    writePeriodicExtModulesWorkflow(resource_name)
+
+    module_names = getModules(args)
+    env_vars = getEnvironmentVariables(args)
+    writeExtModulesInit(resource_name, module_names, env_vars)
+
+def configure_services_workflow(resource_name,args,template_json):
+    services_json = getAbstractServicesJson()
+    setResourceName(resource_name, services_json)
+    updateFilePublishPaths(resource_name, services_json)
+    if (args.publish_to_xsede):
+        addXsedeAmqpToWorkflow("services",activity_json, template_json, args)
+    writeAbstractServicesWorkflow(resource_name, services_json)
+    writePeriodicAbstractServicesWorkflow(resource_name)
+
+
+    module_names = getModules(args)
+    env_vars = getEnvironmentVariables(args)
+    writeAbstractServicesInit(resource_name, module_names, env_vars)
+
+
+def configure_ipfinfo_workflow(resource_name,args,template_json):
+    ipfinfo_json = getIPFInfoJson()
+    if (args.publish_to_xsede):
+        addXsedeAmqpToWorkflow("ipfinfo",activity_json, template_json, args)
+    writeIPFInfoWorkflow(ipfinfo_json)
+
+    module_names = getModules(args)
+    env_vars = getEnvironmentVariables(args)
+    writeIPFInfoInit(resource_name, module_names, env_vars)
+
+#######################################################################################################################
+def getResourceName(template_json):
+    if template_json is not None:
+        for step_json in template_json["steps"]:
+            if step_json["name"] == "ipf.sysinfo.ResourceNameStep":
+                if "params" in step_json:
+                    resource_name = step_json["params"]["resource_name"]
+            return resource_name
+    else:
+        resource_name = question("Enter the XSEDE resource name", xdresid_name)
     return resource_name
 
 
-def getComputeJsonForScheduler(sched_name):
-    return readWorkflowFile(os.path.join(getGlueWorkflowDir(), "templates", sched_name+"_compute.json"))
+def getTemplateJson(template_name):
+    if template_name:
+        if not testReadFile(template_name):
+            raise Exception("No template file found at %s" % template_name)
+        else:
+            return readWorkflowFile(template_name)
+    else:
+        return None
+
+def getComputeJsonForScheduler(sched_name,template_json):
+    if template_json is not None:
+        try:
+            template_json["name"].index("_compute")
+        except ValueError:
+            pass
+        else:
+            return template_json
+    return readWorkflowFile(os.path.join(getWorkflowTemplateGlueDir(), sched_name+"_compute.json"))
 
 
-def getActivityJsonForScheduler(sched_name):
+def getActivityJsonForScheduler(sched_name,template_json):
+    if template_json is not None:
+        try:
+            template_json["name"].index("_activity")
+        except ValueError:
+            pass
+        else:
+            return template_json
     parts = sched_name.split("_")
     if len(parts) == 1:
         sched_name = sched_name
@@ -130,41 +259,54 @@ def getActivityJsonForScheduler(sched_name):
     else:
         print("Warning: expected one or two parts in scheduler name - may not find _activity workflow file")
         sched_name = sched_name
-    return readWorkflowFile(os.path.join(getGlueWorkflowDir(), "templates", sched_name+"_activity.json"))
+    return readWorkflowFile(os.path.join(getWorkflowTemplateGlueDir(), sched_name+"_activity.json"))
 
 
-def getModulesJson():
-    return readWorkflowFile(os.path.join(getGlueWorkflowDir(), "templates", "modules.json"))
+def getExtModulesJson(template_json):
+    if template_json is not None:
+        try:
+            template_json["name"].index("_extmodules")
+        except ValueError:
+            pass
+        else:
+            return template_json
+    return readWorkflowFile(os.path.join(getWorkflowTemplateGlueDir(), "extmodules.json"))
 
 
-def getExtModulesJson():
-    return readWorkflowFile(os.path.join(getGlueWorkflowDir(), "templates", "extmodules.json"))
-
-
-def setSupportContact(extmodules_json):
+def setSupportContact(extmodules_json,args):
+    if args.support_contact:
+        support_contact = args.scheduler
+    else:
+        support_contact = None
     for step_json in extmodules_json["steps"]:
         if step_json["name"] == "ipf.glue2.modules.ExtendedModApplicationsStep":
-            step_json["params"] = {}
-            step_json["params"]["default_support_contact"] = getSupportContact()
+            if support_contact is not None:
+                if step_json["params"]:
+                    step_json["params"]["default_support_contact"] = support_contact
+                else:
+                    step_json["params"]={}
+                    step_json["params"]["default_support_contact"] = getSupportContact()
             return
     raise Exception("didn't find an ExtendedModApplicationsStep to modify")
 
 
-def getAbstractServicesJson():
-    return readWorkflowFile(os.path.join(getGlueWorkflowDir(), "templates", "abstractservice.json"))
+def getAbstractServicesJson(template_json):
+    if template_json is not None:
+        if _services in template_json["Name"]:
+            return template_json
+    return readWorkflowFile(os.path.join(getWorkflowTemplateGlueDir(), "abstractservice.json"))
 
 
-def getLModJson():
-    return readWorkflowFile(os.path.join(getGlueWorkflowDir(), "templates", "lmod.json"))
-
-
-def getIPFInfoJson():
-    return readWorkflowFile(os.path.join(getGlueWorkflowDir(), "templates", "ipfinfo_publish.json"))
+def getIPFInfoJson(template_json):
+    if template_json is not None:
+        if _ipfinfo in template_json["Name"]:
+            return template_json
+    return readWorkflowFile(os.path.join(getWorkflowTemplateGlueDir(), "templates", "ipfinfo_publish.json"))
 
 
 def getSchedulerName():
     names = []
-    sched_dir = os.path.join(getGlueWorkflowDir(), "templates")
+    sched_dir = getWorkflowTemplateGlueDir()
     for file_name in os.listdir(sched_dir):
         if file_name.endswith("_compute.json"):
             parts = file_name.split("_")
@@ -189,66 +331,40 @@ def setResourceName(resource_name, workflow_json):
     raise Exception("didn't find a ResourceNameStep to modify")
 
 
-def setLocation(compute_json):
+def setLocation(compute_json,args,template_json):
     for step_json in compute_json["steps"]:
         if step_json["name"] == "ipf.glue2.location.LocationStep":
-            updateLocationStep(step_json["params"]["location"])
+            updateLocationStep(step_json["params"]["location"],args)
             return
     raise Exception("didn't find a LocationStep to modify")
 
 
-def updateLocationStep(params):
-    params["Name"] = question(
-        "Enter your organization", params.get("Name", None))
-#    if params.get("Place",None) == None:
-#        updateFromFreeGeoIp(params)
-    params["Place"] = question("Enter your city", params.get("Place", None))
-    params["Country"] = question(
-        "Enter your country", params.get("Country", None))
-    params["Latitude"] = question(
-        "Enter your latitude", params.get("Latitude", None))
-    params["Longitude"] = question(
-        "Enter your longitude", params.get("Longitude", None))
+def updateLocationStep(params,args):
+    if args.organization_name:
+        params["Name"] = args.organization_name
+    elif not params["Name"]:
+        params["Name"] = question(
+            "Enter your organization", params.get("Name", None))
+    if args.city:
+        params["Place"] = args.city
+    elif not params["Place"]:
+        params["Place"] = question("Enter your city", params.get("Place", None))
+    if args.country:
+        params["Country"] = args.country
+    elif not params["Country"]:
+        params["Country"] = question(
+            "Enter your country", params.get("Country", None))
+    if args.latitude:
+        params["Latitude"] = args.latitude
+    elif not params["Latitude"]:
+        params["Latitude"] = question(
+            "Enter your latitude", params.get("Latitude", None))
+    if args.longitude:
+        params["Longitude"] = args.longitude
+    elif not params["Longitude"]:
+        params["Longitude"] = question(
+            "Enter your longitude", params.get("Longitude", None))
 
-
-def updateFromFreeGeoIp(params):
-    text = getFreeGeoIp()
-    if text is None:
-        text = getFreeGeoIp(True)
-    if text is None:
-        return None
-    json_doc = json.loads(text)
-
-    params["Place"] = json_doc["city"]
-    params["Country"] = json_doc["country_code"]
-    params["Latitude"] = float(json_doc["latitude"])
-    params["Longitude"] = float(json_doc["longitude"])
-
-
-def getFreeGeoIp(print_message=False):
-    print("Querying for physical location...")
-    thread = FreeGeoIp()
-    thread.start()
-    thread.join(60)
-    if thread.isAlive():
-        if print_message:
-            print("Warning: Query to http:/freegeoip.net didn't complete")
-            print(
-                "         Enter location information manually or re-run this configuration program")
-        return None
-    return thread.output
-
-
-class FreeGeoIp(threading.Thread):
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self.daemon = True
-        self.output = None
-
-    def run(self):
-        host_name = socket.getfqdn()
-        self.output = urllib.request.urlopen(
-            "http://freegeoip.net/json/"+host_name).read()
 
 
 def updateFilePublishPaths(resource_name, workflow_json):
@@ -258,42 +374,78 @@ def updateFilePublishPaths(resource_name, workflow_json):
             step_json["params"]["path"] = res_name + \
                 "_" + step_json["params"]["path"]
 
-
-def addXsedeAmqpToCompute(compute_json, ask=True):
-    answer = options("Do you wish to publish to the XSEDE AMQP service?", [
-                     "yes", "no"], "yes")
-    if answer == "no":
+def addXsedeAmqpToWorkflow(workflow_name,workflow_json, template_json, args):
+    if not args.publish_to_xsede:
         return False
-    answer = options("Will you authenticate using an X.509 certificate and key or a username and password?",
-                     ["X.509", "username/password"], "X.509")
-    if answer == "X.509":
-        cert_path = question("Where is your certificate?",
-                             "/etc/grid-security/xdinfo-hostcert.pem")
-        while not testReadFile(cert_path):
-            cert_path = question("Where is your certificate?",
-                                 "/etc/grid-security/xdinfo-hostcert.pem")
-        key_path = question("Where is your key?",
-                            "/etc/grid-security/xdinfo-hostkey.pem")
-        while not testReadFile(key_path):
-            key_path = question("Where is your key?",
-                                "/etc/grid-security/xdinfo-hostkey.pem")
+    if workflow_name == "compute":
+        publish_step = "ipf.glue2.compute.PublicOgfJson"
+        exchange = "glue2.compute"
+        description = "Publish compute resource description to XSEDE"
+    elif workflow_name == "activity":
+        publish_step = "ipf.glue2.computing_activity.ComputingActivityOgfJson"
+        exchange = "glue2.computing_activity"
+        description = "Publish job updates to XSEDE"
+    elif workflow_name == "software":
+        publish_step = "ipf.glue2.application.ApplicationsOgfJson"
+        exchange = "glue2.applications"
+        description = "Publish modules to XSEDE"
+    elif workflow_name == "services":
+        publish_step = "ipf.glue2.abstractservice.ASOgfJson"
+        exchange = "glue2.compute"
+        description = "Publish Services to XSEDE"
+    elif workflow_name == "ipfinfo":
+        publish_step = "ipf.ipfinfo.IPFInformationJson"
+        exchange = "glue2.compute"
+        description = "Publish IPFInfo to XSEDE"
+    if args.amqp_certificate:
+        cert_path = args.amqp_certificate
+        if not testReadFile(cert_path):
+            raise Exception("No certificate found at %s" % cert_path)
+        
+        if args.amqp_certificate_key:
+            key_path = args.amqp_certificate_key
+            if not testReadFile(key_path):
+                raise Exception("No key found at %s" % key_path)
         username = None
         password = None
-    else:
+    elif args.amqp_username:
+        username = args.amqp_username
+        password = args.amqp_password
         cert_path = None
         key_path = None
-        username = question("What is your username?")
-        password = question("What is your password?")
-
+    elif template_json is not None:
+        try:
+            template_json["name"].index("_"+workflow_name)
+        except ValueError:
+            #Template is not for workflow--copy section in
+            for step in template_json["steps"]:
+                #compute workflow has two publish steps, copy both
+                if step["name"] == "ipf.publish.AmqpStep" and "xsede.org" in step["params"]["services"][0]:
+                    if workflow_name == "compute" and step["description"] == "Publish description of current jobs to XSEDE":
+                        publish_description = step["description"]
+                    else:
+                        publish_description = description
+                    amqp_step = copy.deepcopy(step)
+                    amqp_step["description"] = publish_description
+                    amqp_step["params"]["publish"] = [publish_step]
+                    amqp_step["params"]["exchange"] = exchange
+                    workflow_json["steps"].append(amqp_step)
+            return True
+        else:
+            #Template is for workflow--already has the section, just return
+            return True
+    else: 
+        raise Exception("Certificate/key or username/password must be specified")
+    #No template json to copy
     amqp_step = {}
     amqp_step["name"] = "ipf.publish.AmqpStep"
-    amqp_step["description"] = "Publish compute resource description to XSEDE"
+    amqp_step["description"] = description 
     amqp_step["params"] = {}
-    amqp_step["params"]["publish"] = ["ipf.glue2.compute.PublicOgfJson"]
+    amqp_step["params"]["publish"] = [publish_step]
     amqp_step["params"]["services"] = [
         "infopub.xsede.org", "infopub-alt.xsede.org"]
     amqp_step["params"]["vhost"] = "xsede"
-    amqp_step["params"]["exchange"] = "glue2.compute"
+    amqp_step["params"]["exchange"] = exchange
     amqp_step["params"]["ssl_options"] = {}
     amqp_step["params"]["ssl_options"]["ca_certs"] = "xsede/ca_certs.pem"
     if cert_path is not None:
@@ -302,17 +454,18 @@ def addXsedeAmqpToCompute(compute_json, ask=True):
     else:
         amqp_step["params"]["username"] = username
         amqp_step["params"]["password"] = password
-    compute_json["steps"].append(amqp_step)
-
-    amqp_step = copy.deepcopy(amqp_step)
-    amqp_step["description"] = "Publish description of current jobs to XSEDE"
-    amqp_step["params"]["publish"] = ["ipf.glue2.compute.PrivateOgfJson"]
-    amqp_step["params"]["exchange"] = "glue2.computing_activities"
-    compute_json["steps"].append(amqp_step)
+    workflow_json["steps"].append(amqp_step)
+    
+    if workflow_name == "compute":
+        amqp_step = copy.deepcopy(amqp_step)
+        amqp_step["description"] = "Publish description of current jobs to XSEDE"
+        amqp_step["params"]["publish"] = ["ipf.glue2.compute.PrivateOgfJson"]
+        amqp_step["params"]["exchange"] = "glue2.computing_activities"
+        workflow_json["steps"].append(amqp_step)
     return True
 
 
-def updateActivityLogFile(resource_name, activity_json):
+def updateActivityLogFile(resource_name, activity_json, args):
     res_name = resource_name.split(".")[0]
     for step in activity_json["steps"]:
         if not "ActivityUpdateStep" in step["name"]:
@@ -322,159 +475,76 @@ def updateActivityLogFile(resource_name, activity_json):
             if "PBS_HOME" not in os.environ:
                 print(
                     "  Warning: PBS_HOME environment variable not set - can't check for server_logs directory")
-                log_dir = None
+                default = None
             else:
-                log_dir = os.path.join(
+                default = os.path.join(
                     os.environ["PBS_HOME"], "spool", "server_logs")
                 testReadDirectory(log_dir)
-            log_dir = question("Where is your server_logs directory?", log_dir)
+            log_dir = args.pbs_log_dir or default
             if not testReadDirectory(log_dir):
-                return updateActivityLogFile(resource_name, activity_json)
+                raise Exception("Logfile %s not found. Please specify full path for your PBS log dir with the --pbs_log_dir option" % log_file)
             step["params"]["server_logs_dir"] = log_dir
         elif "sge" in step["name"]:
             if "SGE_ROOT" not in os.environ:
                 print(
                     "  Warning: SGE_ROOT environment variable not set - can't check for reporting file")
-                log_file = None
+                default = None
             else:
-                log_file = os.path.join(
+                default = os.path.join(
                     os.environ["SGE_ROOT"], "default", "common", "reporting")
                 testReadFile(log_file)
-            log_file = question("Where is your reporting file?", log_file)
+            log_dir = args.sge_reporting_log or default
             if not testReadFile(log_file):
-                return updateActivityLogFile(resource_name, activity_json)
+                #return updateActivityLogFile(resource_name, activity_json)
+                raise Exception("Logfile %s not found. Please specify full path for your SGE log dir with the --sge_reporting_log option" % log_file)
             step["params"]["reporting_file"] = log_file
         elif "slurm" in step["name"]:
             if os.path.exists("/usr/local/slurm/var/slurmctl.log"):
                 default = "/usr/local/slurm/var/slurmctl.log"
             else:
                 default = None
-            log_file = question(
-                "What is the full path (including filename) for your slurmctl.log file?", default)
-            if not testReadFile(log_file):
-                return updateActivityLogFile(resource_name, activity_json)
+            log_file = args.slurmctl_log or default
+            print("logfile is %s" % log_file)
+            if log_file is not None and not testReadFile(log_file):
+                #return updateActivityLogFile(resource_name, activity_json)
+                raise Exception("Logfile %s not found. Please specify full path (including filename) for your slurmctl.log file with the --slurmctl option" % log_file)
             step["params"]["slurmctl_log_file"] = log_file
         else:
             raise Exception("ActivityUpdateStep isn't pbs, sge, or slurm")
         break
 
 
-def addXsedeAmqpToActivity(activity_json, compute_json):
-    for step in compute_json["steps"]:
-        if step["name"] == "ipf.publish.AmqpStep" and "xsede.org" in step["params"]["services"][0]:
-            amqp_step = copy.deepcopy(step)
-            amqp_step["description"] = "Publish job updates to XSEDE"
-            amqp_step["params"]["publish"] = [
-                "ipf.glue2.computing_activity.ComputingActivityOgfJson"]
-            amqp_step["params"]["exchange"] = "glue2.computing_activity"
-            activity_json["steps"].append(amqp_step)
-            return
-    raise Exception("didn't find AmqpStep in compute workflow")
-
-
-def addXsedeAmqpToModules(modules_json, compute_json):
-    for step in compute_json["steps"]:
-        if step["name"] == "ipf.publish.AmqpStep" and "xsede.org" in step["params"]["services"][0]:
-            amqp_step = copy.deepcopy(step)
-            amqp_step["description"] = "Publish modules to XSEDE"
-            amqp_step["params"]["publish"] = [
-                "ipf.glue2.application.ApplicationsOgfJson"]
-            amqp_step["params"]["exchange"] = "glue2.applications"
-            modules_json["steps"].append(amqp_step)
-            return
-    raise Exception("didn't find AmqpStep in compute workflow")
-
-
-def addXsedeAmqpToExtModules(modules_json, compute_json):
-    for step in compute_json["steps"]:
-        if step["name"] == "ipf.publish.AmqpStep" and "xsede.org" in step["params"]["services"][0]:
-            amqp_step = copy.deepcopy(step)
-            amqp_step["description"] = "Publish modules to XSEDE"
-            amqp_step["params"]["publish"] = [
-                "ipf.glue2.application.ApplicationsOgfJson"]
-            amqp_step["params"]["exchange"] = "glue2.applications"
-            modules_json["steps"].append(amqp_step)
-            return
-    raise Exception("didn't find AmqpStep in compute workflow")
-
-
-def addXsedeAmqpToAbstractServices(modules_json, compute_json):
-    for step in compute_json["steps"]:
-        if step["name"] == "ipf.publish.AmqpStep" and "xsede.org" in step["params"]["services"][0]:
-            amqp_step = copy.deepcopy(step)
-            amqp_step["description"] = "Publish modules to XSEDE"
-            amqp_step["params"]["publish"] = [
-                "ipf.glue2.abstractservice.ASOgfJson"]
-            amqp_step["params"]["exchange"] = "glue2.compute"
-            modules_json["steps"].append(amqp_step)
-            return
-    raise Exception("didn't find AmqpStep in compute workflow")
-
-
-def addXsedeAmqpToIPFInfo(modules_json, compute_json):
-    for step in compute_json["steps"]:
-        if step["name"] == "ipf.publish.AmqpStep" and "xsede.org" in step["params"]["services"][0]:
-            amqp_step = copy.deepcopy(step)
-            amqp_step["description"] = "Publish IPFInfo to XSEDE"
-            amqp_step["params"]["publish"] = ["ipf.ipfinfo.IPFInformationJson"]
-            amqp_step["params"]["exchange"] = "glue2.compute"
-            modules_json["steps"].append(amqp_step)
-            return
-    raise Exception("didn't find AmqpStep in compute workflow")
-
 #######################################################################################################################
 
 
-def getModules():
-    answer = options("Do you want to load any modules?", ["yes", "no"], "no")
-    if answer == "no":
+def getModules(args):
+    if not args.modules:
         return None
-    csv = question("Enter a comma-separated list of modules to load")
+    else:
+        csv = args.modules
     return csv.split(",")
 
 
-def getEnvironmentVariables():
+def getEnvironmentVariables(args):
     vars = {}
-    if "MODULEPATH" in os.environ:
-        _modulepath = os.environ["MODULEPATH"]
-        print("MODULEPATH=%s" % _modulepath)
-        answer = options("is set in your environment.  Do you want to use this value in the Modules workflow?", [
-                         "yes", "no"], "yes")
-        if answer == "no":
-            answer = options("do you want to set a different value for MODULEPATH for use in the Modules workflow?", [
-                             "yes", "no"], "yes")
-            if answer == "yes":
-                _modulepath = question("Enter the value for MODULEPATH")
-            else:
-                _modulepath = None
-        if _modulepath is not None:
-            vars["MODULEPATH"] = _modulepath
-    if "SERVICEPATH" in os.environ:
-        _servicepath = os.environ["SERVICEPATH"]
-        print("SERVICEPATH=%s" % _servicepath)
-        answer = options("is set in your environment.  Do you want to use this value in the Services workflow?", [
-                         "yes", "no"], "yes")
-        if answer == "no":
-            answer = options("do you want to set a different value for SERVICEPATH for use in the Services workflow?", [
-                             "yes", "no"], "yes")
-            if answer == "yes":
-                _servicepath = question("Enter the value for SERVICEPATH")
-            else:
-                _servicepath = None
-        if _servicepath is not None:
-            vars["SERVICEPATH"] = _servicepath
-    while True:
-        if len(vars) > 0:
-            print("current variables:")
-            for key in sorted(vars.keys()):
-                print("  %s = %s" % (key, vars[key]))
-        answer = options("Do you want to set an environment variable?", [
-                         "yes", "no"], "no")
-        if answer == "no":
-            return vars
-        name = question("Enter the environment variable name")
-        value = question("Enter the environment variable value")
-        vars[name] = value
+    if args.modulepath:
+        _modulepath = args.modulepath
+    else:
+        _modulepath = None 
+    if _modulepath is not None:
+        vars["MODULEPATH"] = _modulepath
+    if args.servicepath:
+        _servicepath = args.servicepath
+    else:
+        _servicepath = None 
+    if _servicepath is not None:
+        vars["SERVICEPATH"] = _servicepath
+    if args.environment:
+        _envvars = args.environment.split(",")
+        for _envvar in _envvars:
+            (name,value) = _envvar.split("=")
+            vars[name] = value
+    return vars
 
 #######################################################################################################################
 
@@ -491,7 +561,7 @@ def writeComputeWorkflow(resource_name, compute_json):
     f.close()
 
 
-def writePeriodicComputeWorkflow(resource_name):
+def writePeriodicComputeWorkflow(resource_name,args):
     res_name = resource_name.split(".")[0]
     periodic_json = {}
     periodic_json["name"] = res_name+"_compute_periodic"
@@ -502,8 +572,10 @@ def writePeriodicComputeWorkflow(resource_name):
     step_json["name"] = "ipf.step.WorkflowStep"
     step_json["params"] = {}
     step_json["params"]["workflow"] = "glue2/"+res_name+"_compute.json"
-    interval_str = question(
-        "How often should compute information be gathered (seconds)?", "60")
+    if args.compute_interval:
+        interval_str = args.compute_interval
+    else:
+        interval_str = 60
     step_json["params"]["maximum_interval"] = int(interval_str)
 
     periodic_json["steps"].append(step_json)
@@ -769,11 +841,6 @@ def writeInit(resource_name, module_names, env_vars, name, path):
 #######################################################################################################################
 
 
-def getModulesType():
-    return options("What modules system is used on this resource?",
-                   ["lmod", "modules"])
-
-
 def getSupportContact():
     support_contact = question("What is your default SupportContact URL?",
                                "https://software.xsede.org/xcsr-db/v1/support-contacts/1553")
@@ -783,6 +850,11 @@ def getSupportContact():
 def getGlueWorkflowDir():
     return os.path.join(getWorkflowDir(), "glue2")
 
+def getWorkflowTemplateDir():
+    return os.path.join(getWorkflowDir(), "templates")
+
+def getWorkflowTemplateGlueDir():
+    return os.path.join(getWorkflowTemplateDir(), "glue2")
 
 def getWorkflowDir():
     return os.path.join(getBaseDir(), "etc", "ipf", "workflow")
@@ -795,19 +867,32 @@ def getBaseDir():
     global _base_dir
     if _base_dir is not None:
         return _base_dir
-    base_dir_opts = []
-    if os.path.exists(os.path.join("/etc", "ipf")):
-        base_dir_opts.append("/")
-    base_dir_opts.append(os.path.dirname(
-        os.path.dirname(os.path.abspath(__file__))))
-    base_dir_opts.append(sysconfig.get_paths()["purelib"])
-    base_dir_opts.append("other")
-    _base_dir = options("Select base directory (files will be read/written to $BASE/etc/ipf, $BASE/var/ipf - " +
+    return _base_dir
+
+def setBaseDir(args):
+    global _base_dir
+    if args.base_dir:
+       _base_dir = args.base_dir 
+       return _base_dir
+    if args.rpm:
+       _base_dir = "/"
+    elif args.pip:
+        _base_dir = sysconfig.get_paths()["purelib"]
+    else:
+        base_dir_opts = []
+        if os.path.exists(os.path.join("/etc", "ipf")):
+            base_dir_opts.append("/")
+        base_dir_opts.append(os.path.dirname(
+            os.path.dirname(os.path.abspath(__file__))))
+        base_dir_opts.append(sysconfig.get_paths()["purelib"])
+        base_dir_opts.append("other")
+        _base_dir = options("Select base directory (files will be read/written to $BASE/etc/ipf, $BASE/var/ipf - " +
                         "  RPM install should use '/')" +
                         "  pip install should use '("+(str(len(base_dir_opts)-1))+")'",
                         base_dir_opts)
-    if _base_dir == "other":
-        _base_dir = question("Enter base directory")
+        if _base_dir == "other":
+            _base_dir = question("Enter base directory")
+
     return _base_dir
 
 
