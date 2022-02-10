@@ -485,3 +485,53 @@ The log files described above will grow over time. The logs are only needed for 
 (3) [XSEDE Software and Services Table for Service Providers](https://www.ideals.illinois.edu/handle/2142/85886).
 (4) [Resource Description Repository "RDR"](https://rdr.xsede.org/).
 (5) [GLUE2 Standard Format](https://www.ogf.org/documents/GFD.147.pdf).
+
+# Appendix:  Configuration File Background
+
+There are several files associated with IPF, both pre and post configuration that help determine how workflows are configured and how and when they run.
+
+## Pre-configuration templates
+Depending on how you installed IPF, the IPF source tree can be found in various locations.  
+If you used RPM to install, the source code can be found at /usr/lib/python3.6/site-packages/ipf/.  Note, however, that the $IPF_ETC dir for an RPM install is /etc/ipf (that is to say, inside the canonical /etc directory)
+If you used pip to install, the source code can be found in your python's site_packages/ipf/ directory.  To find the site_packages directory for your python, you can run: 
+    $ python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'
+The pip-installed IPF_ETC path is this directory above, with /etc/ipf/ added to the end, e.g. /usr/lib/python3.6/site-packages/etc/ipf
+
+If you used a tarball or git checkout, you should be able to find the source code on your filesystem yourself.
+
+IPF ships with pre-configuration workflow templates for the various schedulers.
+They can be found in the IPF_ETC directory in the $IPF_ETC/workflow/templates directory.
+The template files as currently constructed are:
+    generic_publish.json
+    generic_print.json
+    glue2/lmod.json
+    glue2/serviceremotepublish.json
+    glue2/moab_pbs_compute.json
+    glue2/extmodules.json
+    glue2/extmodulesremote.json
+    glue2/condor_compute.json
+    glue2/abstractservice.json
+    glue2/pbs_activity.json
+    glue2/sge_activity.json
+    glue2/ipfinfo_publish.json
+    glue2/sge_compute.json
+    glue2/pbs_compute.json
+    glue2/slurm_activity.json
+    glue2/modules.json
+    glue2/slurm_compute.json
+    glue2/openstack_compute.json
+    glue2/catalina_pbs_compute.json
+
+These workflow templates are automatically used in workflow configuration via the ipf_configure_xsede script.
+
+## Post-configuration workflow files
+After you configure your workflows, the configured workflows will be represented by json files in $IPF_ETC/workflow and/or $IPF_ETC/workflow/glue2.
+There will be a json file for each configured workflow, and various workflows will have a second "periodic" workflow that calls the other at a configurable delay.
+These workflow files can be invoked by 
+    $INSTALL_DIR/ipf-VERSION/ipf/bin/ipf_workflow <workflow.json>
+However, in production, they are more commonly invoked by init scripts described below.
+
+## Workflow init scripts
+The ipf_configure_xsede script generates an init script for each workflow you configure, and puts them in $IPF_ETC/init.d/
+Each script runs one workflow, on a periodic basis (using the periodic workflows described above).
+It is important to note that the scripts in $IPF_ETC/init.d are NOT automatically configured to be run by the operating system: this must be done manually, typically by being copied into the system /etc/init.d directory as part of the installation and configuration process documented in this file.  Thus, to see what is actually being used to invoke the workflows in production, one must find the operating system location of init scripts, and see what is configured there.
