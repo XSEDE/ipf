@@ -94,15 +94,21 @@ def parseargs():
                         help='The full path (including filename) for your SGE reporting log')
     parser.add_argument('--slurmctl_log', \
                         help='The full path (including filename) for your slurmctl.log file')
+    parser.add_argument('--support_contact', \
+                        help='The support contact URL to be published in your ExtModules workflow')
+    parser.add_argument('--modules_interval', \
+                        help='Interval in hours for the ExtModules workflow to wait before rerunning')
+    parser.add_argument('--services_interval', \
+                        help='Interval in hours for the AbstractServices workflow to wait before rerunning')
 
     return parser.parse_args()
 
 
 def configure():
     args = parseargs()
-    print()
-    print("This script asks you for information and configures your IPF installation.")
-    print("  This script backs up your existing configuration, by renaming the existing configuration files with .backup-TIMESTAMP")
+    #print()
+    #print("This script asks you for information and configures your IPF installation.")
+    #print("  This script backs up your existing configuration, by renaming the existing configuration files with .backup-TIMESTAMP")
 
     template_json = getTemplateJson(args.workflowtemplate)
 
@@ -112,19 +118,24 @@ def configure():
         resource_name = getResourceName(template_json)
 
     setBaseDir(args)
+   
+    if args.workflows: 
+        for workflow in args.workflows.split(","):
+            print("workflow is %s" % workflow)
+            if workflow == "compute":
+               configure_compute_workflow(resource_name,args,template_json)
+            if workflow == "activity":
+               configure_activity_workflow(resource_name,args,template_json)
+            if workflow == "extmodules":
+               configure_extmodules_workflow(resource_name,args,template_json)
+            if workflow == "services":
+               configure_services_workflow(resource_name,args,template_json)
+            if workflow == "ipfinfo":
+               configure_ipfinfo_workflow(resource_name,args,template_json)
+    else:
+        print('\nPlease specify one or more workflows with the "--workflows <workflowlist>" command line option.  \nNote that "<workflowlist>" should be a comma delimited list that includes one or more of:\n     compute\n     activity\n     extmodules\n     services\n     ipfinfo\n')
+        raise SystemExit
     
-    for workflow in args.workflows.split(","):
-        print("workflow is %s" % workflow)
-        if workflow == "compute":
-           configure_compute_workflow(resource_name,args,template_json)
-        if workflow == "activity":
-           configure_activity_workflow(resource_name,args,template_json)
-        if workflow == "extmodules":
-           configure_extmodules_workflow(resource_name,args,template_json)
-        if workflow == "services":
-           configure_services_workflow(resource_name,args,template_json)
-        if workflow == "ipfinfo":
-           configure_ipfinfo_workflow(resource_name,args,template_json)
 
     return
 
@@ -172,27 +183,27 @@ def configure_activity_workflow(resource_name,args,template_json):
 
 
 def configure_extmodules_workflow(resource_name,args,template_json):
-    extmodules_json = getExtModulesJson()
+    extmodules_json = getExtModulesJson(template_json)
     setSupportContact(extmodules_json,args)
     setResourceName(resource_name, extmodules_json)
     updateFilePublishPaths(resource_name, extmodules_json)
     if (args.publish_to_xsede):
         addXsedeAmqpToWorkflow("extmodules",activity_json, template_json, args)
     writeExtModulesWorkflow(resource_name, extmodules_json)
-    writePeriodicExtModulesWorkflow(resource_name)
+    writePeriodicExtModulesWorkflow(resource_name,args)
 
     module_names = getModules(args)
     env_vars = getEnvironmentVariables(args)
     writeExtModulesInit(resource_name, module_names, env_vars)
 
 def configure_services_workflow(resource_name,args,template_json):
-    services_json = getAbstractServicesJson()
+    services_json = getAbstractServicesJson(template_json)
     setResourceName(resource_name, services_json)
     updateFilePublishPaths(resource_name, services_json)
     if (args.publish_to_xsede):
         addXsedeAmqpToWorkflow("services",activity_json, template_json, args)
     writeAbstractServicesWorkflow(resource_name, services_json)
-    writePeriodicAbstractServicesWorkflow(resource_name)
+    writePeriodicAbstractServicesWorkflow(resource_name,args)
 
 
     module_names = getModules(args)
@@ -219,8 +230,9 @@ def getResourceName(template_json):
                     resource_name = step_json["params"]["resource_name"]
             return resource_name
     else:
-        resource_name = question("Enter the XSEDE resource name", xdresid_name)
-    return resource_name
+        print('\nNo XSEDE resource name specified.  You must do one of:\n     * make sure xdresourceid is in your path\n     *use the command line option "--resource_name <name>"\n     *specify a template file that defines the resource name, using --workflowtemplate <file.json>')
+        raise SystemExit
+    return
 
 
 def getTemplateJson(template_name):
@@ -275,7 +287,7 @@ def getExtModulesJson(template_json):
 
 def setSupportContact(extmodules_json,args):
     if args.support_contact:
-        support_contact = args.scheduler
+        support_contact = args.support_contact
     else:
         support_contact = None
     for step_json in extmodules_json["steps"]:
@@ -315,9 +327,8 @@ def getSchedulerName():
             else:
                 names.append(parts[0]+"_"+parts[1])
     names = sorted(names)
-    sched_name = options(
-        "Which scheduler/resource manager does this resource use?", names)
-    return sched_name
+    opts('\nPlease specify a scheduler using the "--scheduler <scheduler>" command line option.  You can choose from one of the following:', names)
+    raise SystemExit
 
 
 def setResourceName(resource_name, workflow_json):
@@ -332,6 +343,14 @@ def setResourceName(resource_name, workflow_json):
 
 
 def setLocation(compute_json,args,template_json):
+    if template_json is not None:
+        for templatestep_json in template_json["steps"]:
+            if templatestep_json["name"] == "ipf.glue2.location.LocationStep":
+                if "params" in templatestep_json:
+                    location = templatestep_json["params"]["location"]
+                    for step_json in compute_json["steps"]:
+                        if step_json["name"] == "ipf.glue2.location.LocationStep":    
+                            step_json["params"]["location"]=copy.deepcopy(templatestep_json["params"]["location"])
     for step_json in compute_json["steps"]:
         if step_json["name"] == "ipf.glue2.location.LocationStep":
             updateLocationStep(step_json["params"]["location"],args)
@@ -340,30 +359,32 @@ def setLocation(compute_json,args,template_json):
 
 
 def updateLocationStep(params,args):
+    #Command line options always override template
     if args.organization_name:
         params["Name"] = args.organization_name
     elif not params["Name"]:
-        params["Name"] = question(
-            "Enter your organization", params.get("Name", None))
+        print('Please Specify an organization_name with "--organization_name"')
+        raise SystemExit 
     if args.city:
         params["Place"] = args.city
     elif not params["Place"]:
-        params["Place"] = question("Enter your city", params.get("Place", None))
+        print('Please Specify a city with "--city"')
+        raise SystemExit 
     if args.country:
         params["Country"] = args.country
     elif not params["Country"]:
-        params["Country"] = question(
-            "Enter your country", params.get("Country", None))
+        print('Please Specify a country with "--country"')
+        raise SystemExit 
     if args.latitude:
         params["Latitude"] = args.latitude
     elif not params["Latitude"]:
-        params["Latitude"] = question(
-            "Enter your latitude", params.get("Latitude", None))
+        print('Please Specify a latitude with "--latitude"')
+        raise SystemExit 
     if args.longitude:
         params["Longitude"] = args.longitude
     elif not params["Longitude"]:
-        params["Longitude"] = question(
-            "Enter your longitude", params.get("Longitude", None))
+        print('Please Specify a longitude with "--longitude"')
+        raise SystemExit 
 
 
 
@@ -650,35 +671,7 @@ def writeIPFInfoWorkflow(ipfinfo_json):
     f.close()
 
 
-def writePeriodicModulesWorkflow(resource_name):
-    res_name = resource_name.split(".")[0]
-    periodic_json = {}
-    periodic_json["name"] = res_name+"_modules_periodic"
-    periodic_json["description"] = "Gather GLUE2 module information periodically"
-    periodic_json["steps"] = []
-
-    step_json = {}
-    step_json["name"] = "ipf.step.WorkflowStep"
-    step_json["params"] = {}
-    step_json["params"]["workflow"] = "glue2/"+res_name+"_modules.json"
-    interval_str = question(
-        "How often should module information be gathered (hours)?", "1")
-    step_json["params"]["maximum_interval"] = int(interval_str) * 60 * 60
-
-    periodic_json["steps"].append(step_json)
-
-    path = os.path.join(getGlueWorkflowDir(), res_name +
-                        "_modules_periodic.json")
-    print("  -> writing periodic modules workflow to %s" % path)
-    if os.path.isfile(path):
-        os.rename(path, path+".backup-" +
-                  time.strftime('%Y-%M-%d-%X', time.localtime()))
-    f = open(path, "w")
-    f.write(json.dumps(periodic_json, indent=4, sort_keys=True))
-    f.close()
-
-
-def writePeriodicExtModulesWorkflow(resource_name):
+def writePeriodicExtModulesWorkflow(resource_name,args):
     res_name = resource_name.split(".")[0]
     periodic_json = {}
     periodic_json["name"] = res_name+"_extmodules_periodic"
@@ -689,8 +682,10 @@ def writePeriodicExtModulesWorkflow(resource_name):
     step_json["name"] = "ipf.step.WorkflowStep"
     step_json["params"] = {}
     step_json["params"]["workflow"] = "glue2/"+res_name+"_extmodules.json"
-    interval_str = question(
-        "How often should extended module information (XSEDE software) be gathered (hours)?", "1")
+    if args.modules_interval:
+        interval_str = args.modules_interval
+    else:
+        interval_str = 1
     step_json["params"]["maximum_interval"] = int(interval_str) * 60 * 60
 
     periodic_json["steps"].append(step_json)
@@ -706,7 +701,7 @@ def writePeriodicExtModulesWorkflow(resource_name):
     f.close()
 
 
-def writePeriodicAbstractServicesWorkflow(resource_name):
+def writePeriodicAbstractServicesWorkflow(resource_name,args):
     res_name = resource_name.split(".")[0]
     periodic_json = {}
     periodic_json["name"] = res_name+"_services_periodic"
@@ -717,8 +712,10 @@ def writePeriodicAbstractServicesWorkflow(resource_name):
     step_json["name"] = "ipf.step.WorkflowStep"
     step_json["params"] = {}
     step_json["params"]["workflow"] = "glue2/"+res_name+"_services.json"
-    interval_str = question(
-        "How often should AbstractService (XSEDE Services) information be gathered (hours)?", "1")
+    if args.services_interval:
+        interval_str = args.services_interval
+    else:
+        interval_str = 1
     step_json["params"]["maximum_interval"] = int(interval_str) * 60 * 60
 
     periodic_json["steps"].append(step_json)
@@ -842,8 +839,7 @@ def writeInit(resource_name, module_names, env_vars, name, path):
 
 
 def getSupportContact():
-    support_contact = question("What is your default SupportContact URL?",
-                               "https://software.xsede.org/xcsr-db/v1/support-contacts/1553")
+    support_contact = "https://software.xsede.org/xcsr-db/v1/support-contacts/1553"
     return support_contact
 
 
@@ -879,19 +875,8 @@ def setBaseDir(args):
     elif args.pip:
         _base_dir = sysconfig.get_paths()["purelib"]
     else:
-        base_dir_opts = []
-        if os.path.exists(os.path.join("/etc", "ipf")):
-            base_dir_opts.append("/")
-        base_dir_opts.append(os.path.dirname(
-            os.path.dirname(os.path.abspath(__file__))))
-        base_dir_opts.append(sysconfig.get_paths()["purelib"])
-        base_dir_opts.append("other")
-        _base_dir = options("Select base directory (files will be read/written to $BASE/etc/ipf, $BASE/var/ipf - " +
-                        "  RPM install should use '/')" +
-                        "  pip install should use '("+(str(len(base_dir_opts)-1))+")'",
-                        base_dir_opts)
-        if _base_dir == "other":
-            _base_dir = question("Enter base directory")
+        print('\nNo base directory specified.  Please do one of the following:\n     *if you installed IPF from an RPM, specify the "--rpm" command line option.\n     *if you installed using pip, specify the "--pip" command line option.\n     *otherwise, use the "--base_dir <path>" command line option where <path> is the root of where you installed IPF.\n')
+        raise SystemExit
 
     return _base_dir
 
@@ -917,6 +902,14 @@ def question(text, default=None):
             return default
     return answer
 
+def opts(text, opts, default=None):
+    print()
+    if default is None:
+        print("%s:" % text)
+    else:
+        print("%s (%s):" % (text, default))
+    for i in range(len(opts)):
+        print("  (%d) %s" % ((i+1), opts[i]))
 
 def options(text, opts, default=None):
     print()
