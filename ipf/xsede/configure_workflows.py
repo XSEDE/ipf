@@ -212,7 +212,7 @@ def configure_services_workflow(resource_name,args,template_json):
 
 
 def configure_ipfinfo_workflow(resource_name,args,template_json):
-    ipfinfo_json = getIPFInfoJson()
+    ipfinfo_json = getIPFInfoJson(template_json)
     if (args.publish_to_xsede):
         addXsedeAmqpToWorkflow("ipfinfo",activity_json, template_json, args)
     writeIPFInfoWorkflow(ipfinfo_json)
@@ -313,7 +313,7 @@ def getIPFInfoJson(template_json):
     if template_json is not None:
         if _ipfinfo in template_json["Name"]:
             return template_json
-    return readWorkflowFile(os.path.join(getWorkflowTemplateGlueDir(), "templates", "ipfinfo_publish.json"))
+    return readWorkflowFile(os.path.join(getWorkflowTemplateGlueDir(), "ipfinfo_publish.json"))
 
 
 def getSchedulerName():
