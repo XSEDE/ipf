@@ -825,6 +825,21 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
         accelerator_environment.AcceleratorEnvironmentsStep.__init__(self)
 
         self._acceptParameter("scontrol","the path to the SLURM scontrol program (default 'scontrol')",False)
+        self._acceptParameter("PartitionName","Regular Expression to parse PartitionName (default 'PartitionName=(\S+)')",False)
+        self._acceptParameter("TotalNodes","Regular Expression to parse TotalNodes (default 'TotalNodes=(\S+)')",False)
+        self._acceptParameter("Nodes","Regular Expression to parse sNodes (default '\sNodes=(\S+)')",False)
+        self._acceptParameter("ReservationName","Regular Expression to parse ReservationName (default 'ReservationName=(\S+)')",False)
+        self._acceptParameter("StartTime","Regular Expression to parse StartTime (default 'StartTime=(\S+)')",False)
+        self._acceptParameter("EndTime","Regular Expression to parse EndTime (default 'EndTime=(\S+)')",False)
+        self._acceptParameter("NodeCnt","Regular Expression to parse NodeCnt (default 'NodeCnt=(\S+)')",False)
+        self._acceptParameter("Nodes","Regular Expression to parse Nodes (default 'Nodes=(\S+)')",False)
+        self._acceptParameter("State","Regular Expression to parse State (default 'State=(\S+)')",False)
+        self._acceptParameter("NodeName","Regular Expression to parse NodeName (default 'NodeName=(\S+)')",False)
+        self._acceptParameter("Sockets","Regular Expression to parse Sockets (default 'Sockets=(\S+)')",False)
+        self._acceptParameter("CPUTot","Regular Expression to parse CPUTot (default 'CPUTot=(\S+)')",False)
+        self._acceptParameter("RealMemory","Regular Expression to parse RealMemory (default 'RealMemory=(\S+)')",False)
+        self._acceptParameter("Gres","Regular Expression to parse Gres (default 'Gres=(\S+)')",False)
+        self._acceptParameter("GresUsed","Regular Expression to parse GresUsed (default 'GresUsed=(\S+)')",False)
 
     def _run(self):
         # get info on the nodes
@@ -920,21 +935,29 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
     def _getNode(self, node_str):
         node = accelerator_environment.AcceleratorEnvironment()
 
+        NodeName = self.params.get("NodeName","NodeName=(\S+)")
+        Sockets = self.params.get("Sockets","Sockets=(\S+)")
+        CPUTot = self.params.get("CPUTot","CPUTot=(\S+)")
+        RealMemory = self.params.get("RealMemory","RealMemory=(\S+)") 
+        Gres = self.params.get("Gres","Gres=(\S+)")
+        GresUsed = self.params.get("GresUsed","GresUsed=(\S+)")
+        State = self.params.get("State","State=(\S+)")
+
         # ID set by AcceleratorEnvironment
-        m = re.search("NodeName=(\S+)",node_str)
+        m = re.search(NodeName,node_str)
         if m is not None:
             node.Name = m.group(1)
-        m = re.search("Sockets=(\S+)",node_str)
+        m = re.search(Sockets,node_str)
         if m is not None:
             node.PhysicalCPUs = int(m.group(1))
-        m = re.search("CPUTot=(\S+)",node_str)
+        m = re.search(CPUTot,node_str)
         if m is not None:
             node.LogicalCPUs = int(m.group(1))
-        m = re.search("RealMemory=(\S+)",node_str)  # MB
+        m = re.search(RealMemory,node_str)  # MB
         if m is not None:
             node.MainMemorySize = int(m.group(1))
         #AcceleratorEnvironment:
-        m = re.search("Gres=(\S+)",node_str)
+        m = re.search(Gres,node_str)
         if m is not None:
             greslist=[]
             #greslist = split(":",m.group(1))
@@ -946,7 +969,7 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
             elif len(greslist) == 3:
                 node.PhysicalAccelerators = int(greslist[2])
                 node.Type = greslist[1] 
-        m = re.search("GresUsed=(\S+)",node_str)
+        m = re.search(GresUsed,node_str)
         if m is not None:
             greslist=[]
             #greslist = split(":",m.group(1))
@@ -963,7 +986,7 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
                     node.UsedAcceleratorSlots = int(uas)
                 node.Type = greslist[1]
                 
-        m = re.search("State=(\S+)",node_str)
+        m = re.search(State,node_str)
         if m is not None:
             node.TotalInstances = 1
             state = m.group(1)
@@ -996,16 +1019,20 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
     def _getPartition(self, partition_str):
         partition = accelerator_environment.AcceleratorEnvironment()
 
+        PartitionName = self.params.get("PartitionName","PartitionName=(\S+)')")
+        TotalNodes = self.params.get("TotalNodes","TotalNodes=(\S+)")
+        Nodes = self.params.get("Nodes","\sNodes=(\S+)")
+
         # ID set by ExecutionEnvironment
-        m = re.search("PartitionName=(\S+)",partition_str)
+        m = re.search(PartitionName,partition_str)
         if m is not None:
             partition.Name = m.group(1)
 
-        m = re.search("TotalNodes=(\S+)",partition_str)
+        m = re.search(TotalNodes,partition_str)
         if m is not None and m.group(1) != "(null)":
             partition.TotalInstances = int(m.group(1))
 
-        m = re.search("\sNodes=(\S+)",partition_str)
+        m = re.search(Nodes,partition_str)
         if m is not None and m.group(1) != "(null)":
             partition.Extension["Nodes"] = self._expandNames(m.group(1))
 
@@ -1015,30 +1042,36 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
         rsrv = accelerator_environment.AcceleratorEnvironment()
         rsrv.Extension["Reservation"] = True
 
+        ReservationName = self.params.get("ReservationName","ReservationName=(\S+)")
+        StartTime = self.params.get("StartTime","StartTime=(\S+)")
+        EndTime = self.params.get("EndTime","EndTime=(\S+)")
+        NodeCnt = self.params.get("NodeCnt","NodeCnt=(\S+)")
+        Nodes = self.params.get("Nodes","Nodes=(\S+)")
+        State = self.params.get("State","State=(\S+)")
         # ID set by ExecutionEnvironment
-        m = re.search("ReservationName=(\S+)",rsrv_str)
+        m = re.search(ReservationName,rsrv_str)
         if m is None:
             raise StepError("didn't find 'ReservationName'")
         rsrv.Name = m.group(1)
         rsrv.ShareID = ["urn:glue2:ComputingShare:%s.%s" % (rsrv.Name,self.resource_name)]
 
-        m = re.search("StartTime=(\S+)",rsrv_str)
+        m = re.search(StartTime,rsrv_str)
         if m is not None:
             rsrv.Extension["StartTime"] = _getDateTime(m.group(1))
-        m = re.search("EndTime=(\S+)",rsrv_str)
+        m = re.search(EndTime,rsrv_str)
         if m is not None:
             rsrv.Extension["EndTime"] = _getDateTime(m.group(1))
 
-        m = re.search("NodeCnt=(\S+)",rsrv_str)
+        m = re.search(NodeCnt,rsrv_str)
         if m is not None:
             rsrv.Extension["RequestedInstances"] = int(m.group(1))
 
-        m = re.search("Nodes=(\S+)",rsrv_str)
+        m = re.search(Nodes,rsrv_str)
         if m is not None:
             if m.group(1) != "(null)":
                 rsrv.Extension["Nodes"] = self._expandNames(m.group(1))
 
-        m = re.search("State=(\S+)",rsrv_str)
+        m = re.search(State,rsrv_str)
         if m is not None:
             if m.group(1) != "ACTIVE":
                 if "Nodes" in rsrv.Extension:
