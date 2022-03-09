@@ -114,7 +114,7 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
         jobs = []
         for job_str in output.split("\n\n"):
-            job = _getJob(self,job_str)
+            job = _getJob(self,job_str,self.params)
             if self._includeQueue(job.Queue):
                 jobs.append(job)
 
@@ -133,27 +133,27 @@ class ComputingActivitiesStep(computing_activity.ComputingActivitiesStep):
 
         return jobs
 
-def _getJob(step, job_str):
-    showjob = self.params.get("showjob","show job")
+def _getJob(step, job_str,params):
+    showjob = params.get("showjob","show job")
     job = computing_activity.ComputingActivity()
-    JobId = self.params.get("JobId","JobId")
-    Name = self.params.get(" Name"," Name")
-    JobName = self.params.get(" JobName"," JobName")
-    UserId = self.params.get("UserId","UserId")
-    Account = self.params.get("Account","Account")
-    Partition = self.params.get("Partition","Partition")
-    Reservation = self.params.get("Reservation","Reservation")
-    JobState = self.params.get("JobState","JobState")
-    JobHeld = self.params.get("JobHeld","Reason=Dependency")
-    NumCPUs = self.params.get("NumCPUs","NumCPUs")
-    gresgpu = self.params.get("gresgpu","gres/gpu")
-    TimeLimit = self.params.get("TimeLimit","TimeLimit")
-    RunTime = self.params.get("RunTime","RunTime")
-    SubmitTime = self.params.get("SubmitTime","SubmitTime")
-    StartTime = self.params.get("StartTime","StartTime")
-    EndTime = self.params.get("EndTime","EndTime")
-    exec_host  = self.params.get("exec_host ","exec_host ")
-    Priority = self.params.get("Priority","Priority")
+    JobId = params.get("JobId","JobId=(\S+)")
+    Name = params.get(" Name"," Name=(\S+)")
+    JobName = params.get(" JobName"," JobName=(\S+)")
+    UserId = params.get("UserId","UserId=(\S+)\(")
+    Account = params.get("Account","Account=(\S+)")
+    Partition = params.get("Partition","Partition=(\S+)")
+    Reservation = params.get("Reservation","Reservation=(\S+)")
+    JobState = params.get("JobState","JobState=(\S+)")
+    JobHeld = params.get("JobHeld","Reason=Dependency")
+    NumCPUs = params.get("NumCPUs","NumCPUs=(\d+)")
+    gresgpu = params.get("gresgpu","gres/gpu=(\d+)")
+    TimeLimit = params.get("TimeLimit","TimeLimit=(\S+)")
+    RunTime = params.get("RunTime","RunTime=(\S+)")
+    SubmitTime = params.get("SubmitTime","SubmitTime=(\S+)")
+    StartTime = params.get("StartTime","StartTime=(\S+)")
+    EndTime = params.get("EndTime","EndTime=(\S+)")
+    exec_host  = params.get("exec_host ","exec_host = (\S+)")
+    Priority = params.get("Priority","Priority=(\S+)")
 
     m = re.search(JobId,job_str)
     if m is not None:
@@ -174,6 +174,7 @@ def _getJob(step, job_str):
     m = re.search(Partition,job_str)
     if m is not None:
         job.Queue = m.group(1)
+        job.ResourceID = "urn:glue2:ExecutionEnvironment:%s.%s" % (m.group(1),step.resource_name)
     m = re.search(Reservation,job_str)
     if m is not None and m.group(1) != "(null)":
         job.Extension["ReservationName"] = m.group(1)
@@ -386,7 +387,7 @@ class ComputingActivityUpdateStep(computing_activity.ComputingActivityUpdateStep
                 activity = computing_activity.ComputingActivity()
                 activity.LocalIDFromManager = job_id
             else:
-                activity = _getJob(self,output)
+                activity = _getJob(self,output,self.params)
             self.activities[activity.LocalIDFromManager] = activity
         return activity
 
@@ -449,38 +450,49 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
 
     def _getShare(self, partition_str):
         share = computing_share.ComputingShare()
+        PartitionName = self.params.get("PartitionName","PartitionName=(\S+)")
+        MaxNodes = self.params.get("MaxNodes","MaxNodes=(\S+)")
+        MaxMemPerNode = self.params.get("MaxMemPerNode","MaxMemPerNode=(\S+)")
+        DefaultTime = self.params.get("DefaultTime","DefaultTime=(\S+)")
+        MaxTime = self.params.get("MaxTime","MaxTime=(\S+)")
+        State = self.params.get("State","State=(\S+)")
+        ReservationName = self.params.get("ReservationName","ReservationName=(\S+)")
+        NodCnt = self.params.get("NodCnt","NodCnt=(\S+)")
+        State = self.params.get("State","State=(\S+)")
+        PreemptMode = self.params.get("PreemptMode","PreemptMode=(\S+)")
 
-        m = re.search("PartitionName",partition_str)
+        m = re.search(PartitionName,partition_str)
         if m is not None:
             share.Name = m.group(1)
             share.MappingQueue = share.Name
-        m = re.search("MaxNodes",partition_str)
+        m = re.search(MaxNodes,partition_str)
         if m is not None and m.group(1) != "UNLIMITED":
             share.MaxSlotsPerJob = int(m.group(1))
-        m = re.search("MaxMemPerNode",partition_str)
+        m = re.search(MaxMemPerNode,partition_str)
         if m is not None and m.group(1) != "UNLIMITED":
             share.MaxMainMemory = int(m.group(1))
-        m = re.search("DefaultTime",partition_str)
+        m = re.search(DefaultTime,partition_str)
         if m is not None and m.group(1) != "NONE":
             share.DefaultWallTime = _getDuration(m.group(1))
-        m = re.search("MaxTime",partition_str)
+        m = re.search(MaxTime,partition_str)
         if m is not None and m.group(1) != "UNLIMITED":
             share.MaxWallTime = _getDuration(m.group(1))
 
-        m = re.search("PreemptMode",partition_str)
+        m = re.search(PreemptMode,partition_str)
         if m is not None:
             if m.group(1) == "OFF":
                 self.Preemption = False
             else:
                 self.Preemption = True
 
-        m = re.search("State",partition_str)
+        m = re.search(State,partition_str)
         if m is not None:
             if m.group(1) == "UP":
                 share.ServingState = "production"
             else:
                 share.ServingState = "closed"
 
+        share.ResourceID = ["urn:glue2:ExecutionEnvironment:%s.%s" % (share.Name,self.resource_name)]
         return share
 
     def _getReservation(self, rsrv_str):
@@ -532,6 +544,8 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         self._acceptParameter("State","Regular Expression to parse State (default 'State=(\S+)')",False)
 
     def _run(self):
+
+
         # get info on the nodes
         scontrol = self.params.get("scontrol","scontrol")
         cmd = scontrol + " show node -d"
@@ -543,6 +557,19 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         nodes = list(filter(self._goodHost,list(map(self._getNode,node_strs))))
 
         # ignore partitions for now since a node can be part of more than one of them (plus a reservation)
+        # create environments for partitions
+        scontrol = self.params.get("scontrol","scontrol")
+        cmd = scontrol + " show partition"
+        self.debug("running "+cmd)
+        status, output = subprocess.getstatusoutput(cmd)
+        if status != 0:
+            raise StepError("scontrol failed: "+output+"\n")
+        partition_strs = output.split("\n\n")
+        try:
+            partitions = [share for share in map(self._getPartition,partition_strs) if self._includeQueue(share.Name)]
+            #partitions = [self._includeQueue(share.Name) for share in list(map(self._getPartition,partition_strs))]
+        except Exception as err:
+            partitions = []
 
         # create environments for reservations
         scontrol = self.params.get("scontrol","scontrol")
@@ -554,14 +581,16 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         reservation_strs = output.split("\n\n")
         try:
             #reservations = map(self._getReservation,reservation_strs)
-            reservations = [self.includeQueue(share.PartitionName) for share in list(map(self._getReservation,reservation_strs))]
-        except:
+            #reservations = [self.includeQueue(share.PartitionName) for share in list(map(self._getReservation,reservation_strs))]
+            reservations = [share for share in map(self._getReservation,reservation_strs) if self._includeQueue(share.PartitionName)]
+        except Exception as err:
             reservations = []
 
         node_map = {}
         for node in nodes:
             node_map[node.Name] = node
-        for exec_env in reservations:
+        for seq in (partitions,reservations):
+          for exec_env in seq:
             try:
                 node_names = exec_env.Extension["Nodes"]
             except KeyError:
@@ -581,6 +610,8 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
             exec_env.OSName = example_node.OSName
             exec_env.OSVersion = example_node.OSVersion
             exec_env.Platform = example_node.Platform
+            if "AvailableFeatures" in example_node.Extension and example_node.Extension["AvailableFeatures"] is not None and example_node.Extension["AvailableFeatures"] != "(null)":
+                exec_env.Extension["AvailableFeatures"] = example_node.Extension["AvailableFeatures"]
 
             exec_env.PhysicalCPUs = sum([node_map[node_name].PhysicalCPUs for node_name in node_names]) / len(node_names)
             exec_env.LogicalCPUs = sum([node_map[node_name].LogicalCPUs for node_name in node_names]) / len(node_names)
@@ -599,7 +630,8 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
             del exec_env.Extension["Nodes"]
 
         # group up nodes that aren't part of a current reservation
-        return reservations + self._groupHosts(list(node_map.values()))
+        #return reservations + partitions + self._groupHosts(list(node_map.values()))
+        return reservations + partitions 
 
     def _getNode(self, node_str):
         node = execution_environment.ExecutionEnvironment()
@@ -626,6 +658,9 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         m = re.search(Partitions,node_str)
         if m is not None:
             node.Partitions = m.group(1)
+        m = re.search("AvailableFeatures=(\S+)",node_str)
+        if m is not None:
+            node.Extension["AvailableFeatures"] = m.group(1)
         m = re.search(State,node_str)
         if m is not None:
             node.TotalInstances = 1
@@ -655,12 +690,12 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
 
         return node
 
-    # not being used right now
+    # ExecutionEnvironment get partition
     def _getPartition(self, partition_str):
         partition = execution_environment.ExecutionEnvironment()
         PartitionName = self.params.get("PartitionName","PartitionName=(\S+)")
         TotalNodes = self.params.get("TotalNodes","TotalNodes=(\S+)")
-        sNodes = self.params.get("sNodes","\sNodes=(\S+)")
+        Nodes = self.params.get("Nodes","\sNodes=(\S+)")
 
         # ID set by ExecutionEnvironment
         m = re.search(PartitionName,partition_str)
@@ -671,7 +706,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         if m is not None and m.group(1) != "(null)":
             partition.TotalInstances = int(m.group(1))
 
-        m = re.search(sNodes,partition_str)
+        m = re.search(Nodes,partition_str)
         if m is not None and m.group(1) != "(null)":
             partition.Extension["Nodes"] = self._expandNames(m.group(1))
 
@@ -803,6 +838,20 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
         nodes = list(filter(self._goodHost,list(map(self._getNode,node_strs))))
 
         # ignore partitions for now since a node can be part of more than one of them (plus a reservation)
+        # create environments for partitions
+        scontrol = self.params.get("scontrol","scontrol")
+        cmd = scontrol + " show partition"
+        self.debug("running "+cmd)
+        status, output = subprocess.getstatusoutput(cmd)
+        if status != 0:
+            raise StepError("scontrol failed: "+output+"\n")
+        partition_strs = output.split("\n\n")
+        try:
+            partitions = [share for share in map(self._getPartition,partition_strs) if self._includeQueue(share.Name)]
+            #partitions = [self._includeQueue(share.Name) for share in list(map(self._getPartition,partition_strs))]
+        except Exception as err:
+            partitions = []
+
 
         # create environments for reservations
         scontrol = self.params.get("scontrol","scontrol")
@@ -865,7 +914,8 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
         # group up nodes that aren't part of a current reservation
         self.debug("size of node map "+str(len(node_map)))
  
-        return reservations + self._groupHosts(list(node_map.values()))
+        #return partitions + reservations + self._groupHosts(list(node_map.values()))
+        return partitions + reservations
 
     def _getNode(self, node_str):
         node = accelerator_environment.AcceleratorEnvironment()
@@ -944,7 +994,7 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
 
     # not being used right now
     def _getPartition(self, partition_str):
-        partition = execution_environment.ExecutionEnvironment()
+        partition = accelerator_environment.AcceleratorEnvironment()
 
         # ID set by ExecutionEnvironment
         m = re.search("PartitionName=(\S+)",partition_str)
