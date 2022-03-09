@@ -188,7 +188,7 @@ def configure_extmodules_workflow(resource_name,args,template_json):
     setResourceName(resource_name, extmodules_json)
     updateFilePublishPaths(resource_name, extmodules_json)
     if (args.publish_to_xsede):
-        addXsedeAmqpToWorkflow("extmodules",activity_json, template_json, args)
+        addXsedeAmqpToWorkflow("extmodules",extmodules_json, template_json, args)
     writeExtModulesWorkflow(resource_name, extmodules_json)
     writePeriodicExtModulesWorkflow(resource_name,args)
 
@@ -201,7 +201,7 @@ def configure_services_workflow(resource_name,args,template_json):
     setResourceName(resource_name, services_json)
     updateFilePublishPaths(resource_name, services_json)
     if (args.publish_to_xsede):
-        addXsedeAmqpToWorkflow("services",activity_json, template_json, args)
+        addXsedeAmqpToWorkflow("services",services_json, template_json, args)
     writeAbstractServicesWorkflow(resource_name, services_json)
     writePeriodicAbstractServicesWorkflow(resource_name,args)
 
@@ -214,7 +214,7 @@ def configure_services_workflow(resource_name,args,template_json):
 def configure_ipfinfo_workflow(resource_name,args,template_json):
     ipfinfo_json = getIPFInfoJson(template_json)
     if (args.publish_to_xsede):
-        addXsedeAmqpToWorkflow("ipfinfo",activity_json, template_json, args)
+        addXsedeAmqpToWorkflow("ipfinfo",ipfinfo_json, template_json, args)
     writeIPFInfoWorkflow(ipfinfo_json)
 
     module_names = getModules(args)
