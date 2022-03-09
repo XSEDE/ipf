@@ -822,6 +822,7 @@ class ComputingShareAcceleratorInfoStep(computing_share_accel_info.ComputingShar
 
 class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironmentsStep):
     def __init__(self):
+
         accelerator_environment.AcceleratorEnvironmentsStep.__init__(self)
 
         self._acceptParameter("scontrol","the path to the SLURM scontrol program (default 'scontrol')",False)
@@ -843,6 +844,7 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
 
     def _run(self):
         # get info on the nodes
+        import rpdb2; rpdb2.start_embedded_debugger("asdf")
         scontrol = self.params.get("scontrol","scontrol")
         cmd = scontrol + " show node -d"
         self.debug("running "+cmd)
@@ -1019,7 +1021,7 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
     def _getPartition(self, partition_str):
         partition = accelerator_environment.AcceleratorEnvironment()
 
-        PartitionName = self.params.get("PartitionName","PartitionName=(\S+)')")
+        PartitionName = self.params.get("PartitionName","PartitionName=(\S+)")
         TotalNodes = self.params.get("TotalNodes","TotalNodes=(\S+)")
         Nodes = self.params.get("Nodes","\sNodes=(\S+)")
 
