@@ -413,16 +413,15 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
     def _run(self):
         # create shares for partitions
         scontrol = self.params.get("scontrol","scontrol")
-        PartitionName = self.params.get("PartitionName","PartitionName=(\S+)')")
+        PartitionName = self.params.get("PartitionName","PartitionName=(\S+)")
         MaxNodes = self.params.get("MaxNodes","MaxNodes=(\S+)")
-        MaxMemPerNode = self.params.get("MaxMemPerNode","MaxMemPerNode=(\S+)')")
-        DefaultTime = self.params.get("DefaultTime","DefaultTime=(\S+)')")
-        MaxTime = self.params.get("MaxTime","MaxTime=(\S+)')")
-        State = self.params.get("State","State=(\S+)')")
-        ReservationName = self.params.get("ReservationName","ReservationName=(\S+)')")
-        PartitionName = self.params.get("PartitionName","PartitionName=(\S+)')")
-        NodCnt = self.params.get("NodCnt","NodCnt=(\S+)')")
-        State = self.params.get("State","State=(\S+)')")
+        MaxMemPerNode = self.params.get("MaxMemPerNode","MaxMemPerNode=(\S+)")
+        DefaultTime = self.params.get("DefaultTime","DefaultTime=(\S+)")
+        MaxTime = self.params.get("MaxTime","MaxTime=(\S+)")
+        State = self.params.get("State","State=(\S+)")
+        ReservationName = self.params.get("ReservationName","ReservationName=(\S+)")
+        NodCnt = self.params.get("NodCnt","NodCnt=(\S+)")
+        State = self.params.get("State","State=(\S+)")
 
         cmd = scontrol + " show partition"
         self.debug("running "+cmd)
@@ -794,7 +793,6 @@ class ComputingManagerAcceleratorInfoStep(computing_manager_accel_info.Computing
         computing_manager_accel_info.ComputingManagerAcceleratorInfoStep.__init__(self)
 
     def _run(self):
-        #import rpdb2; rpdb2.start_embedded_debugger("asdf")
         manager_accel_info = computing_manager_accel_info.ComputingManagerAcceleratorInfo()
         #manager.ProductName = "SLURM"
         #manager.Name = "SLURM"
@@ -845,7 +843,6 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
 
     def _run(self):
         # get info on the nodes
-#        import rpdb2; rpdb2.start_embedded_debugger("asdf")
         scontrol = self.params.get("scontrol","scontrol")
         cmd = scontrol + " show node -d"
         self.debug("running "+cmd)
