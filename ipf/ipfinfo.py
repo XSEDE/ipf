@@ -332,7 +332,7 @@ class IPFInformationJson(EntityOgfJson):
 
     def get(self):
         # return json.dumps(self.toJson(),sort_keys=True,indent=4)
-        return self.toJson()
+        return json.dumps(self.toJson(), indent=4)
 
 #    def get(self):
 #        #return "IPF version %s installed at %s is running the workflows: %s\n" % (self.data.ipf_version,IPF_PARENT_PATH,self.data.workflows)
