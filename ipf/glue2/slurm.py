@@ -844,7 +844,7 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
 
     def _run(self):
         # get info on the nodes
-        import rpdb2; rpdb2.start_embedded_debugger("asdf")
+#        import rpdb2; rpdb2.start_embedded_debugger("asdf")
         scontrol = self.params.get("scontrol","scontrol")
         cmd = scontrol + " show node -d"
         self.debug("running "+cmd)
