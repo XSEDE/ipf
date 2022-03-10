@@ -121,7 +121,7 @@ def configure():
    
     if args.workflows: 
         for workflow in args.workflows.split(","):
-            print("workflow is %s" % workflow)
+            print("** Configuring workflow: %s" % workflow)
             if workflow == "compute":
                configure_compute_workflow(resource_name,args,template_json)
             if workflow == "activity":
