@@ -58,11 +58,11 @@ class ComputingManagerAcceleratorInfoStep(GlueStep):
         #self.shares = self._getInput(ComputingShares).shares
 
         manager_accel_info = self._run()
-        manager_accel_info.ComputingManagerID = "urn:glue2:ComputingManager:%s" % (
+        manager_accel_info.ComputingManagerID = "urn:ogf:glue2:xsede.org:ComputingManager:%s" % (
             self.resource_name)
 
         manager_accel_info.id = "%s" % (self.resource_name)
-        manager_accel_info.ID = "urn:glue2:ComputingManagerAcceleratorInfo:%s" % (
+        manager_accel_info.ID = "urn:ogf:glue2:xsede.org:ComputingManagerAcceleratorInfo:%s" % (
             self.resource_name)
 
         if self.accel_envs:

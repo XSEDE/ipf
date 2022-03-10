@@ -54,16 +54,16 @@ class ComputingShareAcceleratorInfoStep(GlueStep):
         self.accel_envs = self._getInput(AcceleratorEnvironments).accel_envs
         #self.manager = self._getInput(ComputingManager).manager
         self.shares = self._getInput(ComputingShares).shares
-        self.ComputingManagerID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
+        self.ComputingManagerID = "urn:ogf:glue2:xsede.org:ComputingManager:%s" % (self.resource_name)
         #self.UsedAcceleratorSlots = None         # integer
         accel_shares = []
 
         for computing_share in self.shares:
             share_accel_info = self._run()
             share_accel_info.id = "%s" % (self.resource_name)
-            share_accel_info.ID = "urn:glue2:ComputingShareAcceleratorInfo:%s.%s" % (computing_share.Name,self.resource_name)
+            share_accel_info.ID = "urn:ogf:glue2:xsede.org:ComputingShareAcceleratorInfo:%s.%s" % (computing_share.Name,self.resource_name)
             share_accel_info.Name = computing_share.Name
-            #share_accel_info.ID = "urn:glue2:ComputingShareAcceleratorInfo:%s" % (self.resource_name)
+            #share_accel_info.ID = "urn:ogf:glue2:xsede.org:ComputingShareAcceleratorInfo:%s" % (self.resource_name)
             share_accel_info.ComputingShareID.append(computing_share.ID)
             share_accel_info._addComputingShare(computing_share)
             computing_share.ComputingShareAccelInfoID=share_accel_info.ID

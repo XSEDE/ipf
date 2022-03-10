@@ -59,8 +59,8 @@ class ComputingManagerStep(GlueStep):
         manager = self._run()
 
         manager.id = "%s" % (self.resource_name)
-        manager.ID = "urn:glue2:ComputingManager:%s" % (self.resource_name)
-        manager.ServiceID = "urn:glue2:ComputingService:%s" % (self.resource_name)
+        manager.ID = "urn:ogf:glue2:xsede.org:ComputingManager:%s" % (self.resource_name)
+        manager.ServiceID = "urn:ogf:glue2:xsede.org:ComputingService:%s" % (self.resource_name)
         if self.CMAccelInfo.TotalPhysicalAccelerators is not None:
             manager.ComputingManagerAcceleratorInfoID=self.CMAccelInfo.ID
 

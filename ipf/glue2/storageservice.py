@@ -186,7 +186,7 @@ class StorageServiceStep(Step):
                     else:
                         ServiceType = "LoginService"
         serv.resource_name = self.resource_name 
-        serv.ID = "urn:glue2:%s:%s-%s" % (ServiceType,serv.Name,self.resource_name)
+        serv.ID = "urn:ogf:ogf:glue2:xsede.org:%s:%s-%s" % (ServiceType,serv.Name,self.resource_name)
         serv.ServiceType = ServiceType
         servlist.add(serv)
         
@@ -259,7 +259,7 @@ class SSOgfJson(Representation):
                 endpoint.InterfaceName = serv.Type
                 endpoint.InterfaceVersion = serv.Version
                 endpoint.Name = serv.Name
-                endpoint.ID = "urn:glue2:Endpoint:%s-%s-%s" % (serv.Version, serv.Name, serv.resource_name)
+                endpoint.ID = "urn:ogf:glue2:xsede.org:Endpoint:%s-%s-%s" % (serv.Version, serv.Name, serv.resource_name)
                 endpoint.ServiceID = serv.ID
                 endpoint.QualityLevel = serv.QualityLevel
                 serv.EndpointID = endpoint.ID

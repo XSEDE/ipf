@@ -60,9 +60,9 @@ class AcceleratorEnvironmentsStep(GlueStep):
         if host_groups:
             for host_group in host_groups:
                 host_group.id = "%s.%s" % (host_group.Name, self.resource_name)
-                host_group.ID = "urn:glue2:AcceleratorEnvironment:%s.%s" % (
+                host_group.ID = "urn:ogf:glue2:xsede.org:AcceleratorEnvironment:%s.%s" % (
                     host_group.Name, self.resource_name)
-                host_group.ManagerID = "urn:glue2:ComputingManager:%s" % (
+                host_group.ManagerID = "urn:ogf:glue2:xsede.org:ComputingManager:%s" % (
                     self.resource_name)
                 self.debug("host_group.id "+host_group.id)
                 self.debug("host_group.uas " +
@@ -146,7 +146,7 @@ class AcceleratorEnvironmentsStep(GlueStep):
         if len(host.ShareID) == 0:
             return True
         for share in host.ShareID:
-            m = re.search("urn:glue2:ComputingShare:(\S+).%s" %
+            m = re.search("urn:ogf:glue2:xsede.org:ComputingShare:(\S+).%s" %
                           self.resource_name, share)
             if self._includeQueue(m.group(1)):
                 return True

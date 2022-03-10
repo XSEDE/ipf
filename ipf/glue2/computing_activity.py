@@ -57,9 +57,9 @@ class ComputingActivitiesStep(GlueStep):
                 activity.id = "%s.unknown.%s" % (activity.LocalIDFromManager,self.resource_name)
             else:
                 activity.id = "%s.%s.%s" % (activity.LocalIDFromManager,activity.LocalOwner,self.resource_name)
-            activity.ID = "urn:glue2:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
+            activity.ID = "urn:ogf:glue2:xsede.org:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
             if activity.Queue is not None:
-                activity.ShareID = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
+                activity.ShareID = "urn:ogf:glue2:xsede.org:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
             activity.hide = self.params.get("hide_job_attribs",[])
 
         self._output(ComputingActivities(self.resource_name,activities))
@@ -131,9 +131,9 @@ class ComputingActivityUpdateStep(GlueStep):
             activity.id = "%s.unknown.%s" % (activity.LocalIDFromManager,self.resource_name)
         else:
             activity.id = "%s.%s.%s" % (activity.LocalIDFromManager,activity.LocalOwner,self.resource_name)
-        activity.ID = "urn:glue2:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
+        activity.ID = "urn:ogf:glue2:xsede.org:ComputingActivity:%s.%s" % (activity.LocalIDFromManager,self.resource_name)
         if activity.Queue is not None:
-            activity.ShareID = "urn:glue2:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
+            activity.ShareID = "urn:ogf:glue2:xsede.org:ComputingShare:%s.%s" % (activity.Queue,self.resource_name)
         activity.hide = self.params.get("hide_job_attribs",[])
         
         self._output(activity)

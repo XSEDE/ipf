@@ -5,8 +5,8 @@
 The *Information Publishing Framework* "IPF" is a tool (1) used by resource operators to publish dynamic
 resource information to XSEDE's Information Services (2). IPF can publish four types of resource information:
  1. Software Modules available from the command line
- 2. Network services information
- 3. Batch system configuration and queue contents
+ 2. Batch system configuration and queue contents
+ 3. Network services information
  4. Batch scheduler job events
  
 XSEDE requires Level 1, 2, and 3 operators (3) to publish this dynamic resource information using IPF.

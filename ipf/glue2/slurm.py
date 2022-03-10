@@ -174,11 +174,11 @@ def _getJob(step, job_str,params):
     m = re.search(Partition,job_str)
     if m is not None:
         job.Queue = m.group(1)
-        job.ResourceID = "urn:glue2:ExecutionEnvironment:%s.%s" % (m.group(1),step.resource_name)
+        job.ResourceID = "urn:ogf:glue2:xsede.org:ExecutionEnvironment:%s.%s" % (m.group(1),step.resource_name)
     m = re.search(Reservation,job_str)
     if m is not None and m.group(1) != "(null)":
         job.Extension["ReservationName"] = m.group(1)
-        job.ResourceID = "urn:glue2:ExecutionEnvironment:%s.%s" % (m.group(1),step.resource_name)
+        job.ResourceID = "urn:ogf:glue2:xsede.org:ExecutionEnvironment:%s.%s" % (m.group(1),step.resource_name)
     m = re.search(JobState,job_str)
     if m is not None:
         state = m.group(1)  # see squeue man page for state descriptions
@@ -491,7 +491,7 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
             else:
                 share.ServingState = "closed"
 
-        share.ResourceID = ["urn:glue2:ExecutionEnvironment:%s.%s" % (share.Name,self.resource_name)]
+        share.ResourceID = ["urn:ogf:glue2:xsede.org:ExecutionEnvironment:%s.%s" % (share.Name,self.resource_name)]
         return share
 
     def _getReservation(self, rsrv_str):
@@ -502,7 +502,7 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
         if m is None:
             raise StepError("didn't find 'ReservationName'")
         share.Name = m.group(1)
-        share.ResourceID = ["urn:glue2:ExecutionEnvironment:%s.%s" % (share.Name,self.resource_name)]
+        share.ResourceID = ["urn:ogf:glue2:xsede.org:ExecutionEnvironment:%s.%s" % (share.Name,self.resource_name)]
         m = re.search(PartitionName,rsrv_str)
         if m is not None:                                                                                              
             share.MappingQueue = m.group(1)
@@ -727,7 +727,7 @@ class ExecutionEnvironmentsStep(execution_environment.ExecutionEnvironmentsStep)
         if m is None:
             raise StepError("didn't find 'ReservationName'")
         rsrv.Name = m.group(1)
-        rsrv.ShareID = ["urn:glue2:ComputingShare:%s.%s" % (rsrv.Name,self.resource_name)]
+        rsrv.ShareID = ["urn:ogf:glue2:xsede.org:ComputingShare:%s.%s" % (rsrv.Name,self.resource_name)]
 
         m = re.search(StartTime,rsrv_str)
         if m is not None:
@@ -1053,7 +1053,7 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
         if m is None:
             raise StepError("didn't find 'ReservationName'")
         rsrv.Name = m.group(1)
-        rsrv.ShareID = ["urn:glue2:ComputingShare:%s.%s" % (rsrv.Name,self.resource_name)]
+        rsrv.ShareID = ["urn:ogf:glue2:xsede.org:ComputingShare:%s.%s" % (rsrv.Name,self.resource_name)]
 
         m = re.search(StartTime,rsrv_str)
         if m is not None:

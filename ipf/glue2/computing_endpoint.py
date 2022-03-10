@@ -52,8 +52,8 @@ class ComputingEndpointStep(GlueStep):
                 endpoints[i].Name = "endpoint-%d" % (i+1)
         for endpoint in endpoints:
             endpoint.id = "%s.%s" % (endpoint.Name,self.resource_name)
-            endpoint.ID = "urn:glue2:ComputingEndpoint:%s.%s" % (endpoint.Name,self.resource_name)
-            endpoint.ServiceID = "urn:glue2:ComputingService:%s" % (self.resource_name)
+            endpoint.ID = "urn:ogf:glue2:xsede.org:ComputingEndpoint:%s.%s" % (endpoint.Name,self.resource_name)
+            endpoint.ServiceID = "urn:ogf:glue2:xsede.org:ComputingService:%s" % (self.resource_name)
 
             self._output(endpoint)
 

@@ -37,7 +37,7 @@ class Service(Entity):
         self.ShareID = []                               # list of string (ID)
         self.ManagerID = []                             # list of string (ID)
         self.ContactID = []                             # list of string (ID)
-        self.LocationID = "urn:glue2:Location:unknown"  # string (ID)
+        self.LocationID = "urn:ogf:glue2:xsede.org:Location:unknown"  # string (ID)
         self.ServiceID = []                             # list of string (ID)
 
 #######################################################################################################################

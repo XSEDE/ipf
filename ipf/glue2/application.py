@@ -138,7 +138,7 @@ class ApplicationHandle(Entity):
         # string
         self.Value = "unknown"
         # string (ID)
-        self.ApplicationEnvironmentID = "urn:glue2:ApplicationEnvironment:unknown"
+        self.ApplicationEnvironmentID = "urn:ogf:glue2:xsede.org:ApplicationEnvironment:unknown"
 
 #######################################################################################################################
 
@@ -183,9 +183,9 @@ class Applications(Data):
             app_version = env.AppVersion
         env.Name = "%s-%s" % (env.AppName, app_version)
         env.id = "%s.%s.%s" % (app_version, env.AppName, self.resource_name)
-        env.ID = "urn:glue2:ApplicationEnvironment:%s.%s.%s.%s" % (
+        env.ID = "urn:ogf:glue2:xsede.org:ApplicationEnvironment:%s.%s.%s.%s" % (
             app_version, env.AppName, self.resource_name, env.path_hash)
-        env.ComputingManagerID = "urn:glue2:ComputingManager:%s" % (
+        env.ComputingManagerID = "urn:ogf:glue2:xsede.org:ComputingManager:%s" % (
             self.resource_name)
 
         env.ApplicationHandleID = []
@@ -194,7 +194,7 @@ class Applications(Data):
             handle.Name = "%s-%s" % (env.AppName, app_version)
             handle.id = "%s.%s.%s.%s" % (
                 handle.Type, app_version, env.AppName, self.resource_name)
-            handle.ID = "urn:glue2:ApplicationHandle:%s:%s.%s.%s.%s" % \
+            handle.ID = "urn:ogf:glue2:xsede.org:ApplicationHandle:%s:%s.%s.%s.%s" % \
                         (handle.Type, app_version, env.AppName,
                          self.resource_name, env.path_hash)
             env.ApplicationHandleID.append(handle.ID)
