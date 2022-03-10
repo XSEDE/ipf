@@ -173,6 +173,7 @@ class ComputingShare(Share):
         self.ReservationPolicy = None           # string
         self.ComputingShareAccelInfoID = ""     # string
         self.Tag = []                           # list of string
+        self.EnvironmentID = []                 # list of string
         # use Endpoint, Resource, Service, Activity from Share
         #   instead of ComputingEndpoint, ExecutionEnvironment, ComputingService, ComputingActivity
 

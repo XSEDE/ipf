@@ -31,6 +31,7 @@ class Share(Entity):
         self.Description = None                       # string
         self.EndpointID = []                          # list of string (uri)
         self.ResourceID = []                          # list of string (uri)
+        self.EnvironmentID = []                          # list of string (uri)
         self.ServiceID = "urn:ogf:glue2:xsede.org:Service:unknown"  # string (uri)
         self.ActivityID = []                          # list of string (uri)
         self.MappingPolicyID = []                     # list of string (uri)
@@ -71,6 +72,10 @@ class ShareTeraGridXml(EntityTeraGridXml):
             e = doc.createElement("Resource")
             e.appendChild(doc.createTextNode(resource))
             element.appendChild(e)
+        for resource in self.data.EnvironmentID:
+            e = doc.createElement("Environment")
+            e.appendChild(doc.createTextNode(resource))
+            element.appendChild(e)
         if self.data.ServiceID is not None:
             e = doc.createElement("Service")
             e.appendChild(doc.createTextNode(self.data.ServiceID))
@@ -105,6 +110,7 @@ class ShareOgfJson(EntityOgfJson):
         if len(self.data.EndpointID) > 0:
             associations["EndpointID"] = self.data.EndpointID
         associations["ResourceID"] = self.data.ResourceID
+        associations["EnvironmentID"] = self.data.EnvironmentID
         associations["ServiceID"] = self.data.ServiceID
         if len(self.data.ActivityID) > 0:
             associations["ActivityID"] = self.data.ActivityID

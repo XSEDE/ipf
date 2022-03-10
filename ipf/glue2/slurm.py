@@ -174,11 +174,11 @@ def _getJob(step, job_str,params):
     m = re.search(Partition,job_str)
     if m is not None:
         job.Queue = m.group(1)
-        job.ResourceID = "urn:ogf:glue2:xsede.org:ExecutionEnvironment:%s.%s" % (m.group(1),step.resource_name)
+        job.EnvironmentID = "urn:ogf:glue2:xsede.org:ExecutionEnvironment:%s.%s" % (m.group(1),step.resource_name)
     m = re.search(Reservation,job_str)
     if m is not None and m.group(1) != "(null)":
         job.Extension["ReservationName"] = m.group(1)
-        job.ResourceID = "urn:ogf:glue2:xsede.org:ExecutionEnvironment:%s.%s" % (m.group(1),step.resource_name)
+        job.EnvironmentID = "urn:ogf:glue2:xsede.org:ExecutionEnvironment:%s.%s" % (m.group(1),step.resource_name)
     m = re.search(JobState,job_str)
     if m is not None:
         state = m.group(1)  # see squeue man page for state descriptions
@@ -491,7 +491,7 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
             else:
                 share.ServingState = "closed"
 
-        share.ResourceID = ["urn:ogf:glue2:xsede.org:ExecutionEnvironment:%s.%s" % (share.Name,self.resource_name)]
+        share.EnvironmentID = ["urn:ogf:glue2:xsede.org:ExecutionEnvironment:%s.%s" % (share.Name,self.resource_name)]
         return share
 
     def _getReservation(self, rsrv_str):
@@ -502,7 +502,7 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
         if m is None:
             raise StepError("didn't find 'ReservationName'")
         share.Name = m.group(1)
-        share.ResourceID = ["urn:ogf:glue2:xsede.org:ExecutionEnvironment:%s.%s" % (share.Name,self.resource_name)]
+        share.EnvironmentID = ["urn:ogf:glue2:xsede.org:ExecutionEnvironment:%s.%s" % (share.Name,self.resource_name)]
         m = re.search(PartitionName,rsrv_str)
         if m is not None:                                                                                              
             share.MappingQueue = m.group(1)
