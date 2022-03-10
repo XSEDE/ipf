@@ -414,7 +414,7 @@ class ComputingSharesStep(computing_share.ComputingSharesStep):
         # create shares for partitions
         scontrol = self.params.get("scontrol","scontrol")
         PartitionName = self.params.get("PartitionName","PartitionName=(\S+)')")
-        MaxNodes = self.params.get("MaxNodes","MaxNodes=(\S+)')")
+        MaxNodes = self.params.get("MaxNodes","MaxNodes=(\S+)")
         MaxMemPerNode = self.params.get("MaxMemPerNode","MaxMemPerNode=(\S+)')")
         DefaultTime = self.params.get("DefaultTime","DefaultTime=(\S+)')")
         MaxTime = self.params.get("MaxTime","MaxTime=(\S+)')")
@@ -794,6 +794,7 @@ class ComputingManagerAcceleratorInfoStep(computing_manager_accel_info.Computing
         computing_manager_accel_info.ComputingManagerAcceleratorInfoStep.__init__(self)
 
     def _run(self):
+        #import rpdb2; rpdb2.start_embedded_debugger("asdf")
         manager_accel_info = computing_manager_accel_info.ComputingManagerAcceleratorInfo()
         #manager.ProductName = "SLURM"
         #manager.Name = "SLURM"
@@ -982,7 +983,7 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
             elif len(greslist) >= 3:
                 endindex = greslist[2].find("(")
                 if endindex == -1:
-                    node.UsedAcceleratorSlots = int(greslist[2])
+                    node.UsedAcceleratorSlots = int(greslist[-1])
                 else:
                     uas = greslist[2][:endindex]
                     node.UsedAcceleratorSlots = int(uas)

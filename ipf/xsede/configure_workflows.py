@@ -406,7 +406,7 @@ def addXsedeAmqpToWorkflow(workflow_name,workflow_json, template_json, args):
         publish_step = "ipf.glue2.computing_activity.ComputingActivityOgfJson"
         exchange = "glue2.computing_activity"
         description = "Publish job updates to XSEDE"
-    elif workflow_name == "software":
+    elif workflow_name == "extmodules":
         publish_step = "ipf.glue2.application.ApplicationsOgfJson"
         exchange = "glue2.applications"
         description = "Publish modules to XSEDE"
