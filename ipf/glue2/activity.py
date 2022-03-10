@@ -32,6 +32,7 @@ class Activity(Entity):
         self.EndpointID = None   # string uri
         self.ShareID = None      # string uri
         self.ResourceID = None   # string uri
+        self.EnvironmentID = None   # string uri
         self.ActivityID = []     # list of string uri
 
 #######################################################################################################################
@@ -73,6 +74,10 @@ class ActivityTeraGridXml(EntityTeraGridXml):
             e = doc.createElement("Resource")
             e.appendChild(doc.createTextNode(self.data.ResourceID))
             element.appendChild(e)
+        if self.data.EnvironmentID is not None:
+            e = doc.createElement("Resource")
+            e.appendChild(doc.createTextNode(self.data.EnvironmentID))
+            element.appendChild(e)
         for act in self.data.ActivityID:
             e = doc.createElement("Activity")
             e.appendChild(doc.createTextNode(act))
@@ -97,6 +102,7 @@ class ActivityOgfJson(EntityOgfJson):
         associations["EndpointID"] = self.data.EndpointID
         associations["ShareID"] = self.data.ShareID
         associations["ResourceID"] = self.data.ResourceID
+        associations["EnvironmentID"] = self.data.EnvironmentID
         associations["ActivityID"] = self.data.ActivityID
 
         doc["Associations"] = associations
