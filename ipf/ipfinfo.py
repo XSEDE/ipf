@@ -303,7 +303,7 @@ class IPFInformation(Entity):
         self.Validity = doc.get("Validity", Location.DEFAULT_VALIDITY)
         self.ipf_version = doc.get("ipf_version", "unknown")
         self.type = "IPF"
-        self.ID = "urn:glue2:PublisherInfo:%s" % str.join(
+        self.ID = "urn:ogf:glue2:xsede.org:PublisherInfo:%s" % str.join(
             '-', self.type, self.ipf_version)
         self.id = self.ID
         self.workflows = doc.get("workflows", "unknown")
@@ -351,7 +351,7 @@ class IPFInformationJson(EntityOgfJson):
             doc["Workflows"] = IPFWorkflowsTxt(self.data.workflows).get()
         doc["Type"] = "IPF"
         s = '-'
-        doc["ID"] = "urn:glue2:PublisherInfo:%s" % s.join(
+        doc["ID"] = "urn:ogf:glue2:xsede.org:PublisherInfo:%s" % s.join(
             (doc["Type"], doc["Version"]))
         return doc
 

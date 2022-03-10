@@ -388,7 +388,7 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         handle = application.ApplicationHandle()
         handle.Type = ApplicationHandle.MODULE
         handle.Value = env.AppName+"/"+env.AppVersion
-        env.ExecutionEnvironmentID = "urn:glue2:ExecutionEnvironment:%s" % (
+        env.ExecutionEnvironmentID = "urn:ogf:glue2:xsede.org:ExecutionEnvironment:%s" % (
             self.resource_name)
 
         apps.add(env, [handle])

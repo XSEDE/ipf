@@ -597,7 +597,7 @@ class HostsHandler(xml.sax.handler.ContentHandler):
         elif name == "queue":
             queue = attrs.getValue("name")
             self.cur_host.ShareID.append(
-                "urn:glue2:ComputingShare:%s.%s" % (queue, self.step.resource_name))
+                "urn:ogf:glue2:xsede.org:ComputingShare:%s.%s" % (queue, self.step.resource_name))
         elif name == "hostvalue":
             self.hostvalue_name = attrs.getValue("name")
 

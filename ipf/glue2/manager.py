@@ -30,7 +30,7 @@ class Manager(Entity):
 
         self.ProductName = "unknown"                  # string
         self.ProductVersion = None                    # string
-        self.ServiceID = "urn:glue2:Service:unknown"  # string (ID)
+        self.ServiceID = "urn:ogf:glue2:xsede.org:Service:unknown"  # string (ID)
         self.ResourceID = []                          # list of string (ID)
 
 #######################################################################################################################

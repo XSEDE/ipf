@@ -28,7 +28,7 @@ class Resource(Entity):
     def __init__(self):
         Entity.__init__(self)
 
-        self.ManagerID = "urn:glue2:Manager:unknown"  # string (uri)
+        self.ManagerID = "urn:ogf:glue2:xsede.org:ComputingManager:unknown"  # string (uri)
         self.ShareID = []                             # list of string (uri)
         self.ActivityID = []                          # list of string (uri)
 

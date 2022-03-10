@@ -73,7 +73,7 @@ class Location(Entity):
             self.CreationTime = datetime.datetime.now(tzoffset(0))
         self.Validity = doc.get("Validity",Location.DEFAULT_VALIDITY)
         self.Name = doc.get("Name","unknown")
-        self.ID = "urn:glue2:Location:%s" % self.Name.replace(" ","")
+        self.ID = "urn:ogf:glue2:xsede.org:Location:%s" % self.Name.replace(" ","")
         self.id = self.ID
         self.OtherInfo = doc.get("OtherInfo",[])
         self.Extension = doc.get("Extension",{})

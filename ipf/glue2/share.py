@@ -31,7 +31,7 @@ class Share(Entity):
         self.Description = None                       # string
         self.EndpointID = []                          # list of string (uri)
         self.ResourceID = []                          # list of string (uri)
-        self.ServiceID = "urn:glue2:Service:unknown"  # string (uri)
+        self.ServiceID = "urn:ogf:glue2:xsede.org:Service:unknown"  # string (uri)
         self.ActivityID = []                          # list of string (uri)
         self.MappingPolicyID = []                     # list of string (uri)
 

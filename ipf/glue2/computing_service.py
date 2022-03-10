@@ -57,9 +57,9 @@ class ComputingServiceStep(GlueStep):
         service = self._run()
 
         service.id = self.resource_name
-        service.ID = "urn:glue2:ComputingService:%s" % (self.resource_name)
+        service.ID = "urn:ogf:glue2:xsede.org:ComputingService:%s" % (self.resource_name)
         service.LocationID = self.location
-        service.ManagerID = ["urn:glue2:ComputingManager:%s" % (self.resource_name)]
+        service.ManagerID = ["urn:ogf:glue2:xsede.org:ComputingManager:%s" % (self.resource_name)]
 
 
         service._addActivities(self.activities)

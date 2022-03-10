@@ -30,7 +30,7 @@ class Entity(Data):
 
         self.CreationTime = datetime.datetime.now(tzoffset(0))
         self.Validity = None
-        self.ID = "urn:glue2:Unknown:unknown"   # string (uri)
+        self.ID = "urn:ogf:glue2:xsede.org:Unknown:unknown"   # string (uri)
         self.Name = None                        # string
         self.OtherInfo = []                     # list of string
         self.Extension = {}                     # (key,value) strings

@@ -58,13 +58,13 @@ class ComputingSharesStep(GlueStep):
 
         for share in shares:
             share.id = "%s.%s" % (share.Name,self.resource_name)
-            share.ID = "urn:glue2:ComputingShare:%s.%s" % (share.Name,self.resource_name)
-            share.ServiceID = "urn:glue2:ComputingService:%s" % (self.resource_name)
+            share.ID = "urn:ogf:glue2:xsede.org:ComputingShare:%s.%s" % (share.Name,self.resource_name)
+            share.ServiceID = "urn:ogf:glue2:xsede.org:ComputingService:%s" % (self.resource_name)
 
         self._addActivities(shares)
         for share in shares:
             if share.UsedAcceleratorSlots > 0:
-                share.ComputingShareAccelInfoID = "urn:glue2:ComputingShareAcceleratorInfo:%s.%s" % (share.Name,self.resource_name)
+                share.ComputingShareAccelInfoID = "urn:ogf:glue2:xsede.org:ComputingShareAcceleratorInfo:%s.%s" % (share.Name,self.resource_name)
 
         self._output(ComputingShares(self.resource_name,shares))
 
