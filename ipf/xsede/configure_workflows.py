@@ -66,18 +66,12 @@ def parseargs():
                         help='Password for publishing to XSEDE AMQP. Not needed if using certificate')
     parser.add_argument('--amqp_certificate_key', \
                         help='Location of certificate key for publishing to XSEDE AMQP. Not needed if using username')
-    parser.add_argument('--modulepath', action='store_true', \
+    parser.add_argument('--modulepath', \
                         help='MODULEPATH for software publishing workflow')
-    parser.add_argument('--servicepath', action='store_true', \
+    parser.add_argument('--servicepath', \
                         help='SERVICEPATH for service publishing workflow')
     parser.add_argument('--workflows', \
                         help='Comma delimited list of workflows to configure')
-    parser.add_argument('--software', action='store_true', \
-                        help='Configure the software publishing service')
-    parser.add_argument('--services', action='store_true', \
-                        help='Configure the services publishing service')
-    parser.add_argument('--e', action='store_true', \
-                        help='Configure the software publishing service')
     parser.add_argument('--workflowtemplate', \
                         help='Path to configured workflow to use as template for new workflow')
     parser.add_argument('--publish_to_xsede', action='store_true', \
