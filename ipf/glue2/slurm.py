@@ -886,7 +886,8 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
         node_map = {}
         for node in nodes:
             node_map[node.Name] = node
-        for accel_env in reservations:
+        for seq in (partitions,reservations):
+          for accel_env in seq:
             try:
                 node_names = accel_env.Extension["Nodes"]
             except KeyError:
@@ -969,6 +970,14 @@ class AcceleratorEnvironmentsStep(accelerator_environment.AcceleratorEnvironment
             elif len(greslist) == 3:
                 node.PhysicalAccelerators = int(greslist[2])
                 node.Type = greslist[1] 
+            elif len(greslist) >= 3:
+                endindex = greslist[2].find("(")
+                if endindex == -1:
+                    node.PhysicalAccelerators = int(greslist[-1])
+                else:
+                    pa = greslist[2][:endindex]
+                    node.PhysicalAccelerators = int(pa)
+                node.Type = greslist[1]
         m = re.search(GresUsed,node_str)
         if m is not None:
             greslist=[]
