@@ -279,15 +279,15 @@ class IPFInformationStep(Step):
 #        self.workflows = workflows
 #        self.resource_name = resource_name
 
-#class IPFInformation(Entity):
-class IPFInformation(Data):
+class IPFInformation(Entity):
+#class IPFInformation(Data):
 
     DEFAULT_VALIDITY = 60*60*24  # seconds
 
-    #def __init__(self):
-    #    Entity.__init__(self)
     def __init__(self):
-        Data.__init__(self)
+        Entity.__init__(self)
+#    def __init__(self):
+#        Data.__init__(self)
 
         self.ipf_version = None
         self.workflows = None
@@ -330,14 +330,14 @@ class IPFInformationTxt(Representation):
 #######################################################################################################################
 
 
-#class IPFInformationJson(EntityOgfJson):
-class IPFInformationJson(Representation):
+class IPFInformationJson(EntityOgfJson):
+#class IPFInformationJson(Representation):
     data_cls = IPFInformation
 
     def __init__(self, data):
-        #EntityOgfJson.__init__(self, data)
-        Representation.__init__(
-           self, Representation.MIME_APPLICATION_JSON, data)
+        EntityOgfJson.__init__(self, data)
+        #Representation.__init__(
+        #   self, Representation.MIME_APPLICATION_JSON, data)
 
     def get(self):
         # return json.dumps(self.toJson(),sort_keys=True,indent=4)
@@ -348,8 +348,8 @@ class IPFInformationJson(Representation):
 #        return json.loads({"IPFInfo": {"IPFVersion": self.data.ipf_version, "Location": IPF_PARENT_PATH, "hostname": self.data.resource_name, "workflows": self.data.workflows}})
 
     def toJson(self):
-        #doc = EntityOgfJson.toJson(self)
-        doc = {}
+        doc = EntityOgfJson.toJson(self)
+        #doc = {}
 
         doc["Location"] = IPF_PARENT_PATH
         if self.data.ipf_version is not None:
