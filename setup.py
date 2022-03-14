@@ -35,7 +35,7 @@ include ipf/bin/ipf_workflow
 include ipf/bin/ipf_configure_xsede
 include ipf/etc/ipf/logging.conf
 include ipf/etc/ipf/workflow/*.json
-include ipf/etc/ipf/workflow/glue2/templates/*.json
+include ipf/etc/ipf/workflow/templates/glue2/*.json
 include ipf/etc/ipf/init.d/ipf-WORKFLOW
 include ipf/etc/ipf/xsede/ca_certs.pem
 include ipf/var/ipf/README.txt
@@ -97,8 +97,8 @@ if __name__ == "__main__":
               ("/etc/ipf",["ipf/etc/ipf/logging.conf"]),
               ("/etc/ipf/xsede",["ipf/etc/ipf/xsede/ca_certs.pem"]),
               ("/etc/ipf/workflow",workflow_paths("ipf/etc/ipf/workflow")),
-              ("/etc/ipf/workflow/glue2",workflow_paths("ipf/etc/ipf/workflow/glue2")),
-              ("/etc/ipf/workflow/glue2/templates",workflow_paths("ipf/etc/ipf/workflow/glue2/templates")),
+              ("/etc/ipf/workflow/glue2",[]),
+              ("/etc/ipf/workflow/templates/glue2",workflow_paths("ipf/etc/ipf/workflow/templates/glue2")),
               ("/etc/ipf/init.d",["ipf/etc/ipf/init.d/ipf-WORKFLOW"]),
               ("/var/ipf",[])
           ],
