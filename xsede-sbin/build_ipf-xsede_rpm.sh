@@ -2,7 +2,7 @@
 VERSION=`grep version ../setup.py |awk 'BEGIN { FS = "\"" } ; { print $2 }'`
 echo "Version is $VERSION"\n
 echo $VERSION >./VERSIONipf-xsede
-VERSION=1.5
+VERSION=1.7a1
 RELEASE=`cat ./RELEASE`
 SDIDIR=`pwd`
 cd ..
