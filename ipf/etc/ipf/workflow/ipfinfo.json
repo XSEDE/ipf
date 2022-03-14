@@ -1,7 +1,7 @@
 {
   "name": "ipfinfo",
   "timeout": 15,
-  "description": "This workflow publishes information about the system to the screen",
+  "description": "This workflow gathers information about IPF itself and is configured and run automatically on all resources",
   "steps": [
     { "name": "ipf.sysinfo.ResourceNameStep" },
     { "name": "ipf.ipfinfo.IPFVersionStep" },
