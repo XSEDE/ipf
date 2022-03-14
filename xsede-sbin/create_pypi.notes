@@ -1,0 +1,6 @@
+#For now this is notes, not literally a script that works
+python3 setup.py sdist bdist_wheel
+twine upload dist/ipf-1.5b4-py3-none-any.whl dist/ipf-1.5b4.tar.gz
+
+username: __token__
+password:  contents of ~/pypi.org.token
