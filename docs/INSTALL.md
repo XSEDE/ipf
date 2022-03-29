@@ -109,6 +109,29 @@ all Level 1 and 2 *SPs that offer XSEDE allocated batch computing*
 ## Pre-requisites
 --------------
 
+### Preparing to Install IPF
+-------------------------
+
+
+-   Before installing IPF operators should register their resource in
+    RDR (4).
+
+
+-   Identify a single server to run IPF -- a single IPF instance can be used to
+    publish information for multiple resources.
+
+
+-   To install IPF on machines that are part of multiple XSEDE resources
+    please first review [XSEDE's Advanced Integration Options](https://www.ideals.illinois.edu/bitstream/handle/2142/99081/XSEDE_SP_Advanced_Integration_Options.pdf)
+    documentation.
+
+
+-   If you already have an older IPF create a backup of the /etc/ipf
+    working configurations:
+
+
+    $ tar -cf ipf-etc-yyyymmdd.tar /etc/ipf
+
 
 ### Batch System workflow requirements
 
@@ -140,33 +163,6 @@ all Level 1 and 2 *SPs that offer XSEDE allocated batch computing*
     Configuring Torque Logging.
 
 
-## Preparing to Install IPF
--------------------------
-
-
--   Before installing IPF operators should register their resource in
-    RDR (4).
-
-
--   Install and run IPF on a single server for each resource.
-
-
--   If IPF will authenticate to Information Services using a X.509 host
-    key/certificate, the public and private keys must be readable by the
-    user running IPF.
-
-
--   To install IPF on machines that are part of multiple XSEDE resources
-    please first review [XSEDE's Advanced Integration Options](https://www.ideals.illinois.edu/bitstream/handle/2142/99081/XSEDE_SP_Advanced_Integration_Options.pdf)
-    documentation.
-
-
--   If you already have an older IPF create a backup of the /etc/ipf
-    working configurations:
-
-
-    $ tar -cf ipf-etc-yyyymmdd.tar /etc/ipf
-
 
 ### Software Dependencies
 
@@ -174,9 +170,6 @@ all Level 1 and 2 *SPs that offer XSEDE allocated batch computing*
 -   Python 3.6 or newer
 -   The python-amqp package
 -   The python-setuptools package IF installed by RPM.
--   (Optional) The xdresourceid tool. If not available a resourceid will
-    need to be configured by hand.
-
 
 *These dependencies are encoded in the RPM.*
 
