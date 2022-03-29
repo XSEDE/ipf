@@ -60,26 +60,26 @@ workflow contains one step, which is the `<resource>_services.json` workflow.
 
 
 IPF workflows are typically defined by JSON files under
-\$IPF\_ETC/ipf/workflow/, particularly in \$IPF\_ETC/ipf/workflow/glue2.
+$IPF_ETC_PATH/ipf/workflow/, particularly in $IPF_ETC_PATH/ipf/workflow/glue2.
 
 
 ### How is an IPF workflow invoked?
 
 
-To run a workflow execute the ipf\_workflow program passing it a
+To run a workflow execute the ipf_workflow program passing it a
 workflow definition file argument, like this:
 
 
     $INSTALL_DIR/ipf-VERSION/ipf/bin/ipf_workflow <workflow.json>
 
 
-Workflow JSON files are specified relative to \$IPF\_ETC, so
+Workflow JSON files are specified relative to $IPF_ETC_PATH, so
 `ipf_workflow sysinfo.json` and
 `ipf_workflow glue2/<resource>_services.json` are both valid
 invocations.
 
 
-Part of workflow configuration includes generating \$IPF\_ETC/ipf/init.d
+Part of workflow configuration includes generating $IPF_ETC_PATH/ipf/init.d
  scripts to run a workflow periodically. These scripts are usually copied to the system
 /etc/init.d directory during installation.
 
@@ -165,7 +165,7 @@ all Level 1 and 2 *SPs that offer XSEDE allocated batch computing*
     working configurations:
 
 
-    \$ tar -cf ipf-etc-yyyymmdd.tar /etc/ipf
+    $ tar -cf ipf-etc-yyyymmdd.tar /etc/ipf
 
 
 ### Software Dependencies
@@ -214,25 +214,25 @@ execute:
 
 When installing via pip: unlike in an RPM install, the files get
 installed relative to your Python installation (whether in a virtualenv
-or system Python). Notably, ipf\_configure\_xsede and ipf\_workflow end
+or system Python). Notably, ipf_configure_xsede and ipf_workflow end
 up in the virtualenv's bin directory, and the location IPF expects to
-find as its IPF\_ETC\_PATH (/etc/ipf in an RPM install) is relative to
+find as its IPF_ETC_PATH (/etc/ipf in an RPM install) is relative to
 the Python site-packages directory.
 
 
 You can find your site-packages path for the Python you used for the pip
-install with: \$ python -c 'import sysconfig;
-print(sysconfig.get\_paths()\["purelib"\])'
+install with: $ python -c 'import sysconfig;
+print(sysconfig.get_paths()["purelib"])'
 
 
 When running any IPF commands by hand in a pip install, you will need to
-set the environment variable IPF\_ETC\_PATH. Its value should be the
+set the environment variable IPF_ETC_PATH. Its value should be the
 site-packages directory referenced above, plus "/etc/ipf". For a system
 Python, this might look something like
 "/usr/lib/python3.6/site-packages/etc/ipf". If you have run
-ipf\_configure\_xsede to set up your workflows, and chosen the
+ipf_configure_xsede to set up your workflows, and chosen the
 recommended base directory, your workflow definitions will have the
-appropriate IPF\_ETC\_PATH defined in them.
+appropriate IPF_ETC_PATH defined in them.
 
 
 ### RPM Installation
@@ -252,7 +252,7 @@ Instructions](https://software.xsede.org/development/repo/repoconfig.txt).
 2)  Install ipf-xsede
 
 
-    \$ yum install ipf-xsede
+    $ yum install ipf-xsede
 
 
 
@@ -262,8 +262,8 @@ Instructions](https://software.xsede.org/development/repo/repoconfig.txt).
 
 
 The JSON files that have been written by previous runs of
-ipf\_configure\_xsede would, in some previous versions of IPF get
-overwritten by subsequent runs of ipf\_configure\_xsede. This is no
+ipf_configure_xsede would, in some previous versions of IPF get
+overwritten by subsequent runs of ipf_configure_xsede. This is no
 longer the case--previous versions get backed up, not overwritten. They
 will *not* be erased by removing OR updating the package (nor will the
 service files copied to /etc/init.d be erased).
@@ -272,7 +272,7 @@ service files copied to /etc/init.d be erased).
 To perform the update to the latest RPM distribution of ipf-xsede:
 
 
-1.  \$ sudo yum update ipf-xsede
+1.  $ sudo yum update ipf-xsede
 2.  If there are new workflows you need to configure, follow the
     configuration steps as outlined in the Configuration section below.
 
@@ -283,25 +283,25 @@ To perform the update to the latest RPM distribution of ipf-xsede:
 
 To make configuration easier, an `ipf_configure_xsede` script is
 provided in the bin directory (in /usr/bin if you installed RPMs,
-otherwise in \$INSTALL\_DIR/ipf-VERSION/ipf/bin). This script will 
+otherwise in $INSTALL_DIR/ipf-VERSION/ipf/bin). This script will 
 generate workflow definition files and example init files. 
 
 
 If you intend to publish software module information via the extmodules 
 workflow, set the environment variable MODULEPATH
 to point to the location of the module files before running
-ipf\_configure\_xsede. If you intend to publish the service workflow
+ipf_configure_xsede. If you intend to publish the service workflow
 set SERVICEPATH to point to the location of the service definition files
-before running ipf\_configure\_xsede (more on this below).
-As of IPF v 1.7, ipf\_configure\_xsede accepts command line parameters
+before running ipf_configure_xsede (more on this below).
+As of IPF v 1.7, ipf_configure_xsede accepts command line parameters
 to tell it which workflows to configure, and with which options.
 
 
-An invocation of ipf\_configure\_xsede on a resource that has installed 
+An invocation of ipf_configure_xsede on a resource that has installed 
 IPF using RPM might look like:
 
 
-/usr/bin/ipf_configure_xsede –rpm --resource_name <RESOURCE\_NAME> --workflows=extmodules,compute,activity --publish\_to\_xsede --amqp\_certificate /etc/grid-security/cert\_for\_ipf.pem --amqp\_certificate\_key /etc/grid-security/key_for_ipf.pem  –modulepath /path/to/modules –scheduler slurm –slurmctl_log <PATH TO slurmctl.log> 
+/usr/bin/ipf_configure_xsede –rpm --resource_name <RESOURCE_NAME> --workflows=extmodules,compute,activity --publish_to_xsede --amqp_certificate /etc/grid-security/cert_for_ipf.pem --amqp_certificate_key /etc/grid-security/key_for_ipf.pem  –modulepath /path/to/modules –scheduler slurm –slurmctl_log <PATH TO slurmctl.log> 
 
 
 These options mean:
@@ -349,7 +349,7 @@ Other common options:
 
 
 For a full list of command line options, please try
-\$ ipf\_configure\_xsede –help
+$ ipf_configure_xsede –help
 
 
 -   `ipf_configure_xsede` should be run as the user that will run the
@@ -395,13 +395,13 @@ Please submit an XSEDE ticket.
 
 
 When the script exits, the etc/ipf/workflow/glue2/ directory will
-contain a set of files RESOURCE\_NAME\_*.json that describe the
+contain a set of files RESOURCE_NAME_*.json that describe the
 information gathering workflows you have configured and etc/ipf/init.d
-will contain ipf-RESOURCE\_NAME\_* files which are the init scripts you
+will contain ipf-RESOURCE_NAME_* files which are the init scripts you
 have configured.
 
 
-As root, copy the etc/ipf/init.d/ipf-RESOURCE\_NAME-\* files into
+As root, copy the etc/ipf/init.d/ipf-RESOURCE_NAME-* files into
 /etc/init.d. Your information gathering workflows can then be enabled,
 started, and stopped in the usual ways. You may need to perform a
 'chkconfig --add' or equivalent for each service.
@@ -464,8 +464,8 @@ considered for total Accelerator stats.
 It is necessary for Torque to log at the correct level in order for IPF
 to be able to parse the messages that it uses in determining state.
 Furthermore, the logging level of Torque can be confusing, as it has
-both a log\_level and a log\_events (which is a bitmask). It is important
-to set log\_events to 255 to ensure that all types of events are logged.
+both a log_level and a log_events (which is a bitmask). It is important
+to set log_events to 255 to ensure that all types of events are logged.
 You can check the setting on your Torque installation by using "qmgr".
 
 
@@ -590,7 +590,7 @@ The Keywords field may contain any other desired keywords.
 The SupportStatus field should be: development, testing, or production.
 
 
-The SupportContact field must contain either: \* the exact URL:
+The SupportContact field must contain either: * the exact URL:
 `https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/globalid/helpdesk.xsede.org/`
 
 
@@ -602,14 +602,14 @@ The SupportContact field must contain either: \* the exact URL:
     `[{"GlobalID":"helpdesk.xsede.org","Name":"XSEDE Help Desk","Description":"XSEDE 24/7 support help desk","ShortName":"XSEDE","ContactEmail":"help@xsede.org","ContactURL":"https://www.xsede.org/get-help","ContactPhone":"1-866-907-2383"}]`
 
 
-IMPORTANT: \* The XSEDE user portal only displays software with a
-SupportContact containing the exact URL above. \* Modules that do not
+IMPORTANT: * The XSEDE user portal only displays software with a
+SupportContact containing the exact URL above. * Modules that do not
 have a SupportContact can have a default value assigned by the Workflow
 
 
 All XSEDE registered support contact organizations are found at:
 `https://info.xsede.org/wh1/xcsr-db/v1/supportcontacts/`. To register a
-new support contact e-mail help\@xsede.org using the Subject: Please
+new support contact e-mail help@xsede.org using the Subject: Please
 register a new Support Contact Organization in the CSR.
 
 
@@ -662,7 +662,7 @@ include them as comments is up to each operator.
 1)  To test the extended attribute modules workflow, execute:
 
 
-    \# service ipf-RESOURCE\_NAME-glue2-extmodules start
+    # service ipf-RESOURCE_NAME-glue2-extmodules start
 
 
 This init script starts a workflow that periodically gathers (every hour
@@ -670,8 +670,8 @@ by default) and publishes module information containing extended
 attributes.
 
 
-The log file is in /var/ipf/RESOURCE\_NAME\_modules.log (or
-\$INSTALL\_DIR/ipf/var/ipf/RESOURCE\_NAME\_extmodules.log) and should
+The log file is in /var/ipf/RESOURCE_NAME_modules.log (or
+$INSTALL_DIR/ipf/var/ipf/RESOURCE_NAME_extmodules.log) and should
 contain messages resembling:
 
 
@@ -690,14 +690,14 @@ This workflow describes your modules as a JSON document containing GLUE
 v2.0 Application Environment and Application Handle objects. This
 document is published to the XSEDE messaging services in step-3 and is
 written to a local file in step-4. You can examine this local file in
-/var/ipf/RESOURCE\_NAME\_apps.json. If you see any errors in gathering
+/var/ipf/RESOURCE_NAME_apps.json. If you see any errors in gathering
 module information, please submit an XSEDE ticket to SD&I.
 
 
 2)  To test the compute workflow, execute:
 
 
-    \# service ipf-RESOURCE\_NAME-glue2-compute start
+    # service ipf-RESOURCE_NAME-glue2-compute start
 
 
 This init script starts a workflow that periodically gathers (every
@@ -710,8 +710,8 @@ resource, contains sensitive information (user names), and will only be
 made available to authenticated XSEDE users.
 
 
-The log file is in /var/ipf/RESOURCE\_NAME\_compute.log (or
-\$INSTALL\_DIR/ipf/var/ipf/RESOURCE\_NAME\_compute.log) and should
+The log file is in /var/ipf/RESOURCE_NAME_compute.log (or
+$INSTALL_DIR/ipf/var/ipf/RESOURCE_NAME_compute.log) and should
 contain messages resembling:
 
 
@@ -728,11 +728,11 @@ specific commands available. Review the environment setup in the init
 script.
 
 
-You can examine /var/ipf/RESOURCE\_NAME\_compute.json (or
-\$INSTALL\_DIR/ipf/var/ipf/RESOURCE\_NAME\_compute.json) to determine if
+You can examine /var/ipf/RESOURCE_NAME_compute.json (or
+$INSTALL_DIR/ipf/var/ipf/RESOURCE_NAME_compute.json) to determine if
 the description of your resource is accurate. You can also exampine
-/var/ipf/RESOURCE\_NAME\_activities.json ( or
-\$INSTALL\_DIR/ipf/var/ipf/RESOURCE\_NAME\_activities.json) to determine
+/var/ipf/RESOURCE_NAME_activities.json ( or
+$INSTALL_DIR/ipf/var/ipf/RESOURCE_NAME_activities.json) to determine
 if the description of the jobs being managed by your resource is
 correct.
 
@@ -740,7 +740,7 @@ correct.
 3)  To test the activity workflow, execute:
 
 
-    \# service ipf-RESOURCE\_NAME-glue2-activity start
+    # service ipf-RESOURCE_NAME-glue2-activity start
 
 
 This init script starts a long-running workflow that watches your
@@ -748,8 +748,8 @@ scheduler log files and publishes information about jobs as they are
 submitted and change state.
 
 
-The log file is in /var/ipf/RESOURCE\_NAME\_activity.log (or
-\$INSTALL\_DIR/ipf/var/ipf/RESOURCE\_NAME\_activity.log) and should
+The log file is in /var/ipf/RESOURCE_NAME_activity.log (or
+$INSTALL_DIR/ipf/var/ipf/RESOURCE_NAME_activity.log) and should
 contain messages resembling:
 
 
@@ -769,15 +769,15 @@ contain messages resembling:
 
 
 You can look at the activity information published in
-/var/ipf/RESOURCE\_NAME\_activity.json (or
-\$INSTALL\_DIR/ipf/var/ipf/RESOURCE\_NAME\_activity.json). This file
+/var/ipf/RESOURCE_NAME_activity.json (or
+$INSTALL_DIR/ipf/var/ipf/RESOURCE_NAME_activity.json). This file
 contains the sequence of activity JSON documents published.
 
 
 4)  To test the Network Service (services) workflow, execute:
 
 
-    \# service ipf-RESOURCE\_NAME-glue2-services start
+    # service ipf-RESOURCE_NAME-glue2-services start
 
 
 This init script starts a workflow that periodically gathers (every hour
@@ -785,8 +785,8 @@ by default) and publishes service information from the service
 definition files.
 
 
-The log file is in /var/ipf/RESOURCE\_NAME\_services.log (or
-\$INSTALL\_DIR/ipf/var/ipf/RESOURCE\_NAME\_services.log) and should
+The log file is in /var/ipf/RESOURCE_NAME_services.log (or
+$INSTALL_DIR/ipf/var/ipf/RESOURCE_NAME_services.log) and should
 contain messages resembling:
 
 
@@ -805,7 +805,7 @@ This workflow describes your modules as a JSON document containing GLUE
 v2.0 Application Environment and Application Handle objects. This
 document is published to the XSEDE messaging services in step-3 and is
 written to a local file in step-4. You can examine this local file in
-/var/ipf/RESOURCE\_NAME\_apps.json. If you see any errors in gathering
+/var/ipf/RESOURCE_NAME_apps.json. If you see any errors in gathering
 module information, please submit an XSEDE ticket to SD&I.
 
 
@@ -849,15 +849,15 @@ and when they run.
 
 
 Depending on how you installed IPF, the IPF source tree can be found in
-various locations.\
+various locations.
 If you used RPM to install, the source code can be found at
 /usr/lib/python3.6/site-packages/ipf/. Note, however, that the
-\$IPF\_ETC dir for an RPM install is /etc/ipf (that is to say, inside
+$IPF_ETC_PATH dir for an RPM install is /etc/ipf (that is to say, inside
 the canonical /etc directory) If you used pip to install, the source
-code can be found in your python's site\_packages/ipf/ directory. To
-find the site\_packages directory for your python, you can run: \$
-python -c 'import sysconfig; print(sysconfig.get\_paths()\["purelib"\])'
-The pip-installed IPF\_ETC path is this directory above, with /etc/ipf/
+code can be found in your python's site_packages/ipf/ directory. To
+find the site_packages directory for your python, you can run: $
+python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'
+The pip-installed IPF_ETC_PATH path is this directory above, with /etc/ipf/
 added to the end, e.g. /usr/lib/python3.6/site-packages/etc/ipf
 
 
@@ -866,21 +866,21 @@ source code on your filesystem yourself.
 
 
 IPF ships with pre-configuration workflow templates for the various
-schedulers. They can be found in the IPF\_ETC directory in the
-\$IPF\_ETC/workflow/templates directory. The template files as currently
-constructed are: generic\_publish.json generic\_print.json
+schedulers. They can be found in the IPF_ETC_PATH directory in the
+$IPF_ETC_PATH/workflow/templates directory. The template files as currently
+constructed are: generic_publish.json generic_print.json
 glue2/lmod.json glue2/serviceremotepublish.json
-glue2/moab\_pbs\_compute.json glue2/extmodules.json
-glue2/extmodulesremote.json glue2/condor\_compute.json
-glue2/abstractservice.json glue2/pbs\_activity.json
-glue2/sge\_activity.json glue2/ipfinfo\_publish.json
-glue2/sge\_compute.json glue2/pbs\_compute.json
-glue2/slurm\_activity.json glue2/modules.json glue2/slurm\_compute.json
-glue2/openstack\_compute.json glue2/catalina\_pbs\_compute.json
+glue2/moab_pbs_compute.json glue2/extmodules.json
+glue2/extmodulesremote.json glue2/condor_compute.json
+glue2/abstractservice.json glue2/pbs_activity.json
+glue2/sge_activity.json glue2/ipfinfo_publish.json
+glue2/sge_compute.json glue2/pbs_compute.json
+glue2/slurm_activity.json glue2/modules.json glue2/slurm_compute.json
+glue2/openstack_compute.json glue2/catalina_pbs_compute.json
 
 
 These workflow templates are automatically used in workflow
-configuration via the ipf\_configure\_xsede script.
+configuration via the ipf_configure_xsede script.
 
 
 ### Post-configuration workflow files
@@ -888,11 +888,11 @@ configuration via the ipf\_configure\_xsede script.
 
 
 After you configure your workflows, the configured workflows will be
-represented by json files in \$IPF\_ETC/workflow and/or
-\$IPF\_ETC/workflow/glue2. There will be a json file for each configured
+represented by json files in $IPF_ETC_PATH/workflow and/or
+$IPF_ETC_PATH/workflow/glue2. There will be a json file for each configured
 workflow, and various workflows will have a second "periodic" workflow
 that calls the other at a configurable delay. These workflow files can
-be invoked by \$INSTALL\_DIR/ipf-VERSION/ipf/bin/ipf\_workflow
+be invoked by $INSTALL_DIR/ipf-VERSION/ipf/bin/ipf_workflow
 \<workflow.json\> However, in production, they are more commonly invoked
 by init scripts described below.
 
@@ -901,11 +901,11 @@ by init scripts described below.
 ---------------------
 
 
-The ipf\_configure\_xsede script generates an init script for each
-workflow you configure, and puts them in \$IPF\_ETC/init.d/ Each script
+The ipf_configure_xsede script generates an init script for each
+workflow you configure, and puts them in $IPF_ETC_PATH/init.d/ Each script
 runs one workflow, on a periodic basis (using the periodic workflows
 described above). It is important to note that the scripts in
-\$IPF\_ETC/init.d are NOT automatically configured to be run by the
+$IPF_ETC_PATH/init.d are NOT automatically configured to be run by the
 operating system: this must be done manually, typically by being copied
 into the system /etc/init.d directory as part of the installation and
 configuration process documented in this file. Thus, to see what is
