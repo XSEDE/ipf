@@ -125,6 +125,12 @@ all Level 1 and 2 *SPs that offer XSEDE allocated batch computing*
     please first review [XSEDE's Advanced Integration Options](https://www.ideals.illinois.edu/bitstream/handle/2142/99081/XSEDE_SP_Advanced_Integration_Options.pdf)
     documentation.
 
+-   Decide what installation method to use: 
+    *     RPM is recommended for production installs, as it is managed by system
+          tools, and creates an "xdinfo" user to run the workflows.
+    *     Pip is easier for installs where root access is not available, though
+          some additional environment variables will need to be set.
+
 
 -   If you already have an older IPF create a backup of the /etc/ipf
     working configurations:
@@ -214,18 +220,22 @@ the Python site-packages directory.
 
 
 You can find your site-packages path for the Python you used for the pip
-install with: $ python -c 'import sysconfig;
-print(sysconfig.get_paths()["purelib"])'
+install with: 
+     $ python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'
 
 
 When running any IPF commands by hand in a pip install, you will need to
 set the environment variable IPF_ETC_PATH. Its value should be the
 site-packages directory referenced above, plus "/etc/ipf". For a system
 Python, this might look something like
-"/usr/lib/python3.6/site-packages/etc/ipf". If you have run
-ipf_configure_xsede to set up your workflows, and chosen the
+"/usr/lib/python3.6/site-packages/etc/ipf". 
+
+If you have run ipf_configure_xsede to set up your workflows, and chosen the
 recommended base directory, your workflow definitions will have the
 appropriate IPF_ETC_PATH defined in them.
+
+If you wish to have the workflows run as a user other than the one that 
+performed the pip install, you will have to do so manually.
 
 
 ### RPM Installation
@@ -844,12 +854,15 @@ and when they run.
 Depending on how you installed IPF, the IPF source tree can be found in
 various locations.
 If you used RPM to install, the source code can be found at
-/usr/lib/python3.6/site-packages/ipf/. Note, however, that the
-$IPF_ETC_PATH dir for an RPM install is /etc/ipf (that is to say, inside
-the canonical /etc directory) If you used pip to install, the source
-code can be found in your python's site_packages/ipf/ directory. To
-find the site_packages directory for your python, you can run: $
-python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'
+/usr/lib/python3.6/site-packages/ipf/. 
+Note, however, that the $IPF_ETC_PATH dir for an RPM install is /etc/ipf 
+(that is to say, inside the canonical /etc directory) 
+
+If you used pip to install, the source
+code can be found in your python's site_packages/ipf/ directory. 
+To find the site_packages directory for your python, you can run: 
+     $python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'
+
 The pip-installed IPF_ETC_PATH path is this directory above, with /etc/ipf/
 added to the end, e.g. /usr/lib/python3.6/site-packages/etc/ipf
 
