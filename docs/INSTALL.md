@@ -10,19 +10,19 @@
 ------------
 
 
-The *Information Publishing Framework* "IPF" is a tool (1) used by
+The *Information Publishing Framework* ["IPF" (1)](#IPF) is a tool used by
 resource operators to publish dynamic resource information to XSEDE's
-Information Services (2). IPF can publish four types of resource
+[Information Services (2)](#infoserv). IPF can publish four types of resource
 Information: 1) Batch system configuration and queue
 contents, 2) Software Modules available from the command line, 3)
 Network services information, and 4) Batch scheduler job events.
 
 
-XSEDE requires Level 1, 2, and 3 operators (3) to publish this dynamic
-resource information using IPF to the degree that is possible for each type of resource..
+XSEDE requires Level 1, 2, and 3 operators to publish this [dynamic
+resource information (3)](#softserv) using IPF to the degree that is possible for each type of resource..
 
 
-IPF complements XSEDE's Resource Description Repository "RDR" (4) which
+IPF complements XSEDE's [Resource Description Repository "RDR" (4)](#RDR) which
 is used to maintain static resource information.
 
 
@@ -44,7 +44,7 @@ This document describes how to install and configure IPF.
 
 
 IPF is a Python program that gathers resource information, formats it in
-a GLUE2 standard format (5), and publishes it to XSEDE's Information Services.
+a [GLUE2 standard format (5)](#glue2), and publishes it to XSEDE's Information Services.
 IPF is configured to run one or more “workflows” that define the steps
 that IPF executes to discover, format, and publish a specific type of resource information.
 
@@ -114,7 +114,9 @@ all Level 1 and 2 *SPs that offer XSEDE allocated batch computing*
 
 
 -   Before installing IPF operators should register their resource in
-    RDR (4).
+    [RDR (4)](#RDR).  While IPF is capable of publishing information about resources
+    that are not found in RDR, our intent here is to publish information about
+    XSEDE resources, which should match/map to what is found in RDR.
 
 
 -   Identify a single server to run IPF -- a single IPF instance can be used to
@@ -829,13 +831,13 @@ corresponding ipf service.
 ==========
 
 
-(1) IPF is open source and maintained at
-    [https://github.com/XSEDE/ipf](https://github.com/XSEDE/ipf.).
-(2) [XSEDE Information Services](https://info.xsede.org/).
-(3) [XSEDE Software and Services Table for Service
-    Providers](https://www.ideals.illinois.edu/handle/2142/85886).
-(4) [Resource Description Repository "RDR"](https://rdr.xsede.org/).
-(5) [GLUE2 Standard Format](https://www.ogf.org/documents/GFD.147.pdf).
+<a name="IPF">(1) IPF is open source and maintained at
+    [https://github.com/XSEDE/ipf](https://github.com/XSEDE/ipf.).</a>
+<a name="infoserv">(2) [XSEDE Information Services](https://info.xsede.org/).</a>
+<a name="softserv">(3) [XSEDE Software and Services Table for Service
+    Providers](https://www.ideals.illinois.edu/handle/2142/85886).</a>
+<a name="RDR">(4) [Resource Description Repository "RDR"](https://rdr.xsede.org/).</a>
+<a name="glue2">(5) [GLUE2 Standard Format](https://www.ogf.org/documents/GFD.147.pdf).</a>
 
 
 ## Appendix: Configuration File Background
