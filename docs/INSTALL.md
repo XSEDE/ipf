@@ -831,13 +831,13 @@ corresponding ipf service.
 ==========
 
 
-<a name="IPF">(1) IPF is open source and maintained at
+- <a name="IPF">(1) IPF is open source and maintained at
     [https://github.com/XSEDE/ipf](https://github.com/XSEDE/ipf.).</a>
-<a name="infoserv">(2) [XSEDE Information Services](https://info.xsede.org/).</a>
-<a name="softserv">(3) [XSEDE Software and Services Table for Service
+- <a name="infoserv">(2) [XSEDE Information Services](https://info.xsede.org/).</a>
+- <a name="softserv">(3) [XSEDE Software and Services Table for Service
     Providers](https://www.ideals.illinois.edu/handle/2142/85886).</a>
-<a name="RDR">(4) [Resource Description Repository "RDR"](https://rdr.xsede.org/).</a>
-<a name="glue2">(5) [GLUE2 Standard Format](https://www.ogf.org/documents/GFD.147.pdf).</a>
+- <a name="RDR">(4) [Resource Description Repository "RDR"](https://rdr.xsede.org/).</a>
+- <a name="glue2">(5) [GLUE2 Standard Format](https://www.ogf.org/documents/GFD.147.pdf).</a>
 
 
 ## Appendix: Configuration File Background
