@@ -205,12 +205,13 @@ appropriate version of Python (3.6+). We recommend using venv to manage
 Python installations. More information on venv is available at
 <https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/>
 
+Depending on how many python versions are in place on your system, "pip" may or may not refer to the python 3 version.  "pip3" should always unambiguously refer to a python3 version of pip.
 
 Once you have a Python 3.6 environment (whether venv or not), to install
 execute:
 
 
-    $ pip install ipf
+    $ pip3 install ipf
 
 
 When installing via pip: unlike in an RPM install, the files get
@@ -223,6 +224,8 @@ the Python site-packages directory.
 
 You can find your site-packages path for the Python you used for the pip
 install with: 
+
+
      $ python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'
 
 
@@ -306,38 +309,38 @@ An invocation of ipf_configure_xsede on a resource that has installed
 IPF using RPM might look like:
 
 
-/usr/bin/ipf_configure_xsede –rpm --resource_name <RESOURCE_NAME> --workflows=extmodules,compute,activity --publish_to_xsede --amqp_certificate /etc/grid-security/cert_for_ipf.pem --amqp_certificate_key /etc/grid-security/key_for_ipf.pem  –modulepath /path/to/modules –scheduler slurm –slurmctl_log <PATH TO slurmctl.log> 
+/usr/bin/ipf_configure_xsede --rpm --resource_name <RESOURCE_NAME> --workflows=extmodules,compute,activity --publish_to_xsede --amqp_certificate /etc/grid-security/cert_for_ipf.pem --amqp_certificate_key /etc/grid-security/key_for_ipf.pem  --modulepath /path/to/modules --scheduler slurm --slurmctl_log <PATH TO slurmctl.log> 
 
 
 These options mean:
 
 
-–rpm        IPF was installed using RPM; this lets us know where files should be on disk
+--rpm        IPF was installed using RPM; this lets us know where files should be on disk
 
 
-–resource_name        The name of your resource.  Not necessary if xdresourceid is in your path
+--resource_name        The name of your resource.  Not necessary if xdresourceid is in your path
                                    and returns the desired name 
-–workflows           Comma delimited list of workflows to configure.  Values can include:
+--workflows           Comma delimited list of workflows to configure.  Values can include:
                              compute, activity, extmodules, services
-–publish_to_xsede        Necessary if you wish to configure your workflow to publish to XSEDE’s
+--publish_to_xsede        Necessary if you wish to configure your workflow to publish to XSEDE’s
                                       AMQP service for inclusion in Information Services
 
 
-–amqp_certificate        The path to the certificate to use to authenticate with XSEDE’s AMQP
+--amqp_certificate        The path to the certificate to use to authenticate with XSEDE’s AMQP
 
 
-–amqp_key                  The path to the key for your certificate
+--amqp_key                  The path to the key for your certificate
 
 
-–modulepath                The MODULEPATH where the modulefiles for software publishing are 
+--modulepath                The MODULEPATH where the modulefiles for software publishing are 
                                     found.  If not specified $MODULEPATH from the user environment
                                     will be used.
 
 
-–scheduler                   The batch scheduler in use on your resource.  Typically slurm.
+--scheduler                   The batch scheduler in use on your resource.  Typically slurm.
 
 
-–slurmctl_log               The path (including filename) of your slurmctl log file, used in the 
+--slurmctl_log               The path (including filename) of your slurmctl log file, used in the 
                                     activity workflow.
 
 
@@ -346,15 +349,17 @@ These options mean:
 Other common options:
 
 
-–amqp_username          If not using certificates to authenticate, use these to specify 
-–amqp_password           username and password
+--amqp_username          If not using certificates to authenticate, use these to specify 
+--amqp_password           username and password
 
 
-–pip         IPF was installed using “pip install”
+--pip         IPF was installed using “pip install”
 
 
 For a full list of command line options, please try
-$ ipf_configure_xsede –help
+
+
+$ ipf_configure_xsede ----help
 
 
 -   `ipf_configure_xsede` should be run as the user that will run the
@@ -863,6 +868,8 @@ Note, however, that the $IPF_ETC_PATH dir for an RPM install is /etc/ipf
 If you used pip to install, the source
 code can be found in your python's site_packages/ipf/ directory. 
 To find the site_packages directory for your python, you can run: 
+
+
      $python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])'
 
 The pip-installed IPF_ETC_PATH path is this directory above, with /etc/ipf/
