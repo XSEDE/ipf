@@ -304,6 +304,7 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         env = application.ApplicationEnvironment()
         env.AppName = name
         env.Validity = DEFAULT_VALIDITY
+        publishflag = True
         # env.AppVersion set below, after massaging and/or reading from file
 
         try:
@@ -384,6 +385,14 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
             env.Extension["Default"] = m.group(1).strip()
         else:
             self.debug("no whatis Default: in "+path)
+        m = re.search("\"IPF_FLAGS:([^\"]+)\"", text)
+        if m is not None:
+            #Currently only supporting NOPUBLISH
+            flagslist = list(
+                map(str.strip, m.group(1).split(",")))
+            if "NOPUBLISH" in flagslist:
+                publishflag = False
+                self.debug("NOPUBLISH set for "+path)
 
         handle = application.ApplicationHandle()
         handle.Type = ApplicationHandle.MODULE
@@ -391,7 +400,8 @@ class ExtendedModApplicationsStep(application.ApplicationsStep):
         env.ExecutionEnvironmentID = "urn:ogf:glue2:xsede.org:ExecutionEnvironment:%s" % (
             self.resource_name)
 
-        apps.add(env, [handle])
+        if publishflag == True:
+            apps.add(env, [handle])
 
     def _InferDescription(self, text, env):
         handle = application.ApplicationHandle()
