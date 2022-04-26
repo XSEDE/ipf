@@ -1,0 +1,1 @@
+This file serves no purpose other than to get Python's setuptools to let me include an otherwise empty directory.
