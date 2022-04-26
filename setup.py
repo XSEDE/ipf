@@ -35,6 +35,7 @@ include ipf/bin/ipf_workflow
 include ipf/bin/ipf_configure_xsede
 include ipf/etc/ipf/logging.conf
 include ipf/etc/ipf/workflow/*.json
+include ipf/etc/ipf/workflow/glue2/empty.txt
 include ipf/etc/ipf/workflow/templates/glue2/*.json
 include ipf/etc/ipf/init.d/ipf-WORKFLOW
 include ipf/etc/ipf/xsede/ca_certs.pem
@@ -70,7 +71,7 @@ if __name__ == "__main__":
     _createManifest()
     _createSetupCfg()
     setup(name="ipf",
-          version="1.7a1",
+          version="1.7a3",
           description="The Information Publishing Framework",
           long_description=readme(),
           classifiers=[
@@ -85,7 +86,7 @@ if __name__ == "__main__":
           author_email="blau@anl.gov",
           license="Apache",
           packages=["ipf","ipf.glue2","ipf.xsede","ipf.xsede.test"],
-          install_requires=["amqp >=1.4,<2","python-dateutil"],
+          install_requires=["amqp >=1.4","python-dateutil"],
           entry_points={
               "console_scripts": ["ipf_workflow=ipf.run_workflow:main",
                                   "ipf_configure_xsede=ipf.xsede.configure_workflows:configure"],
@@ -97,6 +98,7 @@ if __name__ == "__main__":
               ("/etc/ipf",["ipf/etc/ipf/logging.conf"]),
               ("/etc/ipf/xsede",["ipf/etc/ipf/xsede/ca_certs.pem"]),
               ("/etc/ipf/workflow",workflow_paths("ipf/etc/ipf/workflow")),
+              ("/etc/ipf/workflow/glue2",["ipf/etc/ipf/workflow/glue2/empty.txt"]),
               ("/etc/ipf/workflow/glue2",[]),
               ("/etc/ipf/workflow/templates/glue2",workflow_paths("ipf/etc/ipf/workflow/templates/glue2")),
               ("/etc/ipf/init.d",["ipf/etc/ipf/init.d/ipf-WORKFLOW"]),
