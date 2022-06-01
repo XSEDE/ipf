@@ -287,7 +287,7 @@ def setSupportContact(extmodules_json,args):
     for step_json in extmodules_json["steps"]:
         if step_json["name"] == "ipf.glue2.modules.ExtendedModApplicationsStep":
             if support_contact is not None:
-                if step_json["params"]:
+                if "params" in step_json:
                     step_json["params"]["default_support_contact"] = support_contact
                 else:
                     step_json["params"]={}
