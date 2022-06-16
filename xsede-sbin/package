@@ -39,6 +39,7 @@ for i in $FILES;do
 done
 cd $HERE
 mv $OUTDIR/docs/INSTALL.md $OUTDIR/INSTALL.md
-markdown_py $OUTDIR/INSTALL.md -f $OUTDIR/INSTALL.html
+#markdown_py $OUTDIR/INSTALL.md -f $OUTDIR/INSTALL.html
+markdown $OUTDIR/INSTALL.md -f $OUTDIR/INSTALL.html
 
 cp dist/$PKG-$VER.tar.gz tmp/$PKG-$VER-$REL.tgz
