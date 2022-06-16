@@ -71,7 +71,7 @@ if __name__ == "__main__":
     _createManifest()
     _createSetupCfg()
     setup(name="ipf",
-          version="1.7a3",
+          version="1.7a5",
           description="The Information Publishing Framework",
           long_description=readme(),
           classifiers=[
@@ -81,7 +81,7 @@ if __name__ == "__main__":
               "Topic :: System :: Monitoring",
           ],
           keywords="monitoring information gathering publishing glue2",
-          url="https://bitbucket.org/wwsmith/ipf",
+          url="https://github.com/xsede/ipf",
           author="Eric Blau, Warren Smith",
           author_email="blau@anl.gov",
           license="Apache",
