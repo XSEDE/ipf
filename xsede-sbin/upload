@@ -14,7 +14,7 @@ fi
 REPO=software.xsede.org
 #REPO=localhost
 
-REPO_SOFTWARE=/local/software.xsede.org/development/ipf/$PKG
+REPO_SOFTWARE=/local/software.xsede.org/development/$PKG
 REPO_SUBDIR=$PKG-$VER-$REL
 
 OUTDIR=tmp/$PKG-$VER/

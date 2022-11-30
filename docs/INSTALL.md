@@ -18,19 +18,19 @@ contents, 2) Software Modules available from the command line, 3)
 Network services information, and 4) Batch scheduler job events.
 
 
-XSEDE requires Level 1, 2, and 3 operators to publish this [dynamic
+XSEDE required Level 1, 2, and 3 operators to publish this [dynamic
 resource information (3)](#softserv) using IPF to the degree that is possible for each type of resource..
 
 
 IPF complements XSEDE's [Resource Description Repository "RDR" (4)](#RDR) which
-is used to maintain static resource information.
+is used to maintain static resource information.  The evolution of RDR continues to exist in ACCESS-CI.
 
 
 Campuses and other research resource operators that are not affiliated
-with XSEDE are welcome to use IPF and to publish their resource
-information to XSEDE Information Services. By doing so, local operator services,
-portals, and gateways can use XSEDE Information Services APIs to access
-their published local resource information in the same way that XSEDE resources, portals, and gateways do.
+with ACCESS-CI are welcome to use IPF and to publish their resource
+information to ACCESS-CI Information Services. By doing so, local operator services,
+portals, and gateways can use ACCESS-CI Information Services APIs to access
+their published local resource information in the same way that ACCESS-CI resources, portals, and gateways do.
 
 
 This document describes how to install and configure IPF.
@@ -158,7 +158,7 @@ all Level 1 and 2 *SPs that offer XSEDE allocated batch computing*
 
 
 -   The service definition files must be readable, and in a single
-    directory.
+    directory.  See Configuring.Service.Files.md for more information
 
 
 ### Batch Scheduler Job Events workflow requirements

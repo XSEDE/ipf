@@ -7,7 +7,7 @@ The Information Publishing Framework (IPF) is a generic framework for gathering 
 focuses narrowly on gatethering and publishing, and not on analyzing or visualizing information. IPF grew out of
 work to publish information about TeraGrid compute resources using the
 [GLUE 2 specification](http://www.ogf.org/documents/GFD.147.pdf). IPF continues to support data gathering and
-publishing in the XSEDE program which succeeded TeraGrid.
+publishing in the ACCESS-CI program which succeeded XSEDE and TeraGrid.
 
 IPF gathers and publishes information using simple workflows. These workflows are defined using JSON (see the
 etc/workflows directory) and steps in the workflows are implemented as Python classes. Each step in the
@@ -38,8 +38,7 @@ Installation instructions are in [docs/INSTALL.md](docs/INSTALL.md).
 
 ## Contact Information
 
-This software is maintained by [XSEDE](https://www.github.com/XSEDE).  and you can contact the XSEDE helpdesk
-if you need help using it.
+This software is maintained by ACCESS-CI, though its source is still currently found in the XSEDE github organization. [XSEDE](https://www.github.com/XSEDE).  and you can contact the ACCESS-CI helpdesk if you need help using it. 
 
 If you have problems with this software you are welcome to submit an [issue](https://github.com/XSEDE/ipf/issues).
 
